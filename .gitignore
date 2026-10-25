@@ -10,10 +10,10 @@ venv/
 ENV/
 
 # Database & local storage
-*.db
-*.sqlite
-*.sqlite3
-postgres_data/
+# *.db
+# *.sqlite
+# *.sqlite3
+# postgres_data/
 
 # Environment variables
 .env

@@ -194,6 +194,7 @@ class SearchService:
         q: str,
         user_id: Optional[uuid.UUID] = None,
         is_community: bool = True,
+        extra_conditions: Optional[List[Any]] = None,
         page: int = 1,
         limit: int = 20,
     ) -> Tuple[List[Dict[str, Any]], int]:
@@ -217,6 +218,9 @@ class SearchService:
             ])
         elif user_id:
             conditions.append(Diary.user_id == user_id)
+
+        if extra_conditions:
+            conditions.extend(extra_conditions)
 
         if is_pg:
             fts_query = func.plainto_tsquery("simple", clean_q)
