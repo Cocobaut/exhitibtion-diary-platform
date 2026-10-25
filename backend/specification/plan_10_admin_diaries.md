@@ -1,7 +1,7 @@
 # PLAN 10 — Nhóm API 10: Quản lý trang nhật ký (`/api/v1/admin/diaries`)
 
 > Đọc `plan_00_foundation.md` và `plan_08_diaries.md` trước. Nguồn: API spec trang 60–65.
-> **Toàn bộ nhóm API yêu cầu quyền ADMIN** (`dependencies=[Depends(require_admin)]`). Không phải Admin → **403 Forbidden**.
+> **Toàn bộ nhóm API yêu cầu quyền ADMIN hoặc OWNER** (`dependencies=[Depends(require_admin)]`). Không phải Admin hoặc Owner → **403 Forbidden**.
 
 ## 1. Phạm vi
 

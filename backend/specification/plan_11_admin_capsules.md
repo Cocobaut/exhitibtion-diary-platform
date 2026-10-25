@@ -1,8 +1,8 @@
 # PLAN 11 — Nhóm API 11: Quản lý kho thông điệp (`/api/v1/admin/capsules`)
 
 > Đọc `plan_00_foundation.md` và `plan_03_capsules.md` trước. Nguồn: API spec trang 66–70.
-> **Toàn bộ nhóm API yêu cầu quyền ADMIN** (`dependencies=[Depends(require_admin)]`).
-> Đảm bảo ràng buộc toàn vẹn: `author_role = 'ADMIN'` và composite foreign key `(author_id, author_role) REFERENCES users(id, role)`.
+> **Toàn bộ nhóm API yêu cầu quyền ADMIN hoặc OWNER** (`dependencies=[Depends(require_admin)]`).
+> Đảm bảo ràng buộc toàn vẹn: `author_role IN ('ADMIN', 'OWNER')` và composite foreign key `(author_id, author_role) REFERENCES users(id, role)`.
 
 ## 1. Phạm vi
 

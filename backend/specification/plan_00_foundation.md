@@ -22,8 +22,9 @@
 | 10 | `plan_10_admin_diaries.md` | Nhóm 10: Admin quản lý nhật ký | `/api/v1/admin/diaries` |
 | 11 | `plan_11_admin_capsules.md` | Nhóm 11: Admin kho thông điệp | `/api/v1/admin/capsules` |
 | 12 | `plan_12_admin_studio_audit.md` | Nhóm 12: Admin Studio & Audit Log | `/api/v1/admin/studio` |
+| 13 | `plan_13_owner.md` | Nhóm 13: Owner Quản trị tối cao | `/api/v1/owner` |
 
-Thứ tự khuyến nghị: 00 → 01 → 02 → 04 (vì nhiều nhóm sinh thông báo) → các nhóm còn lại. Nhóm 9–12 cần `AuditLogService` (mục 6.4).
+Thứ tự khuyến nghị: 00 → 01 → 02 → 04 (vì nhiều nhóm sinh thông báo) → các nhóm còn lại. Nhóm 9–12 cần `AuditLogService` (mục 6.4), Nhóm 13 dành cho Owner.
 
 ---
 
@@ -36,7 +37,7 @@ Code hiện tại trong `backend/app/` được dựng **trước** khi có spec
 | `User.id: int` autoincrement | `UUID` `gen_random_uuid()` | Đổi sang `UUID(as_uuid=True)` |
 | `hashed_password` | `password_hash` | Đổi tên cột |
 | `full_name`, `student_id`, `faculty`, `is_superuser` | `username`, `nickname`, `bio` | Xoá cột cũ, thêm cột mới |
-| `UserRole`: ADMIN/STUDENT/VISITOR/EVALUATOR | `role IN ('USER','ADMIN')` | Enum chỉ còn `USER`, `ADMIN` |
+| `UserRole`: ADMIN/STUDENT/VISITOR/EVALUATOR | `role IN ('USER','ADMIN','OWNER')` | Enum chuẩn hóa gồm `USER`, `ADMIN`, `OWNER` |
 | `TimestampMixin` dùng default phía Python | DB có `DEFAULT CURRENT_TIMESTAMP` + trigger `updated_at` | Dùng `server_default=func.now()`; KHÔNG set `onupdate` (trigger lo) — hoặc giữ cả hai, không xung đột |
 | `main.py` gọi `Base.metadata.create_all` | Schema nguồn là `database/schema.sql` | **Bỏ** `create_all` khỏi lifespan; DB được tạo bằng `schema.sql` |
 | `UserService.seed_first_superuser` | Seed bằng `database/seed.sql` | Giữ seed bằng code nhưng theo cột mới (username/nickname) — hoặc bỏ, chọn một |

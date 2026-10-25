@@ -1,7 +1,7 @@
 # PLAN 09 — Nhóm API 9: Quản lý 3 phòng triển lãm (`/api/v1/admin/rooms/{room_id}/artworks`)
 
 > Đọc `plan_00_foundation.md` trước. Nguồn: API spec trang 52–60.
-> **Toàn bộ nhóm API này yêu cầu quyền ADMIN** (`dependencies=[Depends(require_admin)]`). Người dùng không phải Admin → **403 Forbidden**.
+> **Toàn bộ nhóm API này yêu cầu quyền ADMIN hoặc OWNER** (`dependencies=[Depends(require_admin)]`). Người dùng không có vai trò ADMIN hoặc OWNER → **403 Forbidden**.
 > Tham số `room_id`: 1 (Đổ vỡ), 2 (Lồng đèn Hy vọng), 3 (Cây Thông điệp).
 
 ## 1. Phạm vi

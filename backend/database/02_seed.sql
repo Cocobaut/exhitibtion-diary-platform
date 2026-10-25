@@ -19,12 +19,23 @@ SET title = EXCLUDED.title, description = EXCLUDED.description;
 SELECT setval(pg_get_serial_sequence('rooms', 'id'), coalesce(max(id), 1), max(id) IS NOT null) FROM rooms;
 
 -- ====================================================================
--- 2. BẢNG: users (5 Người dùng: 2 ADMIN, 3 USER)
--- Mật khẩu mặc định: AdminPassword@2026 / UserPassword@2026
+-- 2. BẢNG: users (6 Người dùng: 1 OWNER, 2 ADMIN, 3 USER)
+-- Mật khẩu mặc định: AdminPassword@2026 / UserPassword@2026 / OwnerPassword@2026
 -- password_hash là bcrypt hash hợp lệ của chuỗi mật khẩu
 -- ====================================================================
 INSERT INTO users (id, username, email, password_hash, nickname, role, avatar_url, bio, is_active)
 VALUES 
+    (
+        'a0000000-0000-0000-0000-000000000000',
+        'owner_master',
+        'owner@exhibition.edu.vn',
+        '$2b$12$4rMuWtyzLY5uTLP.RmaHju8XneNlR.4KCO8h1cXFMnCyXo2Ug/rzq',
+        'Chủ Sở Hữu Triển Lãm',
+        'OWNER',
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
+        'Tài khoản Chủ sở hữu tối cao của nền tảng',
+        TRUE
+    ),
     (
         'a0000000-0000-0000-0000-000000000001',
         'admin_exhibition',

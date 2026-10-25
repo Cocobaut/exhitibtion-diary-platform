@@ -12,6 +12,7 @@ from app.models.base import TimestampMixin
 class UserRole(str, enum.Enum):
     USER = "USER"
     ADMIN = "ADMIN"
+    OWNER = "OWNER"
 
 
 class User(Base, TimestampMixin):

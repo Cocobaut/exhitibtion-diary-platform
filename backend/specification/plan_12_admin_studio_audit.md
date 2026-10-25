@@ -1,8 +1,8 @@
 # PLAN 12 — Nhóm API 12: Admin Studio & Audit Log (`/api/v1/admin/studio`)
 
 > Đọc `plan_00_foundation.md` trước. Nguồn: API spec trang 71–74.
-> **Toàn bộ nhóm API yêu cầu quyền ADMIN** (`dependencies=[Depends(require_admin)]`).
-> Quản lý việc Admin xuất bản bài viết trực tiếp (không qua kiểm duyệt) và theo dõi lịch sử thao tác quản trị trên toàn bộ hệ thống triển lãm (`admin_audit_logs`).
+> **Toàn bộ nhóm API yêu cầu quyền ADMIN hoặc OWNER** (`dependencies=[Depends(require_admin)]`).
+> Quản lý việc Admin/Owner xuất bản bài viết trực tiếp (không qua kiểm duyệt) và theo dõi lịch sử thao tác quản trị trên toàn bộ hệ thống triển lãm (`admin_audit_logs`).
 
 ## 1. Phạm vi
 
@@ -10,8 +10,11 @@
 |---|---|---|---|
 | 12.1 | POST | `/api/v1/admin/studio/artworks` | 201 |
 | 12.2 | GET | `/api/v1/admin/studio/audit-logs` | 200 |
+| 12.3 | POST | `/api/v1/admin/studio/users/{user_id}/request-deletion` | 200 |
 
 Router: `APIRouter(prefix="/admin/studio", tags=["Admin - Studio & Audit Log"])`.
+
+> **Lưu ý về quyền hạn**: Admin **không có quyền trực tiếp xóa tài khoản** người dùng hoặc admin khác. Khi phát hiện tài khoản vi phạm nghiêm trọng cần xóa, Admin gửi yêu cầu xóa tài khoản đến Owner qua API `12.3`. Chỉ duy nhất **Chủ sở hữu (Owner)** mới có thẩm quyền phê duyệt xóa vĩnh viễn tài khoản (Plan 13).
 
 ## 2. File cần tạo
 - `app/models/admin_audit_log.py` (đã định nghĩa bảng tại plan_00 §2.5)
@@ -138,12 +141,49 @@ Router: `APIRouter(prefix="/admin/studio", tags=["Admin - Studio & Audit Log"])`
 
 ---
 
+### 12.3 `POST /admin/studio/users/{user_id}/request-deletion`
+Gửi yêu cầu xóa tài khoản đến Chủ sở hữu (Owner).
+
+**Request Body**
+```json
+{
+  "reason": "Tài khoản có hành vi phát tán nội dung độc hại liên tục, spam và quấy rối người dùng khác."
+}
+```
+
+**Quy tắc nghiệp vụ**:
+1. Yêu cầu quyền: `ADMIN` hoặc `OWNER`.
+2. Target `user_id`: Phải tồn tại trong hệ thống. Nếu không tìm thấy $\rightarrow$ 404 `USER_NOT_FOUND`.
+3. Admin không thể yêu cầu xóa chính mình $\rightarrow$ 400 `INVALID_ACTION`.
+4. Không thể yêu cầu xóa tài khoản của `OWNER` $\rightarrow$ 403 `FORBIDDEN` (`"Không thể yêu cầu xóa tài khoản của Chủ sở hữu"`).
+5. Tự động gửi thông báo (`type = 'SYSTEM'`) tới **toàn bộ tài khoản OWNER** trong hệ thống với tiêu đề: `"Yêu cầu xóa tài khoản từ Quản trị viên"`, nội dung chứa lý do và liên kết xử lý `target_url = f"/owner/users/{user_id}"`.
+6. Ghi nhận `AdminAuditLog` (`action_type = 'REQUEST_DELETE_USER'`, `note = reason`).
+
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Đã gửi yêu cầu xóa tài khoản đến Chủ sở hữu để xem xét phê duyệt",
+  "data": {
+    "target_user_id": "b2f67a21-98e3-4f93-b789-2144d18ec301",
+    "target_username": "nguoidung_vipham",
+    "requested_by": "e0a11223-14bc-4183-a212-094182410a88",
+    "reason": "Tài khoản có hành vi phát tán nội dung độc hại...",
+    "created_at": "2026-10-25T11:20:00Z"
+  }
+}
+```
+
+---
+
 ## 4. Test bắt buộc
 - [ ] User bình thường gọi endpoint Studio → 403 `FORBIDDEN`.
 - [ ] Admin xuất bản trực tiếp vào Phòng 1: Bài viết ngay lập tức có `status = 'APPROVED'` và xuất hiện trên Gallery của Phòng 1 mà không cần duyệt.
 - [ ] Xuất bản thiếu `media_url` ở phòng 1 → 400.
 - [ ] Mọi hành động duyệt (`APPROVE`), từ chối (`REJECT`), chỉnh sửa (`UPDATE`), lưu trữ (`ARCHIVE`), tạo mới (`CREATE_DIRECT`) đều ghi nhận chính xác 1 bản ghi vào `admin_audit_logs`.
 - [ ] Audit log lọc chính xác theo `room_id`, `admin_id`, `action_type`.
+- [ ] Admin gửi yêu cầu xóa tài khoản đến Owner: Tạo thông báo `SYSTEM` gửi đến Owner và ghi audit log `REQUEST_DELETE_USER`.
+- [ ] Admin không thể tự yêu cầu xóa chính mình (400) và không thể yêu cầu xóa Owner (403).
 
 ---
 
@@ -153,6 +193,7 @@ Router: `APIRouter(prefix="/admin/studio", tags=["Admin - Studio & Audit Log"])`
 - **Biến môi trường sử dụng**:
   - `{{baseUrl}}`: Mặc định `http://localhost:8000`
   - `{{adminToken}}`: Bearer Token của tài khoản ADMIN (bắt buộc)
+  - `{{targetUserId}}`: ID của tài khoản người dùng vi phạm cần yêu cầu xóa
 - **Danh sách requests cần có trong Collection**:
   1. `[12.1] Xuất bản trực tiếp tác phẩm Phòng 1 (POST /api/v1/admin/studio/artworks)` - Header `Bearer {{adminToken}}`, body gồm `room_id=1`, `media_url`, tiêu đề và nội dung. Kiểm tra status 201, `status = 'APPROVED'`.
   2. `[12.1] Xuất bản trực tiếp lồng đèn Phòng 2 (POST /api/v1/admin/studio/artworks)` - Body `room_id=2`, `visibility='PUBLIC'`.
@@ -160,4 +201,5 @@ Router: `APIRouter(prefix="/admin/studio", tags=["Admin - Studio & Audit Log"])`
   4. `[12.2] Lấy nhật ký quản trị toàn hệ thống (GET /api/v1/admin/studio/audit-logs)` - Header `Bearer {{adminToken}}`, phân trang page/limit, kiểm tra status 200.
   5. `[12.2] Lọc Audit Log theo loại hành động (GET /api/v1/admin/studio/audit-logs?action_type=CREATE_DIRECT)` - Kiểm tra status 200.
   6. `[12.2] Lọc Audit Log theo phòng (GET /api/v1/admin/studio/audit-logs?room_id=1)` - Kiểm tra status 200.
-  7. `[Quyền hạn] Test chặn người dùng thường (GET /api/v1/admin/studio/audit-logs)` - Header `Bearer {{accessToken}}`, kiểm tra status 403 `FORBIDDEN`.
+  7. `[12.3] Admin gửi yêu cầu xóa tài khoản đến Owner (POST /api/v1/admin/studio/users/{{targetUserId}}/request-deletion)` - Body `{ "reason": "..." }`, kiểm tra status 200.
+  8. `[Quyền hạn] Test chặn người dùng thường (GET /api/v1/admin/studio/audit-logs)` - Header `Bearer {{accessToken}}`, kiểm tra status 403 `FORBIDDEN`.

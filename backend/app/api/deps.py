@@ -147,14 +147,30 @@ async def get_optional_user(
 async def require_admin(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Dependency verifying that the current authenticated user has ADMIN role.
+    """Dependency verifying that the current authenticated user has ADMIN or OWNER role.
     Raises:
-        AppException 403 FORBIDDEN if not an admin.
+        AppException 403 FORBIDDEN if not an admin or owner.
     """
-    if current_user.role != UserRole.ADMIN.value and current_user.role != "ADMIN":
+    if current_user.role not in (UserRole.ADMIN.value, "ADMIN", UserRole.OWNER.value, "OWNER"):
         raise AppException(
             status_code=403,
             error_code="FORBIDDEN",
             message="Yêu cầu quyền Quản trị viên"
+        )
+    return current_user
+
+
+async def require_owner(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Dependency verifying that the current authenticated user has OWNER role.
+    Raises:
+        AppException 403 FORBIDDEN if not an owner.
+    """
+    if current_user.role != UserRole.OWNER.value and current_user.role != "OWNER":
+        raise AppException(
+            status_code=403,
+            error_code="FORBIDDEN",
+            message="Yêu cầu quyền Chủ sở hữu (Owner)"
         )
     return current_user
