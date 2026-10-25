@@ -35,6 +35,7 @@
               "    pm.expect(jsonData.data.role).to.be.a(\"string\");",
               "    pm.expect(jsonData.data).to.have.property(\"avatar_url\");",
               "    pm.expect(jsonData.data).to.have.property(\"bio\");",
+              "    pm.expect(jsonData.data).to.have.property(\"theme_preference\");",
               "    pm.expect(jsonData.data.created_at).to.be.a(\"string\");",
               "    pm.expect(jsonData.data).to.not.have.property(\"password_hash\");",
               "    pm.expect(jsonData.data).to.not.have.property(\"is_active\");",
@@ -124,6 +125,7 @@
               "    pm.expect(jsonData.message).to.eql(\"Cập nhật hồ sơ thành công\");",
               "    pm.expect(jsonData.data.nickname).to.eql(\"Người Lữ Khách Mới\");",
               "    pm.expect(jsonData.data.bio).to.eql(\"Cảm xúc lắng đọng qua từng ngày triển lãm.\");",
+              "    pm.expect(jsonData.data.theme_preference).to.eql(\"moss\");",
               "    pm.expect(jsonData.data.updated_at).to.be.a(\"string\");",
               "});"
             ],
@@ -145,7 +147,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"nickname\": \"Người Lữ Khách Mới\",\n  \"bio\": \"Cảm xúc lắng đọng qua từng ngày triển lãm.\"\n}"
+          "raw": "{\n  \"nickname\": \"Người Lữ Khách Mới\",\n  \"bio\": \"Cảm xúc lắng đọng qua từng ngày triển lãm.\",\n  \"theme_preference\": \"moss\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/v1/users/me",

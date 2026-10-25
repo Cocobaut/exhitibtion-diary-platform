@@ -347,6 +347,27 @@ def test_07_route_order_no_path_collision():
     asyncio.run(run())
 
 
+def test_08_bulk_mark_read():
+    """Test 8: PATCH /notifications/bulk-read đánh dấu nhiều thông báo cụ thể."""
+    async def run():
+        async with setup_test_context() as (client, session, auth1, user1, auth2, user2, notifs):
+            n1 = notifs[0]  # user1's unread
+            res = await client.patch(
+                "/api/v1/notifications/bulk-read",
+                headers=auth1,
+                json={"notification_ids": [str(n1.id)]}
+            )
+            assert res.status_code == 200
+            assert res.json()["success"] is True
+            assert res.json()["data"]["affected_rows"] == 1
+
+            # Check unread count
+            c = await client.get("/api/v1/notifications/unread-count", headers=auth1)
+            assert c.json()["data"]["unread_count"] == 1
+
+    asyncio.run(run())
+
+
 if __name__ == "__main__":
     print("Running Plan 04 Notifications Tests...")
     test_01_unauthenticated_requests()
@@ -363,4 +384,7 @@ if __name__ == "__main__":
     print("✓ Test 6: Đánh dấu tất cả thông báo đã đọc và kiểm tra affected_rows")
     test_07_route_order_no_path_collision()
     print("✓ Test 7: Thứ tự route chuẩn xác, không bị xung đột path parameter")
-    print("\n ALL 7 TESTS FOR PLAN 04 PASSED PERFECTLY! ")
+    test_08_bulk_mark_read()
+    print("✓ Test 8: Đánh dấu đã đọc nhiều thông báo qua bulk-read thành công")
+    print("\n ALL 8 TESTS FOR PLAN 04 PASSED PERFECTLY! ")
+

@@ -112,6 +112,36 @@ async def get_ready_to_fall_lanterns(
     return ok(data=jsonable_encoder(result))
 
 
+@router.get(
+    "/artworks/my-personal",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="6.7 Lấy thông tin lồng đèn cá nhân phục vụ widget đếm ngược"
+)
+async def get_my_personal_lantern(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lấy lồng đèn mới nhất của người dùng hiện tại kèm thông số thời gian đếm ngược còn lại."""
+    result = await Room2Service.get_my_personal_lantern(db, current_user=current_user)
+    return ok(data=jsonable_encoder(result))
+
+
+@router.get(
+    "/artworks/random-opened",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="6.8 Rút ngẫu nhiên một lồng đèn đã mở"
+)
+async def get_random_opened_lantern(
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
+):
+    """Rút ngẫu nhiên 1 bức thư lồng đèn đã mở công khai trên bầu trời đêm."""
+    result = await Room2Service.get_random_opened_lantern(db, current_user=current_user)
+    return ok(data=jsonable_encoder(result))
+
+
 @router.post(
     "/artworks/{artwork_id}/open",
     response_model=dict,
@@ -168,3 +198,62 @@ async def delete_lantern(
         current_user=current_user,
     )
     return ok(message=msg)
+
+
+@router.post(
+    "/artworks/{artwork_id}/save",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="6.9 Lưu thư lồng đèn vào sổ tay"
+)
+async def save_lantern_to_notebook(
+    artwork_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lưu một bức thư lồng đèn vào sổ tay của người dùng hiện tại."""
+    try:
+        art_uuid = uuid.UUID(artwork_id)
+    except (ValueError, TypeError):
+        raise AppException(
+            status_code=404,
+            error_code="ARTWORK_NOT_FOUND",
+            message="Không tìm thấy lồng đèn"
+        )
+
+    result = await Room2Service.save_lantern(
+        db,
+        lantern_id=art_uuid,
+        current_user=current_user,
+    )
+    return ok(data=jsonable_encoder(result), message="Đã lưu bức thư lồng đèn vào sổ tay")
+
+
+@router.delete(
+    "/artworks/{artwork_id}/save",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="6.10 Bỏ lưu thư lồng đèn khỏi sổ tay"
+)
+async def unsave_lantern_from_notebook(
+    artwork_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Bỏ lưu một bức thư lồng đèn khỏi sổ tay của người dùng hiện tại."""
+    try:
+        art_uuid = uuid.UUID(artwork_id)
+    except (ValueError, TypeError):
+        raise AppException(
+            status_code=404,
+            error_code="ARTWORK_NOT_FOUND",
+            message="Không tìm thấy lồng đèn"
+        )
+
+    await Room2Service.unsave_lantern(
+        db,
+        lantern_id=art_uuid,
+        current_user=current_user,
+    )
+    return ok(message="Đã bỏ lưu bức thư khỏi sổ tay")
+

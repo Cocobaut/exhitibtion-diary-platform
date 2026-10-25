@@ -8,6 +8,7 @@ from app.api.v1.endpoints import (
     auth,
     capsules,
     diaries,
+    notebook,
     notifications,
     owner,
     room1,
@@ -56,6 +57,10 @@ api_router.include_router(admin_studio.router)
 
 # - plan_13: /owner (app.api.v1.endpoints.owner)
 api_router.include_router(owner.router)
+
+# - plan_14: /notebook (app.api.v1.endpoints.notebook)
+api_router.include_router(notebook.router, prefix="/notebook", tags=["Unified Notebook"])
+
 
 
 

@@ -13,6 +13,7 @@
 | 8.4 | Bản thân | PUT | `/api/v1/diaries/me/{diary_id}` | Authenticated | 200 |
 | 8.5 | Bản thân | DELETE | `/api/v1/diaries/me/{diary_id}` | Authenticated | 200 |
 | 8.6 | Bản thân | POST | `/api/v1/diaries/upload-media` | Authenticated | 200 |
+| 8.7 | Bản thân | GET | `/api/v1/diaries/stats/moods` | Authenticated | 200 |
 | 8.2.1 | Cộng đồng | GET | `/api/v1/diaries/community` | Public (tùy chọn token) | 200 |
 | 8.2.2 | Cộng đồng | GET | `/api/v1/diaries/community/{diary_id}` | Public (tùy chọn token) | 200 |
 | 8.2.3 | Cộng đồng | POST | `/api/v1/diaries/community/{diary_id}/reactions` | Authenticated | 200 |
@@ -20,7 +21,7 @@
 
 Router: `APIRouter(prefix="/diaries", tags=["Diaries"])`.
 > [!IMPORTANT]
-> Cần sắp xếp thứ tự routes cẩn thận: Đặt `/me`, `/upload-media`, `/community`, `/search` **trước** các route có path variable `/{diary_id}` để tránh nhầm route.
+> Cần sắp xếp thứ tự routes cẩn thận: Đặt `/me`, `/stats/moods`, `/upload-media`, `/community`, `/search` **trước** các route có path variable `/{diary_id}` để tránh nhầm route.
 
 ## 2. File cần tạo
 - `app/models/diary.py`, `app/models/diary_interaction.py`
@@ -168,6 +169,26 @@ Router: `APIRouter(prefix="/diaries", tags=["Diaries"])`.
       "https://cdn.exhibition.com/diaries/upload-uuid-1.webp",
       "https://cdn.exhibition.com/diaries/upload-uuid-2.webp"
     ]
+  }
+}
+```
+
+### 8.7 `GET /diaries/stats/moods`
+- Thống kê phân bố cảm xúc nhật ký của người dùng hiện tại.
+- **Quyền hạn**: Authenticated
+- **Response 200**:
+```json
+{
+  "success": true,
+  "data": {
+    "total_diaries": 28,
+    "mood_counts": {
+      "Hy vọng": 12,
+      "Bình yên": 8,
+      "Biết ơn": 5,
+      "Trầm lắng": 2,
+      "Mệt mỏi": 1
+    }
   }
 }
 ```

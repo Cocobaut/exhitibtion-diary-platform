@@ -16,6 +16,8 @@ Thư mục này dùng để lưu trữ toàn bộ các file Postman Collection J
 10. `10_admin_diaries.postman_collection.json` - Nhóm 10: Admin quản lý nhật ký
 11. `11_admin_capsules.postman_collection.json` - Nhóm 11: Admin kho thông điệp
 12. `12_admin_studio_audit.postman_collection.json` - Nhóm 12: Admin Studio & Audit Log
+13. `13_owner.postman_collection.json` - Nhóm 13: Chủ sở hữu hệ thống (Owner)
+14. `14_notebook.postman_collection.json` - Nhóm 14: Sổ tay Ký ức Hợp nhất
 
 ## ⚙️ Hướng dẫn sử dụng
 1. Mở Postman -> Chọn **Import** -> Kéo thả file JSON vào.

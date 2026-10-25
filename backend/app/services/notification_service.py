@@ -197,3 +197,34 @@ class NotificationService:
         result = await db.execute(stmt)
         await db.commit()
         return result.rowcount or 0
+
+    @staticmethod
+    async def bulk_mark_as_read(
+        db: AsyncSession,
+        recipient_id: uuid.UUID,
+        notification_ids: List[str],
+    ) -> int:
+        """4.5 Đánh dấu nhiều thông báo là đã đọc."""
+        valid_uuids: List[uuid.UUID] = []
+        for nid in notification_ids:
+            try:
+                valid_uuids.append(uuid.UUID(str(nid)))
+            except (ValueError, TypeError):
+                continue
+
+        if not valid_uuids:
+            return 0
+
+        stmt = (
+            update(Notification)
+            .where(
+                Notification.recipient_id == recipient_id,
+                Notification.id.in_(valid_uuids),
+                Notification.is_read == False,
+            )
+            .values(is_read=True)
+        )
+        result = await db.execute(stmt)
+        await db.commit()
+        return result.rowcount or 0
+

@@ -23,7 +23,7 @@ SELECT setval(pg_get_serial_sequence('rooms', 'id'), coalesce(max(id), 1), max(i
 -- Mật khẩu mặc định: AdminPassword@2026 / UserPassword@2026 / OwnerPassword@2026
 -- password_hash là bcrypt hash hợp lệ của chuỗi mật khẩu
 -- ====================================================================
-INSERT INTO users (id, username, email, password_hash, nickname, role, avatar_url, bio, is_active)
+INSERT INTO users (id, username, email, password_hash, nickname, role, avatar_url, bio, theme_preference, is_active)
 VALUES 
     (
         'a0000000-0000-0000-0000-000000000000',
@@ -34,6 +34,7 @@ VALUES
         'OWNER',
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
         'Tài khoản Chủ sở hữu tối cao của nền tảng',
+        'museum',
         TRUE
     ),
     (
@@ -45,6 +46,7 @@ VALUES
         'ADMIN',
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
         'Tài khoản quản trị viên hệ thống triển lãm',
+        'museum',
         TRUE
     ),
     (
@@ -56,6 +58,7 @@ VALUES
         'ADMIN',
         'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80',
         'Điều phối viên nội dung và kiểm duyệt bài viết',
+        'moss',
         TRUE
     ),
     (
@@ -67,6 +70,7 @@ VALUES
         'USER',
         'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80',
         'Người tìm kiếm sự tĩnh lặng qua từng trang viết',
+        'museum',
         TRUE
     ),
     (
@@ -78,6 +82,7 @@ VALUES
         'USER',
         'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80',
         'Sinh viên năm 3 yêu thích hội họa và nhiếp ảnh',
+        'paper',
         TRUE
     ),
     (
@@ -89,6 +94,7 @@ VALUES
         'USER',
         'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=256&q=80',
         'Luôn tin rằng nụ cười có thể chữa lành mọi tổn thương',
+        'plum',
         TRUE
     ),
     (
@@ -100,10 +106,11 @@ VALUES
         'USER',
         'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80',
         'Người lắng nghe những câu chuyện thầm kín bên hoàng hôn',
+        'museum',
         TRUE
     )
 ON CONFLICT (id) DO UPDATE 
-SET nickname = EXCLUDED.nickname, bio = EXCLUDED.bio;
+SET nickname = EXCLUDED.nickname, bio = EXCLUDED.bio, theme_preference = EXCLUDED.theme_preference;
 
 -- ====================================================================
 -- 3. BẢNG: artworks (5 Tác phẩm trong các phòng triển lãm)
@@ -1042,6 +1049,27 @@ VALUES
         5,
         FALSE,
         CURRENT_TIMESTAMP - INTERVAL '2 hours'
+    ),
+    (
+        '10000000-0000-0000-0000-000000000011',
+        'b0000000-0000-0000-0000-000000000010',
+        1,
+        TRUE,
+        CURRENT_TIMESTAMP - INTERVAL '2 days'
+    ),
+    (
+        '10000000-0000-0000-0000-000000000012',
+        'b0000000-0000-0000-0000-000000000010',
+        2,
+        TRUE,
+        CURRENT_TIMESTAMP - INTERVAL '1 day'
+    ),
+    (
+        '10000000-0000-0000-0000-000000000013',
+        'b0000000-0000-0000-0000-000000000010',
+        3,
+        TRUE,
+        CURRENT_TIMESTAMP - INTERVAL '6 hours'
     )
 ON CONFLICT (id) DO NOTHING;
 
@@ -1299,3 +1327,42 @@ VALUES
         CURRENT_TIMESTAMP - INTERVAL '1 hour'
     )
 ON CONFLICT (id) DO NOTHING;
+
+-- ====================================================================
+-- 13. BẢNG: user_saved_artworks (Dữ liệu mẫu lưu thư lồng đèn vào sổ tay)
+-- ====================================================================
+INSERT INTO user_saved_artworks (id, user_id, artwork_id, saved_at)
+VALUES 
+    (
+        '50000000-0000-0000-0000-000000000001',
+        'b0000000-0000-0000-0000-000000000001',
+        'c0000000-0000-0000-0000-000000000002',
+        CURRENT_TIMESTAMP - INTERVAL '2 days'
+    ),
+    (
+        '50000000-0000-0000-0000-000000000002',
+        'b0000000-0000-0000-0000-000000000002',
+        'c0000000-0000-0000-0000-000000000002',
+        CURRENT_TIMESTAMP - INTERVAL '1 day'
+    ),
+    (
+        '50000000-0000-0000-0000-000000000003',
+        'b0000000-0000-0000-0000-000000000003',
+        'c0000000-0000-0000-0000-000000000002',
+        CURRENT_TIMESTAMP - INTERVAL '12 hours'
+    ),
+    (
+        '50000000-0000-0000-0000-000000000011',
+        'b0000000-0000-0000-0000-000000000010',
+        'c0000000-0000-0000-0000-000000000002',
+        CURRENT_TIMESTAMP - INTERVAL '1 day'
+    ),
+    (
+        '50000000-0000-0000-0000-000000000012',
+        'b0000000-0000-0000-0000-000000000010',
+        'c0000000-0000-0000-0000-000000000021',
+        CURRENT_TIMESTAMP - INTERVAL '4 hours'
+    )
+ON CONFLICT (id) DO NOTHING;
+
+

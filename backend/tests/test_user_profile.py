@@ -135,6 +135,7 @@ def test_02_get_profile_success():
             assert data["role"] == "USER"
             assert data["avatar_url"] == "https://example.com/avatar.jpg"
             assert data["bio"] == "Gửi những tâm sự vào màn đêm..."
+            assert data["theme_preference"] == "museum"
             assert "created_at" in data
             assert data["created_at"].endswith("Z")
 
@@ -361,12 +362,41 @@ def test_08_upload_avatar_invalid_type_and_large():
     asyncio.run(run())
 
 
+def test_09_patch_theme_preference():
+    """Test 9: PATCH theme_preference (museum, moss, plum, paper)."""
+    async def run():
+        async with setup_test_context() as (client, session, auth_headers, user):
+            # 1. Update to valid theme 'moss'
+            res = await client.patch(
+                "/api/v1/users/me",
+                headers=auth_headers,
+                json={"theme_preference": "moss"}
+            )
+            assert res.status_code == 200
+            assert res.json()["data"]["theme_preference"] == "moss"
+
+            # 2. Verify with GET /users/me
+            get_res = await client.get("/api/v1/users/me", headers=auth_headers)
+            assert get_res.status_code == 200
+            assert get_res.json()["data"]["theme_preference"] == "moss"
+
+            # 3. Invalid theme returns 422
+            bad_res = await client.patch(
+                "/api/v1/users/me",
+                headers=auth_headers,
+                json={"theme_preference": "neon_punk"}
+            )
+            assert bad_res.status_code in (400, 422)
+
+    asyncio.run(run())
+
+
 if __name__ == "__main__":
     print("Running Plan 02 User Profile Tests...")
     test_01_unauthenticated_requests()
     print("✓ Test 1: Không có token trả về 401 cho cả 4 endpoint")
     test_02_get_profile_success()
-    print("✓ Test 2: GET /users/me trả đủ 8 trường, không lộ thông tin nhạy cảm")
+    print("✓ Test 2: GET /users/me trả đủ các trường và theme_preference mặc định")
     test_03_patch_profile_partial_bio()
     print("✓ Test 3: PATCH partial bio giữ nguyên nickname và cập nhật updated_at")
     test_04_patch_ignore_unknown_fields_and_empty()
@@ -379,4 +409,7 @@ if __name__ == "__main__":
     print("✓ Test 7: Upload ảnh PNG 1MB thành công và lưu avatar_url vào DB")
     test_08_upload_avatar_invalid_type_and_large()
     print("✓ Test 8: Kiểm tra tệp giả định dạng (magic bytes) và tệp quá 5MB (400)")
-    print("\n ALL 8 TESTS FOR PLAN 02 PASSED PERFECTLY! ")
+    test_09_patch_theme_preference()
+    print("✓ Test 9: Cập nhật theme_preference và xác thực enum hợp lệ")
+    print("\n ALL 9 TESTS FOR PLAN 02 PASSED PERFECTLY! ")
+

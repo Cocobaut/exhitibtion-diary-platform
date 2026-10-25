@@ -54,6 +54,21 @@ async def get_my_diaries(
 
 
 @router.get(
+    "/stats/moods",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="8.7 Thống kê cảm xúc nhật ký cá nhân"
+)
+async def get_my_diary_mood_stats(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lấy số lượng nhật ký cá nhân phân loại theo từng cảm xúc."""
+    result = await DiaryService.get_mood_stats(db, user_id=current_user.id)
+    return ok(data=jsonable_encoder(result))
+
+
+@router.get(
     "/me/{diary_id}",
     response_model=dict,
     status_code=status.HTTP_200_OK,

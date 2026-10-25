@@ -621,3 +621,29 @@ class DiaryService:
                 "total_hits": total_hits,
             }
         }
+
+    @staticmethod
+    async def get_mood_stats(
+        db: AsyncSession,
+        *,
+        user_id: uuid.UUID,
+    ) -> Dict[str, Any]:
+        """Get mood count statistics for user's personal diaries."""
+        stmt = (
+            select(Diary.mood, func.count(Diary.id))
+            .where(Diary.user_id == user_id)
+            .group_by(Diary.mood)
+        )
+        rows = (await db.execute(stmt)).all()
+        total_diaries = 0
+        mood_counts: Dict[str, int] = {}
+        for mood_val, count in rows:
+            total_diaries += count
+            key = mood_val if mood_val else "Khác"
+            mood_counts[key] = count
+
+        return {
+            "total_diaries": total_diaries,
+            "mood_counts": mood_counts,
+        }
+

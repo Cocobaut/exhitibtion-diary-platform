@@ -91,3 +91,21 @@ class ReadAllResponse(BaseModel):
     success: bool = True
     message: str = "Đã đánh dấu tất cả thông báo là đã đọc"
     data: ReadAllData
+
+
+# =====================================================================
+# 4.5 PATCH /notifications/bulk-read
+# =====================================================================
+class BulkReadRequest(BaseModel):
+    notification_ids: List[str]
+
+
+class BulkReadData(BaseModel):
+    affected_rows: int
+
+
+class BulkReadResponse(BaseModel):
+    success: bool = True
+    message: str = "Đã đánh dấu các thông báo đã chọn là đã đọc"
+    data: BulkReadData
+

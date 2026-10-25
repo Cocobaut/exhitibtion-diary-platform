@@ -10,6 +10,7 @@ from app.core.constants import ROOM_HOPE
 from app.core.exceptions import AppException
 from app.models.artwork import Artwork
 from app.models.user import User
+from app.models.user_saved_artwork import UserSavedArtwork
 from app.schemas.room2 import Room2CreateLanternRequest, serialize_utc_datetime
 from app.services.artwork_query_service import ArtworkQueryService
 from app.services.search_service import SearchService
@@ -544,3 +545,168 @@ class Room2Service:
         await db.delete(artwork)
         await db.flush()
         return "Xóa lồng đèn thành công"
+
+    @staticmethod
+    async def save_lantern(
+        db: AsyncSession,
+        *,
+        lantern_id: uuid.UUID,
+        current_user: User,
+    ) -> Dict[str, Any]:
+        """Save a Room 2 lantern letter into the user's notebook."""
+        stmt = select(Artwork).where(Artwork.id == lantern_id, Artwork.room_id == ROOM_HOPE)
+        artwork = (await db.execute(stmt)).scalar_one_or_none()
+        if not artwork:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy lồng đèn"
+            )
+
+        # Visibility check: if PRIVATE, must belong to current user
+        if artwork.visibility == "PRIVATE" and artwork.user_id != current_user.id:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy lồng đèn"
+            )
+
+        # Check existing save
+        check_stmt = select(UserSavedArtwork).where(
+            UserSavedArtwork.user_id == current_user.id,
+            UserSavedArtwork.artwork_id == lantern_id,
+        )
+        saved_rec = (await db.execute(check_stmt)).scalar_one_or_none()
+        if not saved_rec:
+            saved_rec = UserSavedArtwork(
+                user_id=current_user.id,
+                artwork_id=lantern_id,
+            )
+            db.add(saved_rec)
+            await db.commit()
+            await db.refresh(saved_rec)
+
+        return {
+            "artwork_id": str(artwork.id),
+            "is_saved": True,
+            "saved_at": serialize_utc_datetime(saved_rec.saved_at),
+        }
+
+    @staticmethod
+    async def unsave_lantern(
+        db: AsyncSession,
+        *,
+        lantern_id: uuid.UUID,
+        current_user: User,
+    ) -> None:
+        """Remove a Room 2 lantern letter from the user's notebook."""
+        stmt = select(UserSavedArtwork).where(
+            UserSavedArtwork.user_id == current_user.id,
+            UserSavedArtwork.artwork_id == lantern_id,
+        )
+        saved_rec = (await db.execute(stmt)).scalar_one_or_none()
+        if saved_rec:
+            await db.delete(saved_rec)
+            await db.commit()
+
+    @staticmethod
+    async def get_my_personal_lantern(
+        db: AsyncSession,
+        current_user: User,
+    ) -> Dict[str, Any]:
+        """Get the latest personal lantern for countdown widget."""
+        stmt = (
+            select(Artwork)
+            .where(
+                Artwork.room_id == ROOM_HOPE,
+                Artwork.user_id == current_user.id,
+            )
+            .order_by(Artwork.created_at.desc())
+            .limit(1)
+        )
+        lantern = (await db.execute(stmt)).scalar_one_or_none()
+        if not lantern:
+            return {"has_lantern": False, "lantern": None}
+
+        now = datetime.now(timezone.utc)
+        target = lantern.target_date
+        if target:
+            if target.tzinfo is None:
+                target = target.replace(tzinfo=timezone.utc)
+            else:
+                target = target.astimezone(timezone.utc)
+
+        if target and target > now:
+            diff = target - now
+            rem_sec = int(diff.total_seconds())
+            days = diff.days
+            hours = (diff.seconds // 3600)
+            minutes = (diff.seconds % 3600) // 60
+            seconds = diff.seconds % 60
+        else:
+            rem_sec = 0
+            days = 0
+            hours = 0
+            minutes = 0
+            seconds = 0
+
+        return {
+            "has_lantern": True,
+            "lantern": {
+                "id": str(lantern.id),
+                "title": lantern.title,
+                "target_date": serialize_utc_datetime(lantern.target_date),
+                "remaining_seconds": rem_sec,
+                "days": days,
+                "hours": hours,
+                "minutes": minutes,
+                "seconds": seconds,
+                "is_opened": lantern.is_opened,
+                "symbol": lantern.tag_category or "heart",
+            }
+        }
+
+    @staticmethod
+    async def get_random_opened_lantern(
+        db: AsyncSession,
+        current_user: Optional[User] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Get a random opened public lantern in Room 2."""
+        stmt = (
+            select(Artwork)
+            .options(joinedload(Artwork.author))
+            .where(
+                Artwork.room_id == ROOM_HOPE,
+                Artwork.is_opened.is_(True),
+                Artwork.visibility == "PUBLIC",
+                Artwork.status == "APPROVED",
+            )
+            .order_by(func.random())
+            .limit(1)
+        )
+        lantern = (await db.execute(stmt)).scalar_one_or_none()
+        if not lantern:
+            return None
+
+        return {
+            "id": str(lantern.id),
+            "original_language": lantern.original_language,
+            "title": lantern.title,
+            "title_vi": lantern.title_vi,
+            "title_en": lantern.title_en,
+            "author_display_name": lantern.author_display_name or (lantern.author.nickname if lantern.author and not lantern.is_anonymous else "Người Lữ Khách"),
+            "short_content": lantern.short_content,
+            "short_content_vi": lantern.short_content_vi,
+            "short_content_en": lantern.short_content_en,
+            "content": lantern.content,
+            "content_vi": lantern.content_vi,
+            "content_en": lantern.content_en,
+            "media_url": lantern.media_url,
+            "visibility": lantern.visibility,
+            "target_date": serialize_utc_datetime(lantern.target_date),
+            "is_opened": lantern.is_opened,
+            "view_count": lantern.view_count,
+            "symbol": lantern.tag_category or "heart",
+            "created_at": serialize_utc_datetime(lantern.created_at),
+        }
+

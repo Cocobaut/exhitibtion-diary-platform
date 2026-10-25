@@ -262,6 +262,59 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "[4.5] Đánh dấu nhiều thông báo đã đọc",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Affected rows is returned\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.message).to.eql(\"Đã đánh dấu các thông báo đã chọn là đã đọc\");",
+              "    pm.expect(jsonData.data.affected_rows).to.be.a(\"number\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"notification_ids\": [\"{{notificationId}}\"]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/notifications/bulk-read",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "notifications",
+            "bulk-read"
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }

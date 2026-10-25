@@ -36,6 +36,7 @@ class User(Base, TimestampMixin):
     )
     avatar_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    theme_preference: Mapped[str] = mapped_column(String(20), default="museum", nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     __table_args__ = (

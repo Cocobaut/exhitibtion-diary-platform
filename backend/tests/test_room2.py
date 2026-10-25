@@ -27,6 +27,7 @@ from app.models.notification import Notification
 from app.models.revoked_token import RevokedToken
 from app.models.room import Room
 from app.models.user import User, UserRole
+from app.models.user_saved_artwork import UserSavedArtwork
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -49,7 +50,7 @@ TestingSessionLocal = async_sessionmaker(
 async def setup_test_context():
     """Sets up SQLite tables and seeds test users, rooms, and Room 2 artworks."""
     async with test_engine.begin() as conn:
-        for m in [User, RevokedToken, Room, Artwork, ArtworkInteraction, Notification]:
+        for m in [User, RevokedToken, Room, Artwork, ArtworkInteraction, Notification, UserSavedArtwork]:
             await conn.run_sync(m.__table__.create)
 
     async with TestingSessionLocal() as session:
@@ -223,7 +224,7 @@ async def setup_test_context():
         yield context_data
     finally:
         async with test_engine.begin() as conn:
-            for m in [Notification, ArtworkInteraction, Artwork, Room, RevokedToken, User]:
+            for m in [UserSavedArtwork, Notification, ArtworkInteraction, Artwork, Room, RevokedToken, User]:
                 await conn.run_sync(m.__table__.drop)
 
 
@@ -625,8 +626,68 @@ async def run_tests():
             assert art4_id not in remaining_ids
             print("✓ Test 11: Xóa lồng đèn bản thân bảo vệ bài PUBLIC APPROVED (400), cho phép xóa PENDING và PRIVATE (200), chặn người khác (404)")
 
-    print("\n ALL 11 TESTS FOR PLAN 06 PASSED PERFECTLY! \n")
+            # ================================================================
+            # TEST 12: Lưu & Bỏ lưu thư lồng đèn vào Sổ tay
+            # ================================================================
+            # 12a: Lưu art2 (PUBLIC, APPROVED) -> 200 OK
+            save_res = await client.post(
+                f"/api/v1/rooms/2/artworks/{art2_id}/save",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert save_res.status_code == 200
+            assert save_res.json()["success"] is True
+            assert save_res.json()["data"]["is_saved"] is True
+            assert save_res.json()["data"]["artwork_id"] == art2_id
+
+            # 12b: Bỏ lưu art2 -> 200 OK
+            unsave_res = await client.delete(
+                f"/api/v1/rooms/2/artworks/{art2_id}/save",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert unsave_res.status_code == 200
+            assert unsave_res.json()["success"] is True
+
+            # 12c: Lưu ID không tồn tại -> 404
+            save_fake = await client.post(
+                f"/api/v1/rooms/2/artworks/{uuid.uuid4()}/save",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert save_fake.status_code == 404
+            print("✓ Test 12: Lưu & Bỏ lưu thư lồng đèn vào Sổ tay thành công (200) và bắt lỗi ID sai (404)")
+
+            # ================================================================
+            # TEST 13: Widget đếm ngược lồng đèn cá nhân (my-personal)
+            # ================================================================
+            personal_res = await client.get(
+                "/api/v1/rooms/2/artworks/my-personal",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert personal_res.status_code == 200
+            p_data = personal_res.json()["data"]
+            assert p_data["has_lantern"] is True
+            assert p_data["lantern"] is not None
+            assert "remaining_seconds" in p_data["lantern"]
+            assert "days" in p_data["lantern"]
+            assert "hours" in p_data["lantern"]
+            assert "minutes" in p_data["lantern"]
+            assert "seconds" in p_data["lantern"]
+            print("✓ Test 13: Lấy thông tin lồng đèn cá nhân phục vụ widget đếm ngược thành công")
+
+            # ================================================================
+            # TEST 14: Rút ngẫu nhiên một lồng đèn đã mở (random-opened)
+            # ================================================================
+            random_res = await client.get("/api/v1/rooms/2/artworks/random-opened")
+            assert random_res.status_code == 200
+            # Since art2 was opened in Test 2, random_res should return art2
+            assert random_res.json()["success"] is True
+            if random_res.json()["data"]:
+                assert random_res.json()["data"]["is_opened"] is True
+                assert random_res.json()["data"]["visibility"] == "PUBLIC"
+            print("✓ Test 14: Rút ngẫu nhiên một lồng đèn đã mở thành công")
+
+    print("\n ALL 14 TESTS FOR PLAN 06 PASSED PERFECTLY! \n")
 
 
 if __name__ == "__main__":
     asyncio.run(run_tests())
+

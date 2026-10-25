@@ -25,7 +25,7 @@ class UserService:
         """Cập nhật một phần thông tin cá nhân (nickname, bio, avatar_url)."""
         fields = patch_data.model_dump(exclude_unset=True)
         # Filter allowed fields
-        allowed_keys = {"nickname", "bio", "avatar_url"}
+        allowed_keys = {"nickname", "bio", "avatar_url", "theme_preference"}
         update_dict = {k: v for k, v in fields.items() if k in allowed_keys}
 
         if not update_dict:

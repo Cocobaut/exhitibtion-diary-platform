@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(20) NOT NULL DEFAULT 'USER' CHECK (role IN ('USER', 'ADMIN', 'OWNER')),
     avatar_url TEXT NULL,
     bio VARCHAR(255) NULL,
+    theme_preference VARCHAR(20) NOT NULL DEFAULT 'museum' CHECK (theme_preference IN ('museum', 'moss', 'plum', 'paper')),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -184,6 +185,17 @@ CREATE TABLE IF NOT EXISTS user_capsule_draws (
 );
 
 -- ====================================================================
+-- 8.1. BẢNG: user_saved_artworks (Sổ tay: Lưu thư lồng đèn / tác phẩm)
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS user_saved_artworks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    artwork_id UUID NOT NULL REFERENCES artworks(id) ON DELETE CASCADE,
+    saved_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_user_artwork_saved UNIQUE (user_id, artwork_id)
+);
+
+-- ====================================================================
 -- 9. BẢNG: notifications (Hộp tin nhắn / Thông báo)
 -- ====================================================================
 CREATE TABLE IF NOT EXISTS notifications (
@@ -279,3 +291,9 @@ CREATE INDEX IF NOT EXISTS idx_capsules_approved_category
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_filter 
     ON admin_audit_logs (room_id, admin_id, action_type, performed_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_user_saved_artworks_user 
+    ON user_saved_artworks (user_id);
+
+CREATE INDEX IF NOT EXISTS idx_user_saved_artworks_artwork 
+    ON user_saved_artworks (artwork_id);

@@ -31,7 +31,7 @@ Payload trong khoá **`data`**.
 ```json
 { "success": true,
   "data": { "id": "<uuid>", "username": "hoanghon_01", "email": "hoanghon@example.com", "nickname": "Người Lữ Khách",
-            "role": "USER", "avatar_url": "https://...", "bio": "Gửi những tâm sự...", "created_at": "2026-10-24T15:30:00Z" } }
+            "role": "USER", "avatar_url": "https://...", "bio": "Gửi những tâm sự...", "theme_preference": "museum", "created_at": "2026-10-24T15:30:00Z" } }
 ```
 Không có `message`. Không trả `password_hash`, `is_active`, `updated_at`.
 
@@ -42,6 +42,7 @@ Không có `message`. Không trả `password_hash`, `is_active`, `updated_at`.
 | `nickname` | strip, 1–50 ký tự; **không** cho `null` |
 | `bio` | ≤255 ký tự; cho phép `null` hoặc `""` (lưu `NULL`) |
 | `avatar_url` | URL `http(s)://`, ≤2048; cho phép `null` để xoá ảnh |
+| `theme_preference` | Enum: `museum`, `moss`, `plum`, `paper` (mặc định: `museum`) |
 
 Trường khác (`username`, `email`, `role`, `is_active`…) → **bỏ qua** (cấu hình schema `extra="ignore"`). Body rỗng `{}` → 400 `VALIDATION_ERROR` `"Không có trường nào để cập nhật"`.
 
@@ -50,7 +51,7 @@ Trường khác (`username`, `email`, `role`, `is_active`…) → **bỏ qua** (
 **Response 200**
 ```json
 { "success": true, "message": "Cập nhật hồ sơ thành công",
-  "data": { "id": "<uuid>", "nickname": "...", "bio": "...", "avatar_url": "...", "updated_at": "2026-10-24T16:05:00Z" } }
+  "data": { "id": "<uuid>", "nickname": "...", "bio": "...", "avatar_url": "...", "theme_preference": "moss", "updated_at": "2026-10-24T16:05:00Z" } }
 ```
 
 ### 2.3 `PUT /users/me/password`

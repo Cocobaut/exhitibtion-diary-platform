@@ -7,6 +7,7 @@ from app.models.diary import Diary
 from app.models.diary_interaction import DiaryInteraction
 from app.models.message_capsule import MessageCapsule
 from app.models.user_capsule_draw import UserCapsuleDraw
+from app.models.user_saved_artwork import UserSavedArtwork
 from app.models.notification import Notification
 from app.models.password_reset_token import PasswordResetToken
 from app.models.revoked_token import RevokedToken
@@ -23,6 +24,7 @@ __all__ = [
     "DiaryInteraction",
     "MessageCapsule",
     "UserCapsuleDraw",
+    "UserSavedArtwork",
     "Notification",
     "PasswordResetToken",
     "RevokedToken",

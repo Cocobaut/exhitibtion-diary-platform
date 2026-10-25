@@ -22,6 +22,7 @@ class UserMeOut(BaseModel):
     role: str
     avatar_url: Optional[str] = None
     bio: Optional[str] = None
+    theme_preference: str = "museum"
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -43,6 +44,7 @@ class UserProfilePatch(BaseModel):
     nickname: Optional[str] = None
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
+    theme_preference: Optional[str] = None
 
     model_config = ConfigDict(extra="ignore")
 
@@ -82,12 +84,24 @@ class UserProfilePatch(BaseModel):
             raise ValueError("avatar_url không được vượt quá 2048 ký tự")
         return stripped
 
+    @field_validator("theme_preference")
+    @classmethod
+    def validate_theme_preference(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        stripped = v.strip().lower()
+        valid_themes = {"museum", "moss", "plum", "paper"}
+        if stripped not in valid_themes:
+            raise ValueError("theme_preference phải là một trong: museum, moss, plum, paper")
+        return stripped
+
 
 class UserProfilePatchOut(BaseModel):
     id: uuid.UUID
     nickname: str
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
+    theme_preference: Optional[str] = "museum"
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

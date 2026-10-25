@@ -5,6 +5,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api import deps
 from app.models.user import User
 from app.schemas.notification import (
+    BulkReadData,
+    BulkReadRequest,
+    BulkReadResponse,
     MarkReadResponse,
     NotificationListResponse,
     ReadAllData,
@@ -59,6 +62,33 @@ async def mark_all_read(
         success=True,
         message="Đã đánh dấu tất cả thông báo là đã đọc",
         data=ReadAllData(affected_rows=affected_rows)
+    )
+
+
+# =====================================================================
+# 4.5 PATCH /notifications/bulk-read
+# =====================================================================
+@router.patch(
+    "/bulk-read",
+    response_model=BulkReadResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Đánh dấu nhiều thông báo là đã đọc"
+)
+async def bulk_mark_read(
+    req: BulkReadRequest,
+    current_user: User = Depends(deps.get_current_user),
+    db: AsyncSession = Depends(deps.get_db),
+) -> BulkReadResponse:
+    """4.5 Đánh dấu các thông báo cụ thể trong danh sách là đã đọc."""
+    affected_rows = await NotificationService.bulk_mark_as_read(
+        db,
+        recipient_id=current_user.id,
+        notification_ids=req.notification_ids
+    )
+    return BulkReadResponse(
+        success=True,
+        message="Đã đánh dấu các thông báo đã chọn là đã đọc",
+        data=BulkReadData(affected_rows=affected_rows)
     )
 
 

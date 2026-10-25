@@ -298,3 +298,50 @@ class Room2ReadyToFallItem(BaseModel):
 class Room2ReadyToFallResponse(BaseModel):
     items: List[Room2ReadyToFallItem]
     total: int
+
+
+# =====================================================================
+# Save / Unsave Lantern to Notebook
+# =====================================================================
+class SaveLanternData(BaseModel):
+    artwork_id: str
+    is_saved: bool
+    saved_at: Optional[str] = None
+
+
+class SaveLanternResponse(BaseModel):
+    success: bool = True
+    message: str = "Đã lưu bức thư lồng đèn vào sổ tay"
+    data: SaveLanternData
+
+
+class UnsaveLanternResponse(BaseModel):
+    success: bool = True
+    message: str = "Đã bỏ lưu bức thư khỏi sổ tay"
+
+
+# =====================================================================
+# My Personal Lantern Widget
+# =====================================================================
+class MyPersonalLanternItem(BaseModel):
+    id: str
+    title: str
+    target_date: Optional[str] = None
+    remaining_seconds: int = 0
+    days: int = 0
+    hours: int = 0
+    minutes: int = 0
+    seconds: int = 0
+    is_opened: bool = False
+    symbol: Optional[str] = "heart"
+
+
+class MyPersonalLanternData(BaseModel):
+    has_lantern: bool
+    lantern: Optional[MyPersonalLanternItem] = None
+
+
+class MyPersonalLanternResponse(BaseModel):
+    success: bool = True
+    data: MyPersonalLanternData
+

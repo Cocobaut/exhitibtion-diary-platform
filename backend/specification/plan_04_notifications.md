@@ -11,9 +11,10 @@
 | 4.2 | GET | `/api/v1/notifications` | Authenticated | 200 |
 | 4.3 | PATCH | `/api/v1/notifications/{notification_id}/read` | Authenticated | 200 |
 | 4.4 | PATCH | `/api/v1/notifications/read-all` | Authenticated | 200 |
+| 4.5 | PATCH | `/api/v1/notifications/bulk-read` | Authenticated | 200 |
 
 > [!IMPORTANT]
-> Khai báo route `/read-all` và `/unread-count` **trước** route có path param `/{notification_id}/...` để tránh xung đột match.
+> Khai báo route `/read-all`, `/bulk-read` và `/unread-count` **trước** route có path param `/{notification_id}/...` để tránh xung đột match.
 
 ## 2. File cần tạo
 - `app/models/notification.py` (quan hệ `sender` → `User`, lazy="raise"; dùng `selectinload`/join khi cần)
@@ -72,6 +73,22 @@ Body trống.
 ```json
 { "success": true, "message": "Đã đánh dấu tất cả thông báo là đã đọc", "data": { "affected_rows": 2 } }
 ```
+
+### 4.5 `PATCH /notifications/bulk-read`
+**Request**:
+```json
+{
+  "notification_ids": ["uuid1", "uuid2"]
+}
+```
+
+**Logic**: `UPDATE notifications SET is_read = TRUE WHERE recipient_id = :uid AND id IN (:notification_ids) AND is_read = FALSE` → `affected_rows = result.rowcount`.
+
+**Response 200**
+```json
+{ "success": true, "message": "Đã đánh dấu các thông báo đã chọn là đã đọc", "data": { "affected_rows": 2 } }
+```
+
 
 ---
 

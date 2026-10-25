@@ -14,6 +14,10 @@
 | 6.4 | GET | `/api/v1/rooms/2/search` | Public (tùy chọn token) | 200 |
 | 6.5 | GET | `/api/v1/rooms/2/artworks/ready-to-fall` | Authenticated | 200 |
 | 6.6 | DELETE | `/api/v1/rooms/2/artworks/{artwork_id}` | Authenticated | 200 |
+| 6.7 | GET | `/api/v1/rooms/2/artworks/my-personal` | Authenticated | 200 |
+| 6.8 | GET | `/api/v1/rooms/2/artworks/random-opened` | Public | 200 |
+| 6.9 | POST | `/api/v1/rooms/2/artworks/{artwork_id}/save` | Authenticated | 200 |
+| 6.10 | DELETE | `/api/v1/rooms/2/artworks/{artwork_id}/save` | Authenticated | 200 |
 
 Router: `APIRouter(prefix="/rooms/2", tags=["Room 2 - Hope Lanterns"])`.
 
@@ -227,6 +231,68 @@ Body trống. Dùng `get_optional_user`.
 - 400 `CANNOT_DELETE_PUBLIC_LANTERN`: `"Không thể xóa lồng đèn đã được công khai trên bầu trời đêm"`
 - 401 `UNAUTHORIZED`: Thiếu hoặc sai token
 - 404 `ARTWORK_NOT_FOUND`: `"Không tìm thấy lồng đèn"`
+
+### 6.7 `GET /rooms/2/artworks/my-personal`
+* **Mục đích**: Widget đếm ngược thời gian lồng đèn cá nhân hạ xuống ở góc phòng 2.
+* **Quyền hạn**: Authenticated
+* **Response 200**:
+```json
+{
+  "success": true,
+  "data": {
+    "has_lantern": true,
+    "lantern": {
+      "id": "lt_mine_01",
+      "title": "Gửi mình của năm 2030",
+      "target_date": "2030-10-24T09:00:00Z",
+      "remaining_seconds": 126144000,
+      "days": 1460,
+      "hours": 4,
+      "minutes": 12,
+      "seconds": 9,
+      "is_opened": false,
+      "symbol": "heart"
+    }
+  }
+}
+```
+
+### 6.8 `GET /rooms/2/artworks/random-opened`
+* **Mục đích**: Rút ngẫu nhiên một bức thư lồng đèn đã mở công khai trên bầu trời đêm.
+* **Quyền hạn**: Public
+* **Response 200**: Trả về 1 object lồng đèn có `is_opened = true` và `visibility = 'PUBLIC'`, hoặc `null` nếu chưa có lồng đèn nào mở.
+
+### 6.9 `POST /rooms/2/artworks/{artwork_id}/save`
+* **Mục đích**: Lưu bức thư lồng đèn vào Sổ tay Ký ức của người dùng.
+* **Quyền hạn**: Authenticated
+* **Logic**:
+  - Kiểm tra `artwork_id` tồn tại trong `artworks` thuộc `room_id = 2`.
+  - Nếu `visibility = 'PRIVATE'`, chỉ chính chủ mới được lưu.
+  - Ghi nhận vào bảng `user_saved_artworks`.
+* **Response 200**:
+```json
+{
+  "success": true,
+  "message": "Đã lưu bức thư lồng đèn vào sổ tay",
+  "data": {
+    "artwork_id": "7b8f9e01-1234-4567-89ab-cdef01234567",
+    "is_saved": true,
+    "saved_at": "2026-10-26T03:00:00Z"
+  }
+}
+```
+
+### 6.10 `DELETE /rooms/2/artworks/{artwork_id}/save`
+* **Mục đích**: Bỏ lưu bức thư lồng đèn khỏi Sổ tay Ký ức.
+* **Quyền hạn**: Authenticated
+* **Response 200**:
+```json
+{
+  "success": true,
+  "message": "Đã bỏ lưu bức thư khỏi sổ tay"
+}
+```
+
 
 ---
 

@@ -425,8 +425,29 @@ async def run_tests():
             assert comm_items[0]["id"] == d2_id
             print("✓ Test 8: Search phân tách scope mine/community chuẩn xác và lọc đúng trạng thái")
 
-    print("\n ALL 8 TESTS FOR PLAN 08 PASSED PERFECTLY! \n")
+            # -------------------------------------------------------------
+            # TEST 9: Thống kê cảm xúc nhật ký cá nhân (/stats/moods)
+            # -------------------------------------------------------------
+            # 9a: Without token -> 401
+            stat_guest = await client.get("/api/v1/diaries/stats/moods")
+            assert stat_guest.status_code == 401
+
+            # 9b: With token1 -> 200 OK
+            stat_u1 = await client.get(
+                "/api/v1/diaries/stats/moods",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert stat_u1.status_code == 200
+            stat_data = stat_u1.json()["data"]
+            assert "total_diaries" in stat_data
+            assert stat_data["total_diaries"] >= 1
+            assert "mood_counts" in stat_data
+            assert isinstance(stat_data["mood_counts"], dict)
+            print("✓ Test 9: Thống kê cảm xúc nhật ký cá nhân thành công")
+
+    print("\n ALL 9 TESTS FOR PLAN 08 PASSED PERFECTLY! \n")
 
 
 if __name__ == "__main__":
     asyncio.run(run_tests())
+
