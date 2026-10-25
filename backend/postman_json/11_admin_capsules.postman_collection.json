@@ -1,0 +1,352 @@
+{
+  "info": {
+    "_postman_id": "91e6474d-0011-4000-8000-000000000011",
+    "name": "11. Quản lý Kho Thông điệp (/api/v1/admin/capsules)",
+    "description": "Postman Collection kiểm thử tự động Nhóm 11: Quản lý kho thông điệp con nhộng cảm xúc theo đặc tả plan_11_admin_capsules.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminCapsuleId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "[11.1] Lấy danh sách thông điệp trong kho (GET /admin/capsules)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify capsules list structure\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.pagination).to.have.property(\"total_items\");",
+              "    pm.expect(jsonData.data.items).to.be.an(\"array\");",
+              "    if (jsonData.data.items.length > 0) {",
+              "        var item = jsonData.data.items[0];",
+              "        pm.expect(item).to.have.property(\"category\");",
+              "        pm.expect(item).to.have.property(\"draw_count\");",
+              "        pm.expect(item).to.have.property(\"is_approved\");",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/capsules?category=HEALING&page=1&limit=20",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "capsules"
+          ],
+          "query": [
+            {
+              "key": "category",
+              "value": "HEALING"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[11.2] Thêm mới thông điệp vào kho (POST /admin/capsules)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Verify capsule created and capture adminCapsuleId\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.message).to.eql(\"Thêm thông điệp mới vào máy nhả thành công\");",
+              "    pm.expect(jsonData.data.author_role).to.eql(\"ADMIN\");",
+              "    pm.expect(jsonData.data.draw_count).to.eql(0);",
+              "    pm.expect(jsonData.data.is_approved).to.eql(true);",
+              "    pm.collectionVariables.set(\"adminCapsuleId\", jsonData.data.id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Bạn không cần phải hoàn hảo để bắt đầu, nhưng bạn phải bắt đầu để trở nên hoàn thiện hơn.\",\n  \"category\": \"COURAGE\",\n  \"is_approved\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/capsules",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "capsules"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[11.3] Chỉnh sửa nội dung thông điệp (PUT /admin/capsules/{id})",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify update response\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.message).to.eql(\"Cập nhật thông điệp thành công\");",
+              "    pm.expect(jsonData.data.category).to.eql(\"COURAGE\");",
+              "    pm.expect(jsonData.data).to.have.property(\"updated_at\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"message\": \"Bạn không cần phải hoàn hảo để bắt đầu, hãy dũng cảm bước đi từ ngày hôm nay.\",\n  \"category\": \"COURAGE\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/capsules/{{adminCapsuleId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "capsules",
+            "{{adminCapsuleId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[11.4] Bật / Tắt trạng thái thông điệp (PATCH /admin/capsules/{id}/toggle-status)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify toggle status response\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.message).to.eql(\"Đã cập nhật trạng thái hoạt động của thông điệp\");",
+              "    pm.expect(jsonData.data.is_approved).to.eql(false);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"is_approved\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/capsules/{{adminCapsuleId}}/toggle-status",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "capsules",
+            "{{adminCapsuleId}}",
+            "toggle-status"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[11.5] Xóa thông điệp khỏi kho (DELETE /admin/capsules/{id})",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify deletion message\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.message).to.eql(\"Đã xóa thông điệp khỏi kho dữ liệu\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/capsules/{{adminCapsuleId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "capsules",
+            "{{adminCapsuleId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[Quyền hạn] Test chặn người dùng thường (GET /admin/capsules)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 403 Forbidden\", function () {",
+              "    pm.response.to.have.status(403);",
+              "});",
+              "",
+              "pm.test(\"Verify error_code is FORBIDDEN\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(false);",
+              "    pm.expect(jsonData.error_code).to.eql(\"FORBIDDEN\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/capsules",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "capsules"
+          ]
+        }
+      }
+    }
+  ]
+}

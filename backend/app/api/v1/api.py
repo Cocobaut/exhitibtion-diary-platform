@@ -1,11 +1,15 @@
 from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
+    admin_capsules,
+    admin_diaries,
     admin_rooms,
+    admin_studio,
     auth,
     capsules,
     diaries,
     notifications,
+    owner,
     room1,
     room2,
     room3,
@@ -42,5 +46,17 @@ api_router.include_router(diaries.router, prefix="/diaries", tags=["Diaries"])
 api_router.include_router(admin_rooms.router)
 
 # - plan_10: /admin/diaries (app.api.v1.endpoints.admin_diaries)
+api_router.include_router(admin_diaries.router)
+
 # - plan_11: /admin/capsules (app.api.v1.endpoints.admin_capsules)
+api_router.include_router(admin_capsules.router)
+
 # - plan_12: /admin/studio & /admin/audit-logs (app.api.v1.endpoints.admin_studio)
+api_router.include_router(admin_studio.router)
+
+# - plan_13: /owner (app.api.v1.endpoints.owner)
+api_router.include_router(owner.router)
+
+
+
+

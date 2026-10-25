@@ -1,0 +1,467 @@
+{
+  "info": {
+    "_postman_id": "91e6474d-0012-4000-8000-000000000012",
+    "name": "12. Admin Studio & Audit Log (/api/v1/admin/studio)",
+    "description": "Postman Collection kiểm thử tự động Nhóm 12: Admin Studio, Audit Log và gửi yêu cầu xóa tài khoản theo đặc tả plan_12_admin_studio_audit.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "targetUserId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "[12.1] Xuất bản trực tiếp tác phẩm Phòng 1 (POST /admin/studio/artworks)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Verify direct published artwork\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.message).to.eql(\"Đã xuất bản tác phẩm trực tiếp lên phòng triển lãm thành công\");",
+              "    pm.expect(jsonData.data.status).to.eql(\"APPROVED\");",
+              "    pm.expect(jsonData.data.room_id).to.eql(1);",
+              "    pm.expect(jsonData.data).to.have.property(\"media_url\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"room_id\": 1,\n  \"title\": \"Bức tường im lặng\",\n  \"author_display_name\": \"Triển Lãm Ký Ức (Ban Quản Trị)\",\n  \"short_content\": \"Tác phẩm mở màn cho không gian triển lãm Đổ Vỡ mùa thu 2026.\",\n  \"content\": \"Có những im lặng không phải vì không còn điều gì để nói...\",\n  \"media_url\": \"https://cdn.exhibition.com/artworks/2026/room-1/curator-piece-1.webp\",\n  \"is_anonymous\": false\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/studio/artworks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "studio",
+            "artworks"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[12.1] Xuất bản trực tiếp lồng đèn Phòng 2 (POST /admin/studio/artworks)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Verify Room 2 direct published lantern\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.room_id).to.eql(2);",
+              "    pm.expect(jsonData.data.status).to.eql(\"APPROVED\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"room_id\": 2,\n  \"title\": \"Ngọn đèn thắp sáng tương lai\",\n  \"author_display_name\": \"Ban Quản Trị\",\n  \"short_content\": \"Lồng đèn nguyện ước đầu tiên của mùa triển lãm\",\n  \"content\": \"Nguyện ước bình an cho tất cả mọi người...\",\n  \"visibility\": \"PUBLIC\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/studio/artworks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "studio",
+            "artworks"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[12.1] Xuất bản trực tiếp thông điệp Phòng 3 (POST /admin/studio/artworks)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Verify Room 3 direct published ribbon\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.room_id).to.eql(3);",
+              "    pm.expect(jsonData.data.status).to.eql(\"APPROVED\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"room_id\": 3,\n  \"title\": \"Dải ruy băng khởi đầu\",\n  \"author_display_name\": \"Ban Quản Trị\",\n  \"short_content\": \"Thông điệp tri ân đầu tiên trên Cây Cộng Đồng\",\n  \"content\": \"Biết ơn từng khoảnh khắc được sống và chia sẻ...\",\n  \"tag_category\": \"gratitude\",\n  \"color_code\": \"#FFB6C1\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/studio/artworks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "studio",
+            "artworks"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[12.2] Lấy nhật ký quản trị toàn hệ thống (GET /admin/studio/audit-logs)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify audit logs structure\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.pagination).to.have.property(\"total_items\");",
+              "    pm.expect(jsonData.data.items).to.be.an(\"array\");",
+              "    if (jsonData.data.items.length > 0) {",
+              "        var item = jsonData.data.items[0];",
+              "        pm.expect(item).to.have.property(\"log_id\");",
+              "        pm.expect(item).to.have.property(\"action_type\");",
+              "        pm.expect(item).to.have.property(\"room_code\");",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/studio/audit-logs?page=1&limit=15",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "studio",
+            "audit-logs"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "15"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[12.2] Lọc Audit Log theo loại hành động (GET /admin/studio/audit-logs?action_type=CREATE_DIRECT)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify filtered action_type\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    jsonData.data.items.forEach(function (item) {",
+              "        pm.expect(item.action_type).to.eql(\"CREATE_DIRECT\");",
+              "    });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/studio/audit-logs?action_type=CREATE_DIRECT",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "studio",
+            "audit-logs"
+          ],
+          "query": [
+            {
+              "key": "action_type",
+              "value": "CREATE_DIRECT"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[12.2] Lọc Audit Log theo phòng (GET /admin/studio/audit-logs?room_id=1)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify filtered room_id\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    jsonData.data.items.forEach(function (item) {",
+              "        pm.expect(item.room_id).to.eql(1);",
+              "    });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/studio/audit-logs?room_id=1",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "studio",
+            "audit-logs"
+          ],
+          "query": [
+            {
+              "key": "room_id",
+              "value": "1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[12.3] Admin gửi yêu cầu xóa tài khoản đến Owner (POST /admin/studio/users/{id}/request-deletion)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify deletion request response\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.message).to.eql(\"Đã gửi yêu cầu xóa tài khoản đến Chủ sở hữu để xem xét phê duyệt\");",
+              "    pm.expect(jsonData.data).to.have.property(\"target_user_id\");",
+              "    pm.expect(jsonData.data).to.have.property(\"target_username\");",
+              "    pm.expect(jsonData.data).to.have.property(\"requested_by\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Tài khoản có hành vi phát tán nội dung độc hại liên tục, spam và quấy rối người dùng khác.\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/studio/users/{{targetUserId}}/request-deletion",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "studio",
+            "users",
+            "{{targetUserId}}",
+            "request-deletion"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[Quyền hạn] Test chặn người dùng thường (GET /admin/studio/audit-logs)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 403 Forbidden\", function () {",
+              "    pm.response.to.have.status(403);",
+              "});",
+              "",
+              "pm.test(\"Verify error_code is FORBIDDEN\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(false);",
+              "    pm.expect(jsonData.error_code).to.eql(\"FORBIDDEN\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/admin/studio/audit-logs",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "admin",
+            "studio",
+            "audit-logs"
+          ]
+        }
+      }
+    }
+  ]
+}

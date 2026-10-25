@@ -86,12 +86,21 @@ async def setup_test_context():
             role=UserRole.USER.value,
             is_active=True,
         )
-        session.add_all([admin_user, regular_user, author_user])
+        owner_user = User(
+            username="owner_tester",
+            email="owner@exhibition.vn",
+            password_hash=hash_password("OwnerPass123@"),
+            nickname="Chủ Sở Hữu",
+            role=UserRole.OWNER.value,
+            is_active=True,
+        )
+        session.add_all([admin_user, regular_user, author_user, owner_user])
         await session.flush()
 
         admin_id = admin_user.id
         regular_id = regular_user.id
         author_id = author_user.id
+        owner_id = owner_user.id
 
         # 3. Seed Artworks for Room 1
         now = datetime.now(timezone.utc)
@@ -155,9 +164,11 @@ async def setup_test_context():
             "admin_id": admin_id,
             "regular_id": regular_id,
             "author_id": author_id,
+            "owner_id": owner_id,
             "admin_user": admin_user,
             "regular_user": regular_user,
             "author_user": author_user,
+            "owner_user": owner_user,
             "pending_art1_id": pending_art1.id,
             "pending_art2_id": pending_art2.id,
             "approved_art1_id": approved_art1.id,
@@ -222,6 +233,16 @@ async def run_all_tests():
                 assert res.status_code == 403, f"Expected 403 on {method} {path}, got {res.status_code}"
                 assert res.json()["error_code"] == "FORBIDDEN"
             print("=> PASSED: All admin endpoints securely block regular users with 403.\n")
+
+            # -----------------------------------------------------------------
+            # Test 1b: OWNER có toàn quyền truy cập các endpoint của Admin
+            # -----------------------------------------------------------------
+            print("--- Test 1b: OWNER has full access to admin endpoints ---")
+            owner_token = create_access_token(ctx["owner_user"].id, ctx["owner_user"].role)
+            owner_headers = {"Authorization": f"Bearer {owner_token}"}
+            res_owner = await client.get("/api/v1/admin/rooms/1/artworks/pending", headers=owner_headers)
+            assert res_owner.status_code == 200, f"Expected 200 for OWNER, got {res_owner.status_code}"
+            print("=> PASSED: OWNER successfully accesses admin endpoints without 403.\n")
 
             # -----------------------------------------------------------------
             # Test 2: 9.1.1 Lấy danh sách tác phẩm chờ duyệt
