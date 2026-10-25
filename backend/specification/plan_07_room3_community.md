@@ -12,6 +12,7 @@
 | 7.3 | POST | `/api/v1/rooms/3/artworks/{artwork_id}/energy` | Authenticated | 200 |
 | 7.4 | POST | `/api/v1/rooms/3/artworks` | Authenticated | 201 |
 | 7.5 | GET | `/api/v1/rooms/3/search` | Public (tùy chọn token) | 200 |
+| 7.6 | GET | `/api/v1/rooms/3/leaf-categories` | Public (tùy chọn token) | 200 |
 
 Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
 
@@ -38,14 +39,17 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
 
 ## 4. Chi tiết endpoint
 
-### 7.1 `GET /rooms/3/artworks?category=&color_code=&filter=all&limit=50`
+### 7.1 `GET /rooms/3/artworks?category=&color_code=&filter=all&limit=50&title=&author_display_name=`
 - `category`: `ENCOURAGEMENT | HEALING | GRATITUDE | PERSPECTIVE`.
 - `color_code`: mã màu hex (hỗ trợ cả `%23FFD700` và `#FFD700`).
 - `filter ∈ {all, mine}` (mặc định `all`; `mine` không token → 401).
 - `limit`: mặc định 50, **tối đa 150** (vượt → 400). Không phân trang số (dành cho render toàn bộ cành cây).
+- **Bộ lọc bổ sung (Filter parameters)**:
+  - `title`: Lọc theo tiêu đề ruy băng (không phân biệt hoa thường, tìm kiếm chuỗi con trong `title`, `title_vi`, hoặc `title_en`).
+  - `author_display_name`: Lọc theo tên hiển thị tác giả (không phân biệt hoa thường, tìm kiếm chuỗi con trong `author_display_name`).
 
 **Logic**
-1. Lấy danh sách dải thông điệp: `room_id = 3 AND status = 'APPROVED' [AND tag_category = :category] [AND color_code = :color_code] [AND user_id = :uid] ORDER BY created_at DESC LIMIT :limit`.
+1. Lấy danh sách dải thông điệp: `room_id = 3 AND status = 'APPROVED' [AND tag_category = :category] [AND color_code = :color_code] [AND user_id = :uid] [AND title/author filters] ORDER BY created_at DESC LIMIT :limit`.
 2. Lấy `reactions` cho từng item (`ReactionService.summary` với loại `INSPIRED` mapped sang `ENERGY`, và `HEART`).
 3. Nếu có token user: kiểm tra xem user đã thả `INSPIRED` chưa → gán `has_received_energy` (`true`/`false`). Nếu chưa login → `false`.
 
@@ -152,7 +156,6 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
 ```json
 {
   "original_language": "vi",
-  "author_display_name": "Ánh Sáng Ban Mai",
   "title": "Mọi giông bão rồi sẽ tan",
   "tag_category": "HEALING",
   "color_code": "#98FB98",
@@ -162,12 +165,13 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
 ```
 **Validation & Logic**
 1. `original_language`: enum `vi` hoặc `en`, mặc định `vi`.
-2. Validate `tag_category` và `color_code` phải khớp chuẩn mục §3. Sai → 400 `INVALID_CATEGORY_COLOR`.
-3. Rate limit: tối đa 3 bài / 10 phút.
-4. Kiểm tra biến môi trường `ROOM3_AUTO_APPROVE` (trong `config.py`):
+2. > **Ràng buộc tên tác giả**: Người dùng **không được tự nhập** `author_display_name`. Backend tự động gán `author_display_name = current_user.nickname`.
+3. Validate `tag_category` và `color_code` phải khớp chuẩn mục §3. Sai → 400 `INVALID_CATEGORY_COLOR`.
+4. Rate limit: tối đa 3 bài / 10 phút.
+5. Kiểm tra biến môi trường `ROOM3_AUTO_APPROVE` (trong `config.py`):
    - Mặc định `FALSE`: lưu `status = 'PENDING'`, message: `"Dải thông điệp của bạn đang được chuẩn bị để treo lên cây, chúng mình sẽ thông báo qua hộp tin nhắn ngay khi hoàn tất!"`.
    - Nếu `TRUE`: lưu `status = 'APPROVED'`, message: `"Dải thông điệp đã được treo lên cây!"`.
-5. INSERT vào `artworks` với `room_id = 3`, `visibility = 'PUBLIC'`. Gán giá trị gốc vào cột ngôn ngữ tương ứng (`title_vi` hoặc `title_en`). Khi admin duyệt, admin sẽ biên tập đủ 2 bản song ngữ.
+6. INSERT vào `artworks` với `room_id = 3`, `author_display_name = current_user.nickname`, `visibility = 'PUBLIC'`. Gán giá trị gốc vào cột ngôn ngữ tương ứng (`title_vi` hoặc `title_en`). Khi admin duyệt, admin sẽ biên tập đủ 2 bản song ngữ.
 
 **Response 201**
 ```json
@@ -188,10 +192,11 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
 ```
 
 ### 7.5 `GET /rooms/3/search?q=&category=&color_code=&scope=all&page=1&limit=15`
-- `q`: từ khóa tìm kiếm trong `title`, `content`, `author_display_name`.
+- `q`: từ khóa tìm kiếm trên **toàn bộ 10 trường nội dung và song ngữ**:
+  `title`, `title_vi`, `title_en`, `short_content`, `short_content_vi`, `short_content_en`, `content`, `content_vi`, `content_en`, `author_display_name` (hỗ trợ cả tiếng Việt có dấu và không dấu). Highlight trả về snippets bọc thẻ `<em>...</em>` cho các field có từ khóa khớp (`title`, `short_content`, `content`).
 - `category`, `color_code`: bộ lọc kết hợp tùy chọn.
 - `scope`: `all` (mặc định) hoặc `mine` (yêu cầu token).
-- Trả về `energy_count` (= số reaction `INSPIRED`).
+- **Dữ liệu trả về**: Mỗi item trả về đầy đủ các trường: `title` (kèm `_vi`, `_en`), `short_content` (kèm `_vi`, `_en`), `content` (kèm `_vi`, `_en`), `author_display_name`, `tag_category`, `color_code`, `energy_count` (= số reaction `INSPIRED`), `highlight`.
 
 **Response 200**
 ```json
@@ -202,14 +207,69 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
       {
         "id": "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f",
         "title": "Bạn đã làm <em>tốt</em> hơn bạn nghĩ rất nhiều!",
+        "title_vi": "Bạn đã làm tốt hơn bạn nghĩ rất nhiều!",
+        "title_en": "You did much better than you thought!",
         "author_display_name": "Người Gieo Hạt",
+        "short_content": "Một chiếc ôm <em>dịu dàng</em> gửi tới bạn...",
+        "short_content_vi": "Một chiếc ôm dịu dàng gửi tới bạn...",
+        "short_content_en": "A gentle hug sent to you...",
+        "content": "Gửi người đang đọc dòng này, <em>yêu thương</em> luôn ở quanh bạn...",
+        "content_vi": "Gửi người đang đọc dòng này, yêu thương luôn ở quanh bạn...",
+        "content_en": "To the one reading this, love is always around you...",
         "tag_category": "ENCOURAGEMENT",
         "color_code": "#FFD700",
-        "highlight": { "title": ["Bạn đã làm <em>tốt</em> hơn bạn nghĩ rất nhiều!"] },
-        "energy_count": 142
+        "energy_count": 142,
+        "highlight": { 
+          "title": ["Bạn đã làm <em>tốt</em> hơn..."],
+          "short_content": ["Một chiếc ôm <em>dịu dàng</em>..."],
+          "content": ["...<em>yêu thương</em> luôn ở quanh bạn..."]
+        }
       }
     ],
     "pagination": { "page": 1, "limit": 15, "total_hits": 1 }
+  }
+}
+```
+
+### 7.6 `GET /rooms/3/leaf-categories` (Alias: `/categories`)
+- **Mô tả**: Lấy tổng số lượng lá (dải thông điệp đã duyệt đang treo trên cây), danh sách các loại lá và màu sắc quy chuẩn, kèm số lượng lá tương ứng của từng loại.
+- **Quyền hạn**: Public (không yêu cầu token).
+
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Lấy danh sách các loại lá, màu sắc và tổng số lượng thành công",
+  "data": {
+    "room_id": 3,
+    "room_code": "COMMUNITY",
+    "total_leaves": 42,
+    "categories": [
+      {
+        "category": "ENCOURAGEMENT",
+        "label": "Lời khích lệ, động viên kiên trì",
+        "color_code": "#FFD700",
+        "total_count": 12
+      },
+      {
+        "category": "HEALING",
+        "label": "Lời chữa lành, bình an tâm hồn",
+        "color_code": "#98FB98",
+        "total_count": 15
+      },
+      {
+        "category": "GRATITUDE",
+        "label": "Lời cảm ơn, trân trọng cuộc sống",
+        "color_code": "#FFB6C1",
+        "total_count": 8
+      },
+      {
+        "category": "PERSPECTIVE",
+        "label": "Lời chia sẻ góc nhìn cuộc sống",
+        "color_code": "#87CEFA",
+        "total_count": 7
+      }
+    ]
   }
 }
 ```
@@ -224,6 +284,7 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
 - [ ] Khách vãng lai xem list: `has_received_energy = false`.
 - [ ] Tạo bài phòng 3 với `ROOM3_AUTO_APPROVE = False` → `status = 'PENDING'`.
 - [ ] Search có highlight đúng trường và lọc chuẩn theo `category`, `color_code`.
+- [ ] Lấy danh sách các loại lá, màu sắc và số lượng (7.6): Trả về đầy đủ 4 loại lá, màu sắc và tổng số lượng lá đã duyệt trên cây.
 
 ---
 
@@ -243,3 +304,4 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
   6. `[7.4] Treo thông điệp mới lên cây (POST /api/v1/rooms/3/artworks)` - Header `Bearer {{accessToken}}`, body gồm `title`, `content`, `tag_category`, `color_code`.
   7. `[7.4-Lỗi] Treo thông điệp sai mã màu quy chuẩn (POST /api/v1/rooms/3/artworks)` - Kiểm tra status 400.
   8. `[7.5] Tìm kiếm thông điệp trên cây (GET /api/v1/rooms/3/search?q=bình yên)` - Kiểm tra status 200, trường `energy_count`.
+  9. `[7.6] Lấy tất cả các loại lá, màu sắc và số lượng (GET /api/v1/rooms/3/leaf-categories)` - Public, kiểm tra status 200.

@@ -221,7 +221,15 @@ class Room3CreateRibbonResponseData(BaseModel):
 class Room3SearchItem(BaseModel):
     id: uuid.UUID
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     author_display_name: str
+    short_content: Optional[str] = None
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
+    content: Optional[str] = None
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     tag_category: Optional[str] = None
     color_code: Optional[str] = None
     highlight: Dict[str, List[str]] = Field(default_factory=dict)
@@ -241,3 +249,21 @@ class Room3SearchPagination(BaseModel):
 class Room3SearchResponse(BaseModel):
     items: List[Room3SearchItem]
     pagination: Room3SearchPagination
+
+
+# =====================================================================
+# 7.6 GET /rooms/3/leaf-categories
+# =====================================================================
+
+class PublicLeafCategoryItem(BaseModel):
+    category: str
+    label: str
+    color_code: str
+    total_count: int
+
+
+class PublicLeafCategoriesData(BaseModel):
+    room_id: int = 3
+    room_code: str = "COMMUNITY"
+    total_leaves: int
+    categories: List[PublicLeafCategoryItem]

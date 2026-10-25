@@ -39,6 +39,8 @@ class Room2Service:
         *,
         filter_type: str = "all",
         limit: int = 30,
+        title: Optional[str] = None,
+        author_display_name: Optional[str] = None,
         current_user: Optional[User] = None,
     ) -> Dict[str, Any]:
         """Get list of lanterns in Room 2 based on visible set and filters."""
@@ -74,6 +76,20 @@ class Room2Service:
         elif filter_type == "locked":
             conditions.append(Artwork.target_date > now)
 
+        if title:
+            term = f"%{title.strip()}%"
+            conditions.append(
+                or_(
+                    Artwork.title.ilike(term),
+                    Artwork.title_vi.ilike(term),
+                    Artwork.title_en.ilike(term),
+                )
+            )
+
+        if author_display_name:
+            term = f"%{author_display_name.strip()}%"
+            conditions.append(Artwork.author_display_name.ilike(term))
+
         # Count total
         count_stmt = select(func.count(Artwork.id)).where(*conditions)
         total_lanterns = (await db.scalar(count_stmt)) or 0
@@ -98,13 +114,29 @@ class Room2Service:
             is_unlockable = (target is None or target <= now)
             rem_secs = 0 if is_unlockable else int((target - now).total_seconds())
             author_name = ArtworkQueryService.get_author_display_name(art)
+            lang = art.original_language or "vi"
+            title_vi = art.title_vi or (art.title if lang == "vi" else None)
+            title_en = art.title_en or (art.title if lang == "en" else None)
+            short_vi = art.short_content_vi or (art.short_content if lang == "vi" else None)
+            short_en = art.short_content_en or (art.short_content if lang == "en" else None)
+            content_vi = art.content_vi or (art.content if lang == "vi" else None)
+            content_en = art.content_en or (art.content if lang == "en" else None)
 
             items.append({
                 "id": art.id,
+                "original_language": lang,
                 "title": art.title,
+                "title_vi": title_vi,
+                "title_en": title_en,
                 "author_display_name": author_name,
                 "visibility": art.visibility,
                 "is_mine": is_mine,
+                "short_content": art.short_content,
+                "short_content_vi": short_vi,
+                "short_content_en": short_en,
+                "content": art.content,
+                "content_vi": content_vi,
+                "content_en": content_en,
                 "target_date": target,
                 "is_unlockable": is_unlockable,
                 "remaining_seconds": rem_secs,
@@ -130,7 +162,7 @@ class Room2Service:
         2. Permission check:
            - PUBLIC: must be APPROVED.
            - PRIVATE: must have token and user_id = current_user.id (otherwise 401 / 404).
-        3. Time-lock check: if target_date > now -> 423 TIME_CAPSULE_LOCKED.
+        3. No time lock restriction: Users can open/drop any lantern in visible set at will.
         4. Unlock: is_opened = True, view_count + 1.
         """
         stmt = (
@@ -168,24 +200,9 @@ class Room2Service:
                     message="Không tìm thấy lồng đèn"
                 )
 
-        # Time lock check
-        now = datetime.now(timezone.utc)
         target = artwork.target_date
         if target and target.tzinfo is None:
             target = target.replace(tzinfo=timezone.utc)
-
-        if target and target > now:
-            rem_secs = int((target - now).total_seconds())
-            target_str = serialize_utc_datetime(target)
-            raise AppException(
-                status_code=423,
-                error_code="TIME_CAPSULE_LOCKED",
-                message="Bức thư này đang lơ lửng trên tầng mây cao và chưa đến lúc hạ cánh.",
-                data={
-                    "target_date": target_str,
-                    "remaining_seconds": rem_secs,
-                }
-            )
 
         # Atomic increment view_count and mark is_opened
         upd_stmt = (
@@ -207,18 +224,28 @@ class Room2Service:
             await db.flush()
 
         author_name = ArtworkQueryService.get_author_display_name(artwork)
+        lang = artwork.original_language or "vi"
+        title_vi = artwork.title_vi or (artwork.title if lang == "vi" else None)
+        title_en = artwork.title_en or (artwork.title if lang == "en" else None)
+        short_vi = artwork.short_content_vi or (artwork.short_content if lang == "vi" else None)
+        short_en = artwork.short_content_en or (artwork.short_content if lang == "en" else None)
+        content_vi = artwork.content_vi or (artwork.content if lang == "vi" else None)
+        content_en = artwork.content_en or (artwork.content if lang == "en" else None)
 
         message = "Lồng đèn đã hạ cánh. Chúc mừng bạn đã chạm tới bức thư tương lai!"
         data = {
             "id": artwork.id,
-            "original_language": artwork.original_language or "vi",
+            "original_language": lang,
             "title": artwork.title,
-            "title_vi": artwork.title_vi,
-            "title_en": artwork.title_en,
+            "title_vi": title_vi,
+            "title_en": title_en,
             "author_display_name": author_name,
+            "short_content": artwork.short_content,
+            "short_content_vi": short_vi,
+            "short_content_en": short_en,
             "content": artwork.content,
-            "content_vi": artwork.content_vi,
-            "content_en": artwork.content_en,
+            "content_vi": content_vi,
+            "content_en": content_en,
             "media_url": artwork.media_url,
             "visibility": artwork.visibility,
             "target_date": target,
@@ -227,6 +254,76 @@ class Room2Service:
             "created_at": artwork.created_at,
         }
         return message, data
+
+    @staticmethod
+    async def get_ready_to_fall_lanterns(
+        db: AsyncSession,
+        *,
+        current_user: User,
+        include_opened: bool = False,
+    ) -> Dict[str, Any]:
+        """Get lanterns belonging to current_user whose target_date has arrived (target_date <= now)
+        so that the front end can animate them falling down to be opened.
+        Only returns APPROVED lanterns (both PUBLIC and PRIVATE).
+        """
+        now = datetime.now(timezone.utc)
+        conditions = [
+            Artwork.room_id == ROOM_HOPE,
+            Artwork.user_id == current_user.id,
+            Artwork.status == "APPROVED",
+            Artwork.target_date.isnot(None),
+            Artwork.target_date <= now,
+        ]
+        if not include_opened:
+            conditions.append(Artwork.is_opened.is_(False))
+
+        stmt = (
+            select(Artwork)
+            .options(joinedload(Artwork.author))
+            .where(*conditions)
+            .order_by(Artwork.target_date.desc(), Artwork.created_at.desc())
+        )
+        rows = (await db.execute(stmt)).scalars().all()
+
+        items = []
+        for art in rows:
+            target = art.target_date
+            if target and target.tzinfo is None:
+                target = target.replace(tzinfo=timezone.utc)
+            author_name = ArtworkQueryService.get_author_display_name(art)
+            lang = art.original_language or "vi"
+            title_vi = art.title_vi or (art.title if lang == "vi" else None)
+            title_en = art.title_en or (art.title if lang == "en" else None)
+            short_vi = art.short_content_vi or (art.short_content if lang == "vi" else None)
+            short_en = art.short_content_en or (art.short_content if lang == "en" else None)
+            content_vi = art.content_vi or (art.content if lang == "vi" else None)
+            content_en = art.content_en or (art.content if lang == "en" else None)
+
+            items.append({
+                "id": art.id,
+                "original_language": lang,
+                "title": art.title,
+                "title_vi": title_vi,
+                "title_en": title_en,
+                "author_display_name": author_name,
+                "short_content": art.short_content,
+                "short_content_vi": short_vi,
+                "short_content_en": short_en,
+                "content": art.content,
+                "content_vi": content_vi,
+                "content_en": content_en,
+                "visibility": art.visibility,
+                "status": art.status,
+                "target_date": target,
+                "is_opened": art.is_opened,
+                "media_url": art.media_url,
+                "created_at": art.created_at,
+            })
+
+        return {
+            "items": items,
+            "total": len(items),
+        }
 
     @staticmethod
     async def create_lantern(
@@ -279,7 +376,7 @@ class Room2Service:
             content=clean_content,
             content_vi=clean_content if lang == "vi" else None,
             content_en=clean_content if lang == "en" else None,
-            author_display_name=request.author_display_name.strip() if request.author_display_name else None,
+            author_display_name=current_user.nickname or "Người Dùng",
             is_anonymous=request.is_anonymous,
             target_date=request.target_date,
             visibility=request.visibility,
@@ -296,6 +393,15 @@ class Room2Service:
             "room_id": new_lantern.room_id,
             "original_language": new_lantern.original_language,
             "title": new_lantern.title,
+            "title_vi": new_lantern.title_vi,
+            "title_en": new_lantern.title_en,
+            "author_display_name": new_lantern.author_display_name,
+            "short_content": new_lantern.short_content,
+            "short_content_vi": new_lantern.short_content_vi,
+            "short_content_en": new_lantern.short_content_en,
+            "content": new_lantern.content,
+            "content_vi": new_lantern.content_vi,
+            "content_en": new_lantern.content_en,
             "visibility": new_lantern.visibility,
             "status": new_lantern.status,
             "target_date": new_lantern.target_date,
@@ -384,7 +490,15 @@ class Room2Service:
             formatted_items.append({
                 "id": item["id"],
                 "title": item["title"],
+                "title_vi": item.get("title_vi"),
+                "title_en": item.get("title_en"),
                 "author_display_name": item["author_display_name"],
+                "short_content": item.get("short_content"),
+                "short_content_vi": item.get("short_content_vi"),
+                "short_content_en": item.get("short_content_en"),
+                "content": item.get("content"),
+                "content_vi": item.get("content_vi"),
+                "content_en": item.get("content_en"),
                 "visibility": item.get("visibility", "PUBLIC"),
                 "is_opened": item.get("is_opened", False),
                 "is_unlockable": is_unlockable,
@@ -400,3 +514,33 @@ class Room2Service:
                 "total_hits": total_hits,
             }
         }
+
+    @staticmethod
+    async def delete_lantern(
+        db: AsyncSession,
+        *,
+        lantern_id: uuid.UUID,
+        current_user: User,
+    ) -> str:
+        """Delete a lantern belonging to current_user if it has not been publicized
+        (i.e. cannot delete if visibility is PUBLIC and status is APPROVED).
+        """
+        stmt = select(Artwork).where(Artwork.id == lantern_id, Artwork.room_id == ROOM_HOPE)
+        artwork = (await db.execute(stmt)).scalar_one_or_none()
+        if not artwork or artwork.user_id != current_user.id:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy lồng đèn"
+            )
+
+        if artwork.visibility == "PUBLIC" and artwork.status == "APPROVED":
+            raise AppException(
+                status_code=400,
+                error_code="CANNOT_DELETE_PUBLIC_LANTERN",
+                message="Không thể xóa lồng đèn đã được công khai trên bầu trời đêm"
+            )
+
+        await db.delete(artwork)
+        await db.flush()
+        return "Xóa lồng đèn thành công"

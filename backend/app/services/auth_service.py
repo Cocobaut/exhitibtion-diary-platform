@@ -120,8 +120,10 @@ class AuthService:
 
         access_token = create_access_token(subject=user.id, role=user.role)
 
-        if user.role == UserRole.ADMIN.value or user.role == "ADMIN":
+        if user.role in (UserRole.ADMIN.value, "ADMIN"):
             message = "Đăng nhập quyền quản trị viên thành công"
+        elif user.role in (UserRole.OWNER.value, "OWNER"):
+            message = "Đăng nhập quyền chủ sở hữu thành công"
         else:
             message = "Đăng nhập thành công"
 

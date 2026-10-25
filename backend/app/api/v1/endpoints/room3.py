@@ -29,6 +29,8 @@ async def get_ribbons(
     color_code: Optional[str] = Query(None, description="Lọc theo mã màu hex (ví dụ #FFD700)"),
     filter: str = Query("all", description="Bộ lọc: all hoặc mine"),
     limit: int = Query(50, description="Số lượng dải thông điệp (mặc định 50, tối đa 150)"),
+    title: Optional[str] = Query(None, description="Lọc theo tiêu đề thông điệp"),
+    author_display_name: Optional[str] = Query(None, description="Lọc theo tên hiển thị tác giả"),
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
@@ -39,6 +41,8 @@ async def get_ribbons(
         color_code=color_code,
         filter_type=filter,
         limit=limit,
+        title=title,
+        author_display_name=author_display_name,
         current_user=current_user,
     )
     return ok(data=jsonable_encoder(result))
@@ -72,6 +76,29 @@ async def search_ribbons(
         current_user=current_user,
     )
     return ok(data=jsonable_encoder(result))
+
+
+@router.get(
+    "/leaf-categories",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="7.6 Lấy tất cả loại lá, màu sắc và tổng số lượng trên cây",
+)
+@router.get(
+    "/categories",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="7.6 Lấy tất cả loại lá, màu sắc và tổng số lượng trên cây",
+)
+async def get_leaf_categories(
+    db: AsyncSession = Depends(get_db),
+):
+    """Lấy tổng số lượng lá, danh sách các loại lá, màu sắc quy chuẩn trên Cây thông điệp."""
+    data = await Room3Service.get_leaf_categories(db)
+    return ok(
+        message="Lấy danh sách các loại lá, màu sắc và tổng số lượng thành công",
+        data=jsonable_encoder(data),
+    )
 
 
 @router.post(

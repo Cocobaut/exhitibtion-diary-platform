@@ -57,7 +57,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Vết nứt của thời gian\",\n  \"author_display_name\": \"Bụi Thời Gian\",\n  \"is_anonymous\": false,\n  \"short_content\": \"Lời tự sự về những vết nứt thời gian không thể hàn gắn\",\n  \"content\": \"Có những vết nứt chẳng bao giờ liền lại được theo năm tháng, nhưng nó nhắc nhở chúng ta đã từng can đảm bước qua như thế nào.\"\n}"
+          "raw": "{\n  \"original_language\": \"vi\",\n  \"title\": \"Vết nứt của thời gian\",\n  \"is_anonymous\": false,\n  \"short_content\": \"Lời tự sự về những vết nứt thời gian không thể hàn gắn\",\n  \"content\": \"Có những vết nứt chẳng bao giờ liền lại được theo năm tháng, nhưng nó nhắc nhở chúng ta đã từng can đảm bước qua như thế nào.\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/v1/rooms/1/artworks",
@@ -138,6 +138,16 @@
             {
               "key": "filter",
               "value": "all"
+            },
+            {
+              "key": "title",
+              "value": "",
+              "disabled": true
+            },
+            {
+              "key": "author_display_name",
+              "value": "",
+              "disabled": true
             }
           ]
         }
@@ -313,6 +323,11 @@
               "    pm.expect(jsonData.success).to.eql(true);",
               "    pm.expect(jsonData.data).to.have.property(\"items\");",
               "    pm.expect(jsonData.data.pagination).to.have.property(\"total_hits\");",
+              "    if (jsonData.data.items.length > 0) {",
+              "        var item = jsonData.data.items[0];",
+              "        pm.expect(item).to.have.property(\"content\");",
+              "        pm.expect(item).to.have.property(\"short_content\");",
+              "    }",
               "});"
             ],
             "type": "text/javascript"

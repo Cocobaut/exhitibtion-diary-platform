@@ -26,6 +26,8 @@ router = APIRouter()
 async def get_lanterns(
     filter: str = Query("all", description="Bộ lọc: all, mine, opened, locked"),
     limit: int = Query(30, description="Số lượng lồng đèn (mặc định 30, tối đa 100)"),
+    title: Optional[str] = Query(None, description="Lọc theo tiêu đề lồng đèn"),
+    author_display_name: Optional[str] = Query(None, description="Lọc theo tên hiển thị tác giả"),
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
@@ -34,6 +36,8 @@ async def get_lanterns(
         db,
         filter_type=filter,
         limit=limit,
+        title=title,
+        author_display_name=author_display_name,
         current_user=current_user,
     )
     return ok(data=jsonable_encoder(result))
@@ -88,18 +92,38 @@ async def create_lantern(
     )
 
 
+@router.get(
+    "/artworks/ready-to-fall",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="6.5 Lấy danh sách lồng đèn của bản thân đến thời điểm rơi xuống"
+)
+async def get_ready_to_fall_lanterns(
+    include_opened: bool = Query(False, description="Bao gồm cả lồng đèn đã mở"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lấy danh sách lồng đèn của người dùng hiện tại có target_date trùng hoặc đã qua thời điểm hiện tại (để frontend kích hoạt hiệu ứng rơi xuống)."""
+    result = await Room2Service.get_ready_to_fall_lanterns(
+        db,
+        current_user=current_user,
+        include_opened=include_opened,
+    )
+    return ok(data=jsonable_encoder(result))
+
+
 @router.post(
     "/artworks/{artwork_id}/open",
     response_model=dict,
     status_code=status.HTTP_200_OK,
-    summary="6.2 Mở lồng đèn hy vọng"
+    summary="6.2 Kéo thả và mở lồng đèn hy vọng"
 )
 async def open_lantern(
     artwork_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
-    """Mở một lồng đèn khi đã đến hạn ngày mở khóa (target_date <= now). Trả về 423 nếu chưa đến ngày."""
+    """Kéo thả và mở một lồng đèn nằm trong danh sách hợp lệ (PUBLIC đã duyệt hoặc PRIVATE của bản thân) mà không bị giới hạn bởi thời gian khóa."""
     try:
         art_uuid = uuid.UUID(artwork_id)
     except (ValueError, TypeError):
@@ -115,3 +139,32 @@ async def open_lantern(
         current_user=current_user,
     )
     return ok(data=jsonable_encoder(data), message=msg)
+
+
+@router.delete(
+    "/artworks/{artwork_id}",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="6.6 Xóa lồng đèn của bản thân (nếu chưa được public)"
+)
+async def delete_lantern(
+    artwork_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Xóa lồng đèn của chính mình khi chưa được công khai duyệt (chặn xóa nếu lồng đèn đã PUBLIC và APPROVED)."""
+    try:
+        art_uuid = uuid.UUID(artwork_id)
+    except (ValueError, TypeError):
+        raise AppException(
+            status_code=404,
+            error_code="ARTWORK_NOT_FOUND",
+            message="Không tìm thấy lồng đèn"
+        )
+
+    msg = await Room2Service.delete_lantern(
+        db,
+        lantern_id=art_uuid,
+        current_user=current_user,
+    )
+    return ok(message=msg)

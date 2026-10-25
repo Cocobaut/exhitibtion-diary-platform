@@ -27,6 +27,8 @@ router = APIRouter(
 @router.get("/pending", status_code=status.HTTP_200_OK)
 async def get_pending_artworks(
     room_id: int,
+    title: Optional[str] = Query(None, description="Lọc theo tiêu đề tác phẩm"),
+    author_display_name: Optional[str] = Query(None, description="Lọc theo tên hiển thị tác giả"),
     page: int = Query(1, ge=1, description="Số trang hiện tại"),
     limit: int = Query(15, ge=1, le=100, description="Số lượng bản ghi trên một trang"),
     sort: str = Query("oldest", pattern="^(oldest|latest)$", description="Thứ tự sắp xếp"),
@@ -37,6 +39,8 @@ async def get_pending_artworks(
     data = await AdminRoomService.get_pending_artworks(
         db=db,
         room_id=room_id,
+        title=title,
+        author_display_name=author_display_name,
         page=page,
         limit=limit,
         sort=sort,
@@ -113,6 +117,8 @@ async def reject_artwork(
 async def get_approved_artworks(
     room_id: int,
     q: Optional[str] = Query(None, description="Từ khóa tìm kiếm theo tiêu đề"),
+    title: Optional[str] = Query(None, description="Lọc theo tiêu đề tác phẩm"),
+    author_display_name: Optional[str] = Query(None, description="Lọc theo tên hiển thị tác giả"),
     page: int = Query(1, ge=1, description="Số trang hiện tại"),
     limit: int = Query(15, ge=1, le=100, description="Số lượng bản ghi trên một trang"),
     sort: str = Query("latest", pattern="^(latest|most_viewed|most_interacted)$", description="Tiêu chí sắp xếp"),
@@ -124,11 +130,32 @@ async def get_approved_artworks(
         db=db,
         room_id=room_id,
         q=q,
+        title=title,
+        author_display_name=author_display_name,
         page=page,
         limit=limit,
         sort=sort,
     )
     return ok(data=data)
+
+
+# -----------------------------------------------------------------------------
+# 9.2.4 Leaf Categories & Stats (Room 3)
+# -----------------------------------------------------------------------------
+
+@router.get("/leaf-categories", status_code=status.HTTP_200_OK)
+@router.get("/categories", status_code=status.HTTP_200_OK)
+async def get_leaf_categories(
+    room_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """9.2.4 Lấy tất cả các loại lá (dải thông điệp trên Cây - Phòng 3) và thống kê số lượng từng loại."""
+    data = await AdminRoomService.get_leaf_categories(db=db, room_id=room_id)
+    return ok(
+        message="Lấy danh sách các loại lá và thống kê số lượng thành công",
+        data=data,
+    )
 
 
 @router.put("/{artwork_id}", status_code=status.HTTP_200_OK)

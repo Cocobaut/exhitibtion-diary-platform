@@ -86,7 +86,9 @@ class AuditLogsListData(BaseModel):
 # -----------------------------------------------------------------------------
 
 class RequestUserDeletionRequest(BaseModel):
-    reason: str = Field(..., min_length=5, description="Lý do đề xuất xóa tài khoản")
+    username: str = Field(..., min_length=1, max_length=50, description="Tên đăng nhập xác nhận của tài khoản cần xóa")
+    email: str = Field(..., min_length=3, max_length=100, description="Email xác nhận của tài khoản cần xóa")
+    reason: str = Field(..., min_length=5, max_length=500, description="Lý do chi tiết đề xuất xóa tài khoản")
 
 
 class RequestUserDeletionData(BaseModel):
@@ -95,3 +97,20 @@ class RequestUserDeletionData(BaseModel):
     requested_by: uuid.UUID
     reason: str
     created_at: datetime
+
+
+# -----------------------------------------------------------------------------
+# 12.4 Update User Status (Block / Activate)
+# -----------------------------------------------------------------------------
+
+class AdminUpdateUserStatusRequest(BaseModel):
+    is_active: bool = Field(..., description="Trạng thái kích hoạt tài khoản")
+    reason: Optional[str] = Field(None, description="Lý do khóa hoặc mở khóa")
+
+
+class AdminUpdateUserStatusData(BaseModel):
+    id: uuid.UUID
+    username: str
+    role: str
+    is_active: bool
+    updated_at: datetime

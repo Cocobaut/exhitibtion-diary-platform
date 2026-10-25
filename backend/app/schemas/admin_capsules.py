@@ -102,3 +102,21 @@ class ToggleCapsuleStatusRequest(BaseModel):
 class ToggleCapsuleStatusData(BaseModel):
     id: int
     is_approved: bool
+
+
+# -----------------------------------------------------------------------------
+# 11.6 Capsule Categories & Stats
+# -----------------------------------------------------------------------------
+
+class CapsuleCategoryStatItem(BaseModel):
+    category: str
+    label: str
+    description: str
+    total_count: int
+    active_count: int
+    inactive_count: int
+
+
+class CapsuleCategoriesData(BaseModel):
+    total_capsules: int
+    categories: List[CapsuleCategoryStatItem]

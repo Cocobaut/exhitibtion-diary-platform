@@ -93,6 +93,7 @@ async def setup_test_context():
             user_id=user1.id,
             room_id=3,
             title="Bạn đã làm tốt hơn bạn nghĩ rất nhiều!",
+            title_en="You did much better than you thought!",
             author_display_name="Người Gieo Mầm",
             is_anonymous=False,
             short_content="Tóm tắt lời khích lệ kiên trì",
@@ -207,6 +208,26 @@ async def run_tests():
             print("✓ Test 1: List phòng 3 trả về đúng color_legend 4 màu cố định và total_ribbons chuẩn")
 
             # -------------------------------------------------------------
+            # TEST 1b: Lọc danh sách dải lụa theo title và author_display_name
+            # -------------------------------------------------------------
+            filter_title = await client.get("/api/v1/rooms/3/artworks?title=tốt hơn")
+            assert filter_title.status_code == 200
+            f_title_items = filter_title.json()["data"]["items"]
+            assert len(f_title_items) == 1
+            assert f_title_items[0]["id"] == art1_id
+
+            filter_author = await client.get("/api/v1/rooms/3/artworks?author_display_name=Người Gieo Mầm")
+            assert filter_author.status_code == 200
+            f_author_items = filter_author.json()["data"]["items"]
+            assert len(f_author_items) == 1
+            assert f_author_items[0]["id"] == art1_id
+
+            filter_none = await client.get("/api/v1/rooms/3/artworks?title=khong_tim_thay")
+            assert filter_none.status_code == 200
+            assert len(filter_none.json()["data"]["items"]) == 0
+            print("✓ Test 1b: Lọc danh sách dải lụa theo title và author_display_name chính xác")
+
+            # -------------------------------------------------------------
             # TEST 2: Gửi sai cặp màu - danh mục khi tạo bài -> 400 INVALID_CATEGORY_COLOR
             # -------------------------------------------------------------
             # HEALING must be #98FB98, here sending #FFD700
@@ -308,6 +329,7 @@ async def run_tests():
             assert create_res.status_code == 201
             c_data = create_res.json()["data"]
             assert c_data["status"] == "PENDING"
+            assert c_data["author_display_name"] == ctx["user1"].nickname, "author_display_name must be forced to current_user nickname"
             assert "đang được chuẩn bị để treo lên cây" in create_res.json()["message"]
 
             # Test auto approve = True
@@ -326,11 +348,12 @@ async def run_tests():
             )
             assert create_auto_res.status_code == 201
             assert create_auto_res.json()["data"]["status"] == "APPROVED"
+            assert create_auto_res.json()["data"]["author_display_name"] == ctx["user1"].nickname
             assert create_auto_res.json()["message"] == "Dải thông điệp đã được treo lên cây!"
-            print("✓ Test 6: Tạo bài kiểm tra cơ chế ROOM3_AUTO_APPROVE (PENDING khi False, APPROVED khi True)")
+            print("✓ Test 6: Tạo bài kiểm tra cơ chế ROOM3_AUTO_APPROVE (PENDING khi False, APPROVED khi True) và ép author_display_name theo nickname")
 
             # -------------------------------------------------------------
-            # TEST 7: Search có highlight đúng trường và lọc chuẩn theo category, color_code
+            # TEST 7: Search có highlight đúng trường, hỗ trợ 10 trường song ngữ và lọc chuẩn theo category, color_code
             # -------------------------------------------------------------
             # Search q="kiên trì"
             search_res = await client.get("/api/v1/rooms/3/search?q=kiên trì")
@@ -348,9 +371,73 @@ async def run_tests():
             sf_items = search_filter.json()["data"]["items"]
             assert len(sf_items) == 1
             assert sf_items[0]["tag_category"] == "HEALING"
-            print("✓ Test 7: Search có highlight chuẩn xác và lọc kết hợp category, color_code, energy_count")
 
-    print("\n ALL 7 TESTS FOR PLAN 07 PASSED PERFECTLY! \n")
+            # 10-field bilingual search on Room 3: title_en & author_display_name
+            s_bilingual = await client.get("/api/v1/rooms/3/search?q=You did much better")
+            assert s_bilingual.status_code == 200
+            assert s_bilingual.json()["data"]["pagination"]["total_hits"] >= 1
+            assert s_bilingual.json()["data"]["items"][0]["id"] == art1_id
+
+            s_author = await client.get("/api/v1/rooms/3/search?q=Người Gieo Mầm")
+            assert s_author.status_code == 200
+            assert s_author.json()["data"]["pagination"]["total_hits"] >= 1
+            author_hit_ids = [it["id"] for it in s_author.json()["data"]["items"]]
+            assert art1_id in author_hit_ids
+
+            # Search keyword only in short_content
+            s_short = await client.get("/api/v1/rooms/3/search?q=khích lệ")
+            assert s_short.status_code == 200
+            assert s_short.json()["data"]["pagination"]["total_hits"] >= 1
+            hit_short = s_short.json()["data"]["items"][0]
+            assert hit_short["id"] == art1_id
+            assert "content" in hit_short
+            assert "short_content" in hit_short
+            assert "short_content" in hit_short["highlight"]
+            assert "<em>khích lệ</em>" in hit_short["highlight"]["short_content"][0]
+
+            # Search keyword only in content
+            s_content = await client.get("/api/v1/rooms/3/search?q=mệt mỏi")
+            assert s_content.status_code == 200
+            assert s_content.json()["data"]["pagination"]["total_hits"] >= 1
+            hit_content = s_content.json()["data"]["items"][0]
+            assert hit_content["id"] == art1_id
+            assert "content" in hit_content["highlight"]
+            assert "<em>mệt mỏi</em>" in hit_content["highlight"]["content"][0]
+
+            print("✓ Test 7: Search có highlight chuẩn xác, hỗ trợ 10 trường song ngữ (title, short_content, content, author) và lọc kết hợp category, color_code, energy_count")
+
+            # -------------------------------------------------------------
+            # TEST 8: 7.6 Lấy danh sách các loại lá, màu sắc và tổng số lượng trên cây
+            # -------------------------------------------------------------
+            leaf_cat_res = await client.get("/api/v1/rooms/3/leaf-categories")
+            assert leaf_cat_res.status_code == 200
+            lc_data = leaf_cat_res.json()["data"]
+            assert lc_data["room_id"] == 3
+            assert lc_data["room_code"] == "COMMUNITY"
+            assert "total_leaves" in lc_data
+            assert lc_data["total_leaves"] >= 1
+            assert len(lc_data["categories"]) == 4
+
+            cats = [c["category"] for c in lc_data["categories"]]
+            assert "ENCOURAGEMENT" in cats
+            assert "HEALING" in cats
+            assert "GRATITUDE" in cats
+            assert "PERSPECTIVE" in cats
+
+            for c in lc_data["categories"]:
+                assert "label" in c
+                assert "color_code" in c
+                assert "total_count" in c
+                assert c["color_code"].startswith("#")
+
+            # Test alias /categories
+            alias_res = await client.get("/api/v1/rooms/3/categories")
+            assert alias_res.status_code == 200
+            assert alias_res.json()["data"]["total_leaves"] == lc_data["total_leaves"]
+
+            print("✓ Test 8: 7.6 Lấy tất cả loại lá, màu sắc và tổng số lượng dải thông điệp trên Cây cộng đồng thành công")
+
+    print("\n ALL 8 TESTS FOR PLAN 07 PASSED PERFECTLY! \n")
 
 
 if __name__ == "__main__":

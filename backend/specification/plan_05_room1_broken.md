@@ -32,9 +32,12 @@ Object `reactions` luôn có đủ: `{ "HEART": n, "HUG": n, "SYMPATHY": n, "tot
 
 ## 3. Chi tiết endpoint
 
-### 5.1 `GET /rooms/1/artworks?page=1&limit=12&filter=all`
+### 5.1 `GET /rooms/1/artworks?page=1&limit=12&filter=all&title=&author_display_name=`
 - `page` mặc định 1; `limit` mặc định 12, tối đa 50.
 - `filter ∈ {all, my_artworks, most_sympathetic, latest}`, mặc định `all`; giá trị khác → 400.
+- **Bộ lọc bổ sung (Filter parameters)**:
+  - `title`: Lọc theo tiêu đề tác phẩm (không phân biệt hoa thường, tìm kiếm chuỗi con trong `title`, `title_vi`, hoặc `title_en`).
+  - `author_display_name`: Lọc theo tên hiển thị của tác giả (không phân biệt hoa thường, tìm kiếm chuỗi con trong `author_display_name`).
 
 | filter | Điều kiện thêm | Sắp xếp |
 |---|---|---|
@@ -44,7 +47,7 @@ Object `reactions` luôn có đủ: `{ "HEART": n, "HUG": n, "SYMPATHY": n, "tot
 | `my_artworks` | `user_id = current_user.id`; **không có token → 401** | `created_at DESC` |
 
 **Logic**
-1. Query trang hiện tại + `COUNT(*)`.
+1. Query trang hiện tại + `COUNT(*)` (kết hợp các điều kiện lọc `title`, `author_display_name` nếu có).
 2. `ReactionService.summary(ids, ROOM1_REACTIONS)` 1 lần.
 3. Nếu có user: `ReactionService.my_reactions(ids, user.id)` → `my_reaction` = reaction đầu tiên (phòng 1 chỉ cho 1 reaction / user) hoặc `null`.
 
@@ -120,12 +123,34 @@ Không trả `content`, `user_id`.
 ### 5.4 `GET /rooms/1/search?q=&scope=all&page=1&limit=12`
 - `q` bắt buộc, 1–100 ký tự sau strip. `scope ∈ {all, mine}`; `mine` không token → 401. `limit` mặc định 12, tối đa 50.
 - Dùng `SearchService.search_artworks(room_id=1, ...)` (plan_00 §6.5). Chỉ tìm trong `status='APPROVED'`; `scope=mine` thêm `user_id = current_user.id`.
-- Field tìm: `title`, `content`, `short_content`, `author_display_name`. Highlight trả cho field khớp (thường `title`/`content`).
+- **Phạm vi tìm kiếm**: Từ khóa `q` tìm kiếm và đối sánh trên **toàn bộ 10 trường nội dung và song ngữ**:
+  `title`, `title_vi`, `title_en`, `short_content`, `short_content_vi`, `short_content_en`, `content`, `content_vi`, `content_en`, `author_display_name`.
+  Tác phẩm sẽ xuất hiện trong kết quả nếu từ khóa `q` xuất hiện ở bất kỳ trường nào trong số trên (hỗ trợ cả tiếng Việt có dấu và không dấu). Highlight trả về snippets bọc thẻ `<em>...</em>` cho các field có từ khóa khớp (`title`, `short_content`, `content`).
+- **Dữ liệu trả về**: Mỗi item trả về đầy đủ các trường nội dung: `title` (kèm `_vi`, `_en`), `short_content` (kèm `_vi`, `_en`), `content` (kèm `_vi`, `_en`), `author_display_name`, `media_url`, `reactions_total`, `view_count`, `highlight`.
 
 **Item**
 ```json
-{ "id": "...", "title": "Những mảnh vỡ <em>mùa thu</em>", "short_content": "...", "author_display_name": "...",
-  "media_url": "...", "highlight": { "content": ["...<em>đổ vỡ</em>..."] }, "reactions_total": 254, "view_count": 343 }
+{ 
+  "id": "...", 
+  "title": "Những mảnh vỡ <em>mùa thu</em>", 
+  "title_vi": "Những mảnh vỡ mùa thu",
+  "title_en": "Broken pieces of Autumn",
+  "author_display_name": "...",
+  "short_content": "Một thoáng <em>buồn</em> rơi nghiêng...", 
+  "short_content_vi": "Một thoáng buồn rơi nghiêng...",
+  "short_content_en": "A glimpse of sadness...",
+  "content": "Những ngày tháng <em>đổ vỡ</em> ấy đã dạy tôi trưởng thành...",
+  "content_vi": "Những ngày tháng đổ vỡ ấy đã dạy tôi trưởng thành...",
+  "content_en": "Those broken days taught me to grow up...",
+  "media_url": "...", 
+  "highlight": { 
+    "title": ["Những mảnh vỡ <em>mùa thu</em>"],
+    "short_content": ["Một thoáng <em>buồn</em> rơi..."],
+    "content": ["...những ngày tháng <em>đổ vỡ</em>..."] 
+  }, 
+  "reactions_total": 254, 
+  "view_count": 343 
+}
 ```
 **Response 200**: `{ "success": true, "data": { "items": [...], "pagination": { "page": 1, "limit": 12, "total_hits": 5 } } }` (không có `total_pages`).
 
@@ -134,17 +159,18 @@ Không trả `content`, `user_id`.
 | Trường | Quy tắc |
 |---|---|
 | `original_language` | tuỳ chọn, enum `vi` hoặc `en`, mặc định `vi` |
-| `author_display_name` | tuỳ chọn, strip, ≤50 |
 | `title` | bắt buộc, strip, 3–150 (theo `original_language`) |
 | `short_content` | bắt buộc, strip, 10–300 (theo `original_language`) |
 | `content` | bắt buộc, strip, ≥30 ký tự, ≤20 000 (theo `original_language`) |
 | `is_anonymous` | boolean, mặc định `false` |
 
+> **Ràng buộc tên tác giả**: Người dùng **không được tự nhập** `author_display_name`. Nếu client truyền lên sẽ bị bỏ qua. Hệ thống tự động gán `author_display_name = current_user.nickname`. Nếu `is_anonymous = true`, hệ thống lưu cờ ẩn danh và khi hiển thị ra ngoài công chúng sẽ là `"Người Bạn Ẩn Danh"`.
+
 Các trường khác (`status`, `media_url`, `room_id`, `user_id`…) bị bỏ qua.
 
 **Logic**
 1. Rate limit: đếm artwork của user (mọi phòng) có `created_at > now() - ARTWORK_RATE_LIMIT_WINDOW` (mặc định 10 phút); ≥ `ARTWORK_RATE_LIMIT_MAX` (mặc định 3) → 429. Cấu hình trong `config.py`.
-2. `INSERT artworks(user_id, room_id=1, original_language, title, short_content, content, author_display_name, is_anonymous, status='PENDING', media_url=NULL, visibility='PUBLIC')`. Gán `title_vi = title` nếu `original_language == 'vi'` (hoặc `title_en = title` nếu `'en'`). Bản dịch còn lại sẽ do Admin biên tập ở khâu duyệt bài.
+2. `INSERT artworks(user_id, room_id=1, original_language, title, short_content, content, author_display_name=current_user.nickname, is_anonymous, status='PENDING', media_url=NULL, visibility='PUBLIC')`. Gán `title_vi = title` nếu `original_language == 'vi'` (hoặc `title_en = title` nếu `'en'`). Bản dịch còn lại sẽ do Admin biên tập ở khâu duyệt bài.
 
 **Response 201**
 ```json
@@ -162,7 +188,7 @@ Các trường khác (`status`, `media_url`, `room_id`, `user_id`…) bị bỏ 
   }
 }
 ```
-`author_display_name` trong response = giá trị hiển thị theo plan_00 §6.6.
+`author_display_name` trong response = giá trị hiển thị theo plan_00 §6.6 (nếu `is_anonymous=true` thì hiển thị `"Người Bạn Ẩn Danh"`, ngược lại hiển thị `current_user.nickname`).
 
 **Lỗi**: 400 `VALIDATION_ERROR` (`"Tiêu đề hoặc nội dung quá ngắn/để trống"`), 429 `RATE_LIMITED` (`"Bạn gửi bài quá nhanh, vui lòng thử lại sau ít phút"`).
 

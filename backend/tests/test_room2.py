@@ -93,6 +93,7 @@ async def setup_test_context():
             user_id=user1.id,
             room_id=2,
             title="Lồng đèn ước mơ ngày hôm qua",
+            title_en="Lantern of Past Dreams",
             author_display_name="Kẻ Gieo Hy Vọng",
             is_anonymous=False,
             short_content="Tóm tắt lời ước đã đến hạn mở",
@@ -269,6 +270,8 @@ async def run_tests():
             assert art3_id not in guest_ids, "PUBLIC PENDING must not be visible"
             assert art4_id not in guest_ids, "PRIVATE of user1 must not be visible to guest"
             assert art5_id not in guest_ids, "PRIVATE of user2 must not be visible to guest"
+            assert "content" in guest_items[0] and guest_items[0]["content"] is not None
+            assert "short_content" in guest_items[0] and guest_items[0]["short_content"] is not None
 
             # User 1 request
             u1_res = await client.get(
@@ -280,7 +283,29 @@ async def run_tests():
             u1_ids = {it["id"] for it in u1_items}
             assert art4_id in u1_ids, "User 1 must see their own PRIVATE artwork"
             assert art5_id not in u1_ids, "User 1 must NOT see User 2's PRIVATE artwork"
-            print("✓ Test 1: Khách chỉ thấy PUBLIC+APPROVED; user A thấy PRIVATE của A và không thấy PRIVATE của B")
+            assert "content" in u1_items[0] and u1_items[0]["content"] is not None
+            assert "short_content" in u1_items[0] and u1_items[0]["short_content"] is not None
+            print("✓ Test 1: Khách chỉ thấy PUBLIC+APPROVED; user A thấy PRIVATE của A và không thấy PRIVATE của B, trả đủ content & short_content")
+
+            # -------------------------------------------------------------
+            # TEST 1b: Lọc danh sách lồng đèn theo title và author_display_name
+            # -------------------------------------------------------------
+            filter_title = await client.get("/api/v1/rooms/2/artworks?title=ước mơ")
+            assert filter_title.status_code == 200
+            f_title_items = filter_title.json()["data"]["items"]
+            assert len(f_title_items) == 1
+            assert f_title_items[0]["id"] == art1_id
+
+            filter_author = await client.get("/api/v1/rooms/2/artworks?author_display_name=Kẻ Gieo Hy Vọng")
+            assert filter_author.status_code == 200
+            f_author_items = filter_author.json()["data"]["items"]
+            assert len(f_author_items) == 1
+            assert f_author_items[0]["id"] == art1_id
+
+            filter_none = await client.get("/api/v1/rooms/2/artworks?title=khong_co_ai")
+            assert filter_none.status_code == 200
+            assert len(filter_none.json()["data"]["items"]) == 0
+            print("✓ Test 1b: Lọc danh sách lồng đèn theo title và author_display_name chính xác")
 
             # -------------------------------------------------------------
             # TEST 2: PUBLIC PENDING không xuất hiện (kể cả với chính tác giả)
@@ -324,7 +349,43 @@ async def run_tests():
             print("✓ Test 4: Giới hạn limit tối đa 100 (400), filter=mine yêu cầu token (401), total_lanterns phản ánh COUNT thật")
 
             # -------------------------------------------------------------
-            # TEST 5: Open PUBLIC đã đến hạn bởi khách -> 200, is_opened=true, view_count +1
+            # TEST 5a: API Lấy lồng đèn của bản thân đến thời điểm rơi xuống (GET /ready-to-fall)
+            # -------------------------------------------------------------
+            # Guest call -> 401
+            fall_guest = await client.get("/api/v1/rooms/2/artworks/ready-to-fall")
+            assert fall_guest.status_code == 401
+
+            # User 1 call before opening art1 (art1 has target_date in past, user_id=user1, status=APPROVED, is_opened=False)
+            fall_u1 = await client.get(
+                "/api/v1/rooms/2/artworks/ready-to-fall",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert fall_u1.status_code == 200
+            fall_items = fall_u1.json()["data"]["items"]
+            assert len(fall_items) == 1
+            assert fall_items[0]["id"] == art1_id
+            assert "content" in fall_items[0] and fall_items[0]["content"] is not None
+            assert "short_content" in fall_items[0] and fall_items[0]["short_content"] is not None
+            assert fall_u1.json()["data"]["total"] == 1
+
+            # User 2 call -> art5 is user2's past lantern, but art5 is already is_opened=True
+            fall_u2 = await client.get(
+                "/api/v1/rooms/2/artworks/ready-to-fall",
+                headers={"Authorization": f"Bearer {token2}"}
+            )
+            assert fall_u2.status_code == 200
+            assert len(fall_u2.json()["data"]["items"]) == 0
+            # User 2 call with include_opened=true -> returns art5
+            fall_u2_opened = await client.get(
+                "/api/v1/rooms/2/artworks/ready-to-fall?include_opened=true",
+                headers={"Authorization": f"Bearer {token2}"}
+            )
+            assert fall_u2_opened.status_code == 200
+            assert any(item["id"] == art5_id for item in fall_u2_opened.json()["data"]["items"])
+            print("✓ Test 5a: API lấy lồng đèn rơi xuống (/ready-to-fall) kiểm tra quyền, thời gian chính xác, trả đủ content & short_content")
+
+            # -------------------------------------------------------------
+            # TEST 5b: Open PUBLIC đã đến hạn bởi khách -> 200, is_opened=true, view_count +1
             # -------------------------------------------------------------
             # art1: target_date in past, view_count=5
             open_pub = await client.post(f"/api/v1/rooms/2/artworks/{art1_id}/open")
@@ -332,22 +393,26 @@ async def run_tests():
             data_open = open_pub.json()["data"]
             assert data_open["is_opened"] is True
             assert data_open["view_count"] == 6
+            assert "content" in data_open and data_open["content"] is not None
+            assert "content_vi" in data_open and data_open["content_vi"] is not None
+            assert "short_content" in data_open and data_open["short_content"] is not None
+            assert "short_content_vi" in data_open and data_open["short_content_vi"] is not None
             assert open_pub.json()["message"] == "Lồng đèn đã hạ cánh. Chúc mừng bạn đã chạm tới bức thư tương lai!"
-            print("✓ Test 5: Khách mở lồng đèn PUBLIC đã đến hạn thành công (200), is_opened=true, view_count tăng")
+            print("✓ Test 5b: Khách mở lồng đèn PUBLIC đã đến hạn thành công (200), trả đủ content và short_content song ngữ, is_opened=true, view_count tăng")
 
             # -------------------------------------------------------------
-            # TEST 6: Open khi target_date tương lai -> 423 đúng body (error_code, data.remaining_seconds)
+            # TEST 6: Kéo thả & Mở lồng đèn khi target_date ở tương lai -> 200 OK (không bị chặn 423)
             # -------------------------------------------------------------
-            # art2: target in future
-            locked_res = await client.post(f"/api/v1/rooms/2/artworks/{art2_id}/open")
-            assert locked_res.status_code == 423
-            err_body = locked_res.json()
-            assert err_body["success"] is False
-            assert err_body["error_code"] == "TIME_CAPSULE_LOCKED"
-            assert "chưa đến lúc hạ cánh" in err_body["message"]
-            assert err_body["data"]["remaining_seconds"] > 0
-            assert "Z" in err_body["data"]["target_date"]
-            print("✓ Test 6: Mở lồng đèn khi chưa đến hạn trả mã 423 TIME_CAPSULE_LOCKED kèm số giây còn lại")
+            # art2: PUBLIC, APPROVED, target in future -> người dùng kéo thả và mở tự do nếu trong visible set
+            open_future = await client.post(f"/api/v1/rooms/2/artworks/{art2_id}/open")
+            assert open_future.status_code == 200
+            future_data = open_future.json()["data"]
+            assert future_data["is_opened"] is True
+            assert future_data["view_count"] == 1
+            assert "content" in future_data and future_data["content"] is not None
+            assert "short_content" in future_data and future_data["short_content"] is not None
+            assert "Chúc mừng bạn đã chạm tới bức thư tương lai" in open_future.json()["message"]
+            print("✓ Test 6: Mở lồng đèn khi target_date ở tương lai thành công 200 OK (không bị chặn 423), trả đủ content và short_content")
 
             # -------------------------------------------------------------
             # TEST 7: Open PRIVATE không token -> 401; PRIVATE của người khác -> 404
@@ -363,7 +428,15 @@ async def run_tests():
             )
             assert open_priv_other.status_code == 404
             assert open_priv_other.json()["error_code"] == "ARTWORK_NOT_FOUND"
-            print("✓ Test 7: Mở lồng đèn PRIVATE không token trả 401; mở thư riêng người khác trả 404 bảo mật")
+
+            # user 1 opens their own private lantern (art4, future target_date) -> 200 OK!
+            open_priv_own = await client.post(
+                f"/api/v1/rooms/2/artworks/{art4_id}/open",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert open_priv_own.status_code == 200
+            assert open_priv_own.json()["data"]["is_opened"] is True
+            print("✓ Test 7: Mở lồng đèn PRIVATE không token trả 401; người khác trả 404; chính chủ mở thành công 200")
 
             # -------------------------------------------------------------
             # TEST 8: Create PUBLIC -> PENDING + message PUBLIC; PRIVATE -> APPROVED + message PRIVATE
@@ -387,6 +460,9 @@ async def run_tests():
             pub_data = pub_create.json()["data"]
             assert pub_data["status"] == "PENDING"
             assert pub_data["visibility"] == "PUBLIC"
+            assert pub_data["author_display_name"] == ctx["user1"].nickname, "author_display_name must be forced to current_user nickname"
+            assert "content" in pub_data and pub_data["content"] is not None
+            assert "short_content" in pub_data and pub_data["short_content"] is not None
             assert pub_create.json()["message"] == "Lồng đèn của bạn đang được chuẩn bị, chúng mình sẽ thông báo trong hộp tin nhắn cho bạn sau khi tác phẩm hoàn thành"
 
             # 8b: Create PRIVATE
@@ -405,8 +481,10 @@ async def run_tests():
             priv_data = priv_create.json()["data"]
             assert priv_data["status"] == "APPROVED", "PRIVATE lanterns must be automatically APPROVED"
             assert priv_data["visibility"] == "PRIVATE"
+            assert "content" in priv_data and priv_data["content"] is not None
+            assert "short_content" in priv_data and priv_data["short_content"] is not None
             assert priv_create.json()["message"] == "Lồng đèn hy vọng đã được thả bay lên bầu trời riêng của bạn!"
-            print("✓ Test 8: Tạo lồng đèn PUBLIC trả về PENDING, PRIVATE tự động APPROVED kèm thông điệp phù hợp")
+            print("✓ Test 8: Tạo lồng đèn PUBLIC trả về PENDING, PRIVATE tự động APPROVED kèm thông điệp phù hợp và đủ content, short_content")
 
             # -------------------------------------------------------------
             # TEST 9: Create target_date quá khứ -> 400 INVALID_TARGET_DATE
@@ -446,6 +524,8 @@ async def run_tests():
             u1_hit_ids = {h["id"] for h in u1_hits}
             assert art4_id in u1_hit_ids, "User 1 must find their own private lantern"
             assert art5_id not in u1_hit_ids, "User 1 must NEVER find User 2's private lantern"
+            assert "content" in u1_hits[0]
+            assert "short_content" in u1_hits[0]
 
             # Check that locked item (art4 is locked) does NOT include 'content' in highlight
             art4_hit = next(h for h in u1_hits if h["id"] == art4_id)
@@ -455,9 +535,97 @@ async def run_tests():
             s_unlocked = await client.get("/api/v1/rooms/2/search?q=hôm qua")
             assert s_unlocked.status_code == 200
             assert s_unlocked.json()["data"]["pagination"]["total_hits"] >= 1
-            print("✓ Test 10: Search cách ly PRIVATE của người khác và bảo vệ nội dung chưa mở (không highlight content)")
 
-    print("\n ALL 10 TESTS FOR PLAN 06 PASSED PERFECTLY! \n")
+            # Test 10-field bilingual search on Room 2: title_en & author_display_name
+            s_bilingual = await client.get("/api/v1/rooms/2/search?q=Past Dreams")
+            assert s_bilingual.status_code == 200
+            assert s_bilingual.json()["data"]["pagination"]["total_hits"] >= 1
+            assert s_bilingual.json()["data"]["items"][0]["id"] == art1_id
+
+            s_author = await client.get("/api/v1/rooms/2/search?q=Kẻ Gieo Hy Vọng")
+            assert s_author.status_code == 200
+            assert s_author.json()["data"]["pagination"]["total_hits"] >= 1
+            assert s_author.json()["data"]["items"][0]["id"] == art1_id
+
+            # Search keyword only in short_content of unlocked lantern
+            s_short = await client.get("/api/v1/rooms/2/search?q=lời ước")
+            assert s_short.status_code == 200
+            assert s_short.json()["data"]["pagination"]["total_hits"] >= 1
+            hit_short = s_short.json()["data"]["items"][0]
+            assert hit_short["id"] == art1_id
+            assert "short_content" in hit_short["highlight"]
+            assert "<em>lời ước</em>" in hit_short["highlight"]["short_content"][0]
+
+            # Search keyword only in content of unlocked lantern -> highlight content allowed
+            s_content = await client.get("/api/v1/rooms/2/search?q=hạ cánh")
+            assert s_content.status_code == 200
+            assert s_content.json()["data"]["pagination"]["total_hits"] >= 1
+            hit_content = s_content.json()["data"]["items"][0]
+            assert hit_content["id"] == art1_id
+            assert "content" in hit_content["highlight"]
+            assert "<em>hạ cánh</em>" in hit_content["highlight"]["content"][0]
+
+            print("✓ Test 10: Search cách ly PRIVATE của người khác, hỗ trợ tìm kiếm 10 trường song ngữ (title, short_content, content, author) và bảo vệ nội dung chưa mở")
+
+            # -------------------------------------------------------------
+            # TEST 11: Xóa lồng đèn của bản thân khi chưa được public (DELETE /artworks/{id})
+            # -------------------------------------------------------------
+            # 11a: Guest calling delete -> 401
+            del_guest = await client.delete(f"/api/v1/rooms/2/artworks/{art3_id}")
+            assert del_guest.status_code == 401
+
+            # 11b: Invalid UUID -> 404
+            del_invalid = await client.delete(
+                "/api/v1/rooms/2/artworks/invalid-uuid",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert del_invalid.status_code == 404
+
+            # 11c: User 2 tries to delete User 1's artwork -> 404
+            del_other = await client.delete(
+                f"/api/v1/rooms/2/artworks/{art3_id}",
+                headers={"Authorization": f"Bearer {token2}"}
+            )
+            assert del_other.status_code == 404
+            assert del_other.json()["error_code"] == "ARTWORK_NOT_FOUND"
+
+            # 11d: User 1 tries to delete PUBLIC + APPROVED artwork (art1) -> 400 CANNOT_DELETE_PUBLIC_LANTERN
+            del_approved = await client.delete(
+                f"/api/v1/rooms/2/artworks/{art1_id}",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert del_approved.status_code == 400
+            assert del_approved.json()["error_code"] == "CANNOT_DELETE_PUBLIC_LANTERN"
+            assert "Không thể xóa lồng đèn đã được công khai" in del_approved.json()["message"]
+
+            # 11e: User 1 deletes PUBLIC + PENDING artwork (art3) -> 200 OK
+            del_pending = await client.delete(
+                f"/api/v1/rooms/2/artworks/{art3_id}",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert del_pending.status_code == 200
+            assert del_pending.json()["message"] == "Xóa lồng đèn thành công"
+
+            # 11f: User 1 deletes PRIVATE artwork (art4) -> 200 OK
+            del_private = await client.delete(
+                f"/api/v1/rooms/2/artworks/{art4_id}",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert del_private.status_code == 200
+            assert del_private.json()["message"] == "Xóa lồng đèn thành công"
+
+            # 11g: Verify art3 and art4 are gone from database
+            u1_after_del = await client.get(
+                "/api/v1/rooms/2/artworks?filter=mine",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert u1_after_del.status_code == 200
+            remaining_ids = {it["id"] for it in u1_after_del.json()["data"]["items"]}
+            assert art3_id not in remaining_ids
+            assert art4_id not in remaining_ids
+            print("✓ Test 11: Xóa lồng đèn bản thân bảo vệ bài PUBLIC APPROVED (400), cho phép xóa PENDING và PRIVATE (200), chặn người khác (404)")
+
+    print("\n ALL 11 TESTS FOR PLAN 06 PASSED PERFECTLY! \n")
 
 
 if __name__ == "__main__":

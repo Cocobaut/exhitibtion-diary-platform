@@ -259,7 +259,21 @@ async def run_all_tests():
             first_item = pending_data["items"][0]
             assert "author" in first_item
             assert first_item["author"]["username"] == "author_user"
-            print("=> PASSED: 9.1.1 Pending artworks query and author mapping successful.\n")
+
+            # Filter pending by title & author_display_name
+            res_p_title = await client.get("/api/v1/admin/rooms/1/artworks/pending?title=Mảnh vỡ", headers=admin_headers)
+            assert res_p_title.status_code == 200
+            assert res_p_title.json()["data"]["pagination"]["total_pending"] >= 1
+
+            res_p_author = await client.get("/api/v1/admin/rooms/1/artworks/pending?author_display_name=Kẻ lang thang", headers=admin_headers)
+            assert res_p_author.status_code == 200
+            assert res_p_author.json()["data"]["pagination"]["total_pending"] >= 1
+
+            res_p_none = await client.get("/api/v1/admin/rooms/1/artworks/pending?title=khong_co_gi", headers=admin_headers)
+            assert res_p_none.status_code == 200
+            assert res_p_none.json()["data"]["pagination"]["total_pending"] == 0
+
+            print("=> PASSED: 9.1.1 Pending artworks query, filtering (title, author_display_name) and author mapping successful.\n")
 
             # -----------------------------------------------------------------
             # Test 3: 9.1.2 Upload ảnh nghệ thuật minh họa
@@ -415,17 +429,46 @@ async def run_all_tests():
             assert summary["total_approved_artworks"] >= 2  # approved_art1 + pending_art1 that was approved
             assert summary["total_views"] >= 50
             assert summary["total_reactions"] >= 1
-            print(f"=> PASSED: Approved artworks summary: {summary}\n")
+
+            # Filter approved by title & author_display_name
+            res_a_title = await client.get("/api/v1/admin/rooms/1/artworks/approved?title=bình pha lê", headers=admin_headers)
+            assert res_a_title.status_code == 200
+            assert len(res_a_title.json()["data"]["items"]) >= 1
+
+            res_a_author = await client.get("/api/v1/admin/rooms/1/artworks/approved?author_display_name=Bụi Thời Gian", headers=admin_headers)
+            assert res_a_author.status_code == 200
+            assert len(res_a_author.json()["data"]["items"]) >= 1
+
+            res_a_none = await client.get("/api/v1/admin/rooms/1/artworks/approved?title=khong_co_tac_pham_nao", headers=admin_headers)
+            assert res_a_none.status_code == 200
+            assert len(res_a_none.json()["data"]["items"]) == 0
+
+            print(f"=> PASSED: Approved artworks summary and filtering (title, author_display_name): {summary}\n")
 
             # -----------------------------------------------------------------
             # Test 8: 9.2.2 Chỉnh sửa tác phẩm đang trưng bày
             # -----------------------------------------------------------------
             print("--- Test 8: 9.2.2 Edit approved artwork ---")
+            # 8a: Cố tình truyền author_display_name -> 400 VALIDATION_ERROR
+            res_edit_author_fail = await client.put(
+                f"/api/v1/admin/rooms/1/artworks/{ctx['approved_art1_id']}",
+                json={
+                    "author_display_name": "Bụi Thời Gian Đã Đổi",
+                },
+                headers=admin_headers,
+            )
+            assert res_edit_author_fail.status_code == 400, res_edit_author_fail.text
+            assert res_edit_author_fail.json()["error_code"] == "VALIDATION_ERROR"
+            print("=> Verified: Modifying author_display_name is strictly forbidden (400 VALIDATION_ERROR).")
+
+            # 8b: Chỉnh sửa các trường cho phép (title, short_content, content, media_url) không bắt buộc có đủ
             res_edit = await client.put(
                 f"/api/v1/admin/rooms/1/artworks/{ctx['approved_art1_id']}",
                 json={
                     "title": "Chiếc bình pha lê tái sinh",
-                    "author_display_name": "Bụi Thời Gian Đã Đổi",
+                    "short_content": "Tóm tắt đã hiệu đính",
+                    "content": "Nội dung đầy đủ mới...",
+                    "media_url": "https://cdn.exhibition.com/artworks/updated.webp",
                 },
                 headers=admin_headers,
             )
@@ -435,6 +478,11 @@ async def run_all_tests():
             async with TestingSessionLocal() as session:
                 updated_art = await session.get(Artwork, ctx["approved_art1_id"])
                 assert updated_art.title == "Chiếc bình pha lê tái sinh"
+                assert updated_art.short_content == "Tóm tắt đã hiệu đính"
+                assert updated_art.content == "Nội dung đầy đủ mới..."
+                assert updated_art.media_url == "https://cdn.exhibition.com/artworks/updated.webp"
+                # Tuyệt đối author_display_name không thay đổi
+                assert updated_art.author_display_name == "Bụi Thời Gian"
 
                 edit_audit = (await session.execute(
                     select(AdminAuditLog).where(
@@ -443,7 +491,7 @@ async def run_all_tests():
                     )
                 )).scalar_one_or_none()
                 assert edit_audit is not None, "Update audit log must exist"
-            print("=> PASSED: Edit approved artwork and audit log confirmed.\n")
+            print("=> PASSED: Edit approved artwork (preserving author_display_name) confirmed.\n")
 
             # -----------------------------------------------------------------
             # Test 9: 9.2.3 Archive tác phẩm biến mất khỏi gallery
@@ -474,6 +522,47 @@ async def run_all_tests():
                 )).scalar_one_or_none()
                 assert arch_audit is not None, "Archive audit log must exist"
             print("=> PASSED: Artwork archived and verified removed from public gallery.\n")
+
+            # -----------------------------------------------------------------
+            # Test 10: 9.2.4 Lấy tất cả các loại lá và số lượng từng loại (Phòng 3)
+            # -----------------------------------------------------------------
+            print("--- Test 10: 9.2.4 Get leaf categories & stats (Room 3) ---")
+            # 10a: Regular user is forbidden -> 403
+            res_reg_leaf = await client.get("/api/v1/admin/rooms/3/artworks/leaf-categories", headers=regular_headers)
+            assert res_reg_leaf.status_code == 403, res_reg_leaf.text
+
+            # 10b: Room 1 is invalid room type -> 400 INVALID_ROOM_TYPE
+            res_r1_leaf = await client.get("/api/v1/admin/rooms/1/artworks/leaf-categories", headers=admin_headers)
+            assert res_r1_leaf.status_code == 400, res_r1_leaf.text
+            assert res_r1_leaf.json()["error_code"] == "INVALID_ROOM_TYPE"
+
+            # 10c: Room 3 -> 200 OK
+            res_r3_leaf = await client.get("/api/v1/admin/rooms/3/artworks/leaf-categories", headers=admin_headers)
+            assert res_r3_leaf.status_code == 200, res_r3_leaf.text
+            leaf_data = res_r3_leaf.json()["data"]
+            assert leaf_data["room_id"] == 3
+            assert leaf_data["room_code"] == "COMMUNITY"
+            assert "total_leaves" in leaf_data
+            assert len(leaf_data["categories"]) == 4
+
+            leaf_cats = [c["category"] for c in leaf_data["categories"]]
+            assert "ENCOURAGEMENT" in leaf_cats
+            assert "HEALING" in leaf_cats
+            assert "GRATITUDE" in leaf_cats
+            assert "PERSPECTIVE" in leaf_cats
+
+            for c in leaf_data["categories"]:
+                assert "label" in c
+                assert "color_code" in c
+                assert "total_count" in c
+                assert "approved_count" in c
+                assert "pending_count" in c
+
+            # Test alias /categories
+            res_r3_alias = await client.get("/api/v1/admin/rooms/3/artworks/categories", headers=admin_headers)
+            assert res_r3_alias.status_code == 200, res_r3_alias.text
+
+            print(f"=> PASSED: 9.2.4 Leaf categories and counts verified: {leaf_data['categories']}\n")
 
             print("================ ALL PLAN 09 TESTS PASSED 100% ================\n")
 

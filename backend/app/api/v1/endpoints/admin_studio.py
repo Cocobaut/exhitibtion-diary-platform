@@ -6,6 +6,7 @@ from app.api.deps import get_db, require_admin
 from app.core.responses import ok
 from app.models.user import User
 from app.schemas.admin_studio import (
+    AdminUpdateUserStatusRequest,
     RequestUserDeletionRequest,
     StudioPublishArtworkRequest,
 )
@@ -70,10 +71,11 @@ async def list_audit_logs(
 # 12.3 Request User Deletion to Owner
 # -----------------------------------------------------------------------------
 
+@router.post("/users/request-deletion", status_code=status.HTTP_200_OK)
 @router.post("/users/{user_id}/request-deletion", status_code=status.HTTP_200_OK)
 async def request_user_deletion(
-    user_id: str,
     payload: RequestUserDeletionRequest,
+    user_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
@@ -81,10 +83,34 @@ async def request_user_deletion(
     data = await AdminStudioService.request_user_deletion(
         db=db,
         admin=admin,
+        payload=payload,
+        target_user_id_raw=user_id,
+    )
+    return ok(
+        message="Đã gửi yêu cầu xóa tài khoản đến Chủ sở hữu để xem xét phê duyệt",
+        data=data,
+    )
+
+
+# -----------------------------------------------------------------------------
+# 12.4 Update User Status (Block / Activate User)
+# -----------------------------------------------------------------------------
+
+@router.patch("/users/{user_id}/status", status_code=status.HTTP_200_OK)
+async def update_user_status(
+    user_id: str,
+    payload: AdminUpdateUserStatusRequest,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """12.4 Admin hoặc Owner thực hiện chặn (khóa) hoặc kích hoạt lại người dùng."""
+    data = await AdminStudioService.update_user_status(
+        db=db,
+        admin=admin,
         target_user_id_raw=user_id,
         payload=payload,
     )
     return ok(
-        message="Đã gửi yêu cầu xóa tài khoản đến Chủ sở hữu để xem xét phê duyệt",
+        message="Cập nhật trạng thái tài khoản thành công",
         data=data,
     )

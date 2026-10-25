@@ -13,6 +13,7 @@
 | 11.3 | PUT | `/api/v1/admin/capsules/{capsule_id}` | 200 |
 | 11.4 | PATCH | `/api/v1/admin/capsules/{capsule_id}/toggle-status` | 200 |
 | 11.5 | DELETE | `/api/v1/admin/capsules/{capsule_id}` | 200 |
+| 11.6 | GET | `/api/v1/admin/capsules/categories` | 200 |
 
 Router: `APIRouter(prefix="/admin/capsules", tags=["Admin - Message Capsules Management"])`.
 Tham số `capsule_id`: số nguyên `int` (BIGINT).
@@ -156,6 +157,47 @@ Tham số `capsule_id`: số nguyên `int` (BIGINT).
 }
 ```
 
+### 11.6 `GET /admin/capsules/categories`
+**Mô tả**: Lấy tất cả các loại thông điệp (chủ đề) trong kho và thống kê số lượng thông điệp của từng loại (tổng số lượng, số lượng đang hoạt động `is_approved=true`, số lượng đang tắt `is_approved=false`).
+**Phân quyền**: Yêu cầu ADMIN hoặc OWNER.
+
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Lấy danh sách các loại thông điệp và thống kê số lượng thành công",
+  "data": {
+    "total_capsules": 128,
+    "categories": [
+      {
+        "category": "HEALING",
+        "label": "Chữa lành",
+        "description": "Thông điệp chữa lành, bình an tâm hồn",
+        "total_count": 50,
+        "active_count": 45,
+        "inactive_count": 5
+      },
+      {
+        "category": "COURAGE",
+        "label": "Can đảm",
+        "description": "Thông điệp can đảm, tiếp thêm sức mạnh",
+        "total_count": 40,
+        "active_count": 38,
+        "inactive_count": 2
+      },
+      {
+        "category": "PERSPECTIVE",
+        "label": "Góc nhìn",
+        "description": "Thông điệp gợi mở góc nhìn mới, chiêm nghiệm cuộc sống",
+        "total_count": 38,
+        "active_count": 35,
+        "inactive_count": 3
+      }
+    ]
+  }
+}
+```
+
 ---
 
 ## 4. Test bắt buộc
@@ -163,6 +205,7 @@ Tham số `capsule_id`: số nguyên `int` (BIGINT).
 - [ ] Tạo capsule: `author_role` luôn được lưu là `'ADMIN'`.
 - [ ] `toggle-status`: Đổi sang `false` thì gọi `POST /api/v1/capsules/draw` không bao giờ rút trúng thông điệp đó.
 - [ ] Cập nhật message và category thành công; `updated_at` được làm mới.
+- [ ] `GET /admin/capsules/categories`: Trả về đầy đủ các loại thông điệp kèm số lượng từng loại chính xác.
 
 ---
 
@@ -179,4 +222,5 @@ Tham số `capsule_id`: số nguyên `int` (BIGINT).
   3. `[11.3] Chỉnh sửa nội dung thông điệp (PUT /api/v1/admin/capsules/{{adminCapsuleId}})` - Body gồm `message`, `category`.
   4. `[11.4] Bật / Tắt trạng thái thông điệp (PATCH /api/v1/admin/capsules/{{adminCapsuleId}}/toggle-status)` - Body `{ "is_approved": false }`, kiểm tra status 200.
   5. `[11.5] Xóa thông điệp khỏi kho (DELETE /api/v1/admin/capsules/{{adminCapsuleId}})` - Kiểm tra status 200.
-  6. `[Quyền hạn] Test chặn người dùng thường (GET /api/v1/admin/capsules)` - Header `Bearer {{accessToken}}`, kiểm tra status 403 `FORBIDDEN`.
+  6. `[11.6] Lấy tất cả các loại thông điệp và số lượng (GET /api/v1/admin/capsules/categories)` - Header `Bearer {{adminToken}}`, kiểm tra status 200.
+  7. `[Quyền hạn] Test chặn người dùng thường (GET /api/v1/admin/capsules)` - Header `Bearer {{accessToken}}`, kiểm tra status 403 `FORBIDDEN`.

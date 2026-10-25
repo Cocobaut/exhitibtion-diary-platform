@@ -13,9 +13,14 @@ from app.core.config import settings
 is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 connect_args = {"check_same_thread": False} if is_sqlite else {}
 
+import logging
+
+# Giữ log terminal gọn gàng, tránh spam hàng chục dòng raw SQL query
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,
+    echo=settings.DB_ECHO,
     future=True,
     connect_args=connect_args,
     pool_pre_ping=True if not is_sqlite else False,

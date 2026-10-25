@@ -133,7 +133,14 @@ class Room1ReactionResponseData(BaseModel):
 class Room1SearchItem(BaseModel):
     id: uuid.UUID
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     short_content: str
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
+    content: Optional[str] = None
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     author_display_name: str
     media_url: Optional[str] = None
     highlight: Dict[str, List[str]] = Field(default_factory=dict)

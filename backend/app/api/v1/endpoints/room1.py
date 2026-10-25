@@ -31,6 +31,8 @@ async def get_artworks(
     page: int = Query(1, ge=1, description="Trang hiện tại"),
     limit: int = Query(12, ge=1, le=50, description="Số tác phẩm mỗi trang (tối đa 50)"),
     filter: str = Query("all", description="Bộ lọc: all, latest, most_sympathetic, my_artworks"),
+    title: Optional[str] = Query(None, description="Lọc theo tiêu đề tác phẩm"),
+    author_display_name: Optional[str] = Query(None, description="Lọc theo tên hiển thị tác giả"),
     db: AsyncSession = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
 ):
@@ -40,6 +42,8 @@ async def get_artworks(
         filter_type=filter,
         page=page,
         limit=limit,
+        title=title,
+        author_display_name=author_display_name,
         current_user=current_user,
     )
     return ok(data=jsonable_encoder(result))

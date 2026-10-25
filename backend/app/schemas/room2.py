@@ -25,10 +25,19 @@ class LanternVisibility(str, Enum):
 
 class Room2LanternListItem(BaseModel):
     id: uuid.UUID
+    original_language: str = "vi"
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     author_display_name: str
     visibility: str
     is_mine: bool
+    short_content: Optional[str] = None
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
+    content: Optional[str] = None
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     target_date: Optional[datetime] = None
     is_unlockable: bool
     remaining_seconds: int
@@ -63,6 +72,9 @@ class Room2LanternDetail(BaseModel):
     title_vi: Optional[str] = None
     title_en: Optional[str] = None
     author_display_name: str
+    short_content: Optional[str] = None
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
     content: str
     content_vi: Optional[str] = None
     content_en: Optional[str] = None
@@ -179,7 +191,17 @@ class Room2CreateLanternRequest(BaseModel):
 class Room2CreateLanternResponseData(BaseModel):
     id: uuid.UUID
     room_id: int
+    original_language: str = "vi"
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
+    author_display_name: Optional[str] = None
+    short_content: Optional[str] = None
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
+    content: Optional[str] = None
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     visibility: str
     status: str
     target_date: Optional[datetime] = None
@@ -203,7 +225,15 @@ class Room2CreateLanternResponseData(BaseModel):
 class Room2SearchItem(BaseModel):
     id: uuid.UUID
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     author_display_name: str
+    short_content: Optional[str] = None
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
+    content: Optional[str] = None
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     visibility: str
     is_opened: bool
     is_unlockable: bool
@@ -228,3 +258,43 @@ class Room2SearchPagination(BaseModel):
 class Room2SearchResponse(BaseModel):
     items: List[Room2SearchItem]
     pagination: Room2SearchPagination
+
+
+class Room2ReadyToFallItem(BaseModel):
+    id: uuid.UUID
+    original_language: str = "vi"
+    title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
+    author_display_name: str
+    short_content: Optional[str] = None
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
+    content: Optional[str] = None
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
+    visibility: str
+    status: str
+    target_date: Optional[datetime] = None
+    is_opened: bool
+    media_url: Optional[str] = None
+    created_at: datetime
+
+    @field_serializer("id")
+    def serialize_uuid(self, v: uuid.UUID) -> str:
+        return str(v)
+
+    @field_serializer("target_date")
+    def serialize_target_date(self, dt: Optional[datetime]) -> Optional[str]:
+        return serialize_utc_datetime(dt)
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, dt: datetime) -> Optional[str]:
+        return serialize_utc_datetime(dt)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class Room2ReadyToFallResponse(BaseModel):
+    items: List[Room2ReadyToFallItem]
+    total: int

@@ -66,6 +66,23 @@ async def create_capsule(
 
 
 # -----------------------------------------------------------------------------
+# 11.6 Get Capsule Categories & Stats
+# -----------------------------------------------------------------------------
+
+@router.get("/categories", status_code=status.HTTP_200_OK)
+async def get_capsule_categories(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """11.6 Lấy danh sách các loại thông điệp và thống kê số lượng từng loại."""
+    data = await AdminCapsuleService.get_categories_summary(db=db)
+    return ok(
+        message="Lấy danh sách các loại thông điệp và thống kê số lượng thành công",
+        data=data,
+    )
+
+
+# -----------------------------------------------------------------------------
 # 11.3 Update Capsule
 # -----------------------------------------------------------------------------
 

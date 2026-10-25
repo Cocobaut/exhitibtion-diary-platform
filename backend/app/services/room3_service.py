@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -13,6 +13,8 @@ from app.models.artwork_interaction import ArtworkInteraction
 from app.models.user import User
 from app.schemas.room3 import (
     ROOM3_CATEGORY_COLORS,
+    PublicLeafCategoriesData,
+    PublicLeafCategoryItem,
     Room3CreateRibbonRequest,
 )
 from app.services.artwork_query_service import ArtworkQueryService
@@ -30,6 +32,8 @@ class Room3Service:
         color_code: Optional[str] = None,
         filter_type: str = "all",
         limit: int = 50,
+        title: Optional[str] = None,
+        author_display_name: Optional[str] = None,
         current_user: Optional[User] = None,
     ) -> Dict[str, Any]:
         """Get ribbons for Room 3 (Community Tree)."""
@@ -71,6 +75,20 @@ class Room3Service:
 
         if filter_type == "mine" and current_user:
             conditions.append(Artwork.user_id == current_user.id)
+
+        if title:
+            term = f"%{title.strip()}%"
+            conditions.append(
+                or_(
+                    Artwork.title.ilike(term),
+                    Artwork.title_vi.ilike(term),
+                    Artwork.title_en.ilike(term),
+                )
+            )
+
+        if author_display_name:
+            term = f"%{author_display_name.strip()}%"
+            conditions.append(Artwork.author_display_name.ilike(term))
 
         # Count total ribbons
         count_stmt = select(func.count(Artwork.id)).where(*conditions)
@@ -342,7 +360,7 @@ class Room3Service:
             content=clean_content,
             content_vi=clean_content if lang == "vi" else None,
             content_en=clean_content if lang == "en" else None,
-            author_display_name=request.author_display_name.strip() if request.author_display_name else None,
+            author_display_name=current_user.nickname or "Người Dùng",
             is_anonymous=request.is_anonymous,
             visibility="PUBLIC",
             status=status_val,
@@ -445,7 +463,15 @@ class Room3Service:
             formatted_items.append({
                 "id": aid,
                 "title": item["title"],
+                "title_vi": item.get("title_vi"),
+                "title_en": item.get("title_en"),
                 "author_display_name": item["author_display_name"],
+                "short_content": item.get("short_content"),
+                "short_content_vi": item.get("short_content_vi"),
+                "short_content_en": item.get("short_content_en"),
+                "content": item.get("content"),
+                "content_vi": item.get("content_vi"),
+                "content_en": item.get("content_en"),
                 "tag_category": item.get("tag_category"),
                 "color_code": item.get("color_code"),
                 "highlight": item.get("highlight", {}),
@@ -460,3 +486,42 @@ class Room3Service:
                 "total_hits": total_hits,
             }
         }
+
+    @staticmethod
+    async def get_leaf_categories(db: AsyncSession) -> PublicLeafCategoriesData:
+        """7.6 Lấy tổng số lượng lá (dải thông điệp đã duyệt), loại lá, màu sắc trên Cây thông điệp."""
+        stmt = (
+            select(
+                Artwork.tag_category,
+                func.count().label("total_count"),
+            )
+            .where(
+                Artwork.room_id == ROOM_COMMUNITY,
+                Artwork.status == "APPROVED",
+            )
+            .group_by(Artwork.tag_category)
+        )
+        rows = (await db.execute(stmt)).all()
+        stat_map = {row.tag_category: int(row.total_count) for row in rows}
+
+        total_leaves = 0
+        categories = []
+        for item in ROOM3_COLOR_LEGEND:
+            cat = item["category"]
+            cnt = stat_map.get(cat, 0)
+            total_leaves += cnt
+            categories.append(
+                PublicLeafCategoryItem(
+                    category=cat,
+                    label=item["label"],
+                    color_code=item["color_code"],
+                    total_count=cnt,
+                )
+            )
+
+        return PublicLeafCategoriesData(
+            room_id=ROOM_COMMUNITY,
+            room_code="COMMUNITY",
+            total_leaves=total_leaves,
+            categories=categories,
+        )

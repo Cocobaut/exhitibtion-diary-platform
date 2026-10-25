@@ -19,6 +19,8 @@ from app.schemas.admin_capsules import (
     ToggleCapsuleStatusRequest,
     UpdateCapsuleData,
     UpdateCapsuleRequest,
+    CapsuleCategoriesData,
+    CapsuleCategoryStatItem,
 )
 
 
@@ -250,3 +252,46 @@ class AdminCapsuleService:
 
         await db.delete(capsule)
         await db.commit()
+
+    @staticmethod
+    async def get_categories_summary(db: AsyncSession) -> CapsuleCategoriesData:
+        """11.6 Lấy tất cả các loại thông điệp và thống kê số lượng từng loại."""
+        stmt = select(
+            MessageCapsule.category,
+            func.count().label("total_count"),
+            func.count().filter(MessageCapsule.is_approved.is_(True)).label("active_count"),
+            func.count().filter(MessageCapsule.is_approved.is_(False)).label("inactive_count"),
+        ).group_by(MessageCapsule.category)
+        rows = (await db.execute(stmt)).all()
+        stat_map = {row.category: row for row in rows}
+
+        meta = {
+            "HEALING": ("Chữa lành", "Thông điệp chữa lành, bình an tâm hồn"),
+            "COURAGE": ("Can đảm", "Thông điệp can đảm, tiếp thêm sức mạnh"),
+            "PERSPECTIVE": ("Góc nhìn", "Thông điệp gợi mở góc nhìn mới, chiêm nghiệm cuộc sống"),
+        }
+
+        total_capsules = 0
+        categories = []
+        for cat in ["HEALING", "COURAGE", "PERSPECTIVE"]:
+            row = stat_map.get(cat)
+            t_count = int(row.total_count) if row else 0
+            a_count = int(row.active_count) if row else 0
+            i_count = int(row.inactive_count) if row else 0
+            total_capsules += t_count
+            label, desc = meta[cat]
+            categories.append(
+                CapsuleCategoryStatItem(
+                    category=cat,
+                    label=label,
+                    description=desc,
+                    total_count=t_count,
+                    active_count=a_count,
+                    inactive_count=i_count,
+                )
+            )
+
+        return CapsuleCategoriesData(
+            total_capsules=total_capsules,
+            categories=categories,
+        )

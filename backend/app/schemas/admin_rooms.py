@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # -----------------------------------------------------------------------------
@@ -167,7 +167,6 @@ class EditArtworkRequest(BaseModel):
     title: Optional[str] = Field(None, max_length=150)
     title_vi: Optional[str] = Field(None, max_length=150)
     title_en: Optional[str] = Field(None, max_length=150)
-    author_display_name: Optional[str] = Field(None, max_length=50)
     short_content: Optional[str] = None
     short_content_vi: Optional[str] = None
     short_content_en: Optional[str] = None
@@ -177,6 +176,14 @@ class EditArtworkRequest(BaseModel):
     media_url: Optional[str] = None
     tag_category: Optional[str] = Field(None, max_length=30)
     color_code: Optional[str] = Field(None, max_length=10)
+    author_display_name: Optional[str] = Field(None, description="Tuyệt đối không được chỉnh sửa trường này")
+
+    @field_validator("author_display_name")
+    @classmethod
+    def validate_no_author_display_name(cls, v):
+        if v is not None:
+            raise ValueError("Tuyệt đối không được sửa author_display_name (tên tác giả được cố định theo bí danh của tài khoản)")
+        return v
 
 
 class EditArtworkData(BaseModel):
@@ -197,3 +204,23 @@ class ArchiveArtworkData(BaseModel):
     status: str
     archived_by: uuid.UUID
     updated_at: datetime
+
+
+# -----------------------------------------------------------------------------
+# 9.2.4 Leaf Categories & Stats (Room 3)
+# -----------------------------------------------------------------------------
+
+class LeafCategoryStatItem(BaseModel):
+    category: str
+    label: str
+    color_code: str
+    total_count: int
+    approved_count: int
+    pending_count: int
+
+
+class LeafCategoriesData(BaseModel):
+    room_id: int
+    room_code: str
+    total_leaves: int
+    categories: List[LeafCategoryStatItem]

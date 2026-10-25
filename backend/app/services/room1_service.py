@@ -2,7 +2,7 @@ import math
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -30,6 +30,8 @@ class Room1Service:
         filter_type: str = "all",
         page: int = 1,
         limit: int = 12,
+        title: Optional[str] = None,
+        author_display_name: Optional[str] = None,
         current_user: Optional[User] = None,
     ) -> Dict[str, Any]:
         """Get gallery artworks list for Room 1."""
@@ -56,6 +58,20 @@ class Room1Service:
 
         if filter_type == "my_artworks":
             base_conditions.append(Artwork.user_id == current_user.id)
+
+        if title:
+            term = f"%{title.strip()}%"
+            base_conditions.append(
+                or_(
+                    Artwork.title.ilike(term),
+                    Artwork.title_vi.ilike(term),
+                    Artwork.title_en.ilike(term),
+                )
+            )
+
+        if author_display_name:
+            term = f"%{author_display_name.strip()}%"
+            base_conditions.append(Artwork.author_display_name.ilike(term))
 
         # Ordering
         if filter_type == "most_sympathetic":
@@ -358,7 +374,14 @@ class Room1Service:
             formatted_items.append({
                 "id": aid,
                 "title": item["title"],
+                "title_vi": item.get("title_vi"),
+                "title_en": item.get("title_en"),
                 "short_content": item["short_content"],
+                "short_content_vi": item.get("short_content_vi"),
+                "short_content_en": item.get("short_content_en"),
+                "content": item.get("content"),
+                "content_vi": item.get("content_vi"),
+                "content_en": item.get("content_en"),
                 "author_display_name": item["author_display_name"],
                 "media_url": item["media_url"],
                 "highlight": item.get("highlight", {}),
@@ -418,7 +441,7 @@ class Room1Service:
             content=clean_content,
             content_vi=clean_content if lang == "vi" else None,
             content_en=clean_content if lang == "en" else None,
-            author_display_name=request.author_display_name.strip() if request.author_display_name else None,
+            author_display_name=current_user.nickname or "Người Dùng",
             is_anonymous=request.is_anonymous,
             status="PENDING",
             media_url=None,

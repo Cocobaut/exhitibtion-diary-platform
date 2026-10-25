@@ -262,20 +262,28 @@ Dùng `HTTPBearer(auto_error=False)` thay cho `OAuth2PasswordBearer` (login củ
 ### 6.5 `SearchService` (API 5.4, 6.4, 7.5, 8.3.1)
 Spec yêu cầu Elasticsearch, nhưng hạ tầng hiện **chưa có** ES. Thiết kế:
 - Interface `search_artworks(room_id, q, filters, user, page, limit)` và `search_diaries(...)` trả `(items, total_hits)`, mỗi item có `highlight: dict[str, list[str]]`.
-- Backend mặc định `PostgresSearchBackend`:
-  - Điều kiện: `to_tsvector('simple', title || ' ' || content) @@ plainto_tsquery('simple', :q)` (khớp đúng biểu thức của `idx_artworks_fts` để dùng index) **OR** `unaccent(lower(title|short_content|author_display_name)) LIKE unaccent(lower('%' || :q || '%'))` (hỗ trợ không dấu).
-  - Highlight: `ts_headline('simple', <field>, plainto_tsquery('simple', :q), 'StartSel=<em>, StopSel=</em>, MaxFragments=1')`. Chỉ đưa field vào `highlight` khi có match.
-  - Trường `title` trong item kết quả trả **bản đã highlight** (theo ví dụ spec).
-  - Sắp xếp: `ts_rank` DESC, rồi `created_at` DESC.
-- `ElasticsearchBackend` (tùy chọn, bật khi có `ELASTICSEARCH_URL`): index `artworks_index`, `diaries_index`; multi_match fields theo từng plan; đồng bộ index khi tạo/sửa/duyệt/lưu trữ. **Không bắt buộc ở phiên bản đầu.**
+- **Phạm vi tìm kiếm của `q` trên Tác phẩm (`artworks`)**:
+  Tìm kiếm toàn diện trên **tất cả các trường nội dung và song ngữ**:
+  `title`, `title_vi`, `title_en`, `short_content`, `short_content_vi`, `short_content_en`, `content`, `content_vi`, `content_en`, `author_display_name`.
+  Một tác phẩm được coi là khớp nếu từ khóa `q` xuất hiện ở **bất kỳ trường nào** trong số các trường trên.
+- **Backend mặc định `PostgresSearchBackend`**:
+  - Điều kiện FTS & Unaccent: Sử dụng `to_tsvector` kết hợp `plainto_tsquery` trên toàn bộ các trường text/bilingual, đồng thời dùng `unaccent(lower(...)) LIKE unaccent(lower('%' || :q || '%'))` để hỗ trợ tìm kiếm tiếng Việt không dấu (gõ không dấu vẫn tìm ra bài viết có dấu).
+  - Highlight: Sử dụng `ts_headline('simple', <field>, plainto_tsquery('simple', :q), 'StartSel=<em>, StopSel=</em>')`. Bất kỳ trường nào (`title`, `content`, `short_content`, v.v.) có chứa từ khóa khớp đều được sinh snippet chứa thẻ `<em>...</em>` trong object `highlight`.
+  - Trường `title` trong item kết quả trả về **bản đã highlight** nếu có từ khóa khớp ở tiêu đề.
+  - Sắp xếp: Ưu tiên `ts_rank` DESC (độ liên quan cao nhất lên đầu), tiếp theo là `created_at` DESC.
+- `ElasticsearchBackend` (tùy chọn, bật khi có `ELASTICSEARCH_URL`): index `artworks_index`, `diaries_index`; multi_match fields gồm toàn bộ 10 trường trên; đồng bộ index khi tạo/sửa/duyệt/lưu trữ. **Không bắt buộc ở phiên bản đầu.**
 - `q` rỗng/thiếu → 400 `VALIDATION_ERROR`.
 
-### 6.6 Hiển thị tên tác giả tác phẩm (dùng ở plan 05, 06, 07, 09)
+### 6.6 Ràng buộc và Hiển thị tên tác giả tác phẩm (`author_display_name`)
+- **Ràng buộc khi tạo bài (Plan 05, 06, 07)**:
+  - Người dùng **KHÔNG được tự nhập** `author_display_name` khi đăng tác phẩm lên các phòng triển lãm. Trường này bị loại bỏ khỏi Request Body phía client.
+  - Backend **bắt buộc tự động gán** `artworks.author_display_name = current_user.nickname` từ tài khoản người dùng đang đăng nhập.
+  - *(Ngoại lệ duy nhất)*: Chỉ tại Plan 12 (Admin Studio) khi Admin/Ban Quản Trị xuất bản tác phẩm chính thức thì Admin mới được chỉ định tên hiển thị đại diện như `"Triển Lãm Ký Ức (Ban Quản Trị)"`.
+- **Hiển thị ra ngoài công chúng (Output)**:
 ```
 author_display_name (output) =
     "Người Bạn Ẩn Danh"            nếu artworks.is_anonymous = TRUE
-    artworks.author_display_name   nếu khác NULL/rỗng
-    users.nickname                 còn lại
+    artworks.author_display_name   nếu is_anonymous = FALSE (được gán bằng nickname người dùng)
 ```
 Endpoint public **không bao giờ** trả `user_id`/`username`/`email` của tác giả.
 

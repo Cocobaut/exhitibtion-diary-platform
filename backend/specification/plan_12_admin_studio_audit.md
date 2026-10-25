@@ -11,6 +11,7 @@
 | 12.1 | POST | `/api/v1/admin/studio/artworks` | 201 |
 | 12.2 | GET | `/api/v1/admin/studio/audit-logs` | 200 |
 | 12.3 | POST | `/api/v1/admin/studio/users/{user_id}/request-deletion` | 200 |
+| 12.4 | PATCH | `/api/v1/admin/studio/users/{user_id}/status` | 200 |
 
 Router: `APIRouter(prefix="/admin/studio", tags=["Admin - Studio & Audit Log"])`.
 
@@ -145,23 +146,30 @@ Router: `APIRouter(prefix="/admin/studio", tags=["Admin - Studio & Audit Log"])`
 
 ---
 
-### 12.3 `POST /admin/studio/users/{user_id}/request-deletion`
+### 12.3 `POST /admin/studio/users/request-deletion` (hoặc `/users/{user_id}/request-deletion`)
 Gửi yêu cầu xóa tài khoản đến Chủ sở hữu (Owner).
+
+> **Ràng buộc bảo mật danh tính**:
+> Để bảo đảm tính bảo mật tối cao và tránh việc Admin lạm dụng hay chỉ biết `user_id` mà tùy tiện gửi yêu cầu xóa, đầu vào API **bắt buộc phải cung cấp đầy đủ `username` và `email`** của tài khoản cần xóa.
+> Hệ thống sẽ đối chiếu xác nhận: Nếu `username` hoặc `email` không khớp với tài khoản $\rightarrow$ 400 `USER_IDENTITY_MISMATCH` (`"Thông tin xác nhận tài khoản (username hoặc email) không khớp với tài khoản cần xóa"`).
 
 **Request Body**
 ```json
 {
+  "username": "spammer_001",
+  "email": "spammer@exhibition.vn",
   "reason": "Tài khoản có hành vi phát tán nội dung độc hại liên tục, spam và quấy rối người dùng khác."
 }
 ```
 
 **Quy tắc nghiệp vụ**:
 1. Yêu cầu quyền: `ADMIN` hoặc `OWNER`.
-2. Target `user_id`: Phải tồn tại trong hệ thống. Nếu không tìm thấy $\rightarrow$ 404 `USER_NOT_FOUND`.
-3. Admin không thể yêu cầu xóa chính mình $\rightarrow$ 400 `INVALID_ACTION`.
-4. Không thể yêu cầu xóa tài khoản của `OWNER` $\rightarrow$ 403 `FORBIDDEN` (`"Không thể yêu cầu xóa tài khoản của Chủ sở hữu"`).
-5. Tự động gửi thông báo (`type = 'SYSTEM'`) tới **toàn bộ tài khoản OWNER** trong hệ thống với tiêu đề: `"Yêu cầu xóa tài khoản từ Quản trị viên"`, nội dung chứa lý do và liên kết xử lý `target_url = f"/owner/users/{user_id}"`.
-6. Ghi nhận `AdminAuditLog` (`action_type = 'REQUEST_DELETE_USER'`, `note = reason`).
+2. Target user: Phải tồn tại trong hệ thống (tìm theo `user_id` hoặc cặp `username` + `email`). Nếu không tìm thấy $\rightarrow$ 404 `USER_NOT_FOUND`.
+3. Xác nhận danh tính: Nếu `user_id` trên path không khớp với `username` hoặc `email` trong body $\rightarrow$ 400 `USER_IDENTITY_MISMATCH`.
+4. Admin không thể yêu cầu xóa chính mình $\rightarrow$ 400 `INVALID_ACTION`.
+5. Không thể yêu cầu xóa tài khoản của `OWNER` $\rightarrow$ 403 `FORBIDDEN` (`"Không thể yêu cầu xóa tài khoản của Chủ sở hữu"`).
+6. Tự động gửi thông báo (`type = 'SYSTEM'`) tới **toàn bộ tài khoản OWNER** trong hệ thống với tiêu đề: `"Yêu cầu xóa tài khoản từ Quản trị viên"`, nội dung chứa lý do, thông tin username, email và liên kết xử lý `target_url = f"/owner/users/{user_id}"`.
+7. Ghi nhận `AdminAuditLog` (`action_type = 'REQUEST_DELETE_USER'`, `note = reason`).
 
 **Response 200**
 ```json
@@ -170,10 +178,44 @@ Gửi yêu cầu xóa tài khoản đến Chủ sở hữu (Owner).
   "message": "Đã gửi yêu cầu xóa tài khoản đến Chủ sở hữu để xem xét phê duyệt",
   "data": {
     "target_user_id": "b2f67a21-98e3-4f93-b789-2144d18ec301",
-    "target_username": "nguoidung_vipham",
+    "target_username": "spammer_001",
     "requested_by": "e0a11223-14bc-4183-a212-094182410a88",
-    "reason": "Tài khoản có hành vi phát tán nội dung độc hại...",
+    "reason": "Tài khoản có hành vi phát tán nội dung độc hại liên tục, spam và quấy rối người dùng khác.",
     "created_at": "2026-10-25T11:20:00Z"
+  }
+}
+```
+
+---
+
+### 12.4 `PATCH /admin/studio/users/{user_id}/status`
+Admin hoặc Owner thực hiện **chặn (vô hiệu hóa/khóa)** hoặc **kích hoạt lại** tài khoản người dùng vi phạm.
+
+> **Quy định phân quyền**:
+> - **Cả ADMIN và OWNER đều có quyền chặn người dùng** (`is_active = false`) hoặc mở chặn (`is_active = true`).
+> - **Giới hạn của ADMIN**: Admin chỉ được phép chặn người dùng thường (`role = 'USER'`). Admin **không thể** tự khóa tài khoản của chính mình (400 `INVALID_ACTION`) và **không thể** khóa tài khoản của Admin khác hoặc Owner (403 `FORBIDDEN`).
+> - **Quyền của OWNER**: Owner có quyền chặn cả User thường và Admin khác.
+> - **Chỉ riêng OWNER mới có quyền XÓA vĩnh viễn tài khoản** (`DELETE /api/v1/owner/users/{user_id}`). Admin không có quyền xóa.
+
+**Request Body**
+```json
+{
+  "is_active": false,
+  "reason": "Vi phạm tiêu chuẩn cộng đồng và phát tán nội dung tiêu cực"
+}
+```
+
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Cập nhật trạng thái tài khoản thành công",
+  "data": {
+    "id": "b2f67a21-98e3-4f93-b789-2144d18ec301",
+    "username": "nguoidung_vipham",
+    "role": "USER",
+    "is_active": false,
+    "updated_at": "2026-10-26T01:05:00Z"
   }
 }
 ```

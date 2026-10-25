@@ -315,6 +315,33 @@ async def run_all_tests():
             assert res_get_deleted.json()["error_code"] == "CAPSULE_NOT_FOUND"
             print("=> PASSED: 11.5 Safe deletion of unused capsule verified.\n")
 
+            # -----------------------------------------------------------------
+            # Test 7: 11.6 Lấy danh sách các loại thông điệp và số lượng từng loại
+            # -----------------------------------------------------------------
+            print("--- Test 7: 11.6 Get capsule categories & stats ---")
+            # 7a: Regular user is forbidden -> 403
+            res_reg_cat = await client.get("/api/v1/admin/capsules/categories", headers=regular_headers)
+            assert res_reg_cat.status_code == 403, res_reg_cat.text
+
+            # 7b: Admin gets categories -> 200 OK
+            res_cat_ok = await client.get("/api/v1/admin/capsules/categories", headers=admin_headers)
+            assert res_cat_ok.status_code == 200, res_cat_ok.text
+            cat_data = res_cat_ok.json()["data"]
+            assert "total_capsules" in cat_data
+            assert "categories" in cat_data
+            assert len(cat_data["categories"]) == 3
+            cat_names = [c["category"] for c in cat_data["categories"]]
+            assert "HEALING" in cat_names
+            assert "COURAGE" in cat_names
+            assert "PERSPECTIVE" in cat_names
+            for c in cat_data["categories"]:
+                assert "label" in c
+                assert "description" in c
+                assert "total_count" in c
+                assert "active_count" in c
+                assert "inactive_count" in c
+            print(f"=> PASSED: 11.6 Categories stats verified: {cat_data['categories']}\n")
+
             print("================ ALL PLAN 11 TESTS PASSED 100% ================\n")
 
 

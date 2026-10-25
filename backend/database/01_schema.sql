@@ -230,7 +230,9 @@ CREATE TABLE IF NOT EXISTS admin_audit_logs (
     room_id SMALLINT NOT NULL REFERENCES rooms(id),
     admin_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
     action_type VARCHAR(40) NOT NULL CHECK (action_type IN 
-        ('CREATE_DIRECT', 'UPDATE', 'APPROVE', 'APPROVE_AND_UPLOAD_MEDIA', 'REJECT', 'ARCHIVE')),
+        ('CREATE_DIRECT', 'UPDATE', 'APPROVE', 'APPROVE_AND_UPLOAD_MEDIA', 'REJECT', 'ARCHIVE',
+         'REQUEST_DELETE_USER', 'ACTIVATE_USER', 'DEACTIVATE_USER', 'BLOCK_USER', 'UNBLOCK_USER',
+         'DELETE_USER', 'UPDATE_USER_ROLE')),
     note TEXT NULL,
     performed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -242,7 +244,28 @@ CREATE INDEX IF NOT EXISTS idx_artworks_room_user
     ON artworks (room_id, user_id);
 
 CREATE INDEX IF NOT EXISTS idx_artworks_fts 
-    ON artworks USING GIN (to_tsvector('simple', title || ' ' || content));
+    ON artworks USING GIN (to_tsvector('simple', 
+        coalesce(title, '') || ' ' || 
+        coalesce(title_vi, '') || ' ' || 
+        coalesce(title_en, '') || ' ' || 
+        coalesce(short_content, '') || ' ' || 
+        coalesce(short_content_vi, '') || ' ' || 
+        coalesce(short_content_en, '') || ' ' || 
+        coalesce(content, '') || ' ' || 
+        coalesce(content_vi, '') || ' ' || 
+        coalesce(content_en, '') || ' ' || 
+        coalesce(author_display_name, '')
+    ));
+
+CREATE INDEX IF NOT EXISTS idx_diaries_fts 
+    ON diaries USING GIN (to_tsvector('simple', 
+        coalesce(title, '') || ' ' || 
+        coalesce(title_vi, '') || ' ' || 
+        coalesce(title_en, '') || ' ' || 
+        coalesce(content, '') || ' ' || 
+        coalesce(content_vi, '') || ' ' || 
+        coalesce(content_en, '')
+    ));
 
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread 
     ON notifications (recipient_id) 

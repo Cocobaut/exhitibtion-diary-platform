@@ -3,7 +3,7 @@ import math
 from typing import Optional
 import uuid
 from fastapi import UploadFile
-from sqlalchemy import func, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -23,6 +23,8 @@ from app.schemas.admin_rooms import (
     AuthorInfo,
     EditArtworkData,
     EditArtworkRequest,
+    LeafCategoriesData,
+    LeafCategoryStatItem,
     PendingArtworkAuthor,
     PendingArtworkDetail,
     PendingArtworksData,
@@ -32,6 +34,7 @@ from app.schemas.admin_rooms import (
     RoomApprovedSummary,
     UploadArtworkImageResponse,
 )
+from app.core.constants import ROOM3_COLOR_LEGEND
 from app.services.audit_log_service import AuditLogService
 from app.services.notification_service import NotificationService
 from app.services.storage_service import StorageService
@@ -81,6 +84,8 @@ class AdminRoomService:
     async def get_pending_artworks(
         db: AsyncSession,
         room_id: int,
+        title: Optional[str] = None,
+        author_display_name: Optional[str] = None,
         page: int = 1,
         limit: int = 15,
         sort: str = "oldest",
@@ -92,6 +97,20 @@ class AdminRoomService:
             Artwork.room_id == room_id,
             Artwork.status == "PENDING",
         ]
+
+        if title:
+            term = f"%{title.strip()}%"
+            base_filter.append(
+                or_(
+                    Artwork.title.ilike(term),
+                    Artwork.title_vi.ilike(term),
+                    Artwork.title_en.ilike(term),
+                )
+            )
+
+        if author_display_name:
+            term = f"%{author_display_name.strip()}%"
+            base_filter.append(Artwork.author_display_name.ilike(term))
 
         count_stmt = select(func.count()).select_from(Artwork).where(*base_filter)
         total_pending = (await db.scalar(count_stmt)) or 0
@@ -357,6 +376,8 @@ class AdminRoomService:
         db: AsyncSession,
         room_id: int,
         q: Optional[str] = None,
+        title: Optional[str] = None,
+        author_display_name: Optional[str] = None,
         page: int = 1,
         limit: int = 15,
         sort: str = "latest",
@@ -402,7 +423,26 @@ class AdminRoomService:
         ]
         if q:
             term = f"%{q.strip()}%"
-            base_filter.append(Artwork.title.ilike(term))
+            base_filter.append(
+                or_(
+                    Artwork.title.ilike(term),
+                    Artwork.title_vi.ilike(term),
+                    Artwork.title_en.ilike(term),
+                    Artwork.content.ilike(term),
+                )
+            )
+        if title:
+            term = f"%{title.strip()}%"
+            base_filter.append(
+                or_(
+                    Artwork.title.ilike(term),
+                    Artwork.title_vi.ilike(term),
+                    Artwork.title_en.ilike(term),
+                )
+            )
+        if author_display_name:
+            term = f"%{author_display_name.strip()}%"
+            base_filter.append(Artwork.author_display_name.ilike(term))
 
         count_items_stmt = select(func.count()).select_from(Artwork).where(*base_filter)
         total_items = (await db.scalar(count_items_stmt)) or 0
@@ -507,8 +547,6 @@ class AdminRoomService:
             artwork.title = payload.title
         elif payload.title_vi is not None:
             artwork.title = payload.title_vi
-        if payload.author_display_name is not None:
-            artwork.author_display_name = payload.author_display_name
         if payload.short_content is not None:
             artwork.short_content = payload.short_content
         elif payload.short_content_vi is not None:
@@ -581,4 +619,55 @@ class AdminRoomService:
             status=artwork.status,
             archived_by=admin.id,
             updated_at=artwork.updated_at,
+        )
+
+    @staticmethod
+    async def get_leaf_categories(
+        db: AsyncSession,
+        room_id: int,
+    ) -> LeafCategoriesData:
+        """9.2.4 Lấy tất cả các loại lá (dải thông điệp trên Cây - Phòng 3) và số lượng từng loại."""
+        await AdminRoomService.validate_room(db, room_id)
+        if room_id != 3:
+            raise AppException(
+                status_code=400,
+                error_code="INVALID_ROOM_TYPE",
+                message="Chỉ Phòng 3 (Cây thông điệp) mới có phân loại lá",
+            )
+
+        stmt = select(
+            Artwork.tag_category,
+            func.count().label("total_count"),
+            func.count().filter(Artwork.status == "APPROVED").label("approved_count"),
+            func.count().filter(Artwork.status == "PENDING").label("pending_count"),
+        ).where(Artwork.room_id == 3).group_by(Artwork.tag_category)
+
+        rows = (await db.execute(stmt)).all()
+        stat_map = {row.tag_category: row for row in rows}
+
+        total_leaves = 0
+        categories = []
+        for item in ROOM3_COLOR_LEGEND:
+            cat = item["category"]
+            row = stat_map.get(cat)
+            t_count = int(row.total_count) if row else 0
+            a_count = int(row.approved_count) if row else 0
+            p_count = int(row.pending_count) if row else 0
+            total_leaves += t_count
+            categories.append(
+                LeafCategoryStatItem(
+                    category=cat,
+                    label=item["label"],
+                    color_code=item["color_code"],
+                    total_count=t_count,
+                    approved_count=a_count,
+                    pending_count=p_count,
+                )
+            )
+
+        return LeafCategoriesData(
+            room_id=3,
+            room_code="COMMUNITY",
+            total_leaves=total_leaves,
+            categories=categories,
         )

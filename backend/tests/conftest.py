@@ -1,6 +1,7 @@
 import asyncio
 from typing import AsyncGenerator
 import pytest
+import pytest_asyncio
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool

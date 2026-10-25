@@ -15,6 +15,7 @@
 | 9.2.1 | Đang trưng bày | GET | `/api/v1/admin/rooms/{room_id}/artworks/approved` | 200 |
 | 9.2.2 | Đang trưng bày | PUT | `/api/v1/admin/rooms/{room_id}/artworks/{artwork_id}` | 200 |
 | 9.2.3 | Đang trưng bày | PATCH | `/api/v1/admin/rooms/{room_id}/artworks/{artwork_id}/archive` | 200 |
+| 9.2.4 | Đang trưng bày | GET | `/api/v1/admin/rooms/{room_id}/artworks/leaf-categories` | 200 |
 
 Router: `APIRouter(prefix="/admin/rooms/{room_id}/artworks", tags=["Admin - Exhibition Rooms Management"])`.
 
@@ -28,9 +29,12 @@ Router: `APIRouter(prefix="/admin/rooms/{room_id}/artworks", tags=["Admin - Exhi
 
 ## 3. Chi tiết endpoint
 
-### 9.1.1 `GET /admin/rooms/{room_id}/artworks/pending?page=1&limit=15&sort=oldest`
+### 9.1.1 `GET /admin/rooms/{room_id}/artworks/pending?page=1&limit=15&sort=oldest&title=&author_display_name=`
 - `room_id ∈ {1, 2, 3}`. Sai → 404.
 - `sort`: `oldest` (mặc định: bài gửi trước duyệt trước - `created_at ASC`) hoặc `latest` (`created_at DESC`).
+- **Bộ lọc bổ sung (Filter parameters)**:
+  - `title`: Lọc theo tiêu đề tác phẩm (không phân biệt hoa thường, tìm chuỗi con trong `title`, `title_vi`, hoặc `title_en`).
+  - `author_display_name`: Lọc theo tên hiển thị tác giả (không phân biệt hoa thường).
 - Trả về thông tin chi tiết bài viết kèm thông tin người gửi gốc (`users.username`, `users.email`).
 - Khóa phân trang đặc thù trong response: **`total_pending`** (thay vì `total_items`).
 
@@ -157,8 +161,12 @@ Router: `APIRouter(prefix="/admin/rooms/{room_id}/artworks", tags=["Admin - Exhi
 
 ---
 
-### 9.2.1 `GET /admin/rooms/{room_id}/artworks/approved?q=&page=1&limit=15&sort=latest`
+### 9.2.1 `GET /admin/rooms/{room_id}/artworks/approved?q=&title=&author_display_name=&page=1&limit=15&sort=latest`
 - `sort`: `latest` (mặc định), `most_viewed` (`view_count DESC`), `most_interacted` (tổng reactions DESC).
+- **Bộ lọc bổ sung (Filter parameters)**:
+  - `q`: Tìm kiếm nhanh trong tiêu đề và nội dung tác phẩm.
+  - `title`: Lọc theo tiêu đề tác phẩm (không phân biệt hoa thường, tìm chuỗi con trong `title`, `title_vi`, hoặc `title_en`).
+  - `author_display_name`: Lọc theo tên hiển thị tác giả (không phân biệt hoa thường).
 - Response bao gồm **`summary`** thống kê cả phòng:
   - `total_approved_artworks`: Tổng số bài `status = 'APPROVED'` trong phòng.
   - `total_views`: Tổng lượt xem `sum(view_count)` trong phòng.
@@ -204,8 +212,21 @@ Router: `APIRouter(prefix="/admin/rooms/{room_id}/artworks", tags=["Admin - Exhi
 ```
 
 ### 9.2.2 `PUT /admin/rooms/{room_id}/artworks/{artwork_id}`
-- Admin chỉnh sửa tác phẩm đang hiển thị (tiêu đề, nội dung, ảnh minh họa nghệ thuật).
+- Admin chỉnh sửa tác phẩm đang hiển thị (tiêu đề, nội dung, tóm tắt, ảnh minh họa nghệ thuật).
+- **Quy tắc ràng buộc**:
+  - Các trường được phép chỉnh sửa: `title`, `short_content`, `content`, `media_url` (không nhất thiết phải bắt buộc có đủ, trường nào truyền thì cập nhật trường đó; hỗ trợ song ngữ `_vi` và `_en`).
+  - **Tuyệt đối không được sửa `author_display_name`**: `author_display_name` được ràng buộc chặt chẽ với tên bí danh (nickname) của tài khoản tác giả (`username`), không được phép thay đổi. Nếu client cố tình truyền `author_display_name` khác `null`, hệ thống sẽ từ chối (`400 Bad Request` với mã lỗi `VALIDATION_ERROR`).
 - Ghi Audit Log: `action_type = 'UPDATE'`.
+
+**Request Body**
+```json
+{
+  "title": "Những mảnh vỡ mùa thu (Tái sinh)",
+  "short_content": "Tóm tắt hiệu đính mới của tác phẩm",
+  "content": "Nội dung đầy đủ đã được hiệu đính bởi ban quản trị...",
+  "media_url": "https://cdn.exhibition.com/artworks/2026/room-1/updated-glass.webp"
+}
+```
 
 **Response 200**
 ```json
@@ -242,6 +263,57 @@ Router: `APIRouter(prefix="/admin/rooms/{room_id}/artworks", tags=["Admin - Exhi
 }
 ```
 
+### 9.2.4 `GET /admin/rooms/{room_id}/artworks/leaf-categories` (Alias: `/categories`)
+- **Mô tả**: Lấy tất cả các loại lá (dải thông điệp trên Cây thông điệp - Phòng 3) và thống kê số lượng lá theo từng loại (tổng số lượng, số lượng đã duyệt `approved_count`, số lượng đang chờ duyệt `pending_count`).
+- **Phân quyền**: Yêu cầu ADMIN hoặc OWNER.
+
+**Response 200**
+```json
+{
+  "success": true,
+  "message": "Lấy danh sách các loại lá và thống kê số lượng thành công",
+  "data": {
+    "room_id": 3,
+    "room_code": "COMMUNITY",
+    "total_leaves": 42,
+    "categories": [
+      {
+        "category": "ENCOURAGEMENT",
+        "label": "Lời khích lệ, động viên kiên trì",
+        "color_code": "#FFD700",
+        "total_count": 12,
+        "approved_count": 10,
+        "pending_count": 2
+      },
+      {
+        "category": "HEALING",
+        "label": "Lời chữa lành, bình an tâm hồn",
+        "color_code": "#98FB98",
+        "total_count": 15,
+        "approved_count": 14,
+        "pending_count": 1
+      },
+      {
+        "category": "GRATITUDE",
+        "label": "Lời cảm ơn, trân trọng cuộc sống",
+        "color_code": "#FFB6C1",
+        "total_count": 8,
+        "approved_count": 8,
+        "pending_count": 0
+      },
+      {
+        "category": "PERSPECTIVE",
+        "label": "Lời chia sẻ góc nhìn cuộc sống",
+        "color_code": "#87CEFA",
+        "total_count": 7,
+        "approved_count": 6,
+        "pending_count": 1
+      }
+    ]
+  }
+}
+```
+
 ---
 
 ## 4. Test bắt buộc
@@ -249,7 +321,9 @@ Router: `APIRouter(prefix="/admin/rooms/{room_id}/artworks", tags=["Admin - Exhi
 - [ ] Approve bài phòng 1 không có `media_url` → 400 `MISSING_MEDIA_URL`.
 - [ ] Approve bài phòng 2/3 không bắt buộc `media_url`.
 - [ ] Khi Approve hoặc Reject: Tác giả bài viết nhận được đúng 1 thông báo tương ứng trong hộp thư notification; ghi đúng 1 bản ghi vào `admin_audit_logs`.
+- [ ] Chỉnh sửa tác phẩm (9.2.2): Chỉ được phép sửa `title`, `short_content`, `content`, `media_url` (không nhất thiết phải có đủ). Tuyệt đối không được sửa `author_display_name` (cố tình truyền sẽ bị lỗi 400 `VALIDATION_ERROR`).
 - [ ] Archive tác phẩm: `status` đổi thành `ARCHIVED`, bài viết ngay lập tức biến mất khỏi gallery công khai của phòng đó.
+- [ ] Lấy danh sách các loại lá và số lượng (9.2.4): Trả về đầy đủ 4 loại lá quy chuẩn kèm số lượng chính xác.
 
 ---
 
@@ -269,4 +343,5 @@ Router: `APIRouter(prefix="/admin/rooms/{room_id}/artworks", tags=["Admin - Exhi
   5. `[9.2.1] Danh sách tác phẩm đang trưng bày kèm thống kê (GET /api/v1/admin/rooms/1/artworks/approved)` - Kiểm tra trường `summary` và danh sách bài. Test script lưu `{{approvedArtworkId}}`.
   6. `[9.2.2] Chỉnh sửa tác phẩm đang trưng bày (PUT /api/v1/admin/rooms/1/artworks/{{approvedArtworkId}})` - Cập nhật nội dung bài viết.
   7. `[9.2.3] Gỡ bỏ tác phẩm vào kho lưu trữ Archive (PATCH /api/v1/admin/rooms/1/artworks/{{approvedArtworkId}}/archive)` - Body `{ "admin_note": "..." }`, kiểm tra `status = 'ARCHIVED'`.
-  8. `[Quyền hạn] Test chặn người dùng thường (GET /api/v1/admin/rooms/1/artworks/pending)` - Header `Bearer {{accessToken}}` (role USER), kiểm tra status 403 `FORBIDDEN`.
+  8. `[9.2.4] Lấy tất cả các loại lá và số lượng (GET /api/v1/admin/rooms/3/artworks/leaf-categories)` - Header `Bearer {{adminToken}}`, kiểm tra status 200.
+  9. `[Quyền hạn] Test chặn người dùng thường (GET /api/v1/admin/rooms/1/artworks/pending)` - Header `Bearer {{accessToken}}` (role USER), kiểm tra status 403 `FORBIDDEN`.

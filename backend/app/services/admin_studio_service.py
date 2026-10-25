@@ -12,6 +12,8 @@ from app.models.artwork import Artwork
 from app.models.room import Room
 from app.models.user import User, UserRole
 from app.schemas.admin_studio import (
+    AdminUpdateUserStatusData,
+    AdminUpdateUserStatusRequest,
     AuditAdminInfo,
     AuditLogItem,
     AuditLogPagination,
@@ -23,6 +25,9 @@ from app.schemas.admin_studio import (
 )
 from app.services.audit_log_service import AuditLogService
 from app.services.notification_service import NotificationService
+import logging
+
+logger = logging.getLogger("uvicorn.info")
 
 
 class AdminStudioService:
@@ -243,26 +248,53 @@ class AdminStudioService:
     async def request_user_deletion(
         db: AsyncSession,
         admin: User,
-        target_user_id_raw: str,
         payload: RequestUserDeletionRequest,
+        target_user_id_raw: Optional[str] = None,
     ) -> RequestUserDeletionData:
         """12.3 Admin gửi yêu cầu xóa tài khoản người dùng vi phạm đến Owner."""
-        try:
-            target_user_id = uuid.UUID(str(target_user_id_raw))
-        except (ValueError, TypeError):
-            raise AppException(
-                status_code=404,
-                error_code="USER_NOT_FOUND",
-                message="Không tìm thấy tài khoản người dùng"
-            )
+        target_user: Optional[User] = None
 
-        target_user = await db.get(User, target_user_id)
-        if not target_user:
-            raise AppException(
-                status_code=404,
-                error_code="USER_NOT_FOUND",
-                message="Không tìm thấy tài khoản người dùng"
+        if target_user_id_raw:
+            try:
+                target_user_id = uuid.UUID(str(target_user_id_raw))
+            except (ValueError, TypeError):
+                raise AppException(
+                    status_code=404,
+                    error_code="USER_NOT_FOUND",
+                    message="Không tìm thấy tài khoản người dùng",
+                )
+
+            target_user = await db.get(User, target_user_id)
+            if not target_user:
+                raise AppException(
+                    status_code=404,
+                    error_code="USER_NOT_FOUND",
+                    message="Không tìm thấy tài khoản người dùng",
+                )
+
+            # Xác nhận đối chiếu danh tính: username và email phải khớp với tài khoản
+            if (
+                target_user.username.lower() != payload.username.strip().lower()
+                or target_user.email.lower() != payload.email.strip().lower()
+            ):
+                raise AppException(
+                    status_code=400,
+                    error_code="USER_IDENTITY_MISMATCH",
+                    message="Thông tin xác nhận tài khoản (username hoặc email) không khớp với tài khoản cần xóa",
+                )
+        else:
+            # Tìm trực tiếp qua username và email
+            stmt = select(User).where(
+                func.lower(User.username) == payload.username.strip().lower(),
+                func.lower(User.email) == payload.email.strip().lower(),
             )
+            target_user = (await db.execute(stmt)).scalar_one_or_none()
+            if not target_user:
+                raise AppException(
+                    status_code=404,
+                    error_code="USER_NOT_FOUND",
+                    message="Không tìm thấy tài khoản với username và email đã cung cấp",
+                )
 
         # Safety Guardrails:
         # 1. Admin cannot request to delete themselves
@@ -270,7 +302,7 @@ class AdminStudioService:
             raise AppException(
                 status_code=400,
                 error_code="INVALID_ACTION",
-                message="Bạn không thể tự yêu cầu xóa tài khoản của chính mình"
+                message="Bạn không thể tự yêu cầu xóa tài khoản của chính mình",
             )
 
         # 2. Cannot request to delete an OWNER
@@ -278,7 +310,7 @@ class AdminStudioService:
             raise AppException(
                 status_code=403,
                 error_code="FORBIDDEN",
-                message="Không thể yêu cầu xóa tài khoản của Chủ sở hữu"
+                message="Không thể yêu cầu xóa tài khoản của Chủ sở hữu",
             )
 
         # Notify ALL owners
@@ -297,7 +329,7 @@ class AdminStudioService:
                 sender_id=admin.id,
                 type="SYSTEM",
                 title="Yêu cầu xóa tài khoản từ Quản trị viên",
-                body=f"Quản trị viên '{admin.nickname}' đã đề xuất xóa tài khoản '{target_user.username}' với lý do: {payload.reason}",
+                body=f"Quản trị viên '{admin.nickname}' đã đề xuất xóa tài khoản '{target_user.username}' ({target_user.email}) với lý do: {payload.reason}",
                 target_url=f"/owner/users/{target_user.id}",
             )
 
@@ -306,12 +338,16 @@ class AdminStudioService:
             db,
             admin_id=admin.id,
             action_type="REQUEST_DELETE_USER",
-            artwork_title=f"User: {target_user.username}",
+            artwork_title=f"User: {target_user.username} ({target_user.email})",
             room_id=1,
             note=payload.reason,
         )
 
         await db.commit()
+
+        logger.info(
+            f"[12.3] Đề xuất xóa tài khoản: '{target_user.username}' ({target_user.email}) | Admin: '{admin.username}' | Lý do: '{payload.reason}'"
+        )
 
         return RequestUserDeletionData(
             target_user_id=target_user.id,
@@ -320,3 +356,82 @@ class AdminStudioService:
             reason=payload.reason,
             created_at=now,
         )
+
+    @staticmethod
+    async def update_user_status(
+        db: AsyncSession,
+        admin: User,
+        target_user_id_raw: str,
+        payload: AdminUpdateUserStatusRequest,
+    ) -> AdminUpdateUserStatusData:
+        """12.4 Admin hoặc Owner cập nhật trạng thái (chặn/mở chặn) người dùng."""
+        try:
+            target_user_id = uuid.UUID(str(target_user_id_raw))
+        except (ValueError, TypeError):
+            raise AppException(
+                status_code=404,
+                error_code="USER_NOT_FOUND",
+                message="Không tìm thấy tài khoản người dùng"
+            )
+
+        target_user = await db.get(User, target_user_id)
+        if not target_user:
+            raise AppException(
+                status_code=404,
+                error_code="USER_NOT_FOUND",
+                message="Không tìm thấy tài khoản người dùng"
+            )
+
+        # Safety Guardrails:
+        # 1. Admin/Owner cannot deactivate themselves
+        if target_user.id == admin.id:
+            raise AppException(
+                status_code=400,
+                error_code="INVALID_ACTION",
+                message="Bạn không thể tự thay đổi trạng thái tài khoản của chính mình"
+            )
+
+        # 2. Regular Admin can only block/unblock regular USER
+        is_owner = admin.role in (UserRole.OWNER.value, "OWNER")
+        if not is_owner:
+            if target_user.role in (UserRole.ADMIN.value, UserRole.OWNER.value, "ADMIN", "OWNER"):
+                raise AppException(
+                    status_code=403,
+                    error_code="FORBIDDEN",
+                    message="Quản trị viên chỉ có quyền thay đổi trạng thái của người dùng thông thường"
+                )
+        else:
+            # Owner cannot change status of another Owner
+            if target_user.role in (UserRole.OWNER.value, "OWNER"):
+                raise AppException(
+                    status_code=403,
+                    error_code="FORBIDDEN",
+                    message="Không thể thay đổi trạng thái của tài khoản Chủ sở hữu khác"
+                )
+
+        now = datetime.now(timezone.utc)
+        target_user.is_active = payload.is_active
+        target_user.updated_at = now
+
+        # Audit log
+        action = "ACTIVATE_USER" if payload.is_active else "DEACTIVATE_USER"
+        await AuditLogService.log(
+            db,
+            admin_id=admin.id,
+            action_type=action,
+            artwork_title=f"User: {target_user.username}",
+            room_id=1,
+            note=payload.reason or f"Admin changed status to {payload.is_active}",
+        )
+
+        await db.commit()
+        await db.refresh(target_user)
+
+        return AdminUpdateUserStatusData(
+            id=target_user.id,
+            username=target_user.username,
+            role=target_user.role,
+            is_active=target_user.is_active,
+            updated_at=target_user.updated_at,
+        )
+

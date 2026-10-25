@@ -32,6 +32,7 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/exhibition_diary_db"
+    DB_ECHO: bool = False
 
     # Frontend URLs
     FRONTEND_RESET_URL: str = "http://localhost:3000/reset-password"

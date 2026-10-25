@@ -102,10 +102,12 @@ async def setup_test_context():
             user_id=user1.id,
             room_id=1,
             title="Mảnh vỡ thời gian mùa thu",
+            title_en="Autumn Broken Pieces",
             author_display_name="Kẻ Độc Hành",
             is_anonymous=False,
             short_content="Tóm tắt về những mảnh vỡ thời gian",
             content="Nội dung chi tiết về những mảnh vỡ đổ vỡ thời gian mùa thu dài hơn 30 ký tự",
+            content_en="Detailed story about autumn broken fragments",
             media_url="https://example.com/art1.jpg",
             status="APPROVED",
             view_count=10,
@@ -272,6 +274,26 @@ async def run_tests():
             print("✓ Test 4: Lọc most_sympathetic sắp xếp chính xác theo tổng reaction")
 
             # -------------------------------------------------------------
+            # TEST 4b: Lọc danh sách tác phẩm theo title và author_display_name
+            # -------------------------------------------------------------
+            filter_title_res = await client.get("/api/v1/rooms/1/artworks?title=mùa thu")
+            assert filter_title_res.status_code == 200
+            f_title_items = filter_title_res.json()["data"]["items"]
+            assert len(f_title_items) == 1
+            assert f_title_items[0]["id"] == art1_id
+
+            filter_author_res = await client.get("/api/v1/rooms/1/artworks?author_display_name=Kẻ Độc Hành")
+            assert filter_author_res.status_code == 200
+            f_auth_items = filter_author_res.json()["data"]["items"]
+            assert len(f_auth_items) == 1
+            assert f_auth_items[0]["id"] == art1_id
+
+            filter_none_res = await client.get("/api/v1/rooms/1/artworks?title=khong_co_tac_pham_nao")
+            assert filter_none_res.status_code == 200
+            assert len(filter_none_res.json()["data"]["items"]) == 0
+            print("✓ Test 4b: Lọc danh sách tác phẩm theo title và author_display_name chính xác")
+
+            # -------------------------------------------------------------
             # TEST 5: is_anonymous=true -> author_display_name == "Người Bạn Ẩn Danh"
             # -------------------------------------------------------------
             # art1 is_anonymous=False with author_display_name="Kẻ Độc Hành"
@@ -435,7 +457,44 @@ async def run_tests():
             first_hit = s_data["items"][0]
             assert "<em>" in first_hit["title"] or "<em>" in str(first_hit.get("highlight", {}))
             assert "reactions_total" in first_hit
-            print("✓ Test 10: Search validation chuẩn xác (400 khi q rỗng, 401 khi mine thiếu token, highlight <em>)")
+
+            # Test 10-field search across title_en, content_en, author_display_name
+            search_en_title = await client.get("/api/v1/rooms/1/search?q=Autumn")
+            assert search_en_title.status_code == 200
+            assert search_en_title.json()["data"]["pagination"]["total_hits"] >= 1
+            assert search_en_title.json()["data"]["items"][0]["id"] == art1_id
+
+            search_en_content = await client.get("/api/v1/rooms/1/search?q=fragments")
+            assert search_en_content.status_code == 200
+            assert search_en_content.json()["data"]["pagination"]["total_hits"] >= 1
+            assert search_en_content.json()["data"]["items"][0]["id"] == art1_id
+            assert "content" in search_en_content.json()["data"]["items"][0]
+            assert "short_content" in search_en_content.json()["data"]["items"][0]
+
+            # Search keyword only in short_content
+            search_short = await client.get("/api/v1/rooms/1/search?q=Tóm tắt")
+            assert search_short.status_code == 200
+            assert search_short.json()["data"]["pagination"]["total_hits"] >= 1
+            hit_short = search_short.json()["data"]["items"][0]
+            assert hit_short["id"] == art1_id
+            assert "short_content" in hit_short["highlight"]
+            assert "<em>Tóm tắt</em>" in hit_short["highlight"]["short_content"][0]
+
+            # Search keyword only in content
+            search_content = await client.get("/api/v1/rooms/1/search?q=đổ vỡ")
+            assert search_content.status_code == 200
+            assert search_content.json()["data"]["pagination"]["total_hits"] >= 1
+            hit_content = search_content.json()["data"]["items"][0]
+            assert hit_content["id"] == art1_id
+            assert "content" in hit_content["highlight"]
+            assert "<em>đổ vỡ</em>" in hit_content["highlight"]["content"][0]
+
+            search_author = await client.get("/api/v1/rooms/1/search?q=Kẻ Độc Hành")
+            assert search_author.status_code == 200
+            assert search_author.json()["data"]["pagination"]["total_hits"] >= 1
+            assert search_author.json()["data"]["items"][0]["id"] == art1_id
+
+            print("✓ Test 10: Search validation chuẩn xác, hỗ trợ 10 trường song ngữ (title, short_content, content, author) và highlight <em>")
 
             # -------------------------------------------------------------
             # TEST 11: Create -> 201, DB status='PENDING', media_url=None;
@@ -471,7 +530,7 @@ async def run_tests():
             assert create_res1.status_code == 201
             c1_data = create_res1.json()["data"]
             assert c1_data["status"] == "PENDING", "Status must remain PENDING"
-            assert c1_data["author_display_name"] == "Bụi Thời Gian"
+            assert c1_data["author_display_name"] == ctx["user1"].nickname, "Client-injected author_display_name must be ignored and forced to user nickname"
             assert create_res1.json()["message"] == "Tác phẩm của bạn đang được chuẩn bị, chúng mình sẽ thông báo trong hộp tin nhắn cho bạn sau khi tác phẩm hoàn thành"
 
             # Verify in DB: media_url is NULL

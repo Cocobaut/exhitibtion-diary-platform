@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "91e6474d-0006-4000-8000-000000000006",
     "name": "06. Phòng 2 - Lồng đèn Hy vọng (/api/v1/rooms/2)",
-    "description": "Postman Collection kiểm thử tự động Nhóm 6: Phòng 2 'Lồng đèn Hy vọng' theo đặc tả plan_06_room2_hope.md",
+    "description": "Postman Collection kiểm thử tự động Nhóm 6: Phòng 2 'Lồng đèn Hy vọng' theo đặc tả plan_06_room2_hope.md (cho phép kéo thả & mở lồng đèn tự do trong visible set, API lồng đèn rơi xuống ready-to-fall)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -35,6 +35,8 @@
               "    pm.expect(jsonData.data.status).to.eql(\"PENDING\");",
               "    pm.expect(jsonData.data.visibility).to.eql(\"PUBLIC\");",
               "    pm.expect(jsonData.data.room_id).to.eql(2);",
+              "    pm.expect(jsonData.data).to.have.property(\"content\");",
+              "    pm.expect(jsonData.data).to.have.property(\"short_content\");",
               "    if (jsonData.data && jsonData.data.id) {",
               "        pm.collectionVariables.set(\"lanternId\", jsonData.data.id);",
               "    }",
@@ -58,7 +60,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Lời nhắn gửi tới năm 2030\",\n  \"author_display_name\": \"Nguyện Ước Xanh\",\n  \"is_anonymous\": false,\n  \"short_content\": \"Lời chúc gửi tương lai của bản thân và mọi người\",\n  \"content\": \"Hy vọng vào năm 2030, chúng ta đều đã trở thành phiên bản mạnh mẽ, hạnh phúc và bình yên hơn hôm nay rất nhiều.\",\n  \"target_date\": \"2030-01-01T00:00:00Z\",\n  \"visibility\": \"PUBLIC\"\n}"
+          "raw": "{\n  \"original_language\": \"vi\",\n  \"title\": \"Lời nhắn gửi tới năm 2030\",\n  \"is_anonymous\": false,\n  \"short_content\": \"Lời chúc gửi tương lai của bản thân và mọi người\",\n  \"content\": \"Hy vọng vào năm 2030, chúng ta đều đã trở thành phiên bản mạnh mẽ, hạnh phúc và bình yên hơn hôm nay rất nhiều.\",\n  \"target_date\": \"2030-01-01T00:00:00Z\",\n  \"visibility\": \"PUBLIC\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/v1/rooms/2/artworks",
@@ -91,6 +93,11 @@
               "    pm.expect(jsonData.success).to.eql(true);",
               "    pm.expect(jsonData.data.status).to.eql(\"APPROVED\");",
               "    pm.expect(jsonData.data.visibility).to.eql(\"PRIVATE\");",
+              "    pm.expect(jsonData.data).to.have.property(\"content\");",
+              "    pm.expect(jsonData.data).to.have.property(\"short_content\");",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set(\"lanternId\", jsonData.data.id);",
+              "    }",
               "});"
             ],
             "type": "text/javascript"
@@ -111,7 +118,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"title\": \"Bức thư bí mật gửi chính tôi\",\n  \"author_display_name\": null,\n  \"is_anonymous\": false,\n  \"short_content\": \"Tâm sự riêng tư chỉ mình tôi được đọc\",\n  \"content\": \"Gửi tôi của ngày mai, hãy luôn nhớ rằng bạn đã cố gắng hết sức và xứng đáng được yêu thương.\",\n  \"target_date\": \"2028-12-31T23:59:59Z\",\n  \"visibility\": \"PRIVATE\"\n}"
+          "raw": "{\n  \"original_language\": \"vi\",\n  \"title\": \"Bức thư bí mật gửi chính tôi\",\n  \"is_anonymous\": false,\n  \"short_content\": \"Tâm sự riêng tư chỉ mình tôi được đọc\",\n  \"content\": \"Gửi tôi của ngày mai, hãy luôn nhớ rằng bạn đã cố gắng hết sức và xứng đáng được yêu thương.\",\n  \"target_date\": \"2028-12-31T23:59:59Z\",\n  \"visibility\": \"PRIVATE\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/v1/rooms/2/artworks",
@@ -148,7 +155,8 @@
               "        var item = jsonData.data.items[0];",
               "        pm.expect(item).to.have.property(\"is_unlockable\");",
               "        pm.expect(item).to.have.property(\"remaining_seconds\");",
-              "        pm.expect(item).to.not.have.property(\"content\");",
+              "        pm.expect(item).to.have.property(\"content\");",
+              "        pm.expect(item).to.have.property(\"short_content\");",
               "    }",
               "});"
             ],
@@ -185,55 +193,17 @@
             {
               "key": "limit",
               "value": "30"
+            },
+            {
+              "key": "title",
+              "value": "",
+              "disabled": true
+            },
+            {
+              "key": "author_display_name",
+              "value": "",
+              "disabled": true
             }
-          ]
-        }
-      }
-    },
-    {
-      "name": "[6.2-Lỗi 423] Mở lồng đèn đang khóa thời gian (POST /artworks/{id}/open)",
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Status code is 423 Locked\", function () {",
-              "    pm.response.to.have.status(423);",
-              "});",
-              "",
-              "pm.test(\"Verify TIME_CAPSULE_LOCKED error response\", function () {",
-              "    var jsonData = pm.response.json();",
-              "    pm.expect(jsonData.success).to.eql(false);",
-              "    pm.expect(jsonData.error_code).to.eql(\"TIME_CAPSULE_LOCKED\");",
-              "    pm.expect(jsonData.data).to.have.property(\"remaining_seconds\");",
-              "    pm.expect(jsonData.data.remaining_seconds).to.be.above(0);",
-              "});"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{accessToken}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/api/v1/rooms/2/artworks/{{lanternId}}/open",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "api",
-            "v1",
-            "rooms",
-            "2",
-            "artworks",
-            "{{lanternId}}",
-            "open"
           ]
         }
       }
@@ -245,13 +215,19 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test(\"Verify successful unlock (200 OK) when reached target_date\", function () {",
-              "    if (pm.response.code === 200) {",
-              "        var jsonData = pm.response.json();",
-              "        pm.expect(jsonData.success).to.eql(true);",
-              "        pm.expect(jsonData.data.is_opened).to.eql(true);",
-              "        pm.expect(jsonData.data).to.have.property(\"content\");",
-              "    }",
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify successful unlock (200 OK) when in visible set\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.is_opened).to.eql(true);",
+              "    pm.expect(jsonData.data).to.have.property(\"content\");",
+              "    pm.expect(jsonData.data).to.have.property(\"content_vi\");",
+              "    pm.expect(jsonData.data).to.have.property(\"short_content\");",
+              "    pm.expect(jsonData.data).to.have.property(\"short_content_vi\");",
+              "    pm.expect(jsonData.data).to.have.property(\"view_count\");",
               "});"
             ],
             "type": "text/javascript"
@@ -299,6 +275,11 @@
               "    pm.expect(jsonData.success).to.eql(true);",
               "    pm.expect(jsonData.data.items).to.be.an(\"array\");",
               "    pm.expect(jsonData.data.pagination).to.have.property(\"total_hits\");",
+              "    if (jsonData.data.items.length > 0) {",
+              "        var item = jsonData.data.items[0];",
+              "        pm.expect(item).to.have.property(\"content\");",
+              "        pm.expect(item).to.have.property(\"short_content\");",
+              "    }",
               "});"
             ],
             "type": "text/javascript"
@@ -343,6 +324,108 @@
               "key": "limit",
               "value": "15"
             }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[6.5] Lấy lồng đèn của bản thân đến thời điểm rơi xuống (GET /artworks/ready-to-fall)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify ready-to-fall response structure\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.items).to.be.an(\"array\");",
+              "    pm.expect(jsonData.data).to.have.property(\"total\");",
+              "    if (jsonData.data.items.length > 0) {",
+              "        var item = jsonData.data.items[0];",
+              "        pm.expect(item).to.have.property(\"content\");",
+              "        pm.expect(item).to.have.property(\"short_content\");",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rooms/2/artworks/ready-to-fall?include_opened=false",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rooms",
+            "2",
+            "artworks",
+            "ready-to-fall"
+          ],
+          "query": [
+            {
+              "key": "include_opened",
+              "value": "false"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[6.6] Xóa lồng đèn của bản thân khi chưa public (DELETE /artworks/{{lanternId}})",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify delete response message\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.message).to.eql(\"Xóa lồng đèn thành công\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rooms/2/artworks/{{lanternId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rooms",
+            "2",
+            "artworks",
+            "{{lanternId}}"
           ]
         }
       }
