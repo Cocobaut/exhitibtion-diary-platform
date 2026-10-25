@@ -102,6 +102,27 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_filter ON admin_audit_logs (room_id, a
 
 -- 2.6 Tìm kiếm tiếng Việt không dấu (fallback khi không có Elasticsearch)
 CREATE EXTENSION IF NOT EXISTS unaccent;
+
+-- 2.7 Hỗ trợ Song ngữ (Tiếng Việt & Tiếng Anh) cho Tác phẩm, Nhật ký, và Thông điệp Máy nhả
+-- 2.7.1 Kho thông điệp (Capsules)
+ALTER TABLE message_capsules ADD COLUMN IF NOT EXISTS message_vi TEXT NOT NULL DEFAULT '';
+ALTER TABLE message_capsules ADD COLUMN IF NOT EXISTS message_en TEXT NOT NULL DEFAULT '';
+
+-- 2.7.2 Tác phẩm (Artworks)
+ALTER TABLE artworks ADD COLUMN IF NOT EXISTS original_language VARCHAR(5) NOT NULL DEFAULT 'vi';
+ALTER TABLE artworks ADD COLUMN IF NOT EXISTS title_vi VARCHAR(150) NULL;
+ALTER TABLE artworks ADD COLUMN IF NOT EXISTS title_en VARCHAR(150) NULL;
+ALTER TABLE artworks ADD COLUMN IF NOT EXISTS short_content_vi TEXT NULL;
+ALTER TABLE artworks ADD COLUMN IF NOT EXISTS short_content_en TEXT NULL;
+ALTER TABLE artworks ADD COLUMN IF NOT EXISTS content_vi TEXT NULL;
+ALTER TABLE artworks ADD COLUMN IF NOT EXISTS content_en TEXT NULL;
+
+-- 2.7.3 Nhật ký (Diaries)
+ALTER TABLE diaries ADD COLUMN IF NOT EXISTS original_language VARCHAR(5) NOT NULL DEFAULT 'vi';
+ALTER TABLE diaries ADD COLUMN IF NOT EXISTS title_vi VARCHAR(150) NULL;
+ALTER TABLE diaries ADD COLUMN IF NOT EXISTS title_en VARCHAR(150) NULL;
+ALTER TABLE diaries ADD COLUMN IF NOT EXISTS content_vi TEXT NULL;
+ALTER TABLE diaries ADD COLUMN IF NOT EXISTS content_en TEXT NULL;
 ```
 
 ---

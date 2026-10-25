@@ -173,11 +173,16 @@ class Room3Service:
         return {
             "id": artwork.id,
             "room_id": artwork.room_id,
+            "original_language": artwork.original_language or "vi",
             "title": artwork.title,
+            "title_vi": artwork.title_vi,
+            "title_en": artwork.title_en,
             "author_display_name": author_name,
             "tag_category": artwork.tag_category,
             "color_code": artwork.color_code,
             "content": artwork.content,
+            "content_vi": artwork.content_vi,
+            "content_en": artwork.content_en,
             "reactions": rx_obj,
             "has_received_energy": has_energy,
             "view_count": new_view_count,
@@ -317,14 +322,26 @@ class Room3Service:
             status_val = "PENDING"
             msg = "Dải thông điệp của bạn đang được chuẩn bị để treo lên cây, chúng mình sẽ thông báo qua hộp tin nhắn ngay khi hoàn tất!"
 
+        lang = getattr(request, "original_language", "vi") or "vi"
+        clean_title = request.title.strip()
+        clean_short = request.short_content.strip()
+        clean_content = request.content.strip()
+
         new_ribbon = Artwork(
             user_id=current_user.id,
             room_id=ROOM_COMMUNITY,
-            title=request.title.strip(),
+            original_language=lang,
+            title=clean_title,
+            title_vi=clean_title if lang == "vi" else None,
+            title_en=clean_title if lang == "en" else None,
             tag_category=request.tag_category,
             color_code=request.color_code,
-            short_content=request.short_content.strip(),
-            content=request.content.strip(),
+            short_content=clean_short,
+            short_content_vi=clean_short if lang == "vi" else None,
+            short_content_en=clean_short if lang == "en" else None,
+            content=clean_content,
+            content_vi=clean_content if lang == "vi" else None,
+            content_en=clean_content if lang == "en" else None,
             author_display_name=request.author_display_name.strip() if request.author_display_name else None,
             is_anonymous=request.is_anonymous,
             visibility="PUBLIC",
@@ -343,6 +360,7 @@ class Room3Service:
         data = {
             "id": new_ribbon.id,
             "room_id": new_ribbon.room_id,
+            "original_language": new_ribbon.original_language,
             "title": new_ribbon.title,
             "tag_category": new_ribbon.tag_category,
             "color_code": new_ribbon.color_code,

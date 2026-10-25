@@ -32,10 +32,13 @@ Router: `APIRouter(prefix="/admin/studio", tags=["Admin - Studio & Audit Log"])`
 ```json
 {
   "room_id": 1, // 1 (Đổ vỡ), 2 (Lồng đèn Hy vọng), 3 (Cây Thông điệp)
-  "title": "Bức tường im lặng",
+  "title_vi": "Bức tường im lặng",
+  "title_en": "The Silent Wall",
   "author_display_name": "Triển Lãm Ký Ức (Ban Quản Trị)",
-  "short_content": "Tác phẩm mở màn cho không gian triển lãm Đổ Vỡ mùa thu 2026.",
-  "content": "Có những im lặng không phải vì không còn điều gì để nói...",
+  "short_content_vi": "Tác phẩm mở màn cho không gian triển lãm Đổ Vỡ mùa thu 2026.",
+  "short_content_en": "The opening piece for Broken Exhibition Autumn 2026.",
+  "content_vi": "Có những im lặng không phải vì không còn điều gì để nói...",
+  "content_en": "There are silences not because there is nothing left to say...",
   "media_url": "https://cdn.exhibition.com/artworks/2026/room-1/curator-piece-1.webp",
   "is_anonymous": false,
 
@@ -54,12 +57,13 @@ Router: `APIRouter(prefix="/admin/studio", tags=["Admin - Studio & Audit Log"])`
    - Nếu `room_id = 1`: Phải có `media_url`.
    - Nếu `room_id = 2`: Validate `visibility` (`PUBLIC` hoặc `PRIVATE`), `target_date` nếu có.
    - Nếu `room_id = 3`: Validate cặp `tag_category` và `color_code` theo bảng màu quy chuẩn.
-2. Tự động thiết lập:
+2. **Yêu cầu Song ngữ**: Bắt buộc cung cấp đầy đủ cả bản tiếng Việt và tiếng Anh (`title_vi`, `title_en`, `short_content_vi`, `short_content_en`, `content_vi`, `content_en` không được để trống). Tự động đồng bộ `title = title_vi`, `short_content = short_content_vi`, `content = content_vi`.
+3. Tự động thiết lập:
    - `user_id = admin.id`
    - `status = 'APPROVED'`
    - `reviewed_by = admin.id`
    - `reviewed_at = CURRENT_TIMESTAMP`
-3. **Tự động ghi Audit Log**:
+4. **Tự động ghi Audit Log**:
    - `AuditLogService.log(artwork=new_artwork, admin_id=admin.id, action_type='CREATE_DIRECT', note='Admin xuất bản bài viết trực tiếp qua Studio')`.
 
 **Response 201 Created**

@@ -99,8 +99,13 @@ class Room1Service:
             rx_data = summaries.get(art.id, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0})
             items.append({
                 "id": art.id,
+                "original_language": art.original_language or "vi",
                 "title": art.title,
+                "title_vi": art.title_vi,
+                "title_en": art.title_en,
                 "short_content": art.short_content,
+                "short_content_vi": art.short_content_vi,
+                "short_content_en": art.short_content_en,
                 "media_url": art.media_url,
                 "author_display_name": author_name,
                 "is_anonymous": art.is_anonymous,
@@ -160,11 +165,18 @@ class Room1Service:
         return {
             "id": artwork.id,
             "room_id": artwork.room_id,
+            "original_language": artwork.original_language or "vi",
             "title": artwork.title,
+            "title_vi": artwork.title_vi,
+            "title_en": artwork.title_en,
             "author_display_name": author_name,
             "is_anonymous": artwork.is_anonymous,
             "short_content": artwork.short_content,
+            "short_content_vi": artwork.short_content_vi,
+            "short_content_en": artwork.short_content_en,
             "content": artwork.content,
+            "content_vi": artwork.content_vi,
+            "content_en": artwork.content_en,
             "media_url": artwork.media_url,
             "view_count": new_view_count,
             "reactions": summaries.get(artwork_id, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0}),
@@ -388,12 +400,24 @@ class Room1Service:
                 message="Bạn gửi bài quá nhanh, vui lòng thử lại sau ít phút"
             )
 
+        lang = getattr(request, "original_language", "vi") or "vi"
+        clean_title = request.title.strip()
+        clean_short = request.short_content.strip()
+        clean_content = request.content.strip()
+
         new_artwork = Artwork(
             user_id=current_user.id,
             room_id=ROOM_BROKEN,
-            title=request.title.strip(),
-            short_content=request.short_content.strip(),
-            content=request.content.strip(),
+            original_language=lang,
+            title=clean_title,
+            title_vi=clean_title if lang == "vi" else None,
+            title_en=clean_title if lang == "en" else None,
+            short_content=clean_short,
+            short_content_vi=clean_short if lang == "vi" else None,
+            short_content_en=clean_short if lang == "en" else None,
+            content=clean_content,
+            content_vi=clean_content if lang == "vi" else None,
+            content_en=clean_content if lang == "en" else None,
             author_display_name=request.author_display_name.strip() if request.author_display_name else None,
             is_anonymous=request.is_anonymous,
             status="PENDING",
@@ -412,6 +436,7 @@ class Room1Service:
         return {
             "id": new_artwork.id,
             "room_id": new_artwork.room_id,
+            "original_language": new_artwork.original_language,
             "title": new_artwork.title,
             "author_display_name": author_name,
             "status": new_artwork.status,

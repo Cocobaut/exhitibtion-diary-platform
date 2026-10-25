@@ -57,12 +57,21 @@ Router: `APIRouter(prefix="/admin/diaries", tags=["Admin - Diaries Moderation"])
 ```
 
 ### 10.2 `PATCH /admin/diaries/{diary_id}/approve`
-Body: Trống.
+**Request Body**
+```json
+{
+  "title_vi": "Một ngày nhiều suy ngẫm",
+  "title_en": "A day of deep reflection",
+  "content_vi": "Hôm nay dành trọn buổi tối để đọc cuốn sách yêu thích...",
+  "content_en": "Spent the whole evening reading my favorite book today..."
+}
+```
 
 **Logic**:
 1. Tìm bài nhật ký: phải tồn tại và `is_public = TRUE`. Không thấy → 404.
-2. `UPDATE diaries SET is_approved = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = :diary_id`.
-3. **Notification**: Gửi thông báo `type = 'SYSTEM'` cho tác giả:
+2. **Yêu cầu Song ngữ bắt buộc**: Admin duyệt bài phải hoàn thiện đầy đủ cả bản tiếng Việt và tiếng Anh (`title_vi`, `title_en`, `content_vi`, `content_en` không được để trống). Nếu thiếu 1 trong 2 ngôn ngữ → 400 `INCOMPLETE_BILINGUAL_CONTENT` (`"Vui lòng hoàn thiện đầy đủ cả bản tiếng Việt và tiếng Anh trước khi phê duyệt"`).
+3. `UPDATE diaries SET is_approved = TRUE, title_vi = :title_vi, title_en = :title_en, content_vi = :content_vi, content_en = :content_en, title = :title_vi, content = :content_vi, updated_at = CURRENT_TIMESTAMP WHERE id = :diary_id`.
+4. **Notification**: Gửi thông báo `type = 'SYSTEM'` cho tác giả:
    - Tiêu đề: `"Nhật ký của bạn đã được xuất bản ra cộng đồng!"`.
    - Body: `"Bài nhật ký '${diary.title}' đã được ban quản trị phê duyệt hiển thị trên Tab Cộng đồng."`.
    - `target_url`: `f"/diaries/community/{diary_id}"`.
@@ -76,6 +85,8 @@ Body: Trống.
     "diary_id": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
     "is_public": true,
     "is_approved": true,
+    "title_vi": "Một ngày nhiều suy ngẫm",
+    "title_en": "A day of deep reflection",
     "updated_at": "2026-10-24T23:45:00Z"
   }
 }

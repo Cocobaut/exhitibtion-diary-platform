@@ -30,11 +30,18 @@ class Artwork(Base, TimestampMixin):
         nullable=False,
         index=True
     )
+    original_language: Mapped[str] = mapped_column(String(5), default="vi", nullable=False)
     title: Mapped[str] = mapped_column(String(150), nullable=False)
+    title_vi: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    title_en: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     author_display_name: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     is_anonymous: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     short_content: Mapped[str] = mapped_column(Text, nullable=False)
+    short_content_vi: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    short_content_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    content_vi: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    content_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     media_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="PENDING", nullable=False, index=True)
     reviewed_by: Mapped[Optional[uuid.UUID]] = mapped_column(

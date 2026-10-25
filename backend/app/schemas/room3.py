@@ -62,11 +62,16 @@ class Room3RibbonListResponse(BaseModel):
 class Room3RibbonDetail(BaseModel):
     id: uuid.UUID
     room_id: int
+    original_language: str = "vi"
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     author_display_name: str
     tag_category: Optional[str] = None
     color_code: Optional[str] = None
     content: str
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     reactions: Room3Reactions
     has_received_energy: bool = False
     view_count: int
@@ -110,6 +115,7 @@ class Room3EnergyResponseData(BaseModel):
 
 
 class Room3CreateRibbonRequest(BaseModel):
+    original_language: str = Field("vi", pattern="^(vi|en)$", description="Ngôn ngữ bài viết gốc: vi hoặc en")
     author_display_name: Optional[str] = None
     title: str
     tag_category: str

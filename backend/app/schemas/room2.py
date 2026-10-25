@@ -58,9 +58,14 @@ class Room2LanternListResponse(BaseModel):
 
 class Room2LanternDetail(BaseModel):
     id: uuid.UUID
+    original_language: str = "vi"
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     author_display_name: str
     content: str
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     media_url: Optional[str] = None
     visibility: str
     target_date: Optional[datetime] = None
@@ -84,6 +89,7 @@ class Room2LanternDetail(BaseModel):
 
 
 class Room2CreateLanternRequest(BaseModel):
+    original_language: str = Field("vi", pattern="^(vi|en)$", description="Ngôn ngữ bài viết gốc: vi hoặc en")
     author_display_name: Optional[str] = None
     title: str
     short_content: str

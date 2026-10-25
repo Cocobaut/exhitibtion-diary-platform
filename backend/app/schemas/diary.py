@@ -71,9 +71,14 @@ class DiaryListResponse(BaseModel):
 class DiaryDetail(BaseModel):
     id: uuid.UUID
     entry_date: date
+    original_language: str = "vi"
     title: Optional[str] = None
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     mood: Optional[str] = None
     content: str
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     media_urls: List[str] = Field(default_factory=list)
     is_public: bool
     is_approved: bool
@@ -98,6 +103,7 @@ class DiaryDetail(BaseModel):
 
 class CreateDiaryRequest(BaseModel):
     entry_date: Optional[date] = None
+    original_language: str = Field("vi", pattern="^(vi|en)$", description="Ngôn ngữ bài viết gốc: vi hoặc en")
     title: Optional[str] = None
     mood: Optional[str] = None
     content: str
@@ -121,6 +127,7 @@ class CreateDiaryRequest(BaseModel):
 class CreateDiaryResponseData(BaseModel):
     id: uuid.UUID
     entry_date: date
+    original_language: str = "vi"
     title: Optional[str] = None
     mood: Optional[str] = None
     is_public: bool
@@ -206,9 +213,14 @@ class CommunityDiaryListResponse(BaseModel):
 class CommunityDiaryDetail(BaseModel):
     id: uuid.UUID
     entry_date: date
+    original_language: str = "vi"
     title: Optional[str] = None
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     mood: Optional[str] = None
     content: str
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     media_urls: List[str] = Field(default_factory=list)
     author: CommunityAuthorInfo
     reactions: CommunityDiaryReactions

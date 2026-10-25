@@ -10,10 +10,16 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class StudioPublishArtworkRequest(BaseModel):
     room_id: int = Field(..., ge=1, le=3, description="Phòng triển lãm 1 (Đổ vỡ), 2 (Hy vọng), 3 (Thông điệp)")
-    title: str = Field(..., min_length=1, max_length=150, description="Tiêu đề tác phẩm")
+    title: Optional[str] = Field(None, max_length=150, description="Tiêu đề tác phẩm")
+    title_vi: Optional[str] = Field(None, max_length=150, description="Tiêu đề tiếng Việt")
+    title_en: Optional[str] = Field(None, max_length=150, description="Tiêu đề tiếng Anh")
     author_display_name: Optional[str] = Field("Triển Lãm Ký Ức (Ban Quản Trị)", max_length=50)
-    short_content: str = Field(..., min_length=1, description="Đoạn trích tóm tắt")
-    content: str = Field(..., min_length=1, description="Nội dung đầy đủ của tác phẩm")
+    short_content: Optional[str] = Field(None, description="Đoạn trích tóm tắt")
+    short_content_vi: Optional[str] = Field(None, description="Tóm tắt tiếng Việt")
+    short_content_en: Optional[str] = Field(None, description="Tóm tắt tiếng Anh")
+    content: Optional[str] = Field(None, description="Nội dung đầy đủ của tác phẩm")
+    content_vi: Optional[str] = Field(None, description="Nội dung tiếng Việt")
+    content_en: Optional[str] = Field(None, description="Nội dung tiếng Anh")
     media_url: Optional[str] = None
     is_anonymous: bool = False
 
@@ -30,6 +36,8 @@ class StudioPublishArtworkData(BaseModel):
     id: uuid.UUID
     room_id: int
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     status: str
     author_display_name: Optional[str] = None
     media_url: Optional[str] = None

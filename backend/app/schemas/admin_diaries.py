@@ -31,9 +31,14 @@ class ApprovedDiaryAuthor(BaseModel):
 class PendingDiaryItem(BaseModel):
     id: uuid.UUID
     entry_date: date
+    original_language: str = "vi"
     title: Optional[str] = None
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     mood: Optional[str] = None
     content: str
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     media_urls: List[str] = []
     author: PendingDiaryAuthor
     created_at: datetime
@@ -57,10 +62,19 @@ class PendingDiariesData(BaseModel):
 # 10.2 Approve Diary
 # -----------------------------------------------------------------------------
 
+class ApproveDiaryRequest(BaseModel):
+    title_vi: Optional[str] = Field(None, max_length=150, description="Tiêu đề tiếng Việt")
+    title_en: Optional[str] = Field(None, max_length=150, description="Tiêu đề tiếng Anh")
+    content_vi: Optional[str] = Field(None, description="Nội dung tiếng Việt")
+    content_en: Optional[str] = Field(None, description="Nội dung tiếng Anh")
+
+
 class ApproveDiaryData(BaseModel):
     diary_id: uuid.UUID
     is_public: bool
     is_approved: bool
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     updated_at: datetime
 
 

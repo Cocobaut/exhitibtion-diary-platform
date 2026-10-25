@@ -6,6 +6,7 @@ from app.api.deps import get_db, require_admin
 from app.core.responses import ok
 from app.models.user import User
 from app.schemas.admin_diaries import (
+    ApproveDiaryRequest,
     RejectDiaryRequest,
     RevokeDiaryRequest,
 )
@@ -45,6 +46,7 @@ async def get_pending_diaries(
 @router.patch("/{diary_id}/approve", status_code=status.HTTP_200_OK)
 async def approve_diary(
     diary_id: str,
+    payload: Optional[ApproveDiaryRequest] = None,
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
@@ -53,6 +55,7 @@ async def approve_diary(
         db=db,
         admin=admin,
         diary_id_raw=diary_id,
+        payload=payload,
     )
     return ok(
         message="Đã phê duyệt bài nhật ký hiển thị lên Tab Cộng đồng",

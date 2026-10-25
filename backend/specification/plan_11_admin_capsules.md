@@ -40,6 +40,8 @@ Tham số `capsule_id`: số nguyên `int` (BIGINT).
       {
         "id": 104,
         "message": "Dù hôm nay có u ám thế nào, mặt trời vẫn sẽ mọc vào sáng mai. Bạn đã làm rất tốt rồi.",
+        "message_vi": "Dù hôm nay có u ám thế nào, mặt trời vẫn sẽ mọc vào sáng mai. Bạn đã làm rất tốt rồi.",
+        "message_en": "No matter how gloomy today is, the sun will rise tomorrow. You did very well.",
         "category": "HEALING",
         "draw_count": 512,
         "is_approved": true,
@@ -61,14 +63,16 @@ Tham số `capsule_id`: số nguyên `int` (BIGINT).
 **Request Body**
 ```json
 {
-  "message": "Bạn không cần phải hoàn hảo để bắt đầu, nhưng bạn phải bắt đầu để trở nên hoàn thiện hơn.",
+  "message_vi": "Bạn không cần phải hoàn hảo để bắt đầu, nhưng bạn phải bắt đầu để trở nên hoàn thiện hơn.",
+  "message_en": "You don't have to be perfect to start, but you have to start to become better.",
   "category": "COURAGE",
   "is_approved": true
 }
 ```
 **Logic**:
-1. Tự động gán: `author_id = admin.id`, `author_role = 'ADMIN'`, `draw_count = 0`.
-2. `INSERT INTO message_capsules (...) RETURNING *`.
+1. Bắt buộc nhập đầy đủ cả 2 bản `message_vi` và `message_en`. Tự động đồng bộ `message = message_vi`.
+2. Tự động gán: `author_id = admin.id`, `author_role = 'ADMIN'`, `draw_count = 0`.
+3. `INSERT INTO message_capsules (...) RETURNING *`.
 
 **Response 201**
 ```json
@@ -78,6 +82,8 @@ Tham số `capsule_id`: số nguyên `int` (BIGINT).
   "data": {
     "id": 129,
     "message": "Bạn không cần phải hoàn hảo để bắt đầu, nhưng bạn phải bắt đầu để trở nên hoàn thiện hơn.",
+    "message_vi": "Bạn không cần phải hoàn hảo để bắt đầu, nhưng bạn phải bắt đầu để trở nên hoàn thiện hơn.",
+    "message_en": "You don't have to be perfect to start, but you have to start to become better.",
     "category": "COURAGE",
     "author_role": "ADMIN",
     "is_approved": true,
@@ -91,11 +97,12 @@ Tham số `capsule_id`: số nguyên `int` (BIGINT).
 **Request Body**
 ```json
 {
-  "message": "Bạn không cần phải hoàn hảo để bắt đầu, hãy dũng cảm bước đi từ ngày hôm nay.",
+  "message_vi": "Bạn không cần phải hoàn hảo để bắt đầu, hãy dũng cảm bước đi từ ngày hôm nay.",
+  "message_en": "You don't have to be perfect to start, be brave and take the first step today.",
   "category": "COURAGE"
 }
 ```
-**Logic**: Cập nhật thông điệp và chủ đề theo `capsule_id`.
+**Logic**: Cập nhật thông điệp song ngữ và chủ đề theo `capsule_id`.
 
 **Response 200**
 ```json
@@ -105,6 +112,8 @@ Tham số `capsule_id`: số nguyên `int` (BIGINT).
   "data": {
     "id": 129,
     "message": "Bạn không cần phải hoàn hảo để bắt đầu, hãy dũng cảm bước đi từ ngày hôm nay.",
+    "message_vi": "Bạn không cần phải hoàn hảo để bắt đầu, hãy dũng cảm bước đi từ ngày hôm nay.",
+    "message_en": "You don't have to be perfect to start, be brave and take the first step today.",
     "category": "COURAGE",
     "updated_at": "2026-10-24T23:47:00Z"
   }

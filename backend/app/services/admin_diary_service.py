@@ -12,6 +12,7 @@ from app.models.diary_interaction import DiaryInteraction
 from app.models.user import User
 from app.schemas.admin_diaries import (
     ApproveDiaryData,
+    ApproveDiaryRequest,
     ApprovedDiariesData,
     ApprovedDiaryAuthor,
     ApprovedDiaryItem,
@@ -79,9 +80,14 @@ class AdminDiaryService:
                 PendingDiaryItem(
                     id=d.id,
                     entry_date=d.entry_date,
+                    original_language=d.original_language or "vi",
                     title=d.title,
+                    title_vi=d.title_vi,
+                    title_en=d.title_en,
                     mood=d.mood,
                     content=d.content,
+                    content_vi=d.content_vi,
+                    content_en=d.content_en,
                     media_urls=d.media_urls or [],
                     author=author_info,
                     created_at=d.created_at,
@@ -103,6 +109,7 @@ class AdminDiaryService:
         db: AsyncSession,
         admin: User,
         diary_id_raw: str,
+        payload: Optional[ApproveDiaryRequest] = None,
     ) -> ApproveDiaryData:
         """10.2 Phê duyệt bài nhật ký hiển thị lên Tab Cộng đồng."""
         diary_id = AdminDiaryService.parse_diary_id(diary_id_raw)
@@ -116,6 +123,29 @@ class AdminDiaryService:
             )
 
         now = datetime.now(timezone.utc)
+
+        # Validation & update bilingual content if payload provided
+        if payload:
+            has_vi = bool(payload.title_vi or payload.content_vi)
+            has_en = bool(payload.title_en or payload.content_en)
+            if (has_vi and not has_en) or (has_en and not has_vi):
+                raise AppException(
+                    status_code=400,
+                    error_code="INCOMPLETE_BILINGUAL_CONTENT",
+                    message="Vui lòng hoàn thiện đầy đủ cả bản tiếng Việt và tiếng Anh trước khi phê duyệt"
+                )
+
+            if payload.title_vi is not None:
+                diary.title_vi = payload.title_vi
+                diary.title = payload.title_vi
+            if payload.title_en is not None:
+                diary.title_en = payload.title_en
+            if payload.content_vi is not None:
+                diary.content_vi = payload.content_vi
+                diary.content = payload.content_vi
+            if payload.content_en is not None:
+                diary.content_en = payload.content_en
+
         diary.is_approved = True
         diary.updated_at = now
 
@@ -138,6 +168,8 @@ class AdminDiaryService:
             diary_id=diary.id,
             is_public=diary.is_public,
             is_approved=diary.is_approved,
+            title_vi=diary.title_vi,
+            title_en=diary.title_en,
             updated_at=diary.updated_at,
         )
 

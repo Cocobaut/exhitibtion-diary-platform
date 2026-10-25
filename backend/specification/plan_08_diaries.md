@@ -78,9 +78,14 @@ Router: `APIRouter(prefix="/diaries", tags=["Diaries"])`.
   "data": {
     "id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
     "entry_date": "2026-10-24",
+    "original_language": "vi",
     "title": "Một buổi chiều tĩnh lặng bên tách trà",
+    "title_vi": "Một buổi chiều tĩnh lặng bên tách trà",
+    "title_en": "A quiet afternoon with tea",
     "mood": "calm",
     "content": "Toàn văn nội dung nhật ký...",
+    "content_vi": "Toàn văn nội dung nhật ký...",
+    "content_en": "Full diary content in English...",
     "media_urls": ["https://cdn.exhibition.com/diaries/tea-cup.webp"],
     "is_public": false,
     "is_approved": true,
@@ -96,6 +101,7 @@ Router: `APIRouter(prefix="/diaries", tags=["Diaries"])`.
 ```json
 {
   "entry_date": "2026-10-24",
+  "original_language": "vi",
   "title": "Lời cảm ơn gửi đến những ngày đã qua",
   "mood": "grateful",
   "content": "Cảm ơn những thất bại...",
@@ -105,8 +111,10 @@ Router: `APIRouter(prefix="/diaries", tags=["Diaries"])`.
 }
 ```
 **Quy tắc nghiệp vụ**:
+- `original_language`: enum `vi` hoặc `en` (mặc định `vi`). Gán bản gốc vào cột tương ứng (`title_vi`/`content_vi` hoặc `title_en`/`content_en`).
 - Nếu `is_public = FALSE`: Tự động gán `is_approved = TRUE` (Nhật ký riêng tư không cần duyệt). Message: `"Lưu nhật ký riêng tư thành công"`.
 - Nếu `is_public = TRUE`: Tự động gán `is_approved = FALSE` (Chờ Admin duyệt trước khi hiển thị ra Tab Cộng đồng). Message: `"Lưu nhật ký thành công! Bài viết đã được đưa vào hàng đợi kiểm duyệt để hiển thị trên Tab Cộng đồng."`.
+  Khi Admin duyệt bài đăng công khai, Admin sẽ biên tập bổ sung ngôn ngữ còn lại.
 
 **Response 201**
 ```json

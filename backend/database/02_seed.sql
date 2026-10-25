@@ -98,8 +98,8 @@ SET nickname = EXCLUDED.nickname, bio = EXCLUDED.bio;
 -- 3. BẢNG: artworks (5 Tác phẩm trong các phòng triển lãm)
 -- ====================================================================
 INSERT INTO artworks (
-    id, user_id, room_id, title, author_display_name, is_anonymous, 
-    short_content, content, media_url, status, reviewed_by, reviewed_at, 
+    id, user_id, room_id, original_language, title, title_vi, title_en, author_display_name, is_anonymous, 
+    short_content, short_content_vi, short_content_en, content, content_vi, content_en, media_url, status, reviewed_by, reviewed_at, 
     admin_note, target_date, is_opened, visibility, tag_category, color_code, view_count
 )
 VALUES 
@@ -107,11 +107,18 @@ VALUES
         'c0000000-0000-0000-0000-000000000001',
         'b0000000-0000-0000-0000-000000000001',
         1,
+        'vi',
         'Những mảnh vỡ sau kỳ thi đại học',
+        'Những mảnh vỡ sau kỳ thi đại học',
+        'Broken Pieces After the University Exam',
         'Ẩn danh',
         TRUE,
         'Cảm giác vụn vỡ khi trượt nguyện vọng 1 đã khiến tôi thu mình suốt nhiều tháng...',
+        'Cảm giác vụn vỡ khi trượt nguyện vọng 1 đã khiến tôi thu mình suốt nhiều tháng...',
+        'The shattered feeling of failing my first choice made me retreat for months...',
         'Cảm giác vụn vỡ khi trượt nguyện vọng 1 đã khiến tôi thu mình suốt nhiều tháng. Từng kỳ vọng của gia đình như tảng đá đè nặng lên vai. Nhưng hôm nay, tôi quyết định đối diện và chấp nhận vết nứt này như một phần của hành trình trưởng thành.',
+        'Cảm giác vụn vỡ khi trượt nguyện vọng 1 đã khiến tôi thu mình suốt nhiều tháng. Từng kỳ vọng của gia đình như tảng đá đè nặng lên vai. Nhưng hôm nay, tôi quyết định đối diện và chấp nhận vết nứt này như một phần của hành trình trưởng thành.',
+        'The shattered feeling of missing my top choice made me withdraw for months. Every expectation from family weighed like a boulder. But today, I decide to face and embrace this fracture as part of growing up.',
         'https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=600&q=80',
         'APPROVED',
         'a0000000-0000-0000-0000-000000000001',
@@ -128,11 +135,18 @@ VALUES
         'c0000000-0000-0000-0000-000000000002',
         'b0000000-0000-0000-0000-000000000002',
         2,
+        'vi',
         'Nguyện ước gửi cánh hạc giấy',
+        'Nguyện ước gửi cánh hạc giấy',
+        'Wishes Sent with Paper Cranes',
         'Hoàng Nam',
         FALSE,
         'Gửi vào tương lai lời chúc cho bản thân kiên định với ngành Khoa học Máy tính.',
+        'Gửi vào tương lai lời chúc cho bản thân kiên định với ngành Khoa học Máy tính.',
+        'Sending into the future my wish to remain steadfast in Computer Science.',
         'Tôi đã gấp 100 con hạc giấy trước ngày nhận kết quả học bổng. Hy vọng ngọn đèn này sẽ thắp sáng ước mơ trở thành kỹ sư công nghệ cống hiến cho xã hội.',
+        'Tôi đã gấp 100 con hạc giấy trước ngày nhận kết quả học bổng. Hy vọng ngọn đèn này sẽ thắp sáng ước mơ trở thành kỹ sư công nghệ cống hiến cho xã hội.',
+        'I folded 100 paper cranes before the scholarship announcement. May this lantern illuminate my dream of becoming an engineer dedicated to society.',
         'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80',
         'APPROVED',
         'a0000000-0000-0000-0000-000000000001',
@@ -149,11 +163,18 @@ VALUES
         'c0000000-0000-0000-0000-000000000003',
         'b0000000-0000-0000-0000-000000000003',
         3,
+        'vi',
         'Bạn không hề đơn độc',
+        'Bạn không hề đơn độc',
+        'You Are Never Alone',
         'Lan Anh',
         FALSE,
         'Nếu bạn đang cảm thấy mệt mỏi, hãy hít thở thật sâu và nhớ rằng luôn có người ủng hộ bạn.',
+        'Nếu bạn đang cảm thấy mệt mỏi, hãy hít thở thật sâu và nhớ rằng luôn có người ủng hộ bạn.',
+        'If you are feeling tired, take a deep breath and remember that someone is always cheering for you.',
         'Một chiếc ôm ấm áp gửi tới bất kỳ ai đang cảm thấy chênh vênh giữa dòng đời. Hãy nhớ rằng bầu trời sau cơn mưa bao giờ cũng rực rỡ nhất.',
+        'Một chiếc ôm ấm áp gửi tới bất kỳ ai đang cảm thấy chênh vênh giữa dòng đời. Hãy nhớ rằng bầu trời sau cơn mưa bao giờ cũng rực rỡ nhất.',
+        'A warm hug to anyone feeling adrift in life. Remember that the sky after the rain is always the most radiant.',
         'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=80',
         'APPROVED',
         'a0000000-0000-0000-0000-000000000002',
@@ -170,11 +191,18 @@ VALUES
         'c0000000-0000-0000-0000-000000000004',
         'b0000000-0000-0000-0000-000000000001',
         4,
+        'vi',
         'Chiều mưa bên góc quán quen',
+        'Chiều mưa bên góc quán quen',
+        'Rainy Afternoon at My Usual Spot',
         'Minh Tâm',
         FALSE,
         'Tách trà nóng và tiếng mưa rơi xoa dịu đi những căng thẳng tích tụ.',
+        'Tách trà nóng và tiếng mưa rơi xoa dịu đi những căng thẳng tích tụ.',
+        'A warm cup of tea and the sound of falling rain soothing accumulated stress.',
         'Ngồi bên khung cửa sổ nhìn giọt mưa đọng lại trên mặt kính, cảm nhận sự chậm lại của nhịp sống. Tự cho phép bản thân nghỉ ngơi là bước đầu tiên để chữa lành.',
+        'Ngồi bên khung cửa sổ nhìn giọt mưa đọng lại trên mặt kính, cảm nhận sự chậm lại của nhịp sống. Tự cho phép bản thân nghỉ ngơi là bước đầu tiên để chữa lành.',
+        'Sitting by the window watching raindrops settle on the glass, feeling the slow pace of life. Allowing oneself to rest is the first step toward healing.',
         'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=600&q=80',
         'APPROVED',
         'a0000000-0000-0000-0000-000000000002',
@@ -191,11 +219,18 @@ VALUES
         'c0000000-0000-0000-0000-000000000005',
         'b0000000-0000-0000-0000-000000000002',
         5,
+        'vi',
         'Lời cảm ơn gửi người thầy đầu tiên',
+        'Lời cảm ơn gửi người thầy đầu tiên',
+        'Gratitude to My First Teacher',
         'Hoàng Nam',
         FALSE,
         'Cảm ơn thầy đã dạy con cách đứng dậy sau những lần vấp ngã.',
+        'Cảm ơn thầy đã dạy con cách đứng dậy sau những lần vấp ngã.',
+        'Thank you teacher for showing me how to stand up after falling.',
         'Con vẫn nhớ bài học đầu tiên thầy dạy: Điểm số không định nghĩa giá trị con người em. Lời động viên ấy đã theo con suốt những năm tháng đại học.',
+        'Con vẫn nhớ bài học đầu tiên thầy dạy: Điểm số không định nghĩa giá trị con người em. Lời động viên ấy đã theo con suốt những năm tháng đại học.',
+        'I still remember your first lesson: Grades do not define your worth. That encouragement has stayed with me through university years.',
         'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80',
         'PENDING',
         NULL,
@@ -251,14 +286,19 @@ ON CONFLICT (artwork_id, user_id, reaction_type) DO NOTHING;
 -- 5. BẢNG: diaries (5 Nhật ký người dùng)
 -- ====================================================================
 INSERT INTO diaries (
-    id, user_id, title, content, mood, media_urls, is_encrypted, is_public, is_approved, entry_date
+    id, user_id, original_language, title, title_vi, title_en, content, content_vi, content_en, mood, media_urls, is_encrypted, is_public, is_approved, entry_date
 )
 VALUES 
     (
         'e0000000-0000-0000-0000-000000000001',
         'b0000000-0000-0000-0000-000000000001',
+        'vi',
         'Một ngày nhiều suy ngẫm',
+        'Một ngày nhiều suy ngẫm',
+        'A Day of Deep Reflection',
         'Hôm nay dành trọn buổi tối để đọc cuốn sách yêu thích. Cảm thấy lòng dịu lại sau tuần làm việc mệt mỏi.',
+        'Hôm nay dành trọn buổi tối để đọc cuốn sách yêu thích. Cảm thấy lòng dịu lại sau tuần làm việc mệt mỏi.',
+        'Spent the entire evening reading my favorite book today. Feeling serene and recharged after a grueling workweek.',
         'Bình yên',
         '["https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80"]'::jsonb,
         FALSE,
@@ -269,8 +309,13 @@ VALUES
     (
         'e0000000-0000-0000-0000-000000000002',
         'b0000000-0000-0000-0000-000000000001',
+        'vi',
         'Ghi chú mục tiêu cá nhân',
+        'Ghi chú mục tiêu cá nhân',
+        'Notes on Personal Goals',
         'Tự nhủ phải chăm chỉ tập thể dục vào mỗi sáng và không thức khuya nữa.',
+        'Tự nhủ phải chăm chỉ tập thể dục vào mỗi sáng và không thức khuya nữa.',
+        'Reminding myself to exercise diligently every morning and stop staying up late.',
         'Quyết tâm',
         '[]'::jsonb,
         TRUE,
@@ -281,8 +326,13 @@ VALUES
     (
         'e0000000-0000-0000-0000-000000000003',
         'b0000000-0000-0000-0000-000000000002',
+        'vi',
         'Báo cáo tiến độ hoàn thành',
+        'Báo cáo tiến độ hoàn thành',
+        'Progress Report Completed',
         'Cuối cùng cũng nộp xong đồ án kỳ này, cảm giác như trút được gánh nặng khổng lồ!',
+        'Cuối cùng cũng nộp xong đồ án kỳ này, cảm giác như trút được gánh nặng khổng lồ!',
+        'Finally submitted my term project, feels like a huge weight lifted off my shoulders!',
         'Hạnh phúc',
         '["https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=400&q=80"]'::jsonb,
         FALSE,
@@ -293,8 +343,13 @@ VALUES
     (
         'e0000000-0000-0000-0000-000000000004',
         'b0000000-0000-0000-0000-000000000003',
+        'vi',
         'Hương hoa sữa đầu mùa',
+        'Hương hoa sữa đầu mùa',
+        'Early Season Milk Flower Fragrance',
         'Đi dạo trên con đường thân quen, mùi hoa thoang thoảng làm nhớ về những ký ức tuổi học trò.',
+        'Đi dạo trên con đường thân quen, mùi hoa thoang thoảng làm nhớ về những ký ức tuổi học trò.',
+        'Strolling along the familiar road, the subtle scent of milk flowers brings back fond school memories.',
         'Hoài niệm',
         '[]'::jsonb,
         FALSE,
@@ -305,8 +360,13 @@ VALUES
     (
         'e0000000-0000-0000-0000-000000000005',
         'b0000000-0000-0000-0000-000000000003',
+        'vi',
         'Bí mật riêng tư của tôi',
+        'Bí mật riêng tư của tôi',
+        'My Private Secret',
         'Có những nỗi niềm chưa thể nói thành lời với bất kỳ ai, xin gửi lại trang giấy này.',
+        'Có những nỗi niềm chưa thể nói thành lời với bất kỳ ai, xin gửi lại trang giấy này.',
+        'There are feelings that words cannot express to anyone, let them rest on this page.',
         'Trầm tư',
         '[]'::jsonb,
         TRUE,
@@ -356,13 +416,15 @@ ON CONFLICT (diary_id, user_id) DO NOTHING;
 -- ====================================================================
 -- 7. BẢNG: message_capsules (5 Thông điệp Máy nhả thông điệp)
 -- ====================================================================
-INSERT INTO message_capsules (id, author_id, author_role, message, category, is_approved, draw_count)
+INSERT INTO message_capsules (id, author_id, author_role, message, message_vi, message_en, category, is_approved, draw_count)
 VALUES 
     (
         1,
         'a0000000-0000-0000-0000-000000000001',
         'ADMIN',
         'Mọi vết nứt đều là nơi ánh sáng có thể len lỏi vào. Bạn đã làm rất tốt ngày hôm nay rồi!',
+        'Mọi vết nứt đều là nơi ánh sáng có thể len lỏi vào. Bạn đã làm rất tốt ngày hôm nay rồi!',
+        'Every crack is where the light gets in. You did very well today!',
         'HEALING',
         TRUE,
         15
@@ -372,6 +434,8 @@ VALUES
         'a0000000-0000-0000-0000-000000000001',
         'ADMIN',
         'Dũng cảm không phải là không sợ hãi, mà là bước tiếp ngay cả khi nỗi sợ vẫn còn đó.',
+        'Dũng cảm không phải là không sợ hãi, mà là bước tiếp ngay cả khi nỗi sợ vẫn còn đó.',
+        'Courage is not the absence of fear, but taking the next step even when fear remains.',
         'COURAGE',
         TRUE,
         28
@@ -381,6 +445,8 @@ VALUES
         'a0000000-0000-0000-0000-000000000001',
         'ADMIN',
         'Cơn bão nào rồi cũng sẽ qua, sau cơn mưa bầu trời sẽ lại trong xanh và ấm áp.',
+        'Cơn bão nào rồi cũng sẽ qua, sau cơn mưa bầu trời sẽ lại trong xanh và ấm áp.',
+        'Every storm will pass; after the rain, the sky will be bright and warm once more.',
         'PERSPECTIVE',
         TRUE,
         42
@@ -390,6 +456,8 @@ VALUES
         'a0000000-0000-0000-0000-000000000001',
         'ADMIN',
         'Hãy dịu dàng với chính mình, bạn đang tiến bộ hơn từng ngày dù đôi lúc không nhận ra.',
+        'Hãy dịu dàng với chính mình, bạn đang tiến bộ hơn từng ngày dù đôi lúc không nhận ra.',
+        'Be gentle with yourself; you are progressing each day even when you do not realize it.',
         'HEALING',
         TRUE,
         19
@@ -399,12 +467,14 @@ VALUES
         'a0000000-0000-0000-0000-000000000001',
         'ADMIN',
         'Mỗi bước chân nhỏ bé hôm nay đang vẽ nên con đường tuyệt vời của tương lai.',
+        'Mỗi bước chân nhỏ bé hôm nay đang vẽ nên con đường tuyệt vời của tương lai.',
+        'Every small step today is paving a wonderful path for tomorrow.',
         'COURAGE',
         TRUE,
         33
     )
 ON CONFLICT (id) DO UPDATE 
-SET message = EXCLUDED.message, category = EXCLUDED.category;
+SET message = EXCLUDED.message, message_vi = EXCLUDED.message_vi, message_en = EXCLUDED.message_en, category = EXCLUDED.category;
 
 SELECT setval(pg_get_serial_sequence('message_capsules', 'id'), coalesce(max(id), 1), max(id) IS NOT null) FROM message_capsules;
 

@@ -61,15 +61,47 @@ class AdminStudioService:
                 message="Tác phẩm phòng Đổ vỡ bắt buộc phải có ảnh nghệ thuật minh họa"
             )
 
+        # Bilingual consistency check: If bilingual fields are used, both VI and EN must be provided
+        has_bilingual = any([
+            payload.title_vi is not None,
+            payload.title_en is not None,
+            payload.content_vi is not None,
+            payload.content_en is not None,
+        ])
+        if has_bilingual:
+            if not payload.title_vi or not payload.title_en or not payload.content_vi or not payload.content_en:
+                raise AppException(
+                    status_code=400,
+                    error_code="INCOMPLETE_BILINGUAL_CONTENT",
+                    message="Vui lòng cung cấp đầy đủ cả bản tiếng Việt và tiếng Anh cho tiêu đề và nội dung tác phẩm"
+                )
+
         now = datetime.now(timezone.utc)
+        title_val = payload.title or payload.title_vi or ""
+        title_vi_val = payload.title_vi or payload.title
+        title_en_val = payload.title_en
+        short_val = payload.short_content or payload.short_content_vi or ""
+        short_vi_val = payload.short_content_vi or payload.short_content
+        short_en_val = payload.short_content_en
+        content_val = payload.content or payload.content_vi or ""
+        content_vi_val = payload.content_vi or payload.content
+        content_en_val = payload.content_en
+
         artwork = Artwork(
             user_id=admin.id,
             room_id=payload.room_id,
-            title=payload.title,
+            original_language="vi",
+            title=title_val,
+            title_vi=title_vi_val,
+            title_en=title_en_val,
             author_display_name=payload.author_display_name or "Triển Lãm Ký Ức (Ban Quản Trị)",
             is_anonymous=payload.is_anonymous,
-            short_content=payload.short_content,
-            content=payload.content,
+            short_content=short_val,
+            short_content_vi=short_vi_val,
+            short_content_en=short_en_val,
+            content=content_val,
+            content_vi=content_vi_val,
+            content_en=content_en_val,
             media_url=payload.media_url,
             status="APPROVED",
             reviewed_by=admin.id,
@@ -101,6 +133,8 @@ class AdminStudioService:
             id=artwork.id,
             room_id=artwork.room_id,
             title=artwork.title,
+            title_vi=artwork.title_vi,
+            title_en=artwork.title_en,
             status=artwork.status,
             author_display_name=artwork.author_display_name,
             media_url=artwork.media_url,

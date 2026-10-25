@@ -122,10 +122,17 @@ class AdminRoomService:
             items.append(
                 PendingArtworkDetail(
                     id=a.id,
+                    original_language=a.original_language or "vi",
                     title=a.title,
+                    title_vi=a.title_vi,
+                    title_en=a.title_en,
                     author_display_name=a.author_display_name,
                     short_content=a.short_content,
+                    short_content_vi=a.short_content_vi,
+                    short_content_en=a.short_content_en,
                     content=a.content,
+                    content_vi=a.content_vi,
+                    content_en=a.content_en,
                     media_url=a.media_url,
                     is_anonymous=a.is_anonymous,
                     target_date=a.target_date,
@@ -203,15 +210,45 @@ class AdminRoomService:
 
         now = datetime.now(timezone.utc)
 
-        # Update fields if provided
+        # Validation: If partial bilingual fields provided, ensure completeness
+        has_vi = bool(payload.title_vi or payload.content_vi or payload.short_content_vi)
+        has_en = bool(payload.title_en or payload.content_en or payload.short_content_en)
+        if (has_vi and not has_en) or (has_en and not has_vi):
+            raise AppException(
+                status_code=400,
+                error_code="INCOMPLETE_BILINGUAL_CONTENT",
+                message="Vui lòng hoàn thiện đầy đủ cả bản tiếng Việt và tiếng Anh trước khi phê duyệt"
+            )
+
+        # Update bilingual fields if provided
+        if payload.title_vi is not None:
+            artwork.title_vi = payload.title_vi
+        if payload.title_en is not None:
+            artwork.title_en = payload.title_en
+        if payload.short_content_vi is not None:
+            artwork.short_content_vi = payload.short_content_vi
+        if payload.short_content_en is not None:
+            artwork.short_content_en = payload.short_content_en
+        if payload.content_vi is not None:
+            artwork.content_vi = payload.content_vi
+        if payload.content_en is not None:
+            artwork.content_en = payload.content_en
+
+        # Update default fields if provided
         if payload.title is not None:
             artwork.title = payload.title
+        elif payload.title_vi is not None:
+            artwork.title = payload.title_vi
         if payload.author_display_name is not None:
             artwork.author_display_name = payload.author_display_name
         if payload.short_content is not None:
             artwork.short_content = payload.short_content
+        elif payload.short_content_vi is not None:
+            artwork.short_content = payload.short_content_vi
         if payload.content is not None:
             artwork.content = payload.content
+        elif payload.content_vi is not None:
+            artwork.content = payload.content_vi
         if payload.media_url is not None:
             artwork.media_url = payload.media_url
         if payload.tag_category is not None:
@@ -453,14 +490,33 @@ class AdminRoomService:
                 message="Không tìm thấy tác phẩm triển lãm"
             )
 
+        if payload.title_vi is not None:
+            artwork.title_vi = payload.title_vi
+        if payload.title_en is not None:
+            artwork.title_en = payload.title_en
+        if payload.short_content_vi is not None:
+            artwork.short_content_vi = payload.short_content_vi
+        if payload.short_content_en is not None:
+            artwork.short_content_en = payload.short_content_en
+        if payload.content_vi is not None:
+            artwork.content_vi = payload.content_vi
+        if payload.content_en is not None:
+            artwork.content_en = payload.content_en
+
         if payload.title is not None:
             artwork.title = payload.title
+        elif payload.title_vi is not None:
+            artwork.title = payload.title_vi
         if payload.author_display_name is not None:
             artwork.author_display_name = payload.author_display_name
         if payload.short_content is not None:
             artwork.short_content = payload.short_content
+        elif payload.short_content_vi is not None:
+            artwork.short_content = payload.short_content_vi
         if payload.content is not None:
             artwork.content = payload.content
+        elif payload.content_vi is not None:
+            artwork.content = payload.content_vi
         if payload.media_url is not None:
             artwork.media_url = payload.media_url
         if payload.tag_category is not None:

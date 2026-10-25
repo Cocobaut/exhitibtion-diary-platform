@@ -67,10 +67,16 @@ class CapsuleService:
         await db.commit()
         await db.refresh(draw)
 
+        # Select message based on language if available
+        msg_vi = capsule.message_vi if capsule.message_vi else capsule.message
+        msg_en = capsule.message_en if capsule.message_en else capsule.message
+
         return DrawCapsuleData(
             draw_id=draw.id,
             capsule_id=capsule.id,
-            message=capsule.message,
+            message=msg_vi,
+            message_vi=msg_vi,
+            message_en=msg_en,
             category=capsule.category,
             is_saved=draw.is_saved,
             drawn_at=draw.drawn_at,
@@ -142,6 +148,8 @@ class CapsuleService:
                 UserCapsuleDraw.id.label("draw_id"),
                 MessageCapsule.id.label("capsule_id"),
                 MessageCapsule.message,
+                MessageCapsule.message_vi,
+                MessageCapsule.message_en,
                 MessageCapsule.category,
                 UserCapsuleDraw.drawn_at,
             )
@@ -179,7 +187,9 @@ class CapsuleService:
             SavedCapsuleItem(
                 draw_id=r.draw_id,
                 capsule_id=r.capsule_id,
-                message=r.message,
+                message=r.message_vi if r.message_vi else r.message,
+                message_vi=r.message_vi if r.message_vi else r.message,
+                message_en=r.message_en if r.message_en else r.message,
                 category=r.category,
                 drawn_at=r.drawn_at,
             )

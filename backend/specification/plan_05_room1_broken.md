@@ -58,19 +58,39 @@ Object `reactions` luôn có đủ: `{ "HEART": n, "HUG": n, "SYMPATHY": n, "tot
 **Response 200**: `{ "success": true, "data": { "items": [...], "pagination": { "page", "limit", "total_items", "total_pages" } } }`
 Không trả `content`, `user_id`.
 
-### 5.2 `GET /rooms/1/artworks/{artwork_id}`
+### 5.2 `GET /rooms/1/artworks/{artwork_id}?lang=vi`
 **Logic**
 1. Tìm artwork `id = :id AND room_id = 1 AND status = 'APPROVED'`; không thấy → 404.
 2. `UPDATE artworks SET view_count = view_count + 1 WHERE id = :id RETURNING view_count` (nguyên tử; trả giá trị **sau khi tăng**).
-   - Lưu ý trigger `updated_at` sẽ chạy khi tăng view. Chấp nhận được; nếu muốn tránh, sửa trigger `WHEN (OLD.* IS DISTINCT FROM NEW.* )` bỏ qua cột `view_count` — không bắt buộc.
 3. Reactions + `my_reaction` như 5.1.
+4. Trả về cả các trường song ngữ `title_vi`, `title_en`, `short_content_vi`, `short_content_en`, `content_vi`, `content_en`. Trường `title`, `short_content`, `content` ưu tiên hiển thị theo `lang` (mặc định `vi`).
 
 **Response 200**
 ```json
-{ "success": true,
-  "data": { "id": "...", "room_id": 1, "title": "...", "author_display_name": "...", "is_anonymous": false,
-            "short_content": "...", "content": "...", "media_url": "...", "view_count": 343,
-            "reactions": { "HEART": 45, "HUG": 89, "SYMPATHY": 120, "total": 254 }, "my_reaction": "HUG", "created_at": "..." } }
+{
+  "success": true,
+  "data": {
+    "id": "...",
+    "room_id": 1,
+    "original_language": "vi",
+    "title": "...",
+    "title_vi": "Những mảnh vỡ...",
+    "title_en": "Broken pieces...",
+    "short_content": "...",
+    "short_content_vi": "...",
+    "short_content_en": "...",
+    "content": "...",
+    "content_vi": "...",
+    "content_en": "...",
+    "author_display_name": "...",
+    "is_anonymous": false,
+    "media_url": "...",
+    "view_count": 343,
+    "reactions": { "HEART": 45, "HUG": 89, "SYMPATHY": 120, "total": 254 },
+    "my_reaction": "HUG",
+    "created_at": "..."
+  }
+}
 ```
 **Lỗi**: 404 `ARTWORK_NOT_FOUND` — `"Không tìm thấy tác phẩm"`.
 
@@ -113,23 +133,34 @@ Không trả `content`, `user_id`.
 **Request**
 | Trường | Quy tắc |
 |---|---|
+| `original_language` | tuỳ chọn, enum `vi` hoặc `en`, mặc định `vi` |
 | `author_display_name` | tuỳ chọn, strip, ≤50 |
-| `title` | bắt buộc, strip, 3–150 |
-| `short_content` | bắt buộc, strip, 10–300 |
-| `content` | bắt buộc, strip, ≥30 ký tự, ≤20 000 |
+| `title` | bắt buộc, strip, 3–150 (theo `original_language`) |
+| `short_content` | bắt buộc, strip, 10–300 (theo `original_language`) |
+| `content` | bắt buộc, strip, ≥30 ký tự, ≤20 000 (theo `original_language`) |
 | `is_anonymous` | boolean, mặc định `false` |
 
 Các trường khác (`status`, `media_url`, `room_id`, `user_id`…) bị bỏ qua.
 
 **Logic**
 1. Rate limit: đếm artwork của user (mọi phòng) có `created_at > now() - ARTWORK_RATE_LIMIT_WINDOW` (mặc định 10 phút); ≥ `ARTWORK_RATE_LIMIT_MAX` (mặc định 3) → 429. Cấu hình trong `config.py`.
-2. `INSERT artworks(user_id, room_id=1, title, short_content, content, author_display_name, is_anonymous, status='PENDING', media_url=NULL, visibility='PUBLIC')`.
+2. `INSERT artworks(user_id, room_id=1, original_language, title, short_content, content, author_display_name, is_anonymous, status='PENDING', media_url=NULL, visibility='PUBLIC')`. Gán `title_vi = title` nếu `original_language == 'vi'` (hoặc `title_en = title` nếu `'en'`). Bản dịch còn lại sẽ do Admin biên tập ở khâu duyệt bài.
 
 **Response 201**
 ```json
-{ "success": true,
+{
+  "success": true,
   "message": "Tác phẩm của bạn đang được chuẩn bị, chúng mình sẽ thông báo trong hộp tin nhắn cho bạn sau khi tác phẩm hoàn thành",
-  "data": { "id": "<uuid>", "room_id": 1, "title": "...", "author_display_name": "Bụi Thời Gian", "status": "PENDING", "created_at": "..." } }
+  "data": {
+    "id": "<uuid>",
+    "room_id": 1,
+    "original_language": "vi",
+    "title": "...",
+    "author_display_name": "Bụi Thời Gian",
+    "status": "PENDING",
+    "created_at": "..."
+  }
+}
 ```
 `author_display_name` trong response = giá trị hiển thị theo plan_00 §6.6.
 

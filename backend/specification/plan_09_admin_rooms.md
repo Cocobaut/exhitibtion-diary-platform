@@ -91,21 +91,25 @@ Router: `APIRouter(prefix="/admin/rooms/{room_id}/artworks", tags=["Admin - Exhi
 **Request Body**
 ```json
 {
-  "title": "Bức thư gửi vào hư không (Đã biên tập)",
+  "title_vi": "Bức thư gửi vào hư không (Bản tiếng Việt)",
+  "title_en": "Letter into the void (English version)",
   "author_display_name": "Bụi Thời Gian",
-  "short_content": "Một câu chuyện chưa từng kể...",
-  "content": "Chúng tôi gặp nhau...",
+  "short_content_vi": "Một câu chuyện chưa từng kể...",
+  "short_content_en": "An untold story...",
+  "content_vi": "Chúng tôi gặp nhau vào một chiều mưa...",
+  "content_en": "We met on a rainy afternoon...",
   "media_url": "https://cdn.exhibition.com/artworks/2026/room-1/illus_9c8b7a6f.webp",
   "tag_category": null,
   "color_code": null
 }
 ```
 **Quy tắc nghiệp vụ**:
-1. Với `room_id = 1`: **Bắt buộc** phải có `media_url` (Phòng tranh). Thiếu → 400 `MISSING_MEDIA_URL`.
-2. Với `room_id = 2, 3`: `media_url` là tùy chọn. (Nếu `room_id = 3`, validate cặp `tag_category` và `color_code`).
-3. Cập nhật `artworks`: `status = 'APPROVED'`, `reviewed_by = admin.id`, `reviewed_at = CURRENT_TIMESTAMP`, cập nhật nội dung hiệu đính.
-4. **Tự động kích hoạt Notification**: Tạo thông báo `type = 'SYSTEM'`, `sender_id = admin.id`, `recipient_id = author_id`, tiêu đề: `"Tác phẩm của bạn đã được trưng bày!"`, nội dung chúc mừng và link `target_url = f"/rooms/{room_id}/artworks/{artwork_id}"`.
-5. **Ghi Audit Log**: `AuditLogService.log(action_type='APPROVE' hoặc 'APPROVE_AND_UPLOAD_MEDIA')`.
+1. **Yêu cầu Song ngữ bắt buộc**: Admin duyệt bài phải hoàn thiện đầy đủ cả bản tiếng Việt và tiếng Anh (`title_vi`, `title_en`, `short_content_vi`, `short_content_en`, `content_vi`, `content_en` không được để trống). Nếu thiếu 1 trong 2 ngôn ngữ → 400 `INCOMPLETE_BILINGUAL_CONTENT` (`"Vui lòng hoàn thiện đầy đủ cả bản tiếng Việt và tiếng Anh trước khi phê duyệt"`).
+2. Với `room_id = 1`: **Bắt buộc** phải có `media_url` (Phòng tranh). Thiếu → 400 `MISSING_MEDIA_URL`.
+3. Với `room_id = 2, 3`: `media_url` là tùy chọn. (Nếu `room_id = 3`, validate cặp `tag_category` và `color_code`).
+4. Cập nhật `artworks`: `status = 'APPROVED'`, `reviewed_by = admin.id`, `reviewed_at = CURRENT_TIMESTAMP`, cập nhật nội dung hiệu đính song ngữ (đồng bộ `title = title_vi`, `short_content = short_content_vi`, `content = content_vi`).
+5. **Tự động kích hoạt Notification**: Tạo thông báo `type = 'SYSTEM'`, `sender_id = admin.id`, `recipient_id = author_id`, tiêu đề: `"Tác phẩm của bạn đã được trưng bày!"`, nội dung chúc mừng và link `target_url = f"/rooms/{room_id}/artworks/{artwork_id}"`.
+6. **Ghi Audit Log**: `AuditLogService.log(action_type='APPROVE' hoặc 'APPROVE_AND_UPLOAD_MEDIA')`.
 
 **Response 200**
 ```json

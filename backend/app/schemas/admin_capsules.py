@@ -23,6 +23,8 @@ class CapsuleAuthorInfo(BaseModel):
 class AdminCapsuleItem(BaseModel):
     id: int
     message: str
+    message_vi: str = ""
+    message_en: str = ""
     category: str
     draw_count: int
     is_approved: bool
@@ -50,7 +52,9 @@ class AdminCapsulesListData(BaseModel):
 # -----------------------------------------------------------------------------
 
 class CreateCapsuleRequest(BaseModel):
-    message: str = Field(..., min_length=1, description="Nội dung thông điệp chữa lành")
+    message: Optional[str] = Field(None, description="Nội dung thông điệp (tùy chọn nếu đã có message_vi)")
+    message_vi: Optional[str] = Field(None, description="Nội dung thông điệp tiếng Việt")
+    message_en: Optional[str] = Field(None, description="Nội dung thông điệp tiếng Anh")
     category: str = Field("HEALING", pattern="^(HEALING|COURAGE|PERSPECTIVE)$", description="Chủ đề thông điệp")
     is_approved: bool = Field(True, description="Trạng thái kích hoạt thông điệp")
 
@@ -58,6 +62,8 @@ class CreateCapsuleRequest(BaseModel):
 class CreateCapsuleData(BaseModel):
     id: int
     message: str
+    message_vi: str = ""
+    message_en: str = ""
     category: str
     author_role: str
     is_approved: bool
@@ -70,13 +76,17 @@ class CreateCapsuleData(BaseModel):
 # -----------------------------------------------------------------------------
 
 class UpdateCapsuleRequest(BaseModel):
-    message: str = Field(..., min_length=1, description="Nội dung thông điệp mới")
+    message: Optional[str] = Field(None, description="Nội dung thông điệp mới")
+    message_vi: Optional[str] = Field(None, description="Nội dung thông điệp tiếng Việt")
+    message_en: Optional[str] = Field(None, description="Nội dung thông điệp tiếng Anh")
     category: str = Field("HEALING", pattern="^(HEALING|COURAGE|PERSPECTIVE)$", description="Chủ đề thông điệp")
 
 
 class UpdateCapsuleData(BaseModel):
     id: int
     message: str
+    message_vi: str = ""
+    message_en: str = ""
     category: str
     updated_at: datetime
 

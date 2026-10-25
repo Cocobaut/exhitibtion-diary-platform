@@ -114,9 +114,14 @@ class DiaryService:
         return {
             "id": diary.id,
             "entry_date": diary.entry_date,
+            "original_language": diary.original_language or "vi",
             "title": diary.title,
+            "title_vi": diary.title_vi,
+            "title_en": diary.title_en,
             "mood": diary.mood,
             "content": diary.content,
+            "content_vi": diary.content_vi,
+            "content_en": diary.content_en,
             "media_urls": diary.media_urls or [],
             "is_public": diary.is_public,
             "is_approved": diary.is_approved,
@@ -141,13 +146,29 @@ class DiaryService:
             msg = "Lưu nhật ký riêng tư thành công"
 
         entry_d = request.entry_date or date.today()
+        orig_lang = (request.original_language or "vi").strip().lower()
+        if orig_lang not in ("vi", "en"):
+            orig_lang = "vi"
+
+        title_val = request.title.strip() if request.title else None
+        content_val = request.content.strip()
+
+        title_vi = title_val if orig_lang == "vi" else None
+        title_en = title_val if orig_lang == "en" else None
+        content_vi = content_val if orig_lang == "vi" else None
+        content_en = content_val if orig_lang == "en" else None
 
         new_diary = Diary(
             user_id=current_user.id,
             entry_date=entry_d,
-            title=request.title.strip() if request.title else None,
+            original_language=orig_lang,
+            title=title_val,
+            title_vi=title_vi,
+            title_en=title_en,
             mood=request.mood.strip().lower() if request.mood else None,
-            content=request.content.strip(),
+            content=content_val,
+            content_vi=content_vi,
+            content_en=content_en,
             media_urls=request.media_urls or [],
             is_public=request.is_public,
             is_approved=is_approved,
@@ -160,6 +181,7 @@ class DiaryService:
         data = {
             "id": new_diary.id,
             "entry_date": new_diary.entry_date,
+            "original_language": new_diary.original_language,
             "title": new_diary.title,
             "mood": new_diary.mood,
             "is_public": new_diary.is_public,
@@ -419,9 +441,14 @@ class DiaryService:
         return {
             "id": diary.id,
             "entry_date": diary.entry_date,
+            "original_language": diary.original_language or "vi",
             "title": diary.title,
+            "title_vi": diary.title_vi,
+            "title_en": diary.title_en,
             "mood": diary.mood,
             "content": diary.content,
+            "content_vi": diary.content_vi,
+            "content_en": diary.content_en,
             "media_urls": diary.media_urls or [],
             "author": author_info,
             "reactions": rx_obj,

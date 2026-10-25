@@ -25,6 +25,8 @@ class DrawCapsuleData(BaseModel):
     draw_id: uuid.UUID
     capsule_id: int
     message: str
+    message_vi: str = ""
+    message_en: str = ""
     category: str
     is_saved: bool
     drawn_at: datetime
@@ -72,6 +74,8 @@ class SavedCapsuleItem(BaseModel):
     draw_id: uuid.UUID
     capsule_id: int
     message: str
+    message_vi: str = ""
+    message_en: str = ""
     category: str
     drawn_at: datetime
 

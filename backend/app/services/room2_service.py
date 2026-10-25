@@ -211,9 +211,14 @@ class Room2Service:
         message = "Lồng đèn đã hạ cánh. Chúc mừng bạn đã chạm tới bức thư tương lai!"
         data = {
             "id": artwork.id,
+            "original_language": artwork.original_language or "vi",
             "title": artwork.title,
+            "title_vi": artwork.title_vi,
+            "title_en": artwork.title_en,
             "author_display_name": author_name,
             "content": artwork.content,
+            "content_vi": artwork.content_vi,
+            "content_en": artwork.content_en,
             "media_url": artwork.media_url,
             "visibility": artwork.visibility,
             "target_date": target,
@@ -256,12 +261,24 @@ class Room2Service:
             status_val = "APPROVED"
             msg = "Lồng đèn hy vọng đã được thả bay lên bầu trời riêng của bạn!"
 
+        lang = getattr(request, "original_language", "vi") or "vi"
+        clean_title = request.title.strip()
+        clean_short = request.short_content.strip()
+        clean_content = request.content.strip()
+
         new_lantern = Artwork(
             user_id=current_user.id,
             room_id=ROOM_HOPE,
-            title=request.title.strip(),
-            short_content=request.short_content.strip(),
-            content=request.content.strip(),
+            original_language=lang,
+            title=clean_title,
+            title_vi=clean_title if lang == "vi" else None,
+            title_en=clean_title if lang == "en" else None,
+            short_content=clean_short,
+            short_content_vi=clean_short if lang == "vi" else None,
+            short_content_en=clean_short if lang == "en" else None,
+            content=clean_content,
+            content_vi=clean_content if lang == "vi" else None,
+            content_en=clean_content if lang == "en" else None,
             author_display_name=request.author_display_name.strip() if request.author_display_name else None,
             is_anonymous=request.is_anonymous,
             target_date=request.target_date,
@@ -277,6 +294,7 @@ class Room2Service:
         data = {
             "id": new_lantern.id,
             "room_id": new_lantern.room_id,
+            "original_language": new_lantern.original_language,
             "title": new_lantern.title,
             "visibility": new_lantern.visibility,
             "status": new_lantern.status,

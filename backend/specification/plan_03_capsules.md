@@ -37,9 +37,22 @@ Body: trống.
 
 **Response 200**
 ```json
-{ "success": true, "message": "Rút thông điệp thành công",
-  "data": { "draw_id": "<uuid>", "capsule_id": 104, "message": "Dù hôm nay...", "category": "HEALING", "is_saved": false, "drawn_at": "2026-10-24T16:45:10Z" } }
+{
+  "success": true,
+  "message": "Rút thông điệp thành công",
+  "data": {
+    "draw_id": "<uuid>",
+    "capsule_id": 104,
+    "message": "Dù hôm nay...",
+    "message_vi": "Dù hôm nay có khó khăn đến đâu...",
+    "message_en": "No matter how tough today is...",
+    "category": "HEALING",
+    "is_saved": false,
+    "drawn_at": "2026-10-24T16:45:10Z"
+  }
+}
 ```
+> *Ghi chú Song ngữ*: Hệ thống trả về cả `message_vi` và `message_en`. Trường `message` phản ánh nội dung tương ứng theo query param `?lang=vi|en` (mặc định là `vi`).
 **Lỗi**: 404 `CAPSULE_POOL_EMPTY` — `"Kho thông điệp hiện đang trống hoặc chưa có thông điệp nào được duyệt"`.
 
 ### 3.2 `PATCH /capsules/draws/{draw_id}/save`
@@ -79,9 +92,23 @@ LIMIT :limit OFFSET (:page-1)*:limit
 
 **Response 200**
 ```json
-{ "success": true,
-  "data": { "items": [ { "draw_id": "...", "capsule_id": 104, "message": "...", "category": "HEALING", "drawn_at": "..." } ],
-            "pagination": { "page": 1, "limit": 10, "total_items": 12, "total_pages": 2 } } }
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "draw_id": "...",
+        "capsule_id": 104,
+        "message": "...",
+        "message_vi": "...",
+        "message_en": "...",
+        "category": "HEALING",
+        "drawn_at": "..."
+      }
+    ],
+    "pagination": { "page": 1, "limit": 10, "total_items": 12, "total_pages": 2 }
+  }
+}
 ```
 
 ### 3.4 `DELETE /capsules/saved/{draw_id}`

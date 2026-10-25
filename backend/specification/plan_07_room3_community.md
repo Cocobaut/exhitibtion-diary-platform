@@ -90,11 +90,16 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
   "data": {
     "id": "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f",
     "room_id": 3,
+    "original_language": "vi",
     "title": "Bạn đã làm tốt hơn bạn nghĩ rất nhiều!",
+    "title_vi": "Bạn đã làm tốt hơn bạn nghĩ rất nhiều!",
+    "title_en": "You have done much better than you think!",
     "author_display_name": "Người Gieo Hạt",
     "tag_category": "ENCOURAGEMENT",
     "color_code": "#FFD700",
     "content": "Có những ngày bạn cảm thấy mệt mỏi...",
+    "content_vi": "Có những ngày bạn cảm thấy mệt mỏi...",
+    "content_en": "There are days when you feel exhausted...",
     "reactions": { "ENERGY": 142, "HEART": 98, "total": 240 },
     "has_received_energy": true,
     "view_count": 521,
@@ -146,6 +151,7 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
 **Request**
 ```json
 {
+  "original_language": "vi",
   "author_display_name": "Ánh Sáng Ban Mai",
   "title": "Mọi giông bão rồi sẽ tan",
   "tag_category": "HEALING",
@@ -155,12 +161,13 @@ Router: `APIRouter(prefix="/rooms/3", tags=["Room 3 - Community Tree"])`.
 }
 ```
 **Validation & Logic**
-1. Validate `tag_category` và `color_code` phải khớp chuẩn mục §3. Sai → 400 `INVALID_CATEGORY_COLOR`.
-2. Rate limit: tối đa 3 bài / 10 phút.
-3. Kiểm tra biến môi trường `ROOM3_AUTO_APPROVE` (trong `config.py`):
+1. `original_language`: enum `vi` hoặc `en`, mặc định `vi`.
+2. Validate `tag_category` và `color_code` phải khớp chuẩn mục §3. Sai → 400 `INVALID_CATEGORY_COLOR`.
+3. Rate limit: tối đa 3 bài / 10 phút.
+4. Kiểm tra biến môi trường `ROOM3_AUTO_APPROVE` (trong `config.py`):
    - Mặc định `FALSE`: lưu `status = 'PENDING'`, message: `"Dải thông điệp của bạn đang được chuẩn bị để treo lên cây, chúng mình sẽ thông báo qua hộp tin nhắn ngay khi hoàn tất!"`.
    - Nếu `TRUE`: lưu `status = 'APPROVED'`, message: `"Dải thông điệp đã được treo lên cây!"`.
-4. INSERT vào `artworks` với `room_id = 3`, `visibility = 'PUBLIC'`.
+5. INSERT vào `artworks` với `room_id = 3`, `visibility = 'PUBLIC'`. Gán giá trị gốc vào cột ngôn ngữ tương ứng (`title_vi` hoặc `title_en`). Khi admin duyệt, admin sẽ biên tập đủ 2 bản song ngữ.
 
 **Response 201**
 ```json

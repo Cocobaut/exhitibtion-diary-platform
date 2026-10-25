@@ -30,10 +30,17 @@ class PendingArtworkAuthor(BaseModel):
 
 class PendingArtworkDetail(BaseModel):
     id: uuid.UUID
+    original_language: str = "vi"
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     author_display_name: Optional[str] = None
     short_content: str
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
     content: str
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     media_url: Optional[str] = None
     is_anonymous: bool
     target_date: Optional[datetime] = None
@@ -73,9 +80,15 @@ class UploadArtworkImageResponse(BaseModel):
 
 class ApproveArtworkRequest(BaseModel):
     title: Optional[str] = Field(None, max_length=150)
+    title_vi: Optional[str] = Field(None, max_length=150)
+    title_en: Optional[str] = Field(None, max_length=150)
     author_display_name: Optional[str] = Field(None, max_length=50)
     short_content: Optional[str] = None
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
     content: Optional[str] = None
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     media_url: Optional[str] = None
     tag_category: Optional[str] = Field(None, max_length=30)
     color_code: Optional[str] = Field(None, max_length=10)
@@ -152,9 +165,15 @@ class ApprovedArtworksData(BaseModel):
 
 class EditArtworkRequest(BaseModel):
     title: Optional[str] = Field(None, max_length=150)
+    title_vi: Optional[str] = Field(None, max_length=150)
+    title_en: Optional[str] = Field(None, max_length=150)
     author_display_name: Optional[str] = Field(None, max_length=50)
     short_content: Optional[str] = None
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
     content: Optional[str] = None
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     media_url: Optional[str] = None
     tag_category: Optional[str] = Field(None, max_length=30)
     color_code: Optional[str] = Field(None, max_length=10)

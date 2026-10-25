@@ -24,8 +24,13 @@ class Diary(Base, TimestampMixin):
         nullable=False,
         index=True
     )
+    original_language: Mapped[str] = mapped_column(String(5), default="vi", nullable=False)
     title: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    title_vi: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    title_en: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    content_vi: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    content_en: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     mood: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     media_urls: Mapped[Optional[List[Any]]] = mapped_column(
         JSONB,

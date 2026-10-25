@@ -80,7 +80,9 @@ class AdminCapsuleService:
             items.append(
                 AdminCapsuleItem(
                     id=c.id,
-                    message=c.message,
+                    message=c.message_vi if c.message_vi else c.message,
+                    message_vi=c.message_vi if c.message_vi else c.message,
+                    message_en=c.message_en if c.message_en else c.message,
                     category=c.category,
                     draw_count=c.draw_count,
                     is_approved=c.is_approved,
@@ -115,10 +117,16 @@ class AdminCapsuleService:
         now = datetime.now(timezone.utc)
         author_role_val = admin.role if admin.role in (UserRole.ADMIN.value, UserRole.OWNER.value) else "ADMIN"
 
+        msg_vi = payload.message_vi or payload.message or ""
+        msg_en = payload.message_en or payload.message or ""
+        msg_main = payload.message or msg_vi
+
         new_capsule = MessageCapsule(
             author_id=admin.id,
             author_role=author_role_val,
-            message=payload.message,
+            message=msg_main,
+            message_vi=msg_vi,
+            message_en=msg_en,
             category=payload.category,
             is_approved=payload.is_approved,
             draw_count=0,
@@ -132,6 +140,8 @@ class AdminCapsuleService:
         return CreateCapsuleData(
             id=new_capsule.id,
             message=new_capsule.message,
+            message_vi=new_capsule.message_vi,
+            message_en=new_capsule.message_en,
             category=new_capsule.category,
             author_role=new_capsule.author_role or "ADMIN",
             is_approved=new_capsule.is_approved,
@@ -157,7 +167,15 @@ class AdminCapsuleService:
             )
 
         now = datetime.now(timezone.utc)
-        capsule.message = payload.message
+        if payload.message_vi is not None:
+            capsule.message_vi = payload.message_vi
+        if payload.message_en is not None:
+            capsule.message_en = payload.message_en
+        if payload.message is not None:
+            capsule.message = payload.message
+        elif payload.message_vi is not None:
+            capsule.message = payload.message_vi
+
         capsule.category = payload.category
         capsule.updated_at = now
 
@@ -167,6 +185,8 @@ class AdminCapsuleService:
         return UpdateCapsuleData(
             id=capsule.id,
             message=capsule.message,
+            message_vi=capsule.message_vi,
+            message_en=capsule.message_en,
             category=capsule.category,
             updated_at=capsule.updated_at,
         )

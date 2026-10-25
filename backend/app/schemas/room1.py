@@ -41,8 +41,13 @@ class PaginationInfo(BaseModel):
 
 class Room1ArtworkListItem(BaseModel):
     id: uuid.UUID
+    original_language: str = "vi"
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     short_content: str
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
     media_url: Optional[str] = None
     author_display_name: str
     is_anonymous: bool
@@ -70,11 +75,18 @@ class Room1ArtworkListResponse(BaseModel):
 class Room1ArtworkDetail(BaseModel):
     id: uuid.UUID
     room_id: int
+    original_language: str = "vi"
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
     author_display_name: str
     is_anonymous: bool
     short_content: str
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
     content: str
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
     media_url: Optional[str] = None
     view_count: int
     reactions: ReactionsSummary
@@ -145,6 +157,7 @@ class Room1SearchResponse(BaseModel):
 
 
 class Room1CreateArtworkRequest(BaseModel):
+    original_language: str = Field("vi", pattern="^(vi|en)$", description="Ngôn ngữ bài viết gốc: vi hoặc en")
     author_display_name: Optional[str] = None
     title: str
     short_content: str

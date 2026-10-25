@@ -75,7 +75,8 @@ Body trống. Dùng `get_optional_user`.
 **Response 200**
 ```json
 { "success": true, "message": "Lồng đèn đã hạ cánh. Chúc mừng bạn đã chạm tới bức thư tương lai!",
-  "data": { "id": "...", "title": "...", "author_display_name": "...", "content": "...", "media_url": "...",
+  "data": { "id": "...", "original_language": "vi", "title": "...", "title_vi": "...", "title_en": "...",
+            "author_display_name": "...", "content": "...", "content_vi": "...", "content_en": "...", "media_url": "...",
             "visibility": "PRIVATE", "target_date": "...", "is_opened": true, "view_count": 1, "created_at": "..." } }
 ```
 **Response 423** (raise `AppException(423, ...)`)
@@ -90,10 +91,11 @@ Body trống. Dùng `get_optional_user`.
 **Request**
 | Trường | Quy tắc |
 |---|---|
+| `original_language` | tuỳ chọn, enum `vi` hoặc `en`, mặc định `vi` |
 | `author_display_name` | tuỳ chọn, ≤50 |
-| `title` | bắt buộc, 3–150 |
-| `content` | bắt buộc, ≥10, ≤20 000 |
-| `short_content` | bắt buộc, 5–300 |
+| `title` | bắt buộc, 3–150 (theo `original_language`) |
+| `content` | bắt buộc, ≥10, ≤20 000 (theo `original_language`) |
+| `short_content` | bắt buộc, 5–300 (theo `original_language`) |
 | `target_date` | bắt buộc, ISO-8601 có timezone (không có TZ → coi là UTC), phải **> now()** |
 | `visibility` | `PUBLIC` \| `PRIVATE`, bắt buộc |
 | `is_anonymous` | boolean, mặc định false |
