@@ -1,0 +1,351 @@
+{
+  "info": {
+    "_postman_id": "91e6474d-0006-4000-8000-000000000006",
+    "name": "06. Phòng 2 - Lồng đèn Hy vọng (/api/v1/rooms/2)",
+    "description": "Postman Collection kiểm thử tự động Nhóm 6: Phòng 2 'Lồng đèn Hy vọng' theo đặc tả plan_06_room2_hope.md",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "lanternId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "[6.3] Thả lồng đèn công khai PUBLIC (POST /artworks)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Verify PUBLIC lantern is PENDING and save lanternId\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.status).to.eql(\"PENDING\");",
+              "    pm.expect(jsonData.data.visibility).to.eql(\"PUBLIC\");",
+              "    pm.expect(jsonData.data.room_id).to.eql(2);",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set(\"lanternId\", jsonData.data.id);",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Lời nhắn gửi tới năm 2030\",\n  \"author_display_name\": \"Nguyện Ước Xanh\",\n  \"is_anonymous\": false,\n  \"short_content\": \"Lời chúc gửi tương lai của bản thân và mọi người\",\n  \"content\": \"Hy vọng vào năm 2030, chúng ta đều đã trở thành phiên bản mạnh mẽ, hạnh phúc và bình yên hơn hôm nay rất nhiều.\",\n  \"target_date\": \"2030-01-01T00:00:00Z\",\n  \"visibility\": \"PUBLIC\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rooms/2/artworks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rooms",
+            "2",
+            "artworks"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[6.3] Thả lồng đèn riêng tư PRIVATE (POST /artworks)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201 Created\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Verify PRIVATE lantern is APPROVED automatically\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.status).to.eql(\"APPROVED\");",
+              "    pm.expect(jsonData.data.visibility).to.eql(\"PRIVATE\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Bức thư bí mật gửi chính tôi\",\n  \"author_display_name\": null,\n  \"is_anonymous\": false,\n  \"short_content\": \"Tâm sự riêng tư chỉ mình tôi được đọc\",\n  \"content\": \"Gửi tôi của ngày mai, hãy luôn nhớ rằng bạn đã cố gắng hết sức và xứng đáng được yêu thương.\",\n  \"target_date\": \"2028-12-31T23:59:59Z\",\n  \"visibility\": \"PRIVATE\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rooms/2/artworks",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rooms",
+            "2",
+            "artworks"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[6.1] Lấy danh sách lồng đèn bầu trời đêm (GET /artworks)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify lanterns list and computed time fields\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.items).to.be.an(\"array\");",
+              "    pm.expect(jsonData.data).to.have.property(\"total_lanterns\");",
+              "    if (jsonData.data.items.length > 0) {",
+              "        var item = jsonData.data.items[0];",
+              "        pm.expect(item).to.have.property(\"is_unlockable\");",
+              "        pm.expect(item).to.have.property(\"remaining_seconds\");",
+              "        pm.expect(item).to.not.have.property(\"content\");",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rooms/2/artworks?filter=all&limit=30",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rooms",
+            "2",
+            "artworks"
+          ],
+          "query": [
+            {
+              "key": "filter",
+              "value": "all"
+            },
+            {
+              "key": "limit",
+              "value": "30"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "[6.2-Lỗi 423] Mở lồng đèn đang khóa thời gian (POST /artworks/{id}/open)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 423 Locked\", function () {",
+              "    pm.response.to.have.status(423);",
+              "});",
+              "",
+              "pm.test(\"Verify TIME_CAPSULE_LOCKED error response\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(false);",
+              "    pm.expect(jsonData.error_code).to.eql(\"TIME_CAPSULE_LOCKED\");",
+              "    pm.expect(jsonData.data).to.have.property(\"remaining_seconds\");",
+              "    pm.expect(jsonData.data.remaining_seconds).to.be.above(0);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rooms/2/artworks/{{lanternId}}/open",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rooms",
+            "2",
+            "artworks",
+            "{{lanternId}}",
+            "open"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[6.2] Kéo thả & Mở lồng đèn thành công (POST /artworks/{id}/open)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Verify successful unlock (200 OK) when reached target_date\", function () {",
+              "    if (pm.response.code === 200) {",
+              "        var jsonData = pm.response.json();",
+              "        pm.expect(jsonData.success).to.eql(true);",
+              "        pm.expect(jsonData.data.is_opened).to.eql(true);",
+              "        pm.expect(jsonData.data).to.have.property(\"content\");",
+              "    }",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rooms/2/artworks/{{lanternId}}/open",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rooms",
+            "2",
+            "artworks",
+            "{{lanternId}}",
+            "open"
+          ]
+        }
+      }
+    },
+    {
+      "name": "[6.4] Tìm kiếm lồng đèn bầu trời đêm (GET /search)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200 OK\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Verify search response\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.data.items).to.be.an(\"array\");",
+              "    pm.expect(jsonData.data.pagination).to.have.property(\"total_hits\");",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/rooms/2/search?q=ước mơ&filter=all&page=1&limit=15",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "rooms",
+            "2",
+            "search"
+          ],
+          "query": [
+            {
+              "key": "q",
+              "value": "ước mơ"
+            },
+            {
+              "key": "filter",
+              "value": "all"
+            },
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "15"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
