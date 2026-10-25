@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Name of Feeling - UI mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Cinzel:wght@500;600&family=Be+Vietnam+Pro:wght@400;500;600&family=Lora:ital@0;1&family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+/* ---------- Review document shell (always light, independent of the in-app theme) ---------- */
+:root {
+  --d-bg: #FBF4EA; --d-surface: #FFFCF7; --d-sunken: #F3E6D3; --d-line: #E8D6BF; --d-ink: #2E1C17; --d-ink2: #6E5A4E; --d-acc: #7F1916; --d-gold: #C99A3B;
+  --serif: "Cormorant Garamond", Georgia, serif; --logo: "Cinzel", "Cormorant Garamond", serif;
+  --sans: "Be Vietnam Pro", system-ui, sans-serif; --book: "Lora", Georgia, serif; --hand: "Patrick Hand", cursive;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; background: var(--d-bg); color: var(--d-ink); font: 16px/1.6 var(--sans); font-variant-numeric: lining-nums; }
+h1, h2, h3, h4 { font-family: var(--serif); font-weight: 700; line-height: 1.15; margin: 0 0 .4em; }
+p { margin: 0 0 1em; }
+:where(p, h1, h2, h3, h4, li, td, th) { overflow-wrap: anywhere; }
+.doc { display: grid; grid-template-columns: 250px minmax(0, 1fr); min-height: 100vh; }
+.toc { position: sticky; top: 0; height: 100vh; overflow: auto; padding: 28px 20px; border-right: 1px solid var(--d-line); }
+.toc .brand { font-family: var(--serif); font-weight: 700; font-size: 1.15rem; }
+.toc .sub { font-size: .8rem; color: var(--d-ink2); margin-bottom: 16px; }
+.toc h4 { font-family: var(--sans); font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--d-ink2); margin: 18px 0 6px; }
+.toc a { display: block; color: var(--d-ink); text-decoration: none; font-size: .86rem; padding: 3px 8px; border-radius: 6px; }
+.toc a:hover { background: var(--d-sunken); }
+.main { padding: 40px 48px 120px; min-width: 0; }
+.wrap { max-width: 1120px; }
+.eyebrow { font-size: .72rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: var(--d-acc); margin-bottom: 8px; }
+.lede { font-size: 1.08rem; color: var(--d-ink2); max-width: 74ch; }
+section.part { margin-top: 64px; }
+section.part > h2 { font-size: 2.2rem; }
+.sec { margin-top: 44px; }
+.sec > h3 { font-size: 1.5rem; }
+.dcard { background: var(--d-surface); border: 1px solid var(--d-line); border-radius: 14px; box-shadow: 0 1px 2px rgba(46,28,23,.05), 0 8px 24px rgba(46,28,23,.07); }
+.pad { padding: 18px 20px; }
+.g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.g4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.bs { font-size: 14px; color: var(--d-ink2); line-height: 1.55; }
+table.t { width: 100%; border-collapse: collapse; font-size: .92rem; background: var(--d-surface); border: 1px solid var(--d-line); border-radius: 14px; overflow: hidden; }
+table.t th, table.t td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--d-line); vertical-align: top; }
+table.t th { background: var(--d-sunken); font-weight: 600; font-size: .8rem; letter-spacing: .04em; }
+table.t tr:last-child td { border-bottom: 0; }
+ul.clean { margin: 0; padding-left: 18px; } ul.clean li { margin: 4px 0; }
+.qitem { padding: 16px 20px; border-left: 4px solid var(--d-gold); }
+.qitem h4 { font-family: var(--sans); font-size: 1rem; margin-bottom: 6px; }
+.qitem p { margin: 0; color: var(--d-ink2); font-size: .92rem; }
+.qitem .rec { margin-top: 8px; color: var(--d-ink); }
+.qlist { display: grid; gap: 12px; }
+.swatches { display: flex; gap: 0; border-radius: 8px; overflow: hidden; height: 34px; margin: 10px 0; border: 1px solid var(--d-line); }
+.swatches i { flex: 1; display: block; }
+.theme-thumb { border-radius: 10px; overflow: hidden; border: 1px solid var(--d-line); }
+.screen-block { margin-top: 56px; }
+.screen-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+.screen-head h3 { margin: 0; font-size: 1.4rem; }
+.screen-head .id { font-family: ui-monospace, monospace; font-size: .8rem; color: var(--d-ink2); }
+.screen-note { color: var(--d-ink2); font-size: .93rem; margin: 0 0 14px; max-width: 84ch; }
+.viewport { border: 1px solid var(--d-line); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(46,28,23,.08); }
+.viewport .chrome { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--d-sunken); border-bottom: 1px solid var(--d-line); font-size: .75rem; color: var(--d-ink2); }
+.viewport .chrome i { width: 9px; height: 9px; border-radius: 50%; background: var(--d-line); display: inline-block; }
+.viewport .chrome span { margin-left: 10px; background: var(--d-surface); padding: 2px 10px; border-radius: 6px; }
+
+/* ---------- In-app themes. Each screen carries data-theme; the default is the darker museum palette. ---------- */
+.screen {
+  width: 1440px; height: 900px; position: relative; overflow: hidden; font: 16px/1.55 var(--sans); font-variant-numeric: lining-nums; color: var(--onw);
+  --wall: #564640; --wall2: #463832; --wall3: #3A2E29; --onw: #F1E5D5; --onw2: #C3AF9B;
+  --paper: #F3EADD; --paper2: #E8DCCA; --ink: #2C211D; --ink2: #6E5D51; --line: #DCCBB5;
+  --acc: #A1342C; --acc2: #7E241E; --gold: #D4B06A; --logo-c: #D9B873;
+  --glass: rgba(255,240,225,.08); --glass-line: rgba(255,235,215,.18); --side: #3A2E29;
+  background: var(--wall);
+}
+.screen[data-theme="moss"] { --wall: #434D46; --wall2: #37413B; --wall3: #2E3631; --onw: #ECE9DB; --onw2: #B3B8A6; --paper: #F0ECE0; --paper2: #E2DCCB; --ink: #232A25; --ink2: #5E665D; --line: #D4CEBC; --acc: #A55A3A; --acc2: #7F4229; --gold: #CDB06A; --logo-c: #D8C084; --side: #2E3631; }
+.screen[data-theme="plum"] { --wall: #4F3E4B; --wall2: #41323E; --wall3: #362933; --onw: #F3E6E6; --onw2: #C4AEB9; --paper: #F4ECE8; --paper2: #E8DCD8; --ink: #2C2028; --ink2: #6C5A63; --line: #DDCBCB; --acc: #B0473F; --acc2: #8A3530; --gold: #D6AE72; --logo-c: #E0BE85; --side: #362933; }
+.screen[data-theme="paper"] { --wall: #E6D7C1; --wall2: #D9C6AB; --wall3: #CDB79A; --onw: #2E1C17; --onw2: #6E5A4E; --paper: #FBF6EE; --paper2: #F1E6D6; --ink: #2E1C17; --ink2: #6E5A4E; --line: #E3D2BC; --acc: #7F1916; --acc2: #6A030C; --gold: #B8893A; --logo-c: #7F1916; --glass: rgba(255,252,247,.6); --glass-line: rgba(160,120,90,.28); --side: #D3C0A4; }
+/* Room 2 is always a night sky, so its chrome uses light-on-dark whatever the theme. */
+.night { --onw: #F6E9DD; --onw2: #D9BBA8; --glass: rgba(30,12,18,.38); --glass-line: rgba(255,235,220,.2); }
+
+.abs { position: absolute; }
+.scene { position: absolute; inset: 0; width: 1364px; height: 900px; display: block; }
+.stage { position: absolute; left: 76px; top: 0; right: 0; bottom: 0; overflow: hidden; }
+.side { position: absolute; left: 0; top: 0; bottom: 0; width: 76px; background: var(--side); border-right: 1px solid var(--glass-line); display: flex; flex-direction: column; align-items: center; padding: 18px 0 16px; gap: 4px; z-index: 20; }
+.side .mark { width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--logo-c); color: var(--logo-c); display: grid; place-items: center; font-size: 18px; margin-bottom: 14px; }
+.side a { width: 60px; padding: 8px 0 6px; border-radius: 14px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--onw2); font-size: 10.5px; text-decoration: none; position: relative; }
+.side a.on { background: var(--glass); color: var(--onw); }
+.side a.on::before { content: ""; position: absolute; left: -8px; top: 12px; bottom: 12px; width: 3px; border-radius: 3px; background: var(--gold); }
+.side .grow { flex: 1; }
+.side .av { width: 38px; height: 38px; border-radius: 50%; background: var(--acc); color: #fff; display: grid; place-items: center; font-weight: 600; margin-top: 8px; position: relative; }
+.side .av::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 10px; height: 10px; border-radius: 50%; background: #7FB27A; border: 2px solid var(--side); }
+
+.top { position: absolute; left: 30px; right: 30px; top: 22px; height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 18px; z-index: 6; }
+.tr { display: flex; align-items: center; gap: 10px; }
+.room-tag { display: flex; flex-direction: column; line-height: 1.1; min-width: 250px; }
+.room-tag small { font-family: var(--serif); font-weight: 600; letter-spacing: .28em; text-transform: uppercase; font-size: 12px; color: var(--gold); }
+.room-tag b { font-family: var(--serif); font-size: 26px; font-weight: 700; color: var(--onw); }
+.glass { background: var(--glass); border: 1px solid var(--glass-line); color: var(--onw); backdrop-filter: blur(8px); }
+.iconbtn { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; position: relative; }
+.iconbtn .n { position: absolute; top: -3px; right: -3px; min-width: 18px; line-height: 18px; text-align: center; font-size: 11px; font-weight: 600; border-radius: 999px; background: var(--acc); color: #fff; }
+.lang { display: flex; padding: 3px; gap: 2px; border-radius: 999px; }
+.lang b { font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 999px; color: var(--onw2); }
+.lang b.on { background: var(--acc); color: #fff; }
+.search { flex: 1; max-width: 460px; height: 44px; border-radius: 999px; display: flex; align-items: center; gap: 10px; padding: 0 18px; font-size: 14.5px; color: var(--onw2); }
+.chips-row { position: absolute; left: 30px; right: 30px; top: 88px; display: flex; align-items: center; justify-content: space-between; z-index: 6; }
+.chips { display: flex; gap: 8px; }
+.chip { font-size: 14px; padding: 7px 15px; border-radius: 999px; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.chip.on { background: var(--acc); color: #fff; border-color: var(--acc); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border-radius: 999px; font: 500 15px var(--sans); white-space: nowrap; border: 1px solid transparent; }
+.btn.main { background: var(--acc); color: #FFF4EC; box-shadow: 0 8px 22px rgba(0,0,0,.22); }
+.btn.line { border-color: var(--line); color: var(--ink); background: transparent; }
+.btn.ghost { color: var(--ink2); padding-left: 6px; padding-right: 6px; }
+.btn.danger { border-color: #C9867E; color: #A1342C; background: #FFF6F3; }
+.btn.sm { padding: 7px 14px; font-size: 13.5px; }
+.counter { position: absolute; left: 0; right: 0; bottom: 22px; text-align: center; font-size: 14px; color: var(--onw2); z-index: 6; }
+.counter i { font-family: var(--serif); font-size: 18px; color: var(--gold); }
+.logo { font-family: var(--logo); color: var(--logo-c); text-align: center; line-height: 1; position: relative; display: inline-block; }
+.logo .l1, .logo .l3 { font-size: 12px; letter-spacing: .24em; font-weight: 600; }
+.logo .l2 { font-size: 36px; font-weight: 600; letter-spacing: .05em; margin: 3px 0; }
+.logo .star { position: absolute; right: -8px; top: -10px; font-size: 13px; }
+.logo .arc { position: absolute; right: -24px; top: -16px; width: 96px; height: 48px; border: 1.5px solid currentColor; border-color: currentColor currentColor transparent transparent; border-radius: 0 48px 0 0; opacity: .7; }
+.hand { font-family: var(--hand); }
+.book { font-family: var(--book); }
+.serif { font-family: var(--serif); }
+
+.scrim { position: absolute; inset: 0; background: rgba(22,14,11,.58); backdrop-filter: blur(3px); z-index: 30; }
+.panel { position: absolute; z-index: 31; left: 50%; top: 50%; transform: translate(-50%, -50%); background: var(--paper); color: var(--ink); border-radius: 22px; box-shadow: 0 30px 80px rgba(0,0,0,.4); padding: 30px 36px 28px; }
+.panel h2 { font-size: 30px; margin: 0; color: var(--ink); }
+.panel .sub { color: var(--ink2); font-size: 15px; margin: 4px 0 16px; }
+.panel .x { position: absolute; right: 22px; top: 18px; color: var(--ink2); }
+.fieldl { font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink2); font-weight: 600; margin: 14px 0 6px; display: flex; justify-content: space-between; }
+.fieldl span { letter-spacing: 0; text-transform: none; font-weight: 400; }
+.inp { background: #FFFDF9; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; font-size: 15.5px; color: var(--ink); }
+.inp.area { min-height: 140px; font-family: var(--book); line-height: 1.75; }
+.inp.focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(161,52,44,.12); }
+.caret { display: inline-block; width: 2px; height: 18px; background: var(--acc); vertical-align: middle; }
+.row { display: flex; align-items: center; gap: 10px; }
+.between { justify-content: space-between; }
+.muted { color: var(--ink2); font-size: 14px; }
+.tog { display: inline-block; vertical-align: middle; width: 40px; height: 23px; border-radius: 999px; background: var(--line); position: relative; flex: none; }
+.tog::after { content: ""; position: absolute; left: 3px; top: 3px; width: 17px; height: 17px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.tog.on { background: var(--acc); } .tog.on::after { left: 20px; }
+.opt { border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; background: #FFFDF9; }
+.opt.on { border: 2px solid var(--acc); padding: 11px 13px; }
+.opt b { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.opt .muted { font-size: 13px; margin-top: 2px; }
+.ichip { font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); background: #FFFDF9; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.ichip.on { background: var(--acc); color: #fff; border-color: var(--acc); }
+.badge { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.b-wait { background: #F6E7C8; color: #7A5414; } .b-ok { background: #DDEBD8; color: #2F5A2B; } .b-no { background: #F6DCD7; color: #8E2A22; } .b-priv { background: #E6E1EE; color: #4C4170; } .b-arch { background: #E7E2DA; color: #5C524A; }
+
+/* Room 1: gallery of framed works under spotlights */
+.gallery { position: absolute; top: 160px; left: 58px; right: 58px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px 34px; isolation: isolate; }
+.work { position: relative; background: var(--paper); color: var(--ink); border-radius: 4px; padding: 10px 10px 0; box-shadow: 0 2px 3px rgba(0,0,0,.18), 0 18px 34px rgba(0,0,0,.28); }
+.work::before { content: ""; position: absolute; left: -40px; right: -40px; top: -56px; height: 190px; background: radial-gradient(ellipse at 50% 0%, rgba(255,226,170,.24), transparent 68%); z-index: -1; pointer-events: none; }
+.work .art { height: 166px; border: 1px solid rgba(160,120,70,.45); overflow: hidden; position: relative; }
+.work .cap { padding: 12px 6px 12px; }
+.work h4 { font-size: 20px; margin: 0 0 4px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.work p { font-size: 13.5px; color: var(--ink2); margin: 0 0 10px; line-height: 1.5; height: 40px; overflow: hidden; }
+.work .meta { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--ink2); border-top: 1px solid var(--line); padding-top: 9px; }
+.work .by { font-family: var(--hand); font-size: 17px; color: var(--ink); }
+.work.lift { transform: translateY(-8px); box-shadow: 0 4px 6px rgba(0,0,0,.2), 0 30px 50px rgba(0,0,0,.36); }
+.work.pending .art { border: 2px dashed #C9A774; background: repeating-linear-gradient(135deg, #F3E7D3 0 12px, #EFE1CA 12px 24px); display: grid; place-items: center; color: #8A6A3E; font-size: 14px; text-align: center; }
+.rxs { display: inline-flex; align-items: center; gap: 6px; }
+.rxs .stack { display: inline-flex; }
+.rxs .stack .rx { margin-left: -5px; box-shadow: 0 0 0 2px var(--paper); }
+.rxs .stack .rx:first-child { margin-left: 0; }
+.rx { border-radius: 50%; display: inline-grid; place-items: center; flex: none; }
+.picker { position: absolute; display: flex; align-items: flex-end; gap: 10px; background: #FFFDF9; border-radius: 999px; padding: 8px 12px; box-shadow: 0 12px 30px rgba(0,0,0,.28); z-index: 8; }
+.picker .rx { transition: none; }
+.picker .big { transform: translateY(-8px) scale(1.25); }
+.picker .tip { position: absolute; top: -36px; background: rgba(30,20,16,.85); color: #fff; font-size: 12px; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.rxbar { display: flex; gap: 8px; }
+.rxbtn { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 8px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; color: var(--ink); background: #FFFDF9; }
+.rxbtn.on { border-color: #D99A3A; background: #FBF0DD; font-weight: 600; }
+.rxbtn em { font-style: normal; color: var(--ink2); font-weight: 400; }
+
+/* Ambient motion: gentle and optional */
+.lf { transform-box: fill-box; transform-origin: 0% 50%; animation: sway 5s ease-in-out infinite; }
+@keyframes sway { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+.fall { transform-box: fill-box; transform-origin: center; animation: fall 11s linear infinite; }
+@keyframes fall { 0% { transform: translate(0, 0) rotate(0); opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(-90px, 430px) rotate(420deg); opacity: 0; } }
+.ff { animation: tw 3.2s ease-in-out infinite; }
+@keyframes tw { 0%, 100% { opacity: .1; } 50% { opacity: .95; } }
+.ln { animation: bob 6s ease-in-out infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+.pulse { animation: pulse 2.8s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .screen * { animation: none !important; } }
+
+/* Admin back office: calmer, denser, paper surfaces */
+.admin { background: var(--paper2); color: var(--ink); }
+.admin h1 { font-size: 30px; margin: 0; color: var(--ink); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tabs span { padding: 10px 14px; font-size: 14.5px; color: var(--ink2); border-bottom: 2px solid transparent; margin-bottom: -1px; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.tabs span.on { color: var(--ink); border-color: var(--acc); font-weight: 600; }
+.tabs .n { font-size: 11.5px; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 0 7px; }
+.seg { display: inline-flex; background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.seg span { padding: 6px 14px; border-radius: 999px; font-size: 14px; color: var(--ink2); white-space: nowrap; }
+.seg span.on { background: var(--ink); color: var(--paper); }
+.box { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
+.qrow { padding: 13px 16px; border-bottom: 1px solid var(--line); }
+.qrow.sel { background: #FFF8EC; box-shadow: inset 3px 0 0 var(--acc); }
+.qrow b { font-size: 15px; } .qrow .muted { font-size: 13px; }
+.avs { display: flex; }
+.avs i { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 600; color: #fff; margin-left: -6px; border: 2px solid var(--paper2); position: relative; }
+.avs i:first-child { margin-left: 0; }
+.avs i.on::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%; background: #6FA86A; border: 2px solid var(--paper2); }
+table.at { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.at th { text-align: left; font-size: 11.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink2); font-weight: 600; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+table.at td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.stat { padding: 16px 18px; } .stat small { color: var(--ink2); font-size: 13px; } .stat b { display: block; font-family: var(--serif); font-size: 32px; line-height: 1.1; }
+.drop { border: 2px dashed #CDB590; border-radius: 14px; background: #FFFAF1; }
+
+@media (max-width: 900px) {
+  .doc { grid-template-columns: 1fr; }
+  .toc { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--d-line); }
+  .main { padding: 24px 16px 80px; }
+  .g2, .g4 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="doc">
+  <nav class="toc" aria-label="Mục lục">
+    <div class="brand">The Name of Feeling</div>
+    <div class="sub">UI mock · bản nháp 5 · theo tài liệu cập nhật ngày 25.10</div>
+    <h4>Phần 1 · Thay đổi</h4>
+    <a href="#docupdate">Tài liệu có gì mới</a>
+    <a href="#feedback">Góp ý lần này → thay đổi</a>
+    <a href="#themes">Bảng màu (theme)</a>
+    <a href="#questions">Câu hỏi mở</a>
+    <h4>Phần 2 · Sảnh chính</h4>
+    <a href="#s-lobby">B1 Sảnh chính</a>
+    <a href="#s-mailbox">B2 Hòm thư · rút thông điệp</a>
+    <a href="#s-notify">B3 Hộp thông báo</a>
+    <a href="#s-theme">B4 Đổi bảng màu</a>
+    <h4>Phòng 1 · Triển lãm Đổ vỡ</h4>
+    <a href="#s-r1">C1 Phòng triển lãm</a>
+    <a href="#s-r1-detail">C2 Xem tác phẩm</a>
+    <a href="#s-r1-form">C3 Trưng bày tác phẩm</a>
+    <a href="#s-r1-confirm">C4 Xác nhận</a>
+    <a href="#s-r1-prepared">C5 Đang được chuẩn bị</a>
+    <a href="#s-r1-mine">C6 Tác phẩm của tôi</a>
+    <h4>Phòng 2 · Lồng đèn Hy vọng</h4>
+    <a href="#s-r2">D1 Bầu trời lồng đèn</a>
+    <a href="#s-r2-form">D2 Thả lồng đèn · hẹn ngày giờ</a>
+    <a href="#s-r2-land">D3 Lồng đèn hạ xuống</a>
+    <h4>Phòng 3 · Cây Thông điệp</h4>
+    <a href="#s-r3">E1 Cây thông điệp</a>
+    <a href="#s-r3-read">E2 Đọc một chiếc lá</a>
+    <a href="#s-r3-form">E3 Treo thông điệp</a>
+    <h4>Nhật ký</h4>
+    <a href="#s-diary">G1 Bản thân</a>
+    <a href="#s-diary-community">G2 Cộng đồng</a>
+    <a href="#s-diary-write">G3 Viết nhật ký</a>
+    <h4>Quản trị</h4>
+    <a href="#s-admin-pending">H1 Chờ phê duyệt</a>
+    <a href="#s-admin-reject">H2 Từ chối kèm lý do</a>
+    <a href="#s-admin-live">H3 Đang trưng bày</a>
+    <a href="#s-admin-capsules">H4 Kho thông điệp</a>
+    <h4>Khác</h4>
+    <a href="#s-login">A1 Đăng nhập</a>
+  </nav>
+
+  <main class="main">
+  <div class="wrap">
+    <div class="eyebrow">Business Communication · The Name of Feeling Museum</div>
+    <h1 style="font-size:2.8rem">Bản nháp 5: tối hơn, giống đi bảo tàng hơn</h1>
+    <p class="lede">Cập nhật theo tab "Function web (Vietnamese)", "API", "Database" mới trong tài liệu và góp ý của nhóm. Mock tĩnh (có chuyển động nhẹ ở Phòng 2, 3 và hòm thư), chưa phải prototype.</p>
+
+    <section class="part" id="changes">
+      <div class="eyebrow">Phần 1</div>
+      <h2>Thay đổi</h2>
+
+      <div class="sec" id="docupdate">
+        <h3>Tài liệu có gì mới</h3>
+        <div class="g2">
+          <div class="dcard pad"><b>4 tab mới</b>
+            <ul class="clean bs">
+              <li><b>Function web (Vietnamese):</b> đặc tả chức năng chi tiết cho user và admin. Mock bản này bám theo tab này.</li>
+              <li><b>API:</b> 12 nhóm API (auth, profile, máy nhả thông điệp, thông báo, 3 phòng, nhật ký, admin).</li>
+              <li><b>Database:</b> 8 thực thể (users, rooms, artworks, diaries, message_capsules, user_capsule_draws, notifications, artwork_interactions).</li>
+              <li><b>ARCHITECTURE:</b> đang trống.</li>
+            </ul>
+          </div>
+          <div class="dcard pad"><b>Những điểm mock đã áp dụng từ tài liệu</b>
+            <ul class="clean bs">
+              <li>Thanh điều hướng bên trái, có nút "Bảng Quản Trị" khi tài khoản là ADMIN.</li>
+              <li>Phòng 1: thẻ có tranh, tiêu đề, tóm tắt, bút danh, cảm xúc (Thương, Ôm an ủi, Đồng cảm), lượt xem. Bộ lọc "Tất cả / Của tôi / Nhiều đồng cảm nhất".</li>
+              <li>Phòng 2: target_date, đếm ngược, lồng đèn riêng tư tự rơi xuống khi tới giờ hẹn.</li>
+              <li>Phòng 3: 4 màu thông điệp tích cực, nút "Nhận năng lượng" và thả tim.</li>
+              <li>Admin: Chờ phê duyệt / Đang trưng bày, từ chối kèm lý do, lưu trữ (ARCHIVED) thay vì xoá.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="dcard pad" style="margin-top:14px"><b>Lỗi nhỏ trong tài liệu</b><div class="bs">Tab API, nhóm 6 ghi "API cho room 2 (room_id = 3)", đúng ra là room_id = 2. Tab "Function web" đã bỏ các ý cũ của Nhật ký (bìa, mã PIN 6 số, đổi font) so với tab "Application Features": xem câu hỏi mở số 1.</div></div>
+      </div>
+
+      <div class="sec" id="feedback">
+        <h3>Góp ý lần này → thay đổi trong mock</h3>
+        <table class="t">
+          <tr><th style="width:22%">Góp ý</th><th>Đã làm</th><th style="width:16%">Màn hình</th></tr>
+          <tr><td>Nhiều bảng màu, mặc định tối hơn, u buồn như bảo tàng nhưng không đen</td><td>4 theme đổi được trong app. Mặc định "Bảo tàng chiều": tường nâu đất ấm, đèn rọi vàng, thẻ giấy kem. Không dùng đen.</td><td>Phần 1, B4</td></tr>
+          <tr><td>Phòng 1 thành card, có tiêu đề, icon thả cảm xúc như Facebook, có search</td><td>Tranh treo tường dưới đèn rọi. Rê vào thẻ hiện thanh chọn cảm xúc như Facebook. Thanh tìm kiếm và bộ lọc ở trên.</td><td>C1-C6</td></tr>
+          <tr><td>Admin edit, reject, approve. Mọi bài đăng qua admin. 3-4 admin</td><td>Màn quản trị: biên tập, upload tranh, phê duyệt, từ chối kèm lý do. Hiện các admin đang trực và "ai đang xem bài nào" để 2 người không duyệt trùng.</td><td>H1-H4</td></tr>
+          <tr><td>Phòng 2 hẹn ngày giờ, đúng giờ lồng đèn rơi xuống</td><td>Chọn ngày (lịch) và giờ khi thả. Lồng đèn chưa tới hẹn có đếm ngược. Tới giờ thì lồng đèn hạ xuống và mở thư.</td><td>D1-D3</td></tr>
+          <tr><td>Phòng 3 đổi màu, cây đẹp hơn, có chuyển động, bấm được từng lá, nội dung tích cực</td><td>Cây vẽ lại theo nhánh tự nhiên, lá đung đưa, có lá rơi và đom đóm. Rê vào lá thì sáng lên, bấm để đọc. 4 loại: Khích lệ, Chữa lành, Biết ơn, Góc nhìn.</td><td>E1-E3</td></tr>
+          <tr><td>Sảnh chính đổi màu, bấm hòm thư hiện thông điệp</td><td>Sảnh là gian bảo tàng với 3 cửa vòm. Hòm thư (máy nhả thông điệp) phát sáng, bấm để rút một thông điệp soạn sẵn hoặc đã duyệt. Thông báo dời sang icon chuông.</td><td>B1-B3</td></tr>
+          <tr><td>Nhật ký bản cá nhân và public</td><td>Tab "Bản thân" và "Cộng đồng". Khi viết chọn "Chỉ mình tôi" (lưu ngay) hoặc "Chia sẻ lên Cộng đồng" (chờ duyệt).</td><td>G1-G3</td></tr>
+        </table>
+      </div>
+
+      <div class="sec" id="themes">
+        <h3>Bảng màu: 4 theme, người dùng tự đổi</h3>
+        <p class="bs">Mỗi theme là một bộ biến màu, nên cả app (kể cả sảnh và các phòng) đổi theo. Phòng 2 luôn là bầu trời đêm vì lồng đèn cần nền tối để phát sáng. Ảnh nhỏ bên dưới là cùng một sảnh chính ở 4 theme.</p>
+        <div class="g2" id="theme-grid"></div>
+      </div>
+
+      <div class="sec" id="questions">
+        <h3>Câu hỏi mở cho nhóm</h3>
+        <div class="qlist">
+          <div class="dcard qitem"><h4>1. Nhật ký còn giữ bìa, mã PIN 6 số, đổi font không?</h4><p>Tab "Application Features" có, tab "Function web" mới thì không nhắc.</p><p class="rec"><b>Đề xuất:</b> giữ khoá PIN (nhật ký riêng tư nên cần) và chọn font. Bìa để sau. Mock G3 đang có chọn font.</p></div>
+          <div class="dcard qitem"><h4>2. Bài bị từ chối, user có được sửa và gửi lại không?</h4><p>Tài liệu chỉ nói bài chuyển REJECTED và user nhận lý do.</p><p class="rec"><b>Đề xuất:</b> có nút "Sửa và gửi lại" ngay trong thông báo, bài quay về PENDING. Mock C6 và B3 đang có nút này.</p></div>
+          <div class="dcard qitem"><h4>3. Thông điệp trong hòm thư có nhận đóng góp từ cộng đồng không?</h4><p>Database ghi message_capsules gồm "câu mặc định hệ thống + đóng góp từ cộng đồng", nhưng chưa có màn để user gửi.</p><p class="rec"><b>Đề xuất:</b> lá đã duyệt ở Phòng 3 tự vào kho thông điệp (admin bật/tắt được), không cần thêm form mới.</p></div>
+          <div class="dcard qitem"><h4>4. Theme mặc định là gì?</h4><p class="rec"><b>Đề xuất:</b> "Bảo tàng chiều" cho mọi người, lưu lựa chọn theo tài khoản (thêm cột theme vào users).</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="part" id="screens-part">
+      <div class="eyebrow">Phần 2</div>
+      <h2>Màn hình · desktop 1440 × 900</h2>
+      <p class="lede">Mặc định theme "Bảo tàng chiều". Một vài màn dùng theme khác để thấy app trông thế nào khi đổi màu (ghi ở đầu mỗi màn).</p>
+      <div id="screens"></div>
+    </section>
+  </div>
+  </main>
+</div>
+
+<script>
+// Deterministic randomness so the mock renders the same every time; mulberry32 because nearby seeds must not look alike.
+function rng(seed) { let a = Math.imul(seed >>> 0, 2654435761) >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+let UID = 0;
+const f = (n) => n.toFixed(1);
+
+// ---------- icons (24px grid, stroke) ----------
+const IC = {
+  home: "M3 11l9-7 9 7v9h-6v-6H9v6H3z",
+  r1: "M4 4h16v16H4z M7 16l3.5-4 2.5 3 2-2 2 3",
+  r2: "M8 7h8l1.2 8.5L12 18l-5.2-2.5z M10 18.5v2h4v-2 M12 3v4",
+  r3: "M12 21v-6 M12 15l-3.5-3 M12 13l3.5-3 M12 3a6.5 6 0 0 1 6.5 6 6.5 6 0 0 1-13 0A6.5 6 0 0 1 12 3z",
+  diary: "M6 3h11a2 2 0 0 1 2 2v16H8a2 2 0 0 1-2-2z M6 17a2 2 0 0 1 2-2h11 M10 7h5",
+  shield: "M12 3l8 3v6c0 5-3.6 8-8 9-4.4-1-8-4-8-9V6z M9 12l2 2 4-4",
+  bell: "M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z M10 21h4",
+  search: "M11 4a7 7 0 1 1 0 14 7 7 0 0 1 0-14z M20 20l-4.2-4.2",
+  palette: "M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.8 0-1.4-1.3-1.6-1.3-2.9 0-1 .9-1.8 2-1.8H17a4 4 0 0 0 4-4C21 6.2 17 3 12 3z M7.5 11.5h.01 M10 7.5h.01 M14.5 7.5h.01",
+  eye: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z M12 9a3 3 0 1 1 0 6 3 3 0 0 1 0-6z",
+  lock: "M6 11h12v10H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3",
+  globe: "M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z M3 12h18 M12 3c2.5 2.6 3.6 5.6 3.6 9s-1.1 6.4-3.6 9c-2.5-2.6-3.6-5.6-3.6-9s1.1-6.4 3.6-9z",
+  clock: "M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z M12 7v5l3.5 2",
+  plus: "M12 5v14 M5 12h14",
+  edit: "M4 20h4L19 9l-4-4L4 16z M13.5 6.5l4 4",
+  archive: "M3 5h18v4H3z M5 9v10h14V9 M10 13h4",
+  upload: "M12 16V4 M7 9l5-5 5 5 M4 16v4h16v-4",
+  check: "M5 12.5l4.5 4.5L19 7",
+  x: "M6 6l12 12 M18 6L6 18",
+  image: "M4 5h16v14H4z M4 16l5-5 4 4 3-3 4 4 M15.5 9h.01",
+  bookmark: "M7 3h10v18l-5-4-5 4z",
+  refresh: "M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7",
+  calendar: "M4 6h16v15H4z M4 10h16 M8 3v5 M16 3v5",
+  users: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M2.5 20a6.5 6.5 0 0 1 13 0 M16 4.3a3.5 3.5 0 0 1 0 6.4 M18 14a6.5 6.5 0 0 1 3.5 6",
+  log: "M6 3h9l4 4v14H6z M9 11h7 M9 15h7 M9 7h3",
+  star: "M12 3l2.4 5.2L20 9l-4.2 3.9L17 19l-5-2.8L7 19l1.2-6.1L4 9l5.6-.8z",
+  down: "M6 9l6 6 6-6",
+  chev: "M9 6l6 6-6 6",
+  sparkle: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z M19 16l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z",
+  font: "M4 20l6-16h1l6 16 M7 14h7 M17 20h4",
+  filter: "M4 6h16 M7 12h10 M10 18h4",
+};
+const ic = (n, s = 20, sw = 1.7) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${IC[n]}"/></svg>`;
+
+// Reactions from the spec (artwork_interactions.reaction_type), drawn as Facebook-like coloured discs.
+const RX = {
+  HEART: { c: "#C9485B", label: "Thương", fill: true, g: "M12 19s-6.5-4.2-6.5-9.2A3.6 3.6 0 0 1 12 7.6a3.6 3.6 0 0 1 6.5 2.2C18.5 14.8 12 19 12 19z" },
+  HUG: { c: "#D99A3A", label: "Ôm an ủi", fill: false, g: "M5 11.5c1.3 4 4 6 7 6s5.7-2 7-6 M8.5 12.5c.9 1.6 2.2 2.4 3.5 2.4s2.6-.8 3.5-2.4 M8.6 8.4h.01 M15.4 8.4h.01" },
+  SYMPATHY: { c: "#7E74B4", label: "Đồng cảm", fill: true, g: "M12 4.5c2.8 3.6 4.6 5.9 4.6 8.4a4.6 4.6 0 0 1-9.2 0c0-2.5 1.8-4.8 4.6-8.4z" },
+  ENERGY: { c: "#C79A2E", label: "Nhận năng lượng", fill: true, g: "M13 3L6 13h5l-1 8 7-10h-5z" },
+};
+const rx = (t, s = 22) => { const r = RX[t]; return `<span class="rx" style="background:${r.c};width:${s}px;height:${s}px"><svg width="${s * .62}" height="${s * .62}" viewBox="0 0 24 24" fill="${r.fill ? "#fff" : "none"}" stroke="#fff" stroke-width="${r.fill ? 0 : 2.4}" stroke-linecap="round"><path d="${r.g}"/></svg></span>`; };
+const rxStack = (types, s = 20) => `<span class="stack">${types.map(t => rx(t, s)).join("")}</span>`;
+
+// ---------- "paintings": stand-ins for the illustrations admins attach to each work ----------
+function painting(seed, kind) {
+  const r = rng(seed); const id = "p" + (UID++); let s = "";
+  const lg = (n, a, b, vertical = true) => `<linearGradient id="${id}${n}" x1="0" y1="0" x2="${vertical ? 0 : 1}" y2="${vertical ? 1 : 0}"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
+  if (kind === "hills") {
+    const sky = [["#E8D5BC", "#F2E3CC"], ["#D9DCD3", "#EFE6D6"], ["#E6CFC4", "#F2E2D3"]][Math.floor(r() * 3)];
+    const L = [["#BFA582", "#93795D", "#5F4B3B"], ["#A9B39A", "#7E8A6E", "#4F5A45"], ["#C9A19A", "#9C716B", "#5E3F3C"]][Math.floor(r() * 3)];
+    const sx = 60 + r() * 180;
+    s = `<defs>${lg("s", sky[0], sky[1])}</defs><rect width="300" height="190" fill="url(#${id}s)"/><circle cx="${f(sx)}" cy="62" r="26" fill="#F1C98A"/>
+      <path d="M0 120 C80 ${f(70 + r() * 30)},180 ${f(100 + r() * 20)},300 ${f(80 + r() * 30)} V190H0Z" fill="${L[0]}"/>
+      <path d="M0 150 C100 ${f(110 + r() * 25)},200 ${f(150 + r() * 10)},300 ${f(120 + r() * 20)} V190H0Z" fill="${L[1]}"/>
+      <path d="M0 175 C90 ${f(150 + r() * 15)},210 ${f(170 + r() * 10)},300 ${f(160 + r() * 10)} V190H0Z" fill="${L[2]}"/>`;
+  } else if (kind === "window") {
+    s = `<rect width="300" height="190" fill="#4E3F3A"/><rect x="0" y="150" width="300" height="40" fill="#3B2F2B"/>
+      <rect x="168" y="28" width="84" height="104" fill="#F2DDB0"/><path d="M210 28V132 M168 80H252" stroke="#3A2D29" stroke-width="5"/><rect x="164" y="24" width="92" height="112" fill="none" stroke="#3A2D29" stroke-width="6"/>
+      <path d="M168 150 L252 150 L226 190 L96 190 Z" fill="#F2DDB0" opacity=".26"/>
+      <g fill="#2A201D"><rect x="58" y="118" width="54" height="7" rx="2"/><rect x="60" y="72" width="7" height="50"/><rect x="60" y="124" width="5" height="34"/><rect x="104" y="124" width="5" height="34"/></g>`;
+  } else if (kind === "rain") {
+    let drops = ""; for (let i = 0; i < 46; i++) { const x = r() * 320, y = r() * 170; drops += `<path d="M${f(x)} ${f(y)} l-6 16"/>`; }
+    s = `<defs>${lg("s", "#7F8C95", "#B8BEBB")}</defs><rect width="300" height="190" fill="url(#${id}s)"/><rect y="150" width="300" height="40" fill="#566064"/>
+      <g stroke="#EEF2F3" stroke-width="1.2" opacity=".5">${drops}</g>
+      <ellipse cx="150" cy="166" rx="34" ry="5" fill="#3E4649" opacity=".6"/>
+      <path d="M118 112 Q150 80 182 112 Z" fill="#A1342C"/><path d="M150 112 V146" stroke="#2E2A2A" stroke-width="2.5"/>
+      <circle cx="150" cy="121" r="6.5" fill="#2E2A2A"/><rect x="142" y="127" width="16" height="34" rx="6" fill="#2E2A2A"/>`;
+  } else if (kind === "door") {
+    s = `<rect width="300" height="190" fill="#6E5546"/><rect y="150" width="300" height="40" fill="#4A3830"/>
+      <rect x="116" y="38" width="70" height="112" fill="#F5D9A0"/><path d="M186 38 L214 30 L214 158 L186 150 Z" fill="#5A3D30"/>
+      <path d="M116 150 L186 150 L290 190 L40 190 Z" fill="#F5D9A0" opacity=".42"/>
+      <circle cx="151" cy="104" r="6" fill="#3B2A24"/><rect x="144" y="110" width="14" height="40" rx="5" fill="#3B2A24"/>`;
+  } else if (kind === "boat") {
+    let refl = ""; for (let i = 0; i < 6; i++) refl += `<path d="M${f(120 + r() * 50)} ${f(140 + i * 8)} h${f(20 + r() * 30)}"/>`;
+    s = `<defs>${lg("s", "#D8C2A6", "#EBDDC7")}${lg("w", "#45606E", "#22343E")}</defs><rect width="300" height="110" fill="url(#${id}s)"/><circle cx="232" cy="46" r="18" fill="#F6E7C8"/>
+      <rect y="110" width="300" height="80" fill="url(#${id}w)"/><g stroke="#E9DCC6" stroke-width="1.5" opacity=".35">${refl}</g>
+      <path d="M108 118 L192 118 L176 133 L124 133 Z" fill="#F3EDE2"/><path d="M150 80 L150 118 L180 118 Z" fill="#F3EDE2"/>`;
+  } else if (kind === "moon") {
+    let st = ""; for (let i = 0; i < 26; i++) st += `<circle cx="${f(r() * 300)}" cy="${f(r() * 110)}" r="${f(.6 + r())}" fill="#F4ECDA" opacity="${f(.4 + r() * .5)}"/>`;
+    s = `<defs>${lg("s", "#2B2940", "#5A4D68")}</defs><rect width="300" height="190" fill="url(#${id}s)"/>${st}<circle cx="212" cy="56" r="24" fill="#EFE0BE"/>
+      <path d="M0 160 C90 136,200 150,300 140 V190H0Z" fill="#1E1C2B"/><path d="M90 150 V108 M90 124 L74 110 M90 118 L104 102 M90 132 L102 124" stroke="#1E1C2B" stroke-width="4" stroke-linecap="round"/>`;
+  } else {
+    s = `<defs>${lg("s", "#EBCB8F", "#F3E2BE")}</defs><rect width="300" height="190" fill="url(#${id}s)"/><circle cx="150" cy="122" r="44" fill="#E9A15E" opacity=".85"/>
+      <path d="M0 130 C100 116,200 126,300 118 V190H0Z" fill="#8E7F43"/><path d="M0 160 C110 146,210 158,300 150 V190H0Z" fill="#6B5F2A"/>
+      <path d="M92 150 V128" stroke="#3E3A1C" stroke-width="2"/><circle cx="92" cy="125" r="5" fill="#A1342C"/>`;
+  }
+  // Light film grain so the stand-ins read as paintings rather than flat vector clip-art.
+  return `<svg viewBox="0 0 300 190" preserveAspectRatio="xMidYMid slice" style="display:block;width:100%;height:100%" aria-hidden="true">${s}
+    <filter id="${id}g"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .25  0 0 0 0 .18  0 0 0 0 .12  0 0 0 .2 0"/></filter><rect width="300" height="190" filter="url(#${id}g)"/></svg>`;
+}
+
+// ---------- lanterns (Room 2) ----------
+const SYM = {
+  star: () => { const o = []; for (let i = 0; i <= 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? .42 : 1; o.push([Math.cos(a) * rr, Math.sin(a) * rr]); } return o; },
+  heart: () => { const o = []; for (let t = 0; t <= Math.PI * 2 + .01; t += .25) o.push([16 * Math.sin(t) ** 3 / 17, -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) / 17]); return o; },
+  flower: () => { const o = []; for (let t = 0; t <= Math.PI * 2 + .01; t += .12) { const rr = .35 + .65 * Math.abs(Math.cos(2.5 * t)); o.push([Math.cos(t) * rr, Math.sin(t) * rr]); } return o; },
+  spiral: () => { const o = []; for (let t = 0; t <= 12; t += .35) o.push([Math.cos(t) * t / 12, Math.sin(t) * t / 12]); return o; },
+  wave: () => { const o = []; for (let x = -1; x <= 1.01; x += .15) o.push([x, Math.sin(x * 5) * .3]); return o; },
+};
+const SYM_KEYS = Object.keys(SYM);
+function poly(pts) { return "M" + pts.map(([x, y]) => `${f(x)} ${f(y)}`).join(" L"); }
+function lantern(x, y, sc, seed, o = {}) {
+  const r = rng(seed); const kind = o.kind || SYM_KEYS[Math.floor(r() * SYM_KEYS.length)]; const id = "l" + (UID++);
+  const body = o.color || ["#FFE3A8", "#FFD9B0", "#FFE7C2", "#F9CFA0"][Math.floor(r() * 4)];
+  const sym = SYM[kind]().map(([a, b]) => [a * 11, b * 11 - 1]);
+  return `<g class="ln" style="animation-delay:-${f(r() * 6)}s"><g transform="translate(${f(x)} ${f(y)}) scale(${f(sc)}) rotate(${f((r() - .5) * 8)})" opacity="${o.op ?? 1}">
+    <defs><radialGradient id="g${id}"><stop offset="0" stop-color="#FFF1C9" stop-opacity=".95"/><stop offset=".45" stop-color="#FFC774" stop-opacity=".42"/><stop offset="1" stop-color="#FF9A4A" stop-opacity="0"/></radialGradient>
+    <radialGradient id="b${id}" cx=".5" cy=".6"><stop offset="0" stop-color="#FFF6DD"/><stop offset=".6" stop-color="${body}"/><stop offset="1" stop-color="#E58F4C"/></radialGradient></defs>
+    <circle r="62" fill="url(#g${id})"/><path d="M-20 -26 Q0 -34 20 -26 L24 22 Q0 32 -24 22 Z" fill="url(#b${id})"/>
+    <path d="M-20 -26 Q0 -34 20 -26" fill="none" stroke="#A85A2E" stroke-width="2"/><rect x="-8" y="24" width="16" height="5" rx="2" fill="#7A3B1E" opacity=".8"/>
+    <path d="${poly(sym)}" fill="none" stroke="#7F1916" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g></g>`;
+}
+
+// ---------- Room 3: a naturally branching wish tree with positive-message leaves ----------
+const CATS = {
+  KL: { c: "#E2BC55", hi: "#F6DD8F", name: "Khích lệ", desc: "Lời khích lệ, động viên kiên trì" },
+  CL: { c: "#94C590", hi: "#C6E6BE", name: "Chữa lành", desc: "Lời chữa lành, bình an tâm hồn" },
+  BO: { c: "#E9A2AE", hi: "#F6CDD3", name: "Biết ơn", desc: "Lời cảm ơn, trân trọng cuộc sống" },
+  GN: { c: "#8FBCD9", hi: "#C4DDEE", name: "Góc nhìn", desc: "Lời chia sẻ góc nhìn cuộc sống" },
+};
+const CAT_KEYS = Object.keys(CATS);
+const leafPath = (l, w) => `M0 0 Q${f(l * .45)} ${f(-w)} ${f(l)} 0 Q${f(l * .45)} ${f(w)} 0 0Z`;
+function wishTree(seed, o = {}) {
+  const r = rng(seed); const br = []; const tips = []; const cx = 682, base = 812;
+  function grow(x, y, len, ang, d) {
+    const x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len, bend = (r() - .5) * len * .3;
+    const qx = (x + x2) / 2 + Math.cos(ang + Math.PI / 2) * bend, qy = (y + y2) / 2 + Math.sin(ang + Math.PI / 2) * bend;
+    br.push([`M${f(x)} ${f(y)} Q${f(qx)} ${f(qy)} ${f(x2)} ${f(y2)}`, Math.max(1.4, d * d * .5)]);
+    if (d <= 3) tips.push([x2, y2]);
+    if (d === 0) return;
+    const n = d >= 6 ? 2 : (r() < .3 ? 3 : 2), spread = d >= 6 ? .62 : .55;
+    for (let i = 0; i < n; i++) grow(x2, y2, len * (.72 + r() * .12), ang + (i - (n - 1) / 2) * spread * (.8 + r() * .5) + (r() - .5) * .22, d - 1);
+  }
+  grow(cx, base, 150, -Math.PI / 2, 7);
+  const id = "w" + (UID++);
+  let defs = `<linearGradient id="${id}b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5A3E2E"/><stop offset=".55" stop-color="#8A6448"/><stop offset="1" stop-color="#4A3326"/></linearGradient>
+    <radialGradient id="${id}glow"><stop offset="0" style="stop-color:var(--gold);stop-opacity:.34"/><stop offset="1" style="stop-color:var(--gold);stop-opacity:0"/></radialGradient>`;
+  CAT_KEYS.forEach(k => defs += `<linearGradient id="${id}${k}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${CATS[k].c}"/><stop offset="1" stop-color="${CATS[k].hi}"/></linearGradient>`);
+  let leaves = "";
+  tips.forEach(([tx, ty], i) => {
+    const n = 2 + Math.floor(r() * 2);
+    for (let k = 0; k < n; k++) {
+      const cat = CAT_KEYS[Math.floor(r() * 4)], dim = o.filter && o.filter !== cat;
+      const x = tx + (r() - .5) * 34, y = ty + (r() - .5) * 28, l = 13 + r() * 9;
+      leaves += `<g transform="translate(${f(x)} ${f(y)}) rotate(${f(r() * 360)})" opacity="${dim ? .18 : .95}"><path class="lf" style="animation-delay:-${f(r() * 5)}s;animation-duration:${f(4 + r() * 3)}s" d="${leafPath(l, l * .36)}" fill="url(#${id}${cat})"/></g>`;
+    }
+  });
+  let flies = ""; for (let i = 0; i < 26; i++) flies += `<circle class="ff" cx="${f(250 + r() * 860)}" cy="${f(180 + r() * 560)}" r="${f(1.2 + r() * 1.8)}" style="fill:var(--gold);animation-delay:-${f(r() * 3)}s"/>`;
+  let fall = ""; [[560, 330, "BO"], [820, 280, "KL"], [470, 420, "GN"], [900, 430, "CL"]].forEach(([x, y, c], i) => fall += `<g class="fall" style="animation-delay:-${i * 2.7}s"><g transform="translate(${x} ${y}) rotate(${i * 70})"><path d="${leafPath(19, 7)}" fill="url(#${id}${c})"/></g></g>`);
+  const branches = br.map(([d, w]) => `<path d="${d}" fill="none" stroke="url(#${id}b)" stroke-width="${f(w)}" stroke-linecap="round"/>`).join("");
+  const roots = `<path d="M${cx - 30} ${base} C ${cx - 60} ${base + 8}, ${cx - 110} ${base + 10}, ${cx - 150} ${base + 22} M${cx + 26} ${base} C ${cx + 70} ${base + 6}, ${cx + 120} ${base + 14}, ${cx + 160} ${base + 20}" stroke="#5A3E2E" stroke-width="9" stroke-linecap="round" fill="none"/>`;
+  return `<defs>${defs}</defs><ellipse cx="${cx}" cy="430" rx="520" ry="360" fill="url(#${id}glow)"/>${roots}${branches}${leaves}${fall}${flies}`;
+}
+
+// ---------- shared chrome ----------
+const LOGO = `<div class="logo"><span class="arc"></span><span class="star">✦</span><div class="l1">THE NAME OF</div><div class="l2">FEELING</div><div class="l3">MUSEUM</div></div>`;
+function side(active, admin = true) {
+  const items = [["home", "home", "Sảnh"], ["r1", "r1", "Phòng 1"], ["r2", "r2", "Phòng 2"], ["r3", "r3", "Phòng 3"], ["diary", "diary", "Nhật ký"]];
+  return `<nav class="side"><div class="mark">✦</div>${items.map(([k, i, t]) => `<a class="${k === active ? "on" : ""}">${ic(i, 22)}<span>${t}</span></a>`).join("")}
+    <div class="grow"></div>${admin ? `<a class="${active === "admin" ? "on" : ""}">${ic("shield", 22)}<span>Quản trị</span></a>` : ""}<div class="av">L</div></nav>`;
+}
+const topRight = (bell = 3) => `<div class="tr"><div class="iconbtn glass" title="Bảng màu">${ic("palette", 20)}</div><div class="lang glass"><b class="on">VI</b><b>EN</b></div><div class="iconbtn glass">${ic("bell", 20)}${bell ? `<span class="n">${bell}</span>` : ""}</div></div>`;
+const roomTop = (no, name, ph) => `<div class="top"><div class="room-tag"><small>Phòng ${no}</small><b>${name}</b></div><div class="search glass">${ic("search", 18)}<span>${ph}</span></div>${topRight()}</div>`;
+const chipsRow = (chips, cta) => `<div class="chips-row"><div class="chips">${chips.map(([t, on, dot]) => `<span class="chip glass ${on ? "on" : ""}">${dot ? `<i class="dot" style="background:${dot}"></i>` : ""}${t}</span>`).join("")}</div>${cta ? `<span class="btn main">${cta}</span>` : ""}</div>`;
+
+// ---------- B: Lobby (museum hall with three arched doorways) ----------
+const DOORS = [260, 682, 1104];
+const arch = (x, rad = 105) => `M${x - rad} 650 V335 A${rad} ${rad} 0 0 1 ${x + rad} 335 V650 Z`;
+function lobbySVG() {
+  const id = "lb" + (UID++); const r = rng(31);
+  let s = `<defs>
+    <linearGradient id="${id}cone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--gold);stop-opacity:.34"/><stop offset="1" style="stop-color:var(--gold);stop-opacity:0"/></linearGradient>
+    <radialGradient id="${id}vig" cx=".5" cy="0" r=".9"><stop offset="0" style="stop-color:var(--gold);stop-opacity:.13"/><stop offset="1" style="stop-color:var(--gold);stop-opacity:0"/></radialGradient>
+    <linearGradient id="${id}d1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6E2BF"/><stop offset="1" stop-color="#C79A6B"/></linearGradient>
+    <linearGradient id="${id}d2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B1424"/><stop offset=".6" stop-color="#7A2D33"/><stop offset="1" stop-color="#E09A62"/></linearGradient>
+    <linearGradient id="${id}d3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F3D31"/><stop offset="1" stop-color="#5E7A52"/></linearGradient>
+    <radialGradient id="${id}mg"><stop offset="0" style="stop-color:var(--gold);stop-opacity:.55"/><stop offset="1" style="stop-color:var(--gold);stop-opacity:0"/></radialGradient>
+    ${DOORS.map((x, i) => `<clipPath id="${id}c${i}"><path d="${arch(x)}"/></clipPath>`).join("")}</defs>
+    <rect width="1364" height="900" style="fill:var(--wall)"/><rect width="1364" height="900" fill="url(#${id}vig)"/>
+    <rect y="0" width="1364" height="12" style="fill:var(--wall3)"/>
+    <rect y="540" width="1364" height="110" style="fill:var(--wall2)" opacity=".55"/><path d="M0 540 H1364" style="stroke:var(--gold)" stroke-opacity=".25"/>
+    ${Array.from({ length: 12 }, (_, i) => `<path d="M${60 + i * 113} 552 v86" style="stroke:var(--wall3)" stroke-opacity=".7"/>`).join("")}
+    <rect y="650" width="1364" height="250" style="fill:var(--wall3)"/>
+    ${Array.from({ length: 15 }, (_, i) => `<path d="M682 380 L${-500 + i * 168} 900" style="stroke:var(--onw)" stroke-opacity=".035" clip-path="inset(0)"/>`).join("")}
+    ${[690, 735, 795, 870].map(y => `<path d="M0 ${y} H1364" style="stroke:var(--onw)" stroke-opacity=".04"/>`).join("")}`;
+  // the floor perspective lines above start at the horizon; mask them to the floor only
+  s = s.replace(/clip-path="inset\(0\)"/g, `clip-path="url(#${id}floor)"`).replace("</defs>", `<clipPath id="${id}floor"><rect y="650" width="1364" height="250"/></clipPath></defs>`);
+  DOORS.forEach((x, i) => {
+    let inner = "";
+    if (i === 0) {
+      inner = `<rect x="${x - 110}" y="220" width="220" height="440" fill="url(#${id}d1)"/><rect x="${x - 110}" y="585" width="220" height="70" fill="#B48A60"/>
+        ${[[-72, 380, 46, 36, "#7E8A6E"], [-14, 360, 32, 48, "#A1342C"], [32, 388, 44, 32, "#45606E"]].map(([dx, y, w, h, c]) => `<rect x="${x + dx - 3}" y="${y - 3}" width="${w + 6}" height="${h + 6}" fill="#3E302B"/><rect x="${x + dx}" y="${y}" width="${w}" height="${h}" fill="${c}"/>`).join("")}`;
+    } else if (i === 1) {
+      inner = `<rect x="${x - 110}" y="220" width="220" height="440" fill="url(#${id}d2)"/>` +
+        Array.from({ length: 12 }, () => { const lx = x - 85 + r() * 170, ly = 260 + r() * 300; return `<circle cx="${f(lx)}" cy="${f(ly)}" r="10" fill="#FFC774" opacity=".25"/><circle cx="${f(lx)}" cy="${f(ly)}" r="${f(2.5 + r() * 2)}" fill="#FFE3A8"/>`; }).join("") +
+        `<path d="M${x - 110} 640 Q${x} 600 ${x + 110} 630 V660 H${x - 110}Z" fill="#2A1214"/>`;
+    } else {
+      inner = `<rect x="${x - 110}" y="220" width="220" height="440" fill="url(#${id}d3)"/><circle cx="${x}" cy="440" r="110" fill="#F6DD8F" opacity=".22"/>
+        <path d="M${x} 650 V480 M${x} 540 L${x - 40} 490 M${x} 520 L${x + 44} 470 M${x} 500 L${x - 20} 450" stroke="#4A3326" stroke-width="7" stroke-linecap="round"/>` +
+        Array.from({ length: 70 }, () => { const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 80; return `<circle cx="${f(x + Math.cos(a) * d)}" cy="${f(450 + Math.sin(a) * d * .7)}" r="${f(2.4 + r() * 2)}" fill="${CATS[CAT_KEYS[Math.floor(r() * 4)]].c}"/>`; }).join("");
+    }
+    s += `<ellipse cx="${x}" cy="664" rx="160" ry="18" style="fill:var(--gold)" opacity=".1"/>
+      <g clip-path="url(#${id}c${i})">${inner}</g>
+      <path d="${arch(x, 117)}" fill="none" style="stroke:var(--gold)" stroke-opacity=".3" stroke-width="1.5"/>
+      <path d="${arch(x)}" fill="none" style="stroke:var(--gold)" stroke-width="3" stroke-opacity=".85"/>
+      <path d="M${x} 210 l7 8 -7 8 -7 -8z" style="fill:var(--gold)"/>
+      <path d="M${x} 150 V172" style="stroke:var(--gold)" stroke-width="1.5"/><rect x="${x - 18}" y="172" width="36" height="6" rx="3" style="fill:var(--gold)"/>
+      <path d="M${x - 14} 178 L${x + 14} 178 L${x + 150} 650 L${x - 150} 650 Z" fill="url(#${id}cone)"/>`;
+  });
+  // mailbox on a plinth: the message machine
+  const m = 471;
+  s += `<circle class="pulse" cx="${m}" cy="560" r="96" fill="url(#${id}mg)"/>
+    <rect x="${m - 40}" y="650" width="80" height="120" style="fill:var(--wall2);stroke:var(--gold)" stroke-opacity=".35"/><rect x="${m - 48}" y="642" width="96" height="10" style="fill:var(--wall2);stroke:var(--gold)" stroke-opacity=".35"/>
+    <path d="M${m - 38} 642 V566 Q${m - 38} 530 ${m} 530 Q${m + 38} 530 ${m + 38} 566 V642 Z" style="fill:var(--acc)"/>
+    <path d="M${m - 38} 566 Q${m - 38} 530 ${m} 530" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="3"/>
+    <g transform="rotate(-9 ${m} 552)"><rect x="${m - 17}" y="532" width="34" height="24" rx="2" style="fill:var(--paper)"/><path d="M${m - 17} 533 l17 12 17 -12" fill="none" style="stroke:var(--gold)" stroke-width="1.5"/></g>
+    <rect x="${m - 22}" y="556" width="44" height="7" rx="3" fill="#2A1A14"/><rect x="${m - 20}" y="557" width="40" height="3" rx="1.5" style="fill:var(--gold)" opacity=".9"/>
+    <text x="${m}" y="612" text-anchor="middle" font-size="22" style="fill:var(--gold)">✦</text>`;
+  // bench with the diary
+  const b = 893;
+  s += `<ellipse cx="${b}" cy="690" rx="120" ry="10" fill="#000" opacity=".18"/>
+    <rect x="${b - 95}" y="624" width="190" height="13" rx="3" fill="#8A6A50"/><rect x="${b - 95}" y="637" width="190" height="5" fill="#6E523D"/>
+    <rect x="${b - 82}" y="642" width="10" height="44" fill="#6E523D"/><rect x="${b + 72}" y="642" width="10" height="44" fill="#6E523D"/>
+    <g transform="rotate(-5 ${b + 12} 614)"><rect x="${b - 20}" y="604" width="64" height="20" rx="2" style="fill:var(--acc)"/><rect x="${b - 16}" y="604" width="6" height="20" style="fill:var(--gold)"/></g>`;
+  return `<svg class="scene" viewBox="0 0 1364 900" aria-hidden="true">${s}</svg>`;
+}
+const plaque = (x, no, name, n) => `<div class="abs" style="left:${x - 108}px;top:672px;width:216px;text-align:center;background:var(--paper);color:var(--ink);border-radius:6px;padding:8px 10px 9px;box-shadow:0 10px 26px rgba(0,0,0,.28);z-index:4">
+  <div style="font-family:var(--serif);font-weight:600;letter-spacing:.26em;font-size:11px;color:var(--acc)">PHÒNG ${no}</div><div style="font-family:var(--serif);font-weight:700;font-size:19px;line-height:1.2">${name}</div><div style="font-size:12px;color:var(--ink2)">${n}</div></div>`;
+const tag = (x, y, html) => `<div class="abs glass" style="left:${x}px;top:${y}px;transform:translateX(-50%);padding:5px 14px 6px;border-radius:999px;font-family:var(--hand);font-size:18px;white-space:nowrap;z-index:4">${html}</div>`;
+function lobby(overlay = "") {
+  return `${side("home")}<div class="stage">${lobbySVG()}
+    <div class="abs" style="left:0;right:0;top:40px;text-align:center;z-index:5">${LOGO}</div>
+    <div class="top"><div class="hand" style="font-size:24px">Chào Linh, hôm nay bạn muốn ghé đâu?</div>${topRight()}</div>
+    ${plaque(DOORS[0], "01", "Triển lãm Đổ vỡ", "1.284 tác phẩm")}${plaque(DOORS[1], "02", "Bầu trời Lồng đèn", "3.402 lồng đèn đang bay")}${plaque(DOORS[2], "03", "Cây Thông điệp", "862 lời động viên")}
+    ${tag(471, 784, `<span style="color:var(--gold)">✦</span> hòm thư · rút một thông điệp`)}${tag(893, 704, "nhật ký của bạn")}
+    <div class="counter"><i>Bạn hơn cả thành tích của mình.</i></div>${overlay}</div>`;
+}
+const mailboxOpen = `<div class="scrim"></div>
+  <div class="abs" style="left:0;right:0;top:64px;text-align:center;z-index:32;color:#F6E9DD"><div class="serif" style="font-size:34px;font-weight:700">Hôm nay bạn cần nghe điều gì?</div>
+  <div class="row" style="justify-content:center;margin-top:12px;gap:8px">${[["Ngẫu nhiên", 0], ["Can đảm", 1], ["Chữa lành", 0], ["Góc nhìn", 0]].map(([t, on]) => `<span class="chip glass ${on ? "on" : ""}" style="--onw:#F6E9DD;--glass:rgba(255,240,225,.1);--glass-line:rgba(255,235,215,.25)">${t}</span>`).join("")}</div></div>
+  <svg class="abs" style="left:432px;top:520px;z-index:31" width="500" height="380" viewBox="0 0 500 380" aria-hidden="true">
+    <defs><radialGradient id="mbglow"><stop offset="0" stop-color="#F6D98F" stop-opacity=".75"/><stop offset="1" stop-color="#F6D98F" stop-opacity="0"/></radialGradient></defs>
+    <circle class="pulse" cx="250" cy="120" r="240" fill="url(#mbglow)"/>
+    <path d="M120 380 V170 Q120 90 250 90 Q380 90 380 170 V380 Z" style="fill:var(--acc)"/><path d="M120 170 Q120 90 250 90" fill="none" stroke="#fff" stroke-opacity=".15" stroke-width="5"/>
+    <rect x="160" y="150" width="180" height="20" rx="9" fill="#2A1A14"/><text x="250" y="270" text-anchor="middle" font-size="40" style="fill:var(--gold)">✦</text></svg>
+  <div class="panel" style="top:170px;transform:translateX(-50%) rotate(-1.2deg);width:560px;padding:30px 42px 24px;background:#FBF4E6">
+    <div class="row between" style="margin-bottom:10px"><span class="badge b-ok">${ic("sparkle", 14)} Can đảm</span><span class="muted" style="font-size:13px">thông điệp số 128 / 412</span></div>
+    <div class="book" style="font-size:23px;line-height:1.6">Can đảm không phải là không sợ. Can đảm là vẫn nộp đơn lần nữa, dù tay còn run.</div>
+    <div class="hand" style="text-align:right;font-size:20px;margin-top:8px">- một người lạ ở Phòng 3, đã được kiểm duyệt</div>
+    <div class="row between" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px"><span class="btn line sm">${ic("refresh", 16)} Rút thông điệp mới</span><span class="row" style="gap:14px"><span class="muted">Đã lưu (8)</span><span class="btn main sm">${ic("bookmark", 16)} Lưu vào sổ tay</span></span></div></div>`;
+const notifyDrop = `<div class="abs" style="right:30px;top:78px;width:420px;z-index:32;background:var(--paper);color:var(--ink);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.4);overflow:hidden">
+  <div class="row between" style="padding:16px 18px 10px"><b class="serif" style="font-size:22px">Thông báo</b><span class="muted" style="font-size:13px">Đánh dấu tất cả là đã đọc</span></div>
+  ${[
+    ["b-ok", "check", "Tác phẩm “Bài thi mình chắc chắn đã qua” đã được trưng bày ở Phòng 1.", "2 phút trước", "Xem tác phẩm", true],
+    ["b-no", "x", "Lời nhắn “Cố lên nhé” chưa được treo lên cây. Lý do: nội dung còn chứa tên trường của bạn khác.", "1 giờ trước", "Sửa và gửi lại", true],
+    ["b-wait", "r2", "Lồng đèn bạn thả ngày 24.10.2023 đã hạ xuống. Thư từ bạn của 3 năm trước đang chờ.", "Hôm nay, 09:00", "Mở thư", true],
+    ["b-priv", "users", "Hana và 12 người khác đã ôm an ủi tác phẩm “Email học bổng”.", "Hôm qua", "", false],
+  ].map(([b, i, t, time, cta, unread]) => `<div class="row" style="align-items:flex-start;gap:12px;padding:12px 18px;border-top:1px solid var(--line);${unread ? "background:#FFF8EC" : ""}">
+    <span class="badge ${b}" style="width:34px;height:34px;padding:0;justify-content:center;border-radius:50%">${ic(i, 17)}</span>
+    <div style="flex:1"><div style="font-size:14.5px;line-height:1.45">${t}</div><div class="row between" style="margin-top:4px"><span class="muted" style="font-size:12.5px">${time}</span>${cta ? `<b style="font-size:13px;color:var(--acc)">${cta} →</b>` : ""}</div></div>
+    ${unread ? `<i class="dot" style="background:var(--acc);margin-top:6px"></i>` : ""}</div>`).join("")}</div>`;
+const THEMES = [
+  ["museum", "Bảo tàng chiều", "Mặc định. Tường nâu đất, đèn rọi vàng.", ["#564640", "#3A2E29", "#F3EADD", "#A1342C", "#D4B06A"]],
+  ["moss", "Rêu cổ", "Xanh rêu trầm, gạch nung.", ["#434D46", "#2E3631", "#F0ECE0", "#A55A3A", "#CDB06A"]],
+  ["plum", "Mận chín", "Tím mận ấm, hồng đất.", ["#4F3E4B", "#362933", "#F4ECE8", "#B0473F", "#D6AE72"]],
+  ["paper", "Giấy cũ", "Bản sáng, gần màu trang Facebook.", ["#E6D7C1", "#CDB79A", "#FBF6EE", "#7F1916", "#B8893A"]],
+];
+const themePop = `<div class="abs" style="right:150px;top:78px;width:380px;z-index:32;background:var(--paper);color:var(--ink);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.4);padding:16px 16px 10px">
+  <b class="serif" style="font-size:22px">Bảng màu</b><div class="muted" style="font-size:13px;margin-bottom:10px">Lưu theo tài khoản, áp dụng cho mọi phòng.</div>
+  ${THEMES.map(([k, n, d, sw], i) => `<div class="row" style="padding:10px;border-radius:12px;gap:12px;${i === 1 ? "background:#FFF6E8;outline:2px solid var(--acc)" : ""}">
+    <span style="display:flex;border-radius:8px;overflow:hidden;width:110px;height:30px;flex:none;border:1px solid var(--line)">${sw.map(c => `<i style="flex:1;background:${c}"></i>`).join("")}</span>
+    <span style="flex:1"><b style="font-size:15px">${n}</b><div class="muted" style="font-size:12.5px">${d}</div></span>${i === 1 ? `<span style="color:var(--acc)">${ic("check", 20, 2.2)}</span>` : ""}</div>`).join("")}</div>`;
+
+// ---------- C: Room 1 ----------
+const WORKS = [
+  { t: "Email học bổng", s: "Ba năm nộp học bổng, ba lần mở email bằng đôi tay run.", a: "Linh", k: "window", rx: ["HUG", "HEART", "SYMPATHY"], n: 214, v: "1,2k" },
+  { t: "Bài thi mình chắc chắn đã qua", s: "Ôn ba tuần, bước ra phòng thi rất tự tin. Hai tuần sau: 3.5.", a: "Gió", k: "rain", rx: ["SYMPATHY", "HUG"], n: 168, v: "980" },
+  { t: "Lần thứ ba trượt phỏng vấn", s: "Mình thuộc lòng mọi câu trả lời, chỉ là không ai hỏi những câu đó.", a: "Hana", k: "door", rx: ["HUG", "SYMPATHY"], n: 131, v: "760" },
+  { t: "Đội tuyển không có tên mình", s: "Danh sách dán trên bảng tin, mình đọc đi đọc lại ba lần.", a: "Minh", k: "hills", rx: ["HEART", "HUG"], n: 97, v: "540" },
+  { t: "Dự án khởi nghiệp đầu tiên", s: "Sáu tháng, hai người bạn, một ý tưởng và không một khách hàng.", a: "K.", k: "boat", rx: ["SYMPATHY", "HEART"], n: 88, v: "610" },
+  { t: "Năm gap year không ai hiểu", s: "Mọi người hỏi bao giờ đi học lại, không ai hỏi mình có ổn không.", a: "Ẩn danh", k: "moon", rx: ["HUG", "HEART", "SYMPATHY"], n: 245, v: "1,6k" },
+  { t: "Bài thuyết trình run tay", s: "Slide đẹp nhất lớp, giọng nhỏ nhất lớp.", a: "Sóc", k: "field", rx: ["HEART", "HUG"], n: 73, v: "420" },
+  { t: "Ngành học mình không chọn", s: "Bốn năm học một thứ để làm vui lòng người khác.", a: "Lam", k: "hills", rx: ["SYMPATHY", "HUG"], n: 156, v: "890" },
+];
+function work(w, i, o = {}) {
+  if (o.pending) return `<article class="work pending"><div class="art"><div>${ic("image", 26)}<div style="margin-top:6px">Tranh minh họa đang được vẽ</div></div></div><div class="cap"><h4>${w.t}</h4><p>${w.s}</p><div class="meta"><span class="badge b-wait">${ic("clock", 13)} Đang được chuẩn bị</span><span>gửi 25.10</span></div></div></article>`;
+  if (o.rejected) return `<article class="work"><div class="art" style="opacity:.55">${painting(900 + i, "rain")}</div><div class="cap"><h4>${w.t}</h4><p>Lý do: câu chuyện còn nhắc tên thật của một bạn khác.</p><div class="meta"><span class="badge b-no">Chưa được trưng bày</span><b style="color:var(--acc)">Sửa và gửi lại →</b></div></div></article>`;
+  return `<article class="work ${o.lift ? "lift" : ""}"><div class="art">${painting(100 + i * 7, w.k)}</div><div class="cap"><h4>${w.t}</h4><p>${w.s}</p>
+    <div class="meta"><span class="by">${w.a}</span><span class="row" style="gap:12px"><span class="rxs">${rxStack(w.rx)}<span>${w.n}</span></span><span class="row" style="gap:4px">${ic("eye", 15)}${w.v}</span></span></div></div>
+    ${o.lift ? `<div class="picker" style="left:18px;bottom:-34px">${rx("HEART", 38)}<span class="big" style="display:inline-grid">${rx("HUG", 38)}</span>${rx("SYMPATHY", 38)}<span style="font-size:13px;color:var(--ink);font-weight:600;padding:0 4px 9px 2px">Ôm an ủi</span></div>` : ""}</article>`;
+}
+function r1(overlay = "", o = {}) {
+  const items = o.mine ? [work(WORKS[1], 1), work({ t: "Mùa thi đại học năm ấy", s: "Mình đứng trước cổng trường thi cho tới khi người ta khoá cổng." }, 9, { pending: true }), work({ t: "Bạn cùng phòng", s: "" }, 10, { rejected: true })]
+    : WORKS.map((w, i) => work(w, i, { lift: o.hover && i === 1 }));
+  return `${side("r1")}<div class="stage">
+    ${roomTop("01", "Triển lãm Đổ vỡ", "Tìm theo tiêu đề, câu chuyện, bút danh…")}
+    ${chipsRow([["Tất cả tác phẩm", !o.mine], ["Tác phẩm của tôi", o.mine], ["Nhiều đồng cảm nhất", false]], `✦ Trưng bày tác phẩm`)}
+    <div class="gallery">${items.join("")}</div>${overlay}</div>`;
+}
+const r1Detail = `<div class="scrim"></div><div class="panel" style="width:1060px;padding:0;overflow:hidden;display:grid;grid-template-columns:500px 1fr">
+  <div style="background:#2B211D;padding:28px;display:grid;place-items:center"><div style="width:440px;height:540px;border:10px solid #F3EADD;box-shadow:0 20px 40px rgba(0,0,0,.4)">${painting(100, "window")}</div></div>
+  <div style="padding:30px 36px 26px;position:relative"><span class="x">${ic("x", 22)}</span>
+    <div style="font-family:var(--serif);letter-spacing:.24em;font-size:12px;font-weight:600;color:var(--acc)">PHÒNG 01 · TRIỂN LÃM ĐỔ VỠ</div>
+    <h2 style="font-size:38px;margin-top:6px">Email học bổng</h2>
+    <div class="row muted" style="gap:14px;margin:4px 0 16px"><span class="hand" style="font-size:20px;color:var(--ink)">Linh</span><span>trưng bày 21.10.2026</span><span class="row" style="gap:4px">${ic("eye", 15)} 1,2k lượt xem</span></div>
+    <div class="book" style="font-size:16.5px;line-height:1.8">Ba năm liền mình nộp học bổng. Lần nào cũng mở email với đôi tay run run, và lần nào nó cũng bắt đầu bằng “Chúng tôi rất tiếc phải thông báo…”.<br><br>Năm nay mình vẫn không đậu. Nhưng khi đọc lại ba bộ hồ sơ, mình thấy người viết bộ thứ ba đã khác hẳn người viết bộ đầu tiên. Mình đã trở thành một người không bỏ cuộc.</div>
+    <div style="font-family:var(--serif);font-style:italic;font-size:22px;color:var(--acc);margin:16px 0 20px">“Một lời từ chối mô tả một quyết định, không mô tả một con người.”</div>
+    <div style="border-top:1px solid var(--line);padding-top:16px"><div class="rxbar">${["HEART", "HUG", "SYMPATHY"].map((t, i) => `<span class="rxbtn ${i === 1 ? "on" : ""}">${rx(t, 26)}${RX[t].label} <em>${[61, 118, 35][i]}</em></span>`).join("")}</div>
+    <div class="muted" style="margin-top:10px">Bạn và 213 người khác đã để lại cảm xúc.</div></div></div></div>`;
+const r1Form = `<div class="scrim"></div><div class="panel" style="width:1080px;display:grid;grid-template-columns:1fr 330px;gap:34px"><span class="x">${ic("x", 22)}</span>
+  <div><h2>Trưng bày tác phẩm</h2><div class="sub">Kể lại một lần vấp ngã. Đội ngũ sẽ đọc, vẽ tranh minh họa và treo tác phẩm lên tường cho bạn.</div>
+    <div class="fieldl">Tiêu đề</div><div class="inp">Mùa thi đại học năm ấy</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end"><div><div class="fieldl">Bút danh cho tác phẩm này</div><div class="inp">Gió</div></div><div class="row" style="height:46px"><span class="tog"></span><span class="muted" style="color:var(--ink)">Ẩn danh</span></div></div>
+    <div class="fieldl">Tóm tắt hiển thị trên thẻ <span>64 / 120</span></div><div class="inp">Mình đứng trước cổng trường thi cho tới khi người ta khoá cổng.</div>
+    <div class="fieldl">Câu chuyện đầy đủ</div><div class="inp area focus" style="min-height:150px">Sáng hôm đó mình dậy sớm hơn mọi ngày. Mình đã ôn suốt một năm, vậy mà khi cầm đề lên, mình không nhớ nổi công thức đầu tiên<span class="caret"></span></div>
+    <div class="row between" style="margin-top:18px"><span class="muted" style="max-width:420px">${ic("shield", 15)} Mọi tác phẩm đều được đội ngũ đọc và bỏ chi tiết nhận dạng trước khi trưng bày.</span><span class="row"><span class="btn ghost">Huỷ</span><span class="btn main">Trưng bày</span></span></div></div>
+  <div style="padding-top:40px"><div class="muted" style="margin-bottom:10px">Thẻ của bạn sẽ trông như thế này</div>
+    <div style="--paper:#F3EADD">${work({ t: "Mùa thi đại học năm ấy", s: "Mình đứng trước cổng trường thi cho tới khi người ta khoá cổng." }, 11, { pending: true })}</div>
+    <div class="muted" style="font-size:13px;margin-top:12px">Tranh minh họa do admin vẽ hoặc tạo bằng AI dựa trên câu chuyện của bạn.</div></div></div>`;
+const r1Confirm = `<div class="scrim"></div><div class="panel" style="width:560px;text-align:center">
+  <div style="width:64px;height:64px;border-radius:50%;background:#FBF0DD;color:var(--acc);display:grid;place-items:center;margin:0 auto 12px">${ic("r1", 30)}</div>
+  <h2 style="font-size:28px">Bạn có chắc chắn muốn tạo tác phẩm?</h2>
+  <div class="muted" style="font-size:15.5px;margin:8px 0 22px">Vui lòng đọc kỹ nội dung đã ghi.</div>
+  <div class="row" style="justify-content:center"><span class="btn line">Để mình đọc lại</span><span class="btn main">Chắc chắn</span></div></div>`;
+const r1Prepared = `<div class="scrim"></div><div class="panel" style="width:580px;text-align:center">
+  <svg width="90" height="90" viewBox="0 0 90 90" style="display:block;margin:0 auto 10px"><circle cx="45" cy="45" r="44" fill="#FBF0DD"/><rect x="25" y="22" width="40" height="46" fill="none" stroke="#A1342C" stroke-width="2.5"/><path d="M31 58 l9-11 6 7 5-5 8 9" fill="none" stroke="#D4B06A" stroke-width="2.5" stroke-linejoin="round"/><circle class="pulse" cx="56" cy="32" r="4" fill="#D4B06A"/></svg>
+  <h2 style="font-size:28px">Tác phẩm của bạn đang được chuẩn bị</h2>
+  <div class="muted" style="font-size:15.5px;margin:8px 0 22px">Chúng mình sẽ thông báo trong hộp tin nhắn cho bạn sau khi tác phẩm hoàn thành.</div>
+  <div class="row" style="justify-content:center"><span class="btn line">Xem tác phẩm của tôi</span><span class="btn main">Về phòng triển lãm</span></div></div>`;
+
+// ---------- D: Room 2 ----------
+function r2(overlay = "", o = {}) {
+  let l = ""; const r = rng(88);
+  for (let i = 0; i < 64; i++) {
+    const d = r(), x = r() * 1364, y = 170 + r() * 480;
+    if (o.land && Math.abs(x - 682) < 300 && y > 360) continue;
+    l += lantern(x, y, .18 + d * .55, 600 + i, { op: .45 + d * .55 });
+  }
+  let stars = ""; for (let i = 0; i < 70; i++) { const rr = rng(i + 3); stars += `<circle cx="${f(rr() * 1364)}" cy="${f(rr() * 380)}" r="${f(rr() * 1.3 + .3)}" fill="#FFF1DC" opacity="${f(rr() * .6 + .2)}"/>`; }
+  const mine = o.land ? "" : lantern(1010, 205, .95, 4321, { kind: "heart", color: "#FFF0D2" });
+  return `${side("r2")}<div class="stage night"><svg class="scene" viewBox="0 0 1364 900" aria-hidden="true"><defs>
+    <linearGradient id="dusk${UID}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2B1424"/><stop offset=".45" stop-color="#6E2A33"/><stop offset=".8" stop-color="#C9784F"/><stop offset="1" stop-color="#EDBE86"/></linearGradient></defs>
+    <rect width="1364" height="900" fill="url(#dusk${UID})"/>${stars}${l}${mine}
+    <path d="M0 790 Q 340 750 682 770 T 1364 760 L1364 900 L0 900 Z" fill="#3A1A1C"/>
+    <path d="M1130 780 L1130 690 Q1130 640 1180 636 Q1230 640 1230 690 L1230 780 Z" fill="#2A1214"/><path d="M1158 730 L1158 702 Q1158 682 1180 680 Q1202 682 1202 702 L1202 730 Z" fill="#FFCF7A" opacity=".85"/></svg>
+    ${roomTop("02", "Bầu trời Lồng đèn", "Tìm lồng đèn theo từ khoá hoặc bút danh…")}
+    ${chipsRow([["Tất cả", true], ["Của tôi", false], ["Lồng đèn đã mở", false], ["Đang chờ ngày hạ xuống", false]], `✦ Thả lồng đèn`)}
+    ${o.land ? "" : `<div class="abs" style="left:1060px;top:168px;width:250px;z-index:7;background:rgba(30,12,18,.72);border:1px solid rgba(255,235,220,.22);border-radius:14px;padding:12px 14px;color:#F6E9DD">
+      <div class="row" style="gap:6px;font-size:13px;color:#F2C9A8">${ic("lock", 14)} Lồng đèn riêng của bạn</div><div class="serif" style="font-size:19px;font-weight:700;margin:2px 0 8px">Gửi mình của năm 2030</div>
+      <div class="row" style="gap:6px">${[["1460", "ngày"], ["04", "giờ"], ["12", "phút"], ["09", "giây"]].map(([n, u]) => `<div style="flex:1;text-align:center;background:rgba(255,240,225,.08);border-radius:8px;padding:4px 0"><b style="font-size:17px">${n}</b><div style="font-size:10.5px;color:#D9BBA8">${u}</div></div>`).join("")}</div>
+      <div style="font-size:12.5px;color:#D9BBA8;margin-top:8px">Hạ xuống lúc 09:00, 24.10.2030</div></div>
+    <div class="abs" style="left:300px;top:470px;z-index:7" ><span class="glass" style="padding:5px 12px;border-radius:999px;font-family:var(--hand);font-size:17px">kéo xuống để đọc ↓</span></div>`}
+    <div class="counter">3.402 lồng đèn đang bay · 128 lồng đèn đã hạ xuống năm nay</div>${overlay}</div>`;
+}
+function cal() {
+  const days = []; for (let i = 0; i < 1; i++) days.push(""); for (let d = 1; d <= 31; d++) days.push(d);
+  return `<div style="background:#FFFDF9;border:1px solid var(--line);border-radius:14px;padding:12px 14px">
+    <div class="row between" style="margin-bottom:6px"><b>Tháng 10, 2030</b><span class="row muted" style="gap:8px"><span style="transform:rotate(180deg);display:inline-flex">${ic("chev", 16)}</span>${ic("chev", 16)}</span></div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:13px">${["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map(d => `<span class="muted" style="font-size:11.5px">${d}</span>`).join("")}
+    ${days.map(d => `<span style="padding:5px 0;border-radius:8px;${d === 24 ? "background:var(--acc);color:#fff;font-weight:600" : ""}">${d}</span>`).join("")}</div></div>`;
+}
+const r2Form = `<div class="scrim" style="background:rgba(20,8,12,.5)"></div><div class="panel" style="width:1040px;display:grid;grid-template-columns:1fr 390px;gap:30px"><span class="x">${ic("x", 22)}</span>
+  <div><h2>Thả lồng đèn tương lai</h2><div class="sub">Viết cho chính mình, hẹn ngày giờ lồng đèn hạ xuống.</div>
+    <div class="fieldl">Tiêu đề</div><div class="inp">Gửi mình của năm 2030</div>
+    <div class="fieldl">Lời gửi tương lai</div><div class="inp area focus" style="min-height:180px">Hôm nay mình vừa trượt vòng phỏng vấn thứ ba. Mình viết lá thư này để cậu nhớ rằng đã có lúc mọi thứ thật khó, và mình vẫn đi tiếp<span class="caret"></span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px"><div><div class="fieldl">Bút danh</div><div class="inp">Linh của năm 2026</div></div>
+    <div><div class="fieldl">Biểu tượng trên đèn</div><div class="row" style="height:46px;gap:6px">${["heart", "star", "flower", "spiral", "wave"].map((k, i) => `<span style="width:38px;height:38px;border-radius:10px;display:grid;place-items:center;border:${i === 0 ? "2px solid var(--acc)" : "1px solid var(--line)"};background:#FFFDF9"><svg width="22" height="22" viewBox="-12 -13 24 24"><path d="${poly(SYM[k]().map(([a, b]) => [a * 10, b * 10]))}" fill="none" stroke="#7F1916" stroke-width="1.8" stroke-linejoin="round"/></svg></span>`).join("")}</div></div></div>
+    <div class="fieldl">Ai được thấy lồng đèn này?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div class="opt on"><b>${ic("lock", 17)} Riêng tư</b><div class="muted">Chỉ bạn thấy. Không cần duyệt, bay lên ngay.</div></div><div class="opt"><b>${ic("globe", 17)} Công khai</b><div class="muted">Admin duyệt rồi thả lên bầu trời chung.</div></div></div></div>
+  <div style="padding-top:56px"><div class="fieldl" style="margin-top:0">Ngày & giờ hạ xuống</div>${cal()}
+    <div class="row" style="gap:10px;margin-top:12px"><div class="inp row" style="gap:8px;flex:1">${ic("calendar", 17)} 24.10.2030</div><div class="inp row" style="gap:8px;width:130px">${ic("clock", 17)} 09:00 ${ic("down", 14)}</div></div>
+    <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px">${["1 năm nữa", "3 năm", "4 năm", "Sinh nhật tới"].map((t, i) => `<span class="ichip ${i === 2 ? "on" : ""}">${t}</span>`).join("")}</div>
+    <div class="muted" style="font-size:13px;margin-top:12px">Đúng 09:00 ngày 24.10.2030, lồng đèn sẽ hạ xuống và bạn nhận thông báo trong hộp thư.</div>
+    <div class="row" style="justify-content:flex-end;margin-top:22px"><span class="btn ghost">Huỷ</span><span class="btn main">${ic("r2", 17)} Thả lồng đèn</span></div></div></div>`;
+const r2Land = `<svg class="abs" style="left:532px;top:430px;z-index:7" width="300" height="300" viewBox="-150 -150 300 300">${lantern(0, 0, 2.1, 4321, { kind: "heart", color: "#FFF0D2" })}</svg>
+  <div class="panel" style="left:auto;right:70px;top:150px;transform:none;width:500px;background:#FBF4E6">
+    <div class="row" style="gap:6px;color:#8A5A1E;font-size:13.5px">${ic("clock", 15)} Đã tới giờ hẹn · 09:00, 25.10.2026</div>
+    <div class="book" style="font-style:italic;color:var(--acc);font-size:22px;margin:10px 0 6px">Gửi mình của năm 2026,</div>
+    <div class="book" style="font-size:16px;line-height:1.8">Lúc viết thư này mình đang ngồi ở thư viện, vừa trượt kỳ thi IELTS lần hai. Nếu cậu đọc được những dòng này, mong là cậu đã thôi so mình với người khác. Dù kết quả ra sao, mình vẫn tự hào vì tụi mình đã không bỏ cuộc.</div>
+    <div class="hand" style="text-align:right;font-size:22px;margin-top:6px">Linh, 24.10.2023</div>
+    <div class="row between" style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px"><span class="btn line sm">${ic("diary", 16)} Cất vào nhật ký</span><span class="btn main sm">${ic("r2", 16)} Viết thư trả lời tương lai</span></div></div>`;
+
+// ---------- E: Room 3 ----------
+function r3(overlay = "", o = {}) {
+  return `${side("r3")}<div class="stage">
+    <svg class="scene" viewBox="0 0 1364 900" aria-hidden="true">
+      <rect width="1364" height="900" style="fill:var(--wall)"/>
+      <path d="M612 0 L752 0 L1080 820 L284 820 Z" style="fill:var(--gold)" opacity=".05"/>
+      <rect y="800" width="1364" height="100" style="fill:var(--wall3)"/><ellipse cx="682" cy="812" rx="300" ry="22" fill="#000" opacity=".2"/>
+      ${wishTree(3, o)}
+      ${o.sel ? `<g transform="translate(760 330) rotate(-30)"><path d="${leafPath(46, 17)}" fill="#94C590" stroke="#fff" stroke-width="2.5" style="filter:drop-shadow(0 0 10px rgba(255,240,190,.9))"/></g>` : ""}
+    </svg>
+    ${roomTop("03", "Cây Thông điệp", "Tìm lời động viên…")}
+    ${chipsRow([["Tất cả", !o.filter]].concat(CAT_KEYS.map(k => [CATS[k].name, o.filter === k, CATS[k].c])).concat([["Của tôi", false]]), `✦ Treo thông điệp`)}
+    ${o.sel ? `<div class="abs" style="left:822px;top:290px;z-index:7;background:var(--paper);color:var(--ink);border-radius:12px;padding:8px 14px;box-shadow:0 14px 30px rgba(0,0,0,.35);white-space:nowrap"><div class="row" style="gap:6px;font-size:12.5px;color:#4E7A4A"><i class="dot" style="background:#94C590"></i>Chữa lành</div><b class="serif" style="font-size:19px">Gửi bạn đang mệt mỏi</b><div class="muted" style="font-size:12.5px">Mây · nhấn để đọc</div></div>` : ""}
+    <div class="counter">862 lời động viên đang treo trên cây · rê chuột vào một chiếc lá để xem, nhấn để đọc</div>${overlay}</div>`;
+}
+const r3Read = `<div class="scrim"></div><div class="panel" style="width:540px;text-align:center;background:#F7F5EC">
+  <span class="x">${ic("x", 22)}</span>
+  <svg width="160" height="90" viewBox="0 0 160 90" style="display:block;margin:0 auto"><g transform="translate(14 50) rotate(-10)"><path d="${leafPath(130, 40)}" fill="#94C590"/><path d="M6 0 H120" stroke="#5E8F5A" stroke-width="1.5"/></g></svg>
+  <div class="row" style="justify-content:center;gap:6px;font-size:13.5px;color:#4E7A4A;margin-top:4px"><i class="dot" style="background:#94C590"></i>Chữa lành · lời bình an tâm hồn</div>
+  <h2 style="margin-top:6px">Gửi bạn đang mệt mỏi</h2>
+  <div class="hand" style="font-size:27px;line-height:1.45;margin:12px 0 8px">Hôm nay nghỉ ngơi cũng là một cách cố gắng. Cái cây cũng đâu ra lá quanh năm.</div>
+  <div class="muted">Mây · treo lên cây ngày 18.10.2026</div>
+  <div class="row" style="justify-content:center;margin-top:20px;gap:10px"><span class="rxbtn on" style="border-color:#C79A2E">${rx("ENERGY", 26)}Nhận năng lượng <em>86</em></span><span class="rxbtn">${rx("HEART", 26)}Thả tim <em>214</em></span></div>
+  <div class="muted" style="font-size:13px;margin-top:14px">Lời nhắn này cũng có trong hòm thư ở sảnh chính.</div></div>`;
+const r3Form = `<div class="scrim"></div><div class="panel" style="width:880px;display:grid;grid-template-columns:1fr 260px;gap:30px"><span class="x">${ic("x", 22)}</span>
+  <div><h2>Treo thông điệp lên cây</h2><div class="sub">Một câu tử tế cho một người lạ đang cần nghe.</div>
+    <div class="fieldl">Loại thông điệp</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${CAT_KEYS.map((k, i) => `<div class="opt ${i === 0 ? "on" : ""}"><b><i class="dot" style="background:${CATS[k].c};width:12px;height:12px"></i>${CATS[k].name}</b><div class="muted">${CATS[k].desc}</div></div>`).join("")}</div>
+    <div class="fieldl">Tên thông điệp</div><div class="inp">Cho bạn đang ôn thi</div>
+    <div class="fieldl">Nội dung <span>58 / 280</span></div><div class="inp area focus" style="min-height:100px;font-family:var(--hand);font-size:20px">Bạn không cần phải nhanh, chỉ cần đừng dừng lại<span class="caret"></span></div>
+    <div class="fieldl">Bút danh</div><div class="inp">Mây</div></div>
+  <div style="padding-top:60px;text-align:center"><div class="muted" style="margin-bottom:8px">Chiếc lá của bạn</div>
+    <div style="background:var(--wall);border-radius:18px;padding:30px 0;position:relative;overflow:hidden"><div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 50%, rgba(246,221,143,.35), transparent 65%)"></div>
+    <svg width="180" height="110" viewBox="0 0 180 110" style="position:relative"><g transform="translate(20 62) rotate(-14)"><path d="${leafPath(140, 46)}" fill="#E2BC55"/><path d="M6 0 H130" stroke="#A8862E" stroke-width="1.5"/></g></svg></div>
+    <div class="muted" style="font-size:13px;margin:14px 0 18px;text-align:left">${ic("shield", 14)} Lá sẽ được đội ngũ đọc trước khi treo lên cây. Bạn sẽ nhận thông báo khi lá đã lên cây.</div>
+    <span class="btn main" style="width:100%">Treo lên cây</span></div></div>`;
+
+// ---------- G: Diary ----------
+const MOODS = { "Bình yên": "#94C590", "Trầm lắng": "#8FBCD9", "Biết ơn": "#E9A2AE", "Hy vọng": "#E2BC55", "Mệt mỏi": "#B9A89A" };
+function diaryTop(tab) {
+  return `<div class="top"><div class="room-tag"><small>Không gian riêng</small><b>Nhật ký</b></div>
+    <div class="row" style="gap:12px;flex:1;justify-content:center"><div class="seg glass" style="background:var(--glass);border-color:var(--glass-line)"><span class="${tab === 0 ? "on" : ""}" style="${tab === 0 ? "background:var(--paper);color:var(--ink)" : "color:var(--onw2)"}">${ic("lock", 14)} Bản thân</span><span class="${tab === 1 ? "on" : ""}" style="${tab === 1 ? "background:var(--paper);color:var(--ink)" : "color:var(--onw2)"}">${ic("globe", 14)} Cộng đồng</span></div>
+    <div class="search glass" style="max-width:320px">${ic("search", 18)}<span>Tìm trong nhật ký…</span></div></div>
+    <div class="row" style="gap:10px"><span class="btn main">${ic("edit", 16)} Viết nhật ký mới</span>${topRight()}</div></div>`;
+}
+const ENTRIES = [
+  ["25", "Th 7", "Hy vọng", "Hôm nay lồng đèn rơi xuống", "Đọc lại thư mình viết ba năm trước, mình đã khóc một chút.", "priv"],
+  ["22", "Th 4", "Mệt mỏi", "Tuần ôn thi thứ ba", "Ngủ bốn tiếng một đêm. Mai mình sẽ thử ngủ sớm hơn.", "priv"],
+  ["19", "CN", "Biết ơn", "Bữa cơm với mẹ", "Mẹ không hỏi điểm, mẹ chỉ hỏi mình ăn chưa.", "wait"],
+  ["14", "Th 3", "Bình yên", "Một chiều đạp xe", "Gió sông Sài Gòn lúc năm giờ chiều thật dễ chịu.", "pub"],
+];
+function diary(overlay = "") {
+  return `${side("diary")}<div class="stage" style="background:var(--wall)">${diaryTop(0)}
+    <div class="abs" style="left:30px;top:100px;width:420px;bottom:30px">
+      <div style="font-family:var(--serif);font-size:20px;font-weight:700;color:var(--onw);margin:6px 0 10px">Tháng 10 · 2026</div>
+      ${ENTRIES.map(([d, wd, mood, t, ex, st], i) => `<div class="row" style="align-items:flex-start;gap:14px;padding:14px;border-radius:14px;margin-bottom:8px;${i === 0 ? "background:var(--paper);color:var(--ink)" : "background:var(--glass);border:1px solid var(--glass-line)"}">
+        <div style="text-align:center;width:44px;flex:none"><div class="serif" style="font-size:30px;font-weight:700;line-height:1">${d}</div><div style="font-size:12px;opacity:.7">${wd}</div></div>
+        <div style="flex:1;min-width:0"><div class="row" style="gap:6px;font-size:12.5px;opacity:.85"><i class="dot" style="background:${MOODS[mood]}"></i>${mood}<span style="margin-left:auto" class="row">${st === "priv" ? `${ic("lock", 13)} Chỉ mình tôi` : st === "wait" ? `<span class="badge b-wait" style="font-size:11px">Chờ duyệt công khai</span>` : `${ic("globe", 13)} Công khai`}</span></div>
+        <b style="display:block;font-size:16px;margin-top:2px">${t}</b><div style="font-size:13.5px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex}</div></div></div>`).join("")}</div>
+    <div class="abs" style="left:480px;right:30px;top:100px;bottom:30px;background:var(--paper);color:var(--ink);border-radius:6px 18px 18px 6px;box-shadow:0 24px 50px rgba(0,0,0,.35);padding:34px 46px">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:14px;background:var(--acc);border-radius:6px 0 0 6px"></div>
+      <div class="row between"><div class="row muted" style="gap:10px">Thứ Bảy, 25.10.2026 · <i class="dot" style="background:#E2BC55"></i> Hy vọng</div><span class="row muted" style="gap:14px">${ic("edit", 17)} ${ic("lock", 17)} Chỉ mình tôi</span></div>
+      <h2 style="font-size:36px;margin:8px 0 10px">Hôm nay lồng đèn rơi xuống</h2>
+      <div style="display:grid;grid-template-columns:1fr 250px;gap:28px"><div class="book" style="font-size:17px;line-height:32px">Chín giờ sáng, điện thoại báo lồng đèn của mình đã hạ xuống. Mình mở ra và thấy chữ của chính mình ba năm trước, lúc vừa trượt IELTS lần hai.<br>Mình đã khóc một chút, rồi cười. Cậu ấy mong mình thôi so sánh với người khác. Mình nghĩ mình đã làm được một nửa. Nửa còn lại, mình sẽ cố tiếp.</div>
+      <div><div style="height:180px;border:8px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.15);transform:rotate(2deg)">${painting(44, "boat")}</div><div class="hand muted" style="text-align:center;margin-top:10px;font-size:17px">thư viện, chiều thứ bảy</div></div></div></div>${overlay}</div>`;
+}
+function diaryCommunity() {
+  const notes = [["Biết ơn", "Cảm ơn người lạ ở trạm xe buýt", "Chị ấy cho mình mượn ô dù không quen biết. Hôm đó mình vừa bị từ chối học bổng.", "Sóc", 64],
+    ["Bình yên", "Ngày đầu tiên không mở điện thoại", "Mình đi bộ quanh hồ và nhận ra đã lâu rồi mình không nhìn trời.", "Mây", 41],
+    ["Trầm lắng", "Nhớ nhà", "Bốn tháng chưa về quê. Tối nay mình nấu canh chua theo cách mẹ hay nấu.", "Ẩn danh", 88],
+    ["Hy vọng", "Bản CV thứ 21", "Lần này mình viết bằng giọng của chính mình, không bắt chước ai nữa.", "Hana", 57],
+    ["Mệt mỏi", "Tuần không ổn", "Không có gì to tát, chỉ là mọi thứ đều nặng hơn bình thường một chút.", "Gió", 102],
+    ["Biết ơn", "Thầy chủ nhiệm cũ", "Thầy nhắn: điểm số chỉ là một cách đo, không phải cách duy nhất.", "Lam", 76]];
+  return `${side("diary")}<div class="stage">${diaryTop(1)}
+    <div class="abs" style="left:30px;right:30px;top:96px" ><div class="muted" style="color:var(--onw2);font-size:14px">Những trang nhật ký các thành viên chọn chia sẻ và đã qua kiểm duyệt.</div></div>
+    <div class="abs" style="left:30px;right:30px;top:134px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
+    ${notes.map(([m, t, ex, a, n], i) => `<div style="background:var(--paper);color:var(--ink);border-radius:4px 14px 14px 4px;padding:20px 22px 16px;box-shadow:0 14px 30px rgba(0,0,0,.28);transform:rotate(${[-0.6, .5, -0.3, .4, -0.5, .3][i]}deg);border-left:8px solid ${MOODS[m]}">
+      <div class="row muted" style="gap:6px;font-size:12.5px"><i class="dot" style="background:${MOODS[m]}"></i>${m} · ${20 - i}.10.2026</div>
+      <b class="serif" style="display:block;font-size:22px;margin:4px 0 6px">${t}</b><div class="book" style="font-size:15px;line-height:1.7;height:76px;overflow:hidden">${ex}</div>
+      <div class="row between" style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><span class="hand" style="font-size:18px">${a}</span><span class="rxs">${rxStack(["HUG", "SYMPATHY"], 20)}<span class="muted">${n}</span></span></div></div>`).join("")}</div></div>`;
+}
+const diaryWrite = `<div class="scrim"></div><div class="panel" style="width:980px;display:grid;grid-template-columns:1fr 300px;gap:30px"><span class="x">${ic("x", 22)}</span>
+  <div><h2>Viết nhật ký mới</h2><div class="sub">Không ai đọc được trang này nếu bạn không muốn.</div>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:14px"><div><div class="fieldl">Ngày ghi</div><div class="inp row" style="gap:8px">${ic("calendar", 16)} 25.10.2026</div></div><div><div class="fieldl">Tiêu đề</div><div class="inp">Một ngày bình thường</div></div></div>
+    <div class="fieldl">Tâm trạng</div><div class="row" style="gap:6px;flex-wrap:wrap">${Object.keys(MOODS).map((m, i) => `<span class="ichip ${i === 0 ? "on" : ""}"><i class="dot" style="background:${MOODS[m]}"></i>${m}</span>`).join("")}</div>
+    <div class="fieldl">Nội dung</div>
+    <div class="row" style="gap:6px;margin-bottom:6px">${[["Lora", "var(--book)", 1], ["Viết tay", "var(--hand)", 0], ["Gọn gàng", "var(--sans)", 0]].map(([n, ff, on]) => `<span class="ichip ${on ? "on" : ""}" style="font-family:${ff}">${n}</span>`).join("")}<span class="muted" style="margin-left:6px">${ic("font", 16)}</span></div>
+    <div class="inp area focus" style="min-height:170px">Sáng nay trời mưa nhỏ. Mình ngồi ở quán quen, viết lại kế hoạch cho tháng tới mà không thấy áp lực như mọi khi<span class="caret"></span></div>
+    <div class="fieldl">Ảnh đính kèm</div><div class="row" style="gap:10px"><div style="width:84px;height:64px;border-radius:8px;overflow:hidden">${painting(71, "rain")}</div><div class="drop" style="width:84px;height:64px;display:grid;place-items:center;color:var(--ink2)">${ic("plus", 20)}</div></div></div>
+  <div style="padding-top:62px"><div class="fieldl" style="margin-top:0">Ai được đọc?</div>
+    <div class="opt on" style="margin-bottom:10px"><b>${ic("lock", 17)} Chỉ mình tôi</b><div class="muted">Lưu ngay, riêng tư tuyệt đối.</div></div>
+    <div class="opt"><b>${ic("globe", 17)} Chia sẻ lên Cộng đồng</b><div class="muted">Vào hàng chờ duyệt. Nếu không được duyệt, trang vẫn ở lại nhật ký riêng của bạn.</div></div>
+    <div class="row" style="justify-content:flex-end;margin-top:28px"><span class="btn ghost">Huỷ</span><span class="btn main">Lưu trang này</span></div></div></div>`;
+
+// ---------- H: Admin back office ----------
+const ADMINS = [["An", "#A1342C", 1], ["Bình", "#5E7A52", 1], ["Chi", "#7E74B4", 1], ["Dũng", "#B8893A", 0]];
+function adminShell(body, tab = 0, sub = 0) {
+  const tabs = [["Phòng 1", 12], ["Phòng 2", 5], ["Phòng 3", 9], ["Nhật ký", 4], ["Kho thông điệp", 0], ["Studio", 0], ["Nhật ký quản trị", 0]];
+  return `${side("admin")}<div class="stage admin">
+    <div class="abs" style="left:32px;right:32px;top:22px" ><div class="row between"><div><div style="font-size:12px;letter-spacing:.2em;font-weight:600;color:var(--acc)">BẢNG QUẢN TRỊ</div><h1>Kiểm duyệt & trưng bày</h1></div>
+      <div class="row" style="gap:14px"><span class="muted">Đang trực</span><div class="avs">${ADMINS.map(([n, c, on]) => `<i class="${on ? "on" : ""}" style="background:${c}" title="${n}">${n[0]}</i>`).join("")}</div><span class="muted">An, Bình, Chi online</span><div class="iconbtn" style="border:1px solid var(--line);background:var(--paper)">${ic("bell", 19)}<span class="n">5</span></div></div></div>
+      <div class="tabs" style="margin-top:14px">${tabs.map(([t, n], i) => `<span class="${i === tab ? "on" : ""}">${t}${n ? `<b class="n">${n}</b>` : ""}</span>`).join("")}</div></div>
+    ${body}</div>`;
+}
+const PENDING = [
+  ["14:02 hôm nay", "Mùa thi đại học năm ấy", "Gió", "@gio.nguyen", "", 1],
+  ["13:40 hôm nay", "Người bạn thân rời nhóm", "Ẩn danh", "@minhthu", "Ẩn danh", 0, "Chi đang xem"],
+  ["11:15 hôm nay", "Thất bại ở cuộc thi hùng biện", "Sóc", "@soc.le", "", 0],
+  ["Hôm qua", "Năm hai đại học, mình bỏ ngành", "Lam", "@lam.pham", "", 0],
+  ["Hôm qua", "Lần đầu đi làm thêm", "Bơ", "@bo.tran", "", 0],
+  ["23.10", "Bức thư không gửi", "K.", "@khang.k", "", 0],
+];
+const pendingBody = (overlay = "") => adminShell(`
+  <div class="abs" style="left:32px;top:142px" ><div class="seg"><span class="on">Chờ phê duyệt · 12</span><span>Đang trưng bày · 1.284</span><span>Lưu trữ · 3</span></div></div>
+  <div class="abs box" style="left:32px;top:192px;width:400px;bottom:26px;overflow:hidden">
+    <div class="row between" style="padding:12px 16px;border-bottom:1px solid var(--line)"><span class="muted">Cũ nhất trước</span><span class="muted">${ic("filter", 16)}</span></div>
+    ${PENDING.map(([t, title, pen, user, flag, sel, lock]) => `<div class="qrow ${sel ? "sel" : ""}"><div class="row between"><span class="muted">${t}</span>${lock ? `<span class="badge b-priv">${ic("eye", 12)} ${lock}</span>` : flag ? `<span class="badge b-arch">${flag}</span>` : ""}</div><b>${title}</b><div class="muted">${pen} · ${user}</div></div>`).join("")}</div>
+  <div class="abs box" style="left:452px;right:32px;top:142px;bottom:26px;padding:22px 26px">
+    <div class="row between"><div><div class="muted">Gửi lúc 14:02 · @gio.nguyen · bút danh “Gió”</div><div class="row" style="gap:8px;margin-top:4px"><span class="badge b-wait">PENDING</span><span class="muted" style="font-size:13px">${ic("eye", 13)} An đang biên tập · bài được khoá cho An</span></div></div>
+      <div class="row"><span class="btn danger">${ic("x", 16)} Từ chối</span><span class="btn line">Lưu nháp</span><span class="btn main">${ic("check", 16)} Phê duyệt & trưng bày</span></div></div>
+    <div style="display:grid;grid-template-columns:1fr 330px;gap:26px;margin-top:16px">
+      <div><div class="fieldl">Tiêu đề</div><div class="inp">Mùa thi đại học năm ấy</div>
+        <div class="fieldl">Tóm tắt trên thẻ <span>64 / 120</span></div><div class="inp">Mình đứng trước cổng trường thi cho tới khi người ta khoá cổng.</div>
+        <div class="fieldl">Nội dung đầy đủ <span>Admin được sửa câu chữ</span></div><div class="inp area" style="min-height:250px;font-size:15px">Sáng hôm đó mình dậy sớm hơn mọi ngày. Mình đã ôn suốt một năm, vậy mà khi cầm đề lên, mình không nhớ nổi công thức đầu tiên. <span style="background:#F6DCD7;text-decoration:line-through">Cô Hằng lớp 12A3 trường Lê Quý Đôn</span> <span style="background:#DDEBD8">Cô giáo chủ nhiệm</span> đã gọi cho mình tối hôm đó…</div>
+        <div class="muted" style="font-size:13px;margin-top:6px">Đã bỏ 1 chi tiết nhận dạng · thay đổi được lưu vào nhật ký quản trị</div></div>
+      <div><div class="fieldl">Tranh minh họa <span style="color:var(--acc)">Bắt buộc ở Phòng 1</span></div>
+        <div style="height:210px;border-radius:12px;overflow:hidden;border:1px solid var(--line)">${painting(77, "door")}</div>
+        <div class="row" style="gap:8px;margin-top:10px"><span class="btn line sm">${ic("upload", 15)} Tải ảnh khác</span><span class="btn line sm">${ic("sparkle", 15)} Tạo bằng Gemini</span></div>
+        <div class="fieldl" style="margin-top:18px">Xem trước trên tường</div>
+        <div style="background:var(--wall);border-radius:12px;padding:16px 26px"><article class="work" style="transform:scale(.92);transform-origin:top center;margin-bottom:-26px"><div class="art" style="height:120px">${painting(77, "door")}</div><div class="cap"><h4>Mùa thi đại học năm ấy</h4><p style="height:auto">Mình đứng trước cổng trường thi cho tới khi người ta khoá cổng.</p></div></article></div></div></div></div>${overlay}`);
+const rejectModal = `<div class="scrim"></div><div class="panel" style="width:600px"><span class="x">${ic("x", 22)}</span>
+  <h2 style="font-size:28px">Từ chối tác phẩm</h2><div class="sub">“Mùa thi đại học năm ấy” · Gió. Bài sẽ chuyển sang REJECTED, không bị xoá.</div>
+  <div class="fieldl">Lý do nhanh</div><div class="row" style="gap:6px;flex-wrap:wrap">${["Chứa thông tin nhận dạng", "Ngôn từ chưa phù hợp", "Nội dung quá ngắn", "Không đúng chủ đề phòng"].map((t, i) => `<span class="ichip ${i === 0 ? "on" : ""}">${t}</span>`).join("")}</div>
+  <div class="fieldl">Lời nhắn gửi tác giả (admin_note)</div><div class="inp area focus" style="min-height:110px;font-family:var(--sans);font-size:15px">Câu chuyện của bạn rất chân thật. Bạn có thể bỏ tên trường và tên cô giáo rồi gửi lại giúp nhóm nhé<span class="caret"></span></div>
+  <div class="muted" style="font-size:13px;margin-top:10px">${ic("bell", 14)} Gió sẽ nhận thông báo kèm lời nhắn này và nút “Sửa và gửi lại”.</div>
+  <div class="row" style="justify-content:flex-end;margin-top:18px"><span class="btn ghost">Huỷ</span><span class="btn main" style="background:#8E2A22">Xác nhận từ chối</span></div></div>`;
+const liveBody = adminShell(`
+  <div class="abs" style="left:32px;top:142px" ><div class="seg"><span>Chờ phê duyệt · 12</span><span class="on">Đang trưng bày · 1.284</span><span>Lưu trữ · 3</span></div></div>
+  <div class="abs" style="left:32px;right:32px;top:194px;display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+    ${[["Tác phẩm đang trưng bày", "1.284", "+38 tuần này"], ["Lượt xem", "48,2k", "+12% so với tuần trước"], ["Lượt thả cảm xúc", "9.731", "Ôm an ủi nhiều nhất"], ["Thời gian duyệt trung bình", "5,2 giờ", "Mục tiêu dưới 24 giờ"]].map(([a, b, c]) => `<div class="box stat"><small>${a}</small><b>${b}</b><small>${c}</small></div>`).join("")}</div>
+  <div class="abs box" style="left:32px;right:32px;top:330px;bottom:26px;overflow:hidden"><table class="at"><tr><th style="width:90px"></th><th>Tác phẩm</th><th>Bút danh</th><th>Lượt xem</th><th>Cảm xúc</th><th>Duyệt bởi</th><th style="width:210px"></th></tr>
+    ${WORKS.slice(0, 6).map((w, i) => `<tr><td><div style="width:70px;height:46px;border-radius:6px;overflow:hidden">${painting(100 + i * 7, w.k)}</div></td><td><b>${w.t}</b><div class="muted" style="font-size:12.5px">trưng bày ${21 - i}.10.2026</div></td><td>${w.a}</td><td>${w.v}</td><td><span class="rxs">${rxStack(w.rx, 18)} ${w.n}</span></td><td>${ADMINS[i % 4][0]}</td>
+      <td><span class="row" style="gap:8px"><span class="btn line sm">${ic("edit", 14)} Sửa</span><span class="btn line sm">${ic("archive", 14)} Lưu trữ</span></span></td></tr>`).join("")}</table></div>`);
+const capsBody = adminShell(`
+  <div class="abs" style="left:32px;top:142px" ><div class="seg"><span class="on">Kho thông điệp · 412</span><span>Từ Phòng 3 · chờ bật 7</span></div></div>
+  <div class="abs" style="right:32px;top:140px" ><span class="btn main sm">${ic("plus", 15)} Thêm thông điệp</span></div>
+  <div class="abs box" style="left:32px;right:420px;top:194px;bottom:26px;overflow:hidden"><table class="at"><tr><th>Thông điệp</th><th>Chủ đề</th><th>Nguồn</th><th>Lượt rút</th><th>Bật</th></tr>
+    ${[["Can đảm không phải là không sợ. Can đảm là vẫn nộp đơn lần nữa.", "Can đảm", "Phòng 3 · Mây", 342, 1], ["Hôm nay nghỉ ngơi cũng là một cách cố gắng.", "Chữa lành", "Phòng 3 · Mây", 518, 1], ["Mười năm nữa, chuyện hôm nay chỉ là một dòng trong câu chuyện dài của bạn.", "Góc nhìn", "Admin · An", 276, 1], ["Bạn không cần phải nhanh, chỉ cần đừng dừng lại.", "Can đảm", "Admin · Bình", 451, 1], ["Một lời “không” đóng một cánh cửa, không đóng cả con đường.", "Góc nhìn", "Admin · Chi", 189, 0], ["Cảm ơn bạn vì đã ở lại đến hôm nay.", "Chữa lành", "Phòng 3 · Ẩn danh", 97, 1]]
+      .map(([q, t, src, n, on]) => `<tr><td style="max-width:360px">${q}</td><td><span class="badge ${t === "Can đảm" ? "b-wait" : t === "Chữa lành" ? "b-ok" : "b-priv"}">${t}</span></td><td class="muted">${src}</td><td>${n}</td><td><span class="tog ${on ? "on" : ""}"></span></td></tr>`).join("")}</table></div>
+  <div class="abs box" style="right:32px;width:368px;top:194px;padding:20px 22px"><b class="serif" style="font-size:22px">Thêm thông điệp</b>
+    <div class="fieldl">Chủ đề</div><div class="row" style="gap:6px">${["Can đảm", "Chữa lành", "Góc nhìn"].map((t, i) => `<span class="ichip ${i === 2 ? "on" : ""}">${t}</span>`).join("")}</div>
+    <div class="fieldl">Nội dung</div><div class="inp area" style="min-height:110px;font-size:15px">Bạn có thể bắt đầu lại bao nhiêu lần cũng được.</div>
+    <div class="row between" style="margin-top:14px"><span class="row muted" style="gap:8px"><span class="tog on"></span> Bật ngay</span><span class="btn main sm">Lưu vào kho</span></div></div>`, 4);
+
+// ---------- A: Login ----------
+const login = `<div class="stage" style="left:0">${lobbySVG()}</div><div class="scrim" style="background:rgba(30,20,16,.45);backdrop-filter:blur(6px)"></div>
+  <div class="panel" style="width:460px;text-align:center"><div style="--logo-c:var(--acc)">${LOGO}</div>
+  <div class="hand" style="font-size:22px;color:var(--ink2);margin:14px 0 4px">mời bạn vào bảo tàng</div>
+  <div style="text-align:left"><div class="fieldl">Tên đăng nhập hoặc email</div><div class="inp">linh.ng</div><div class="fieldl">Mật khẩu <span style="color:var(--acc)">Quên mật khẩu?</span></div><div class="inp">••••••••</div></div>
+  <div style="margin-top:20px"><span class="btn main" style="width:100%">Bước vào bảo tàng</span></div>
+  <div class="muted" style="margin-top:14px">Chưa có tài khoản? <b style="color:var(--acc)">Đăng ký</b></div></div>`;
+
+// ---------- screens ----------
+const SCREENS = [
+  ["s-lobby", "B1", "Sảnh chính", "Gian bảo tàng với 3 cửa vòm dưới đèn rọi, mỗi cửa hé lộ không gian bên trong. Hòm thư trên bệ phát sáng nhẹ: đó là máy nhả thông điệp. Thanh điều hướng mỏng bên trái theo tài liệu, có mục Quản trị cho tài khoản ADMIN.", "/", lobby()],
+  ["s-mailbox", "B2", "Hòm thư · rút một thông điệp", "Bấm hòm thư: chọn chủ đề, một lá thư trượt ra. Nội dung lấy từ kho thông điệp (admin soạn sẵn hoặc lá đã duyệt ở Phòng 3). Lưu vào sổ tay hoặc rút thông điệp mới.", "/", lobby(mailboxOpen)],
+  ["s-notify", "B3", "Hộp thông báo", "Icon chuông ở góc phải: bài được duyệt, bị từ chối kèm lý do, lồng đèn đã hạ xuống, có người thả cảm xúc. Bấm để tới thẳng tác phẩm.", "/", lobby(notifyDrop)],
+  ["s-theme", "B4", "Đổi bảng màu · theme Rêu cổ", "Icon bảng màu ở góc phải. Màn này đang ở theme Rêu cổ để thấy cả app đổi theo.", "/", lobby(themePop), "moss"],
+  ["s-r1", "C1", "Phòng 1 · Triển lãm Đổ vỡ", "Tranh treo tường dưới đèn rọi. Thẻ có tranh minh họa, tiêu đề, tóm tắt, bút danh, cảm xúc và lượt xem. Rê vào thẻ: thẻ nhấc lên và hiện thanh chọn cảm xúc như Facebook (Thương, Ôm an ủi, Đồng cảm).", "/phong/1", r1("", { hover: true })],
+  ["s-r1-detail", "C2", "Xem tác phẩm", "Tranh lớn bên trái, toàn văn câu chuyện bên phải, thanh cảm xúc ở dưới (đang chọn Ôm an ủi).", "/phong/1/email-hoc-bong", r1(r1Detail)],
+  ["s-r1-form", "C3", "Trưng bày tác phẩm", "Đúng các trường trong tài liệu: bút danh, ẩn danh, tiêu đề, tóm tắt trên thẻ, nội dung đầy đủ. Bên phải xem trước thẻ sẽ hiện thế nào.", "/phong/1/trung-bay", r1(r1Form)],
+  ["s-r1-confirm", "C4", "Xác nhận", "Giữ đúng câu chữ trong tài liệu.", "/phong/1/trung-bay", r1(r1Confirm)],
+  ["s-r1-prepared", "C5", "Đang được chuẩn bị", "Câu thông báo đúng tài liệu. Bài vào trạng thái PENDING.", "/phong/1", r1(r1Prepared)],
+  ["s-r1-mine", "C6", "Tác phẩm của tôi", "Bộ lọc “Tác phẩm của tôi”: đã trưng bày, đang chuẩn bị, chưa được trưng bày (kèm lý do và nút sửa, xem câu hỏi mở 2).", "/phong/1?loc=cua-toi", r1("", { mine: true })],
+  ["s-r2", "D1", "Phòng 2 · Bầu trời Lồng đèn (giữ UI)", "Giữ như bản trước, thêm thanh tìm kiếm và bộ lọc theo tài liệu. Lồng đèn riêng tư của bạn bay cao, có đồng hồ đếm ngược tới giờ hạ xuống. Lồng đèn công khai thì kéo xuống để đọc.", "/phong/2", r2()],
+  ["s-r2-form", "D2", "Thả lồng đèn · hẹn ngày giờ", "Chọn ngày trên lịch và giờ chính xác (target_date). Có nút nhanh 1, 3, 4 năm. Riêng tư thì bay lên ngay, công khai thì qua admin duyệt.", "/phong/2/tha", r2(r2Form)],
+  ["s-r2-land", "D3", "Lồng đèn hạ xuống đúng giờ", "Tới giờ hẹn, lồng đèn rơi xuống và sáng lên, thư tự mở. Đồng thời có thông báo trong hộp thư (B3).", "/phong/2/thu/2023", r2(r2Land, { land: true })],
+  ["s-r3", "E1", "Phòng 3 · Cây Thông điệp", "Cây vẽ lại với nhánh tự nhiên, lá đung đưa nhẹ, có lá rơi và đom đóm. Mỗi lá là một lời động viên tích cực, 4 màu theo tài liệu. Rê vào lá thì lá sáng lên kèm tên thông điệp.", "/phong/3", r3("", { sel: true })],
+  ["s-r3-read", "E2", "Đọc một chiếc lá", "Nhấn vào lá: đọc trọn lời nhắn, “Nhận năng lượng” hoặc thả tim.", "/phong/3/la", r3(r3Read)],
+  ["s-r3-form", "E3", "Treo thông điệp · theme Mận chín", "Chọn loại (màu lá tự theo loại), tên, nội dung, bút danh. Luôn qua admin duyệt. Màn này ở theme Mận chín.", "/phong/3/treo", r3(r3Form, { filter: "KL" }), "plum"],
+  ["s-diary", "G1", "Nhật ký · Bản thân", "Dòng thời gian bên trái, trang đang mở bên phải như một cuốn sổ. Mỗi trang ghi rõ: Chỉ mình tôi, Chờ duyệt công khai, hoặc Công khai.", "/nhat-ky", diary()],
+  ["s-diary-community", "G2", "Nhật ký · Cộng đồng", "Những trang đã được duyệt công khai, có thả cảm xúc đồng cảm.", "/nhat-ky/cong-dong", diaryCommunity()],
+  ["s-diary-write", "G3", "Viết nhật ký mới", "Ngày, tiêu đề, tâm trạng, nội dung (chọn font), ảnh. Quyền riêng tư: Chỉ mình tôi (lưu ngay) hoặc Chia sẻ lên Cộng đồng (chờ duyệt).", "/nhat-ky/viet", diary(diaryWrite)],
+  ["s-admin-pending", "H1", "Quản trị · Chờ phê duyệt", "Danh sách bài chờ bên trái, biên tập bên phải: sửa câu chữ, bỏ chi tiết nhận dạng, upload tranh hoặc tạo bằng Gemini, xem trước trên tường. Hiện các admin đang trực và khoá bài khi một admin đang xem để không duyệt trùng.", "/quan-tri/phong-1", pendingBody()],
+  ["s-admin-reject", "H2", "Quản trị · Từ chối kèm lý do", "Chọn lý do nhanh hoặc viết lời nhắn. User nhận thông báo, bài không bị xoá.", "/quan-tri/phong-1", pendingBody(rejectModal)],
+  ["s-admin-live", "H3", "Quản trị · Đang trưng bày", "Thống kê phòng, sửa nội dung hoặc thay tranh, lưu trữ (ARCHIVED) khi có khiếu nại.", "/quan-tri/phong-1/dang-trung-bay", liveBody],
+  ["s-admin-capsules", "H4", "Quản trị · Kho thông điệp", "Nguồn của hòm thư ở sảnh chính. Thêm, sửa, bật/tắt từng câu. Xem số lần được rút.", "/quan-tri/kho-thong-diep", capsBody],
+  ["s-login", "A1", "Đăng nhập", "Sảnh bảo tàng mờ phía sau.", "/dang-nhap", login],
+];
+
+document.getElementById("screens").innerHTML = SCREENS.map(([id, code, title, note, url, html, theme]) => `
+  <div class="screen-block" id="${id}"><div class="screen-head"><span class="id">${code}</span><h3>${title}</h3></div>
+  <p class="screen-note">${note}</p>
+  <div class="viewport"><div class="chrome"><i></i><i></i><i></i><span>thenameoffeeling.vn${url}</span></div><div class="fit"><div class="screen" data-theme="${theme || "museum"}">${html}</div></div></div></div>`).join("");
+
+document.getElementById("theme-grid").innerHTML = THEMES.map(([k, n, d, sw]) => `<div class="dcard pad"><div class="row" style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:1.05rem">${n}</b><span class="bs">${d}</span></div>
+  <div class="swatches">${sw.map(c => `<i style="background:${c}" title="${c}"></i>`).join("")}</div>
+  <div class="theme-thumb fit"><div class="screen" data-theme="${k}">${lobby()}</div></div></div>`).join("");
+
+function fit() { document.querySelectorAll(".fit").forEach(b => { b.firstElementChild.style.zoom = Math.min(1, b.clientWidth / 1440); }); }
+addEventListener("resize", fit); fit();
+</script>
+</body>
+</html>
