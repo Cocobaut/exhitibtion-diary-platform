@@ -1,4 +1,4 @@
-import React, { useId, useState, useRef } from 'react';
+import React, { useId, useState, useRef, useMemo } from 'react';
 import { rng, f } from '../../utils/rng';
 import { SYM, SYM_KEYS, MOCK_LANTERN_LETTERS } from '../../data/mockData';
 
@@ -22,8 +22,15 @@ export function SingleLantern({
   const r = rng(seed);
   const lanternKind = kind || SYM_KEYS[Math.floor(r() * SYM_KEYS.length)];
   const id = `lt_${compId}_${seed}_`;
-  const body = color || ["#FFE3A8", "#FFD9B0", "#FFE7C2", "#F9CFA0"][Math.floor(r() * 4)];
-  const sym = SYM[lanternKind]().map(([a, b]) => [a * 11, b * 11 - 1]);
+  const body =
+    color ||
+    (isMine
+      ? "#FFF3D6"
+      : ["#FFE3A8", "#FFD9B0", "#FFE7C2", "#F9CFA0"][Math.floor(r() * 4)]);
+  const sym = (SYM[lanternKind] ? SYM[lanternKind]() : SYM.star()).map(([a, b]) => [
+    a * 11,
+    b * 11 - 1,
+  ]);
 
   const [isHovered, setIsHovered] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
@@ -68,8 +75,12 @@ export function SingleLantern({
       window.removeEventListener('touchend', onPointerUp);
 
       const finalDiffY = currentDragRef.current;
-      const curX = upEvent.changedTouches ? upEvent.changedTouches[0].clientX : (upEvent.clientX ?? startXRef.current);
-      const curY = upEvent.changedTouches ? upEvent.changedTouches[0].clientY : (upEvent.clientY ?? startYRef.current);
+      const curX = upEvent.changedTouches
+        ? upEvent.changedTouches[0].clientX
+        : upEvent.clientX ?? startXRef.current;
+      const curY = upEvent.changedTouches
+        ? upEvent.changedTouches[0].clientY
+        : upEvent.clientY ?? startYRef.current;
       const totalDist = Math.hypot(curX - startXRef.current, curY - startYRef.current);
 
       setIsDragging(false);
@@ -87,7 +98,7 @@ export function SingleLantern({
     window.addEventListener('touchend', onPointerUp);
   };
 
-  const currentScale = sc * (isDragging ? 1.25 : (isHovered ? 1.15 : 1));
+  const currentScale = sc * (isDragging ? 1.25 : isHovered ? 1.15 : 1);
   const currentY = y + dragOffset;
 
   return (
@@ -97,8 +108,12 @@ export function SingleLantern({
         animationDelay: isDragging ? '0s' : `-${f(r() * 6)}s`,
         cursor: isDragging ? 'grabbing' : 'grab',
         filter: isDragging
-          ? 'drop-shadow(0 0 24px rgba(255,230,150,1))'
-          : (isHovered ? 'drop-shadow(0 0 18px rgba(255,220,130,0.9))' : 'none'),
+          ? 'drop-shadow(0 0 26px rgba(255,235,160,1))'
+          : isHovered
+          ? 'drop-shadow(0 0 20px rgba(255,220,130,0.95))'
+          : isMine
+          ? 'drop-shadow(0 0 14px rgba(255,230,170,0.8))'
+          : 'none',
         transition: isDragging ? 'none' : 'filter 0.2s ease',
         userSelect: 'none',
       }}
@@ -126,9 +141,11 @@ export function SingleLantern({
         transform={`translate(${f(x)} ${f(currentY)}) scale(${f(currentScale)}) rotate(${f(
           (r() - 0.5) * 8 + (dragOffset > 0 ? dragOffset * 0.08 : 0)
         )})`}
-        opacity={isDragging ? 1 : (isHovered ? 1 : op)}
+        opacity={isDragging ? 1 : isHovered ? 1 : op}
         style={{
-          transition: isDragging ? 'none' : 'transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease',
+          transition: isDragging
+            ? 'none'
+            : 'transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease',
         }}
       >
         <defs>
@@ -159,9 +176,15 @@ export function SingleLantern({
 
         {/* Small pull-down arrow visual indicator on hover / drag */}
         {(isHovered || isDragging) && (
-          <g transform="translate(0, 36)" opacity="0.9">
-            <circle r="9" fill="rgba(40,16,20,0.75)" />
-            <path d="M-4 -2 L0 3 L4 -2" fill="none" stroke="#FFE3A8" strokeWidth="1.6" strokeLinecap="round" />
+          <g transform="translate(0, 36)" opacity="0.95">
+            <circle r="9" fill="rgba(40,16,20,0.85)" />
+            <path
+              d="M-4 -2 L0 3 L4 -2"
+              fill="none"
+              stroke="#FFE3A8"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
           </g>
         )}
       </g>
@@ -169,50 +192,108 @@ export function SingleLantern({
   );
 }
 
-export function LanternSky({ isLanded = false, onOpenLandedModal }) {
+// Simple deterministic hash for string IDs
+function stringToSeed(str) {
+  let hash = 0;
+  if (!str || str.length === 0) return 42;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+export function LanternSky({
+  isLanded = false,
+  lanterns = [],
+  personalLantern = null,
+  onOpenLandedModal,
+}) {
   const compId = useId().replace(/:/g, '');
-  const r = rng(88);
 
-  // Background Lanterns with individual letter data and click/drag handlers
-  const backgroundLanterns = [];
-  for (let i = 0; i < 64; i++) {
-    const d = r();
-    const x = r() * 1364;
-    const y = 170 + r() * 480;
-    if (isLanded && Math.abs(x - 682) < 300 && y > 360) continue;
+  // Generate stars once
+  const stars = useMemo(() => {
+    const list = [];
+    for (let i = 0; i < 75; i++) {
+      const rr = rng(i + 12);
+      list.push(
+        <circle
+          key={`star_${i}`}
+          cx={f(rr() * 1364)}
+          cy={f(rr() * 420)}
+          r={f(rr() * 1.3 + 0.3)}
+          fill="#FFF1DC"
+          opacity={f(rr() * 0.65 + 0.2)}
+        />
+      );
+    }
+    return list;
+  }, []);
 
-    // Pick a mock letter for this lantern
-    const letter = MOCK_LANTERN_LETTERS[(i % (MOCK_LANTERN_LETTERS.length - 1)) + 1];
+  // Compute positioned lanterns combining active API items + ambient background
+  const renderedLanterns = useMemo(() => {
+    const items = [];
+    const hasApiItems = Array.isArray(lanterns) && lanterns.length > 0;
 
-    backgroundLanterns.push(
-      <SingleLantern
-        key={i}
-        x={x}
-        y={y}
-        sc={0.18 + d * 0.55}
-        seed={600 + i}
-        op={0.45 + d * 0.55}
-        titleText={`Lồng đèn của ${letter.author} · Nhấn hoặc kéo xuống để đọc`}
-        onClick={() => onOpenLandedModal && onOpenLandedModal(letter)}
-      />
-    );
-  }
+    if (hasApiItems) {
+      // Map API lanterns into canvas positions
+      lanterns.forEach((item, idx) => {
+        const seed = stringToSeed(item.id || `api_${idx}`);
+        const r = rng(seed);
+        const d = r();
+        const x = 50 + r() * 1264;
+        const y = 160 + r() * 480;
 
-  // Background Stars
-  const stars = [];
-  for (let i = 0; i < 70; i++) {
-    const rr = rng(i + 3);
-    stars.push(
-      <circle
-        key={i}
-        cx={f(rr() * 1364)}
-        cy={f(rr() * 380)}
-        r={f(rr() * 1.3 + 0.3)}
-        fill="#FFF1DC"
-        opacity={f(rr() * 0.6 + 0.2)}
-      />
-    );
-  }
+        if (isLanded && Math.abs(x - 682) < 280 && y > 350) return;
+
+        const authorName = item.author_display_name || 'Người gửi ẩn danh';
+        const titleText = `${item.title || 'Lồng đèn hy vọng'} — ${authorName} · Kéo xuống hoặc nhấn để đọc`;
+
+        items.push(
+          <SingleLantern
+            key={item.id || `api_${idx}`}
+            x={x}
+            y={y}
+            sc={0.22 + d * 0.55}
+            seed={seed}
+            kind={item.symbol || 'star'}
+            op={0.5 + d * 0.5}
+            isMine={Boolean(item.is_mine)}
+            titleText={titleText}
+            onClick={() => onOpenLandedModal && onOpenLandedModal(item)}
+          />
+        );
+      });
+    }
+
+    // Always ensure at least 48 lanterns for breathtaking visual depth
+    const ambientCount = Math.max(0, 48 - (hasApiItems ? lanterns.length : 0));
+    for (let i = 0; i < ambientCount; i++) {
+      const r = rng(600 + i);
+      const d = r();
+      const x = 40 + r() * 1284;
+      const y = 170 + r() * 490;
+      if (isLanded && Math.abs(x - 682) < 280 && y > 350) continue;
+
+      const fallbackLetter =
+        MOCK_LANTERN_LETTERS[(i % (MOCK_LANTERN_LETTERS.length - 1)) + 1];
+
+      items.push(
+        <SingleLantern
+          key={`ambient_${i}`}
+          x={x}
+          y={y}
+          sc={0.16 + d * 0.5}
+          seed={700 + i}
+          op={0.35 + d * 0.5}
+          titleText={`Lồng đèn hy vọng · Nhấn hoặc kéo xuống để đọc`}
+          onClick={() => onOpenLandedModal && onOpenLandedModal(fallbackLetter)}
+        />
+      );
+    }
+
+    return items;
+  }, [lanterns, isLanded, onOpenLandedModal]);
 
   return (
     <svg className="scene" viewBox="0 0 1364 900" aria-hidden="true">
@@ -227,26 +308,36 @@ export function LanternSky({ isLanded = false, onOpenLandedModal }) {
 
       <rect width="1364" height="900" fill={`url(#dusk_${compId})`} />
       {stars}
-      {backgroundLanterns}
+      {renderedLanterns}
 
       {/* User's Own High-flying Personal Lantern */}
       {!isLanded && (
         <SingleLantern
           x={1010}
           y={205}
-          sc={0.95}
+          sc={0.98}
           seed={4321}
-          kind="heart"
+          kind={personalLantern?.symbol || 'heart'}
           color="#FFF0D2"
           isMine={true}
-          titleText="Lồng đèn riêng của bạn · Nhấn để kéo xuống mở thư"
-          onClick={() => onOpenLandedModal && onOpenLandedModal(MOCK_LANTERN_LETTERS[0])}
+          titleText={
+            personalLantern
+              ? `Lồng đèn của bạn: "${personalLantern.title}" · Nhấn để kéo xuống mở thư`
+              : 'Lồng đèn riêng của bạn · Nhấn để kéo xuống mở thư'
+          }
+          onClick={() =>
+            onOpenLandedModal &&
+            onOpenLandedModal(personalLantern || MOCK_LANTERN_LETTERS[0])
+          }
         />
       )}
 
       {/* Ground and Pagoda silhouette */}
       <path d="M0 790 Q 340 750 682 770 T 1364 760 L1364 900 L0 900 Z" fill="#3A1A1C" />
-      <path d="M1130 780 L1130 690 Q1130 640 1180 636 Q1230 640 1230 690 L1230 780 Z" fill="#2A1214" />
+      <path
+        d="M1130 780 L1130 690 Q1130 640 1180 636 Q1230 640 1230 690 L1230 780 Z"
+        fill="#2A1214"
+      />
       <path
         d="M1158 730 L1158 702 Q1158 682 1180 680 Q1202 682 1202 702 L1202 730 Z"
         fill="#FFCF7A"

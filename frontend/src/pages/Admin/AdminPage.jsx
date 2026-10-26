@@ -1,28 +1,158 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { ADMINS } from '../../data/mockData';
 import { Icon } from '../../components/common/Icons';
 import { AdminPending } from './AdminPending';
 import { AdminLive } from './AdminLive';
 import { AdminCapsules } from './AdminCapsules';
+import { AdminDiaries } from './AdminDiaries';
+import { AdminStudio } from './AdminStudio';
+import { AdminAuditLog } from './AdminAuditLog';
 import { AdminRejectModal } from './AdminRejectModal';
+import { adminRoomService } from '../../services/adminRoomService';
+import { adminDiaryService } from '../../services/adminDiaryService';
+import { adminCapsuleService } from '../../services/adminCapsuleService';
+import { useAuth } from '../../context/AuthContext';
 
 export function AdminPage({ onOpenNotifications }) {
+  const { user } = useAuth();
+
   const [activeTab, setActiveTab] = useState(0); // 0: Phòng 1, 1: Phòng 2, 2: Phòng 3, 3: Nhật ký, 4: Kho thông điệp
   const [statusSegment, setStatusSegment] = useState(0); // 0: Chờ phê duyệt, 1: Đang trưng bày, 2: Lưu trữ
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedRejectArtwork, setSelectedRejectArtwork] = useState(null);
+  const [isRejecting, setIsRejecting] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Dynamic counts for exhibition rooms & diaries & capsules
+  const [roomPendingCounts, setRoomPendingCounts] = useState({ 1: 0, 2: 0, 3: 0 });
+  const [diaryPendingCount, setDiaryPendingCount] = useState(0);
+  const [capsuleCount, setCapsuleCount] = useState(0);
+
+  const triggerToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage('');
+    }, 4500);
+  };
+
+  // Fetch counts for all rooms, diaries, and capsules
+  const fetchCounts = useCallback(async () => {
+    try {
+      const [r1, r2, r3, dPending, capSummary] = await Promise.allSettled([
+        adminRoomService.getPendingArtworks(1, { limit: 1 }),
+        adminRoomService.getPendingArtworks(2, { limit: 1 }),
+        adminRoomService.getPendingArtworks(3, { limit: 1 }),
+        adminDiaryService.getPendingDiaries({ limit: 1 }),
+        adminCapsuleService.getCapsuleCategories(),
+      ]);
+
+      const getCount = (res) => {
+        if (res.status === 'fulfilled' && res.value) {
+          const val = res.value?.data || res.value;
+          return val?.pagination?.total ?? val?.pagination?.total_pending ?? val?.items?.length ?? 0;
+        }
+        return 0;
+      };
+
+      setRoomPendingCounts({
+        1: getCount(r1),
+        2: getCount(r2),
+        3: getCount(r3),
+      });
+
+      setDiaryPendingCount(getCount(dPending));
+
+      if (capSummary.status === 'fulfilled' && capSummary.value) {
+        const cData = capSummary.value?.data || capSummary.value;
+        if (cData?.total_capsules !== undefined) {
+          setCapsuleCount(cData.total_capsules);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not load moderation counts:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCounts();
+  }, [fetchCounts, refreshTrigger]);
+
+  // Map activeTab to Room ID (0 -> 1, 1 -> 2, 2 -> 3)
+  const isRoomTab = activeTab >= 0 && activeTab <= 2;
+  const currentRoomId = isRoomTab ? activeTab + 1 : 1;
 
   const tabs = [
-    { name: "Phòng 1", count: 12 },
-    { name: "Phòng 2", count: 5 },
-    { name: "Phòng 3", count: 9 },
-    { name: "Nhật ký", count: 4 },
-    { name: "Kho thông điệp", count: 0 },
-    { name: "Studio", count: 0 },
-    { name: "Nhật ký quản trị", count: 0 },
+    { name: 'Phòng 1 (Đổ vỡ)', count: roomPendingCounts[1] || 0 },
+    { name: 'Phòng 2 (Lồng đèn)', count: roomPendingCounts[2] || 0 },
+    { name: 'Phòng 3 (Cây thông điệp)', count: roomPendingCounts[3] || 0 },
+    { name: 'Nhật ký', count: diaryPendingCount || 0 },
+    { name: 'Kho thông điệp', count: capsuleCount || 0 },
+    { name: 'Studio', count: 0 },
+    { name: 'Nhật ký quản trị', count: 0 },
   ];
+
+  const handleOpenRejectModal = (artwork) => {
+    setSelectedRejectArtwork(artwork);
+    setShowRejectModal(true);
+  };
+
+  const handleConfirmReject = async ({ selectedReason, adminNote, artworkId }) => {
+    if (!artworkId) return;
+    setIsRejecting(true);
+    try {
+      await adminRoomService.rejectArtwork(currentRoomId, artworkId, {
+        admin_note: adminNote,
+        rejection_reason_tag: selectedReason,
+      });
+
+      triggerToast('Đã từ chối tác phẩm và gửi lời nhắn phản hồi tới chuông của tác giả.');
+      setShowRejectModal(false);
+      setSelectedRejectArtwork(null);
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (err) {
+      console.error('Error rejecting artwork:', err);
+      const apiMsg =
+        err?.response?.data?.message || err?.message || 'Không thể từ chối tác phẩm lúc này.';
+      alert(`Lỗi: ${apiMsg}`);
+    } finally {
+      setIsRejecting(false);
+    }
+  };
+
+  const handleApproveSuccess = () => {
+    triggerToast('✦ Tác phẩm đã được phê duyệt và đưa lên triển lãm thành công!');
+    setRefreshTrigger((prev) => prev + 1);
+  };
 
   return (
     <div className="stage admin">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '32px',
+            right: '32px',
+            zIndex: 9999,
+            background: 'var(--ink)',
+            color: 'var(--paper)',
+            padding: '12px 22px',
+            borderRadius: '10px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+            fontSize: '14.5px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            backdropFilter: 'blur(8px)',
+            animation: 'fadeIn 0.3s ease',
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
+
       {/* Top Header */}
       <div className="abs" style={{ left: '32px', right: '32px', top: '22px' }}>
         <div className="row between">
@@ -37,7 +167,7 @@ export function AdminPage({ onOpenNotifications }) {
             >
               BẢNG QUẢN TRỊ
             </div>
-            <h1>Kiểm duyệt & trưng bày</h1>
+            <h1>Kiểm duyệt &amp; trưng bày</h1>
           </div>
 
           <div className="row" style={{ gap: '14px' }}>
@@ -54,14 +184,16 @@ export function AdminPage({ onOpenNotifications }) {
                 </i>
               ))}
             </div>
-            <span className="muted">An, Bình, Chi online</span>
+            <span className="muted">
+              {user?.nickname ? `${user.nickname} (${user.role})` : 'Ban Quản trị online'}
+            </span>
             <div
               className="iconbtn"
               style={{ border: '1px solid var(--line)', background: 'var(--paper)', cursor: 'pointer' }}
               onClick={onOpenNotifications}
             >
               <Icon name="bell" size={19} />
-              <span className="n">5</span>
+              <span className="n">3</span>
             </div>
           </div>
         </div>
@@ -72,7 +204,10 @@ export function AdminPage({ onOpenNotifications }) {
             <span
               key={i}
               className={i === activeTab ? 'on' : ''}
-              onClick={() => setActiveTab(i)}
+              onClick={() => {
+                setActiveTab(i);
+                setStatusSegment(0);
+              }}
             >
               {t.name}
               {t.count > 0 && <b className="n">{t.count}</b>}
@@ -81,27 +216,27 @@ export function AdminPage({ onOpenNotifications }) {
         </div>
       </div>
 
-      {/* Subtab Segment Switcher (for Room tabs) */}
-      {activeTab !== 4 && (
+      {/* Subtab Segment Switcher (for Exhibition Room tabs) */}
+      {isRoomTab && (
         <div className="abs" style={{ left: '32px', top: '142px' }}>
           <div className="seg">
             <span
               className={statusSegment === 0 ? 'on' : ''}
               onClick={() => setStatusSegment(0)}
             >
-              Chờ phê duyệt · 12
+              Chờ phê duyệt · {roomPendingCounts[currentRoomId] || 0}
             </span>
             <span
               className={statusSegment === 1 ? 'on' : ''}
               onClick={() => setStatusSegment(1)}
             >
-              Đang trưng bày · 1.284
+              Đang trưng bày
             </span>
             <span
               className={statusSegment === 2 ? 'on' : ''}
               onClick={() => setStatusSegment(2)}
             >
-              Lưu trữ · 3
+              Lưu trữ
             </span>
           </div>
         </div>
@@ -109,20 +244,68 @@ export function AdminPage({ onOpenNotifications }) {
 
       {/* Main View Content */}
       {activeTab === 4 ? (
-        <AdminCapsules />
-      ) : statusSegment === 0 ? (
-        <AdminPending onOpenRejectModal={() => setShowRejectModal(true)} />
+        <AdminCapsules
+          triggerToast={triggerToast}
+          onCapsulesUpdated={(count) => setCapsuleCount(count)}
+        />
+      ) : activeTab === 3 ? (
+        <AdminDiaries
+          onCountChange={fetchCounts}
+          triggerToast={triggerToast}
+        />
+      ) : isRoomTab ? (
+        statusSegment === 0 ? (
+          <AdminPending
+            key={`pending-${currentRoomId}-${refreshTrigger}`}
+            roomId={currentRoomId}
+            onOpenRejectModal={handleOpenRejectModal}
+            onApproveSuccess={handleApproveSuccess}
+            refreshTrigger={refreshTrigger}
+          />
+        ) : (
+          <AdminLive
+            key={`live-${currentRoomId}-${statusSegment}-${refreshTrigger}`}
+            roomId={currentRoomId}
+            onRefreshCounts={fetchCounts}
+          />
+        )
+      ) : activeTab === 5 ? (
+        <AdminStudio
+          triggerToast={triggerToast}
+          onPublished={() => fetchCounts()}
+        />
+      ) : activeTab === 6 ? (
+        <AdminAuditLog
+          triggerToast={triggerToast}
+        />
       ) : (
-        <AdminLive />
+        <div
+          className="abs box"
+          style={{
+            left: '32px',
+            right: '32px',
+            top: '194px',
+            bottom: '26px',
+            display: 'grid',
+            placeItems: 'center',
+            color: 'var(--muted)',
+            fontSize: '15px',
+          }}
+        >
+          <div>Khu vực quản trị phân hệ {tabs[activeTab]?.name || 'này'} đang hoàn thiện.</div>
+        </div>
       )}
 
       {/* Reject Modal */}
       <AdminRejectModal
         isOpen={showRejectModal}
-        onClose={() => setShowRejectModal(false)}
-        onConfirmReject={(data) => {
-          console.log('Rejected:', data);
+        artwork={selectedRejectArtwork}
+        isSubmitting={isRejecting}
+        onClose={() => {
+          setShowRejectModal(false);
+          setSelectedRejectArtwork(null);
         }}
+        onConfirmReject={handleConfirmReject}
       />
     </div>
   );

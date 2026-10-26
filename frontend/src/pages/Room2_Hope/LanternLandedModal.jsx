@@ -1,36 +1,144 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { SingleLantern } from './LanternSky';
+import { room2Service } from '../../services/room2Service';
 
-export function LanternLandedModal({ isOpen, onClose, onSaveToNotebook, onReplyFuture, letterData }) {
+export function LanternLandedModal({
+  isOpen,
+  onClose,
+  onSaveToNotebook,
+  onReplyFuture,
+  letterData,
+}) {
+  const [letter, setLetter] = useState(letterData || null);
   const [isSaved, setIsSaved] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !letterData) return;
+
+    let isMounted = true;
+    setLetter(letterData);
+    setIsSaved(Boolean(letterData.is_saved));
+
+    // If letter has an id, call openLantern API to mark opened on server & fetch full content
+    if (letterData.id) {
+      setIsLoading(true);
+      room2Service
+        .openLantern(letterData.id)
+        .then((res) => {
+          if (!isMounted) return;
+          const data = res?.data || res;
+          if (data && data.title) {
+            setLetter((prev) => ({
+              ...prev,
+              ...data,
+              author: data.author_display_name || prev?.author || 'Người gửi ẩn danh',
+              content: data.content || prev?.content,
+            }));
+            if (data.is_saved !== undefined) {
+              setIsSaved(Boolean(data.is_saved));
+            }
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not mark lantern opened on backend:', err);
+        })
+        .finally(() => {
+          if (isMounted) setIsLoading(false);
+        });
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, letterData]);
+
   if (!isOpen) return null;
 
-  const letter = letterData || {
-    title: "Gửi mình của năm 2026,",
-    content: "Lúc viết thư này mình đang ngồi ở thư viện, vừa trượt kỳ thi IELTS lần hai. Nếu cậu đọc được những dòng này, mong là cậu đã thôi so mình với người khác. Dù kết quả ra sao, mình vẫn tự hào vì tụi mình đã không bỏ cuộc.",
-    author: "Linh, 24.10.2023",
-    statusNote: "Đã tới giờ hẹn · 09:00, 25.10.2026",
-    symbol: "heart"
+  const currentLetter = letter || {
+    title: 'Gửi mình của năm 2026,',
+    content:
+      'Lúc viết thư này mình đang ngồi ở thư viện, vừa trượt kỳ thi IELTS lần hai. Nếu cậu đọc được những dòng này, mong là cậu đã thôi so mình với người khác. Dù kết quả ra sao, mình vẫn tự hào vì tụi mình đã không bỏ cuộc.',
+    author: 'Linh, 24.10.2023',
+    statusNote: 'Đã tới giờ hẹn · 09:00, 25.10.2026',
+    symbol: 'heart',
   };
 
-  const handleSave = () => {
-    setIsSaved(true);
-    if (onSaveToNotebook) {
-      onSaveToNotebook({
-        id: `nb_lt_${Date.now()}`,
-        source: 'lantern',
-        sourceLabel: 'Lồng đèn hạ xuống · Phòng 2',
-        badgeClass: 'b-wait',
-        icon: 'r2',
-        title: letter.title || 'Lồng đèn gửi tương lai',
-        content: letter.content,
-        author: letter.author,
-        symbol: letter.symbol || 'heart',
-        savedAt: 'Hôm nay'
-      });
+  const formatTargetDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      const hours = String(d.getHours()).padStart(2, '0');
+      const mins = String(d.getMinutes()).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${hours}:${mins}, ${day}.${month}.${year}`;
+    } catch {
+      return dateStr;
     }
   };
+
+  const handleSaveToggle = async () => {
+    if (saveLoading) return;
+    setSaveLoading(true);
+
+    const willSave = !isSaved;
+    try {
+      if (currentLetter.id) {
+        if (willSave) {
+          await room2Service.saveLanternToNotebook(currentLetter.id);
+        } else {
+          await room2Service.unsaveLanternFromNotebook(currentLetter.id);
+        }
+      }
+      setIsSaved(willSave);
+
+      if (willSave && onSaveToNotebook) {
+        onSaveToNotebook({
+          id: currentLetter.id ? `nb_lt_${currentLetter.id}` : `nb_lt_${Date.now()}`,
+          artwork_id: currentLetter.id,
+          source: 'lantern',
+          sourceLabel: 'Lồng đèn hạ xuống · Phòng 2',
+          badgeClass: 'b-wait',
+          icon: 'r2',
+          title: currentLetter.title || 'Lồng đèn gửi tương lai',
+          content: currentLetter.content,
+          author: currentLetter.author_display_name || currentLetter.author || 'Người gửi ẩn danh',
+          symbol: currentLetter.symbol || 'heart',
+          savedAt: 'Hôm nay',
+        });
+      }
+    } catch (err) {
+      console.error('Error toggling notebook save:', err);
+      // Fallback local save even if backend save fails
+      setIsSaved(willSave);
+      if (willSave && onSaveToNotebook) {
+        onSaveToNotebook({
+          id: currentLetter.id ? `nb_lt_${currentLetter.id}` : `nb_lt_${Date.now()}`,
+          artwork_id: currentLetter.id,
+          source: 'lantern',
+          sourceLabel: 'Lồng đèn hạ xuống · Phòng 2',
+          badgeClass: 'b-wait',
+          icon: 'r2',
+          title: currentLetter.title || 'Lồng đèn gửi tương lai',
+          content: currentLetter.content,
+          author: currentLetter.author_display_name || currentLetter.author || 'Người gửi ẩn danh',
+          symbol: currentLetter.symbol || 'heart',
+          savedAt: 'Hôm nay',
+        });
+      }
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const formattedTarget = currentLetter.target_date
+    ? `Hạ xuống: ${formatTargetDate(currentLetter.target_date)}`
+    : currentLetter.statusNote || 'Đã tới giờ hẹn';
 
   return (
     <>
@@ -44,7 +152,14 @@ export function LanternLandedModal({ isOpen, onClose, onSaveToNotebook, onReplyF
         height="300"
         viewBox="-150 -150 300 300"
       >
-        <SingleLantern x={0} y={0} sc={2.1} seed={4321} kind={letter.symbol || "heart"} color="#FFF0D2" />
+        <SingleLantern
+          x={0}
+          y={0}
+          sc={2.1}
+          seed={4321}
+          kind={currentLetter.symbol || 'heart'}
+          color="#FFF0D2"
+        />
       </svg>
 
       {/* Opened Letter Panel */}
@@ -55,8 +170,11 @@ export function LanternLandedModal({ isOpen, onClose, onSaveToNotebook, onReplyF
           right: '70px',
           top: '150px',
           transform: 'none',
-          width: '500px',
+          width: '520px',
+          maxHeight: '80vh',
+          overflowY: 'auto',
           background: '#FBF4E6',
+          boxShadow: '0 24px 60px rgba(10,5,12,0.4)',
         }}
       >
         <span className="x" onClick={onClose} role="button" tabIndex={0}>
@@ -64,7 +182,7 @@ export function LanternLandedModal({ isOpen, onClose, onSaveToNotebook, onReplyF
         </span>
 
         <div className="row" style={{ gap: '6px', color: '#8A5A1E', fontSize: '13.5px' }}>
-          <Icon name="clock" size={15} /> {letter.statusNote || "Đã tới giờ hẹn"}
+          <Icon name="clock" size={15} /> {formattedTarget}
         </div>
 
         <div
@@ -74,23 +192,46 @@ export function LanternLandedModal({ isOpen, onClose, onSaveToNotebook, onReplyF
             color: 'var(--acc)',
             fontSize: '22px',
             margin: '10px 0 6px',
+            fontWeight: 700,
           }}
         >
-          {letter.title}
+          {currentLetter.title}
         </div>
 
-        <div className="book" style={{ fontSize: '16px', lineHeight: 1.8 }}>
-          {letter.content}
-        </div>
+        {isLoading ? (
+          <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)' }}>
+            Đang mở bức thư lồng đèn...
+          </div>
+        ) : (
+          <div
+            className="book"
+            style={{
+              fontSize: '16px',
+              lineHeight: 1.85,
+              whiteSpace: 'pre-wrap',
+              color: '#3A2016',
+            }}
+          >
+            {currentLetter.content}
+          </div>
+        )}
 
-        <div className="hand" style={{ textAlign: 'right', fontSize: '22px', marginTop: '6px' }}>
-          {letter.author}
+        <div
+          className="hand"
+          style={{
+            textAlign: 'right',
+            fontSize: '22px',
+            marginTop: '12px',
+            color: '#5C341F',
+          }}
+        >
+          {currentLetter.author_display_name || currentLetter.author || 'Người gửi ẩn danh'}
         </div>
 
         <div
           className="row between"
           style={{
-            marginTop: '16px',
+            marginTop: '20px',
             borderTop: '1px solid var(--line)',
             paddingTop: '14px',
           }}
@@ -98,12 +239,20 @@ export function LanternLandedModal({ isOpen, onClose, onSaveToNotebook, onReplyF
           <button
             type="button"
             className={`btn ${isSaved ? 'main' : 'line'} sm`}
-            onClick={handleSave}
+            onClick={handleSaveToggle}
+            disabled={saveLoading}
           >
-            <Icon name={isSaved ? "check" : "bookmark"} size={16} />
-            {isSaved ? "Đã lưu vào sổ tay" : "Lưu vào sổ tay"}
+            <Icon name={isSaved ? 'check' : 'bookmark'} size={16} />
+            {saveLoading ? 'Đang lưu...' : isSaved ? 'Đã lưu vào sổ tay' : 'Lưu vào sổ tay'}
           </button>
-          <button type="button" className="btn main sm" onClick={onReplyFuture}>
+          <button
+            type="button"
+            className="btn main sm"
+            onClick={() => {
+              onClose();
+              if (onReplyFuture) onReplyFuture();
+            }}
+          >
             <Icon name="r2" size={16} /> Viết thư trả lời tương lai
           </button>
         </div>

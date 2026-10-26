@@ -2,6 +2,7 @@ import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { THEMES } from '../../data/mockData';
 import { Icon } from '../common/Icons';
+import { userService } from '../../services/userService';
 
 export function ThemeDropdown({ isOpen, onClose }) {
   const { theme, setTheme } = useTheme();
@@ -36,8 +37,16 @@ export function ThemeDropdown({ isOpen, onClose }) {
             <div
               key={th.key}
               className="row"
-              onClick={() => {
+              onClick={async () => {
                 setTheme(th.key);
+                try {
+                  const token = localStorage.getItem('access_token');
+                  if (token) {
+                    await userService.updateProfile({ theme_preference: th.key });
+                  }
+                } catch {
+                  // offline fallback
+                }
                 onClose && onClose();
               }}
               style={{

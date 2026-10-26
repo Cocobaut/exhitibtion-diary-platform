@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { ThemeDropdown } from './components/overlays/ThemeDropdown';
 import { NotificationDropdown } from './components/overlays/NotificationDropdown';
@@ -13,12 +14,15 @@ import { Room3Page } from './pages/Room3_Tree/Room3Page';
 import { DiaryPage } from './pages/Diary/DiaryPage';
 import { NotebookPage } from './pages/Notebook/NotebookPage';
 import { AdminPage } from './pages/Admin/AdminPage';
+import { OwnerDashboardPage } from './pages/Owner/OwnerDashboardPage';
 import { LoginPage } from './pages/Auth/LoginPage';
+import { ProfilePage } from './pages/Profile/ProfilePage';
 import { INITIAL_NOTEBOOK_ITEMS } from './data/mockData';
 
 function MainApp() {
   const { theme, setTheme } = useTheme();
-  const [currentRoute, setCurrentRoute] = useState('home'); // home, r1, r2, r3, diary, notebook, admin, login
+  const { user, isAdmin, login } = useAuth();
+  const [currentRoute, setCurrentRoute] = useState('login'); // Ban đầu bắt buộc vào trang đăng nhập thay vì trang chính
   const [isMailboxOpen, setIsMailboxOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
@@ -61,88 +65,8 @@ function MainApp() {
     });
   };
 
-  // Quick navigation handler from dev toolbar or buttons
-  const handleQuickJump = (target) => {
-    switch (target) {
-      case 's-lobby':
-        setCurrentRoute('home');
-        setIsMailboxOpen(false);
-        break;
-      case 's-mailbox':
-        setCurrentRoute('home');
-        setIsMailboxOpen(true);
-        break;
-      case 's-notify':
-        setCurrentRoute('home');
-        setIsNotificationsOpen(true);
-        break;
-      case 's-theme':
-        setCurrentRoute('home');
-        setIsThemeModalOpen(true);
-        break;
-      case 's-r1':
-        setCurrentRoute('r1');
-        break;
-      case 's-r2':
-        setCurrentRoute('r2');
-        break;
-      case 's-r3':
-        setCurrentRoute('r3');
-        break;
-      case 's-diary':
-        setCurrentRoute('diary');
-        break;
-      case 's-notebook':
-        setCurrentRoute('notebook');
-        break;
-      case 's-admin':
-        setCurrentRoute('admin');
-        break;
-      case 's-login':
-        setCurrentRoute('login');
-        break;
-      default:
-        setCurrentRoute(target);
-    }
-  };
-
   return (
     <div className="app-wrapper">
-      {/* Dev / Tester Quick Switcher Bar */}
-      <div className="dev-toolbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <b style={{ color: 'var(--d-gold)' }}>✦ The Name of Feeling Museum</b>
-          <span style={{ opacity: 0.6 }}>|</span>
-          <span>Chọn nhanh màn hình mock:</span>
-          <select
-            value={currentRoute}
-            onChange={(e) => handleQuickJump(e.target.value)}
-          >
-            <option value="s-lobby">B1 · Sảnh chính</option>
-            <option value="s-mailbox">B2 · Hòm thư · rút thông điệp</option>
-            <option value="s-notify">B3 · Hộp thông báo</option>
-            <option value="s-theme">B4 · Đổi bảng màu</option>
-            <option value="s-r1">C1 · Phòng 1 (Triển lãm Đổ vỡ)</option>
-            <option value="s-r2">D1 · Phòng 2 (Bầu trời Lồng đèn)</option>
-            <option value="s-r3">E1 · Phòng 3 (Cây Thông điệp)</option>
-            <option value="s-diary">G1 · Nhật ký</option>
-            <option value="s-notebook">G2 · Sổ tay (Đã lưu)</option>
-            <option value="s-admin">H1 · Bảng Quản trị</option>
-            <option value="s-login">A1 · Đăng nhập</option>
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span>Theme:</span>
-          <select value={theme} onChange={(e) => setTheme(e.target.value)}>
-            <option value="museum">Bảo tàng chiều (Mặc định)</option>
-            <option value="moss">Rêu cổ</option>
-            <option value="plum">Mận chín</option>
-            <option value="paper">Giấy cũ</option>
-          </select>
-        </div>
-      </div>
-
       {/* Main Museum Screen Viewport */}
       <div className="screen-container">
         <div className="screen" data-theme={theme}>
@@ -156,7 +80,8 @@ function MainApp() {
                 setIsNotificationsOpen(false);
                 setIsThemeModalOpen(false);
               }}
-              isAdmin={true}
+              isAdmin={isAdmin}
+              user={user}
             />
           )}
 
@@ -215,9 +140,27 @@ function MainApp() {
             />
           )}
 
+          {currentRoute === 'owner' && (
+            <OwnerDashboardPage
+              onNavigate={setCurrentRoute}
+            />
+          )}
+
           {currentRoute === 'login' && (
             <LoginPage
-              onLoginSuccess={() => setCurrentRoute('home')}
+              onLoginSuccess={(authData) => {
+                if (authData) login(authData);
+                setCurrentRoute('home');
+              }}
+              onExploreGuest={() => setCurrentRoute('home')}
+            />
+          )}
+
+          {currentRoute === 'profile' && (
+            <ProfilePage
+              onNavigate={setCurrentRoute}
+              onOpenNotifications={() => setIsNotificationsOpen(true)}
+              onOpenThemeModal={() => setIsThemeModalOpen(true)}
             />
           )}
 
@@ -236,6 +179,7 @@ function MainApp() {
               if (cta.includes('Phòng 1') || cta.includes('tác phẩm')) setCurrentRoute('r1');
               else if (cta.includes('thư') || cta.includes('Lồng đèn')) setCurrentRoute('r2');
               else if (cta.includes('cây')) setCurrentRoute('r3');
+              else if (cta.includes('nhật ký') || cta.includes('Nhật ký')) setCurrentRoute('diary');
             }}
           />
 
@@ -252,7 +196,9 @@ function MainApp() {
 export function App() {
   return (
     <ThemeProvider>
-      <MainApp />
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

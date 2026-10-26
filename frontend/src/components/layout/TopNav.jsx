@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../common/Icons';
+import { useAuth } from '../../context/AuthContext';
+import { notificationService } from '../../services/notificationService';
 
 export function TopNav({
   roomNo,
@@ -8,11 +10,51 @@ export function TopNav({
   searchPlaceholder,
   searchValue = '',
   onSearchChange,
-  unreadCount = 3,
+  unreadCount: propUnreadCount,
   onOpenNotifications,
   onOpenThemeModal,
-  rightAddon
+  rightAddon,
 }) {
+  const { isAuthenticated } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(propUnreadCount ?? 0);
+
+  const fetchCount = useCallback(async () => {
+    if (!isAuthenticated) {
+      setUnreadCount(0);
+      return;
+    }
+    try {
+      const res = await notificationService.getUnreadCount();
+      if (res && typeof res.unread_count === 'number') {
+        setUnreadCount(res.unread_count);
+      }
+    } catch {
+      // ignore
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (propUnreadCount !== undefined) {
+      setUnreadCount(propUnreadCount);
+    } else {
+      fetchCount();
+    }
+  }, [propUnreadCount, fetchCount]);
+
+  useEffect(() => {
+    const handleNotifUpdate = () => {
+      fetchCount();
+    };
+
+    window.addEventListener('notifications:updated', handleNotifUpdate);
+    const interval = setInterval(fetchCount, 45000);
+
+    return () => {
+      window.removeEventListener('notifications:updated', handleNotifUpdate);
+      clearInterval(interval);
+    };
+  }, [fetchCount]);
+
   return (
     <div className="top">
       {roomNo ? (
@@ -42,7 +84,7 @@ export function TopNav({
 
       <div className="tr">
         {rightAddon}
-        
+
         <button
           type="button"
           className="iconbtn glass"
