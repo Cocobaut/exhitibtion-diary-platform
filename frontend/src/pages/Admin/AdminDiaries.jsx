@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { adminDiaryService } from '../../services/adminDiaryService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminDiaries({ onCountChange, triggerToast }) {
+  const { t, language, localize } = useLanguage();
   const [segment, setSegment] = useState(0); // 0: Chờ phê duyệt, 1: Đang công khai
 
   // -------------------------------------------------------------
@@ -250,13 +252,13 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
             className={segment === 0 ? 'on' : ''}
             onClick={() => setSegment(0)}
           >
-            Chờ duyệt cộng đồng · {totalPending}
+            {language === 'en' ? 'Pending Community' : 'Chờ duyệt cộng đồng'} · {totalPending}
           </span>
           <span
             className={segment === 1 ? 'on' : ''}
             onClick={() => setSegment(1)}
           >
-            Đang công khai · {approvedTotal}
+            {language === 'en' ? 'Public Diaries' : 'Đang công khai'} · {approvedTotal}
           </span>
         </div>
       </div>
@@ -278,9 +280,9 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
           >
             <div className="row between" style={{ marginBottom: '14px', padding: '0 4px' }}>
               <span style={{ fontWeight: 600, fontSize: '14px', letterSpacing: '.05em' }}>
-                HÀNG ĐỢI DUYỆT ({pendingItems.length})
+                {language === 'en' ? `PENDING QUEUE (${pendingItems.length})` : `HÀNG ĐỢI DUYỆT (${pendingItems.length})`}
               </span>
-              {isLoadingPending && <span className="muted" style={{ fontSize: '12px' }}>Đang tải...</span>}
+              {isLoadingPending && <span className="muted" style={{ fontSize: '12px' }}>{language === 'en' ? 'Loading...' : 'Đang tải...'}</span>}
             </div>
 
             {pendingItems.length === 0 ? (
@@ -294,9 +296,9 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
               >
                 <Icon name="check" size={32} />
                 <div style={{ marginTop: '12px', fontWeight: 500 }}>
-                  Không còn trang nhật ký nào đang chờ duyệt
+                  {language === 'en' ? 'No pending diaries' : 'Không còn trang nhật ký nào đang chờ duyệt'}
                 </div>
-                <small className="muted">Toàn bộ đã được kiểm duyệt</small>
+                <small className="muted">{language === 'en' ? 'All submitted diaries have been reviewed' : 'Toàn bộ đã được kiểm duyệt'}</small>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

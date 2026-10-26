@@ -3,14 +3,16 @@ import { Icon } from '../../components/common/Icons';
 import { leafPath } from './WishTree';
 import { room3Service, CATEGORY_MAP } from '../../services/room3Service';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
   const { user } = useAuth();
+  const { language } = useLanguage();
 
   const [selectedCat, setSelectedCat] = useState('KL');
-  const [title, setTitle] = useState('Cho bạn đang ôn thi');
-  const [message, setMessage] = useState('Bạn không cần phải nhanh, chỉ cần đừng dừng lại.');
-  const [penName, setPenName] = useState('Mây');
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [penName, setPenName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -18,11 +20,21 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
     if (isOpen) {
       setErrorMessage('');
       setIsSubmitting(false);
-      if (user?.nickname) {
-        setPenName(user.nickname);
+      if (!title) {
+        setTitle(language === 'en' ? 'To you studying for exams' : 'Cho bạn đang ôn thi');
+      }
+      if (!message) {
+        setMessage(
+          language === 'en'
+            ? 'You don’t have to be fast, just don’t stop.'
+            : 'Bạn không cần phải nhanh, chỉ cần đừng dừng lại.'
+        );
+      }
+      if (!penName) {
+        setPenName(user?.nickname || (language === 'en' ? 'Cloud' : 'Mây'));
       }
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, language]);
 
   if (!isOpen) return null;
 
@@ -36,11 +48,19 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
     const cleanContent = message.trim();
 
     if (cleanTitle.length < 3 || cleanTitle.length > 150) {
-      setErrorMessage('Tên thông điệp phải từ 3 đến 150 ký tự.');
+      setErrorMessage(
+        language === 'en'
+          ? 'Message title must be between 3 and 150 characters.'
+          : 'Tên thông điệp phải từ 3 đến 150 ký tự.'
+      );
       return;
     }
     if (cleanContent.length < 10 || cleanContent.length > 280) {
-      setErrorMessage('Nội dung thông điệp phải từ 10 đến 280 ký tự.');
+      setErrorMessage(
+        language === 'en'
+          ? 'Message content must be between 10 and 280 characters.'
+          : 'Nội dung thông điệp phải từ 10 đến 280 ký tự.'
+      );
       return;
     }
 
@@ -65,7 +85,9 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
       const apiMsg =
         err?.response?.data?.message ||
         err?.message ||
-        'Không thể gửi thông điệp lúc này. Vui lòng thử lại sau.';
+        (language === 'en'
+          ? 'Could not hang message right now. Please try again later.'
+          : 'Không thể gửi thông điệp lúc này. Vui lòng thử lại sau.');
       setErrorMessage(apiMsg);
     } finally {
       setIsSubmitting(false);
@@ -93,8 +115,12 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
 
         {/* Left Side: Form */}
         <div>
-          <h2>Treo thông điệp lên cây</h2>
-          <div className="sub">Một câu tử tế cho một người lạ đang cần nghe.</div>
+          <h2>{language === 'en' ? 'Hang a Message on the Wish Tree' : 'Treo thông điệp lên cây'}</h2>
+          <div className="sub">
+            {language === 'en'
+              ? 'A kind word for a stranger who needs to hear it.'
+              : 'Một câu tử tế cho một người lạ đang cần nghe.'}
+          </div>
 
           {errorMessage && (
             <div
@@ -112,11 +138,18 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
             </div>
           )}
 
-          <div className="fieldl">Loại thông điệp</div>
+          <div className="fieldl">{language === 'en' ? 'Message Category' : 'Loại thông điệp'}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             {Object.keys(CATEGORY_MAP).map((k) => {
               const item = CATEGORY_MAP[k];
               const isSelected = selectedCat === k;
+              const catName = language === 'en'
+                ? (k === 'KL' ? 'Encouragement' : k === 'CL' ? 'Healing' : k === 'BO' ? 'Gratitude' : 'Perspective')
+                : item.name;
+              const catDesc = language === 'en'
+                ? (k === 'KL' ? 'Persistence & strength' : k === 'CL' ? 'Peace & comfort' : k === 'BO' ? 'Thankfulness & appreciation' : 'Life perspectives')
+                : item.desc;
+
               return (
                 <div
                   key={k}
@@ -129,41 +162,41 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
                       className="dot"
                       style={{ background: item.color, width: '12px', height: '12px' }}
                     />
-                    {item.name}
+                    {catName}
                   </b>
                   <div className="muted" style={{ fontSize: '12px' }}>
-                    {item.desc}
+                    {catDesc}
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="fieldl">Tên thông điệp</div>
+          <div className="fieldl">{language === 'en' ? 'Message Title' : 'Tên thông điệp'}</div>
           <input
             className="inp"
-            placeholder="Ví dụ: Cho bạn đang ôn thi..."
+            placeholder={language === 'en' ? 'E.g., To you studying for exams...' : 'Ví dụ: Cho bạn đang ôn thi...'}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={150}
           />
 
           <div className="fieldl">
-            Nội dung <span>{message.length} / 280</span>
+            {language === 'en' ? 'Content' : 'Nội dung'} <span>{message.length} / 280</span>
           </div>
           <textarea
             className="inp area focus"
             style={{ minHeight: '110px', fontFamily: 'var(--hand)', fontSize: '20px' }}
-            placeholder="Lời nhắn nhủ, động viên ấm áp..."
+            placeholder={language === 'en' ? 'Warm and comforting encouragement...' : 'Lời nhắn nhủ, động viên ấm áp...'}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             maxLength={280}
           />
 
-          <div className="fieldl">Bút danh</div>
+          <div className="fieldl">{language === 'en' ? 'Pen Name' : 'Bút danh'}</div>
           <input
             className="inp"
-            placeholder="Ví dụ: Mây hoặc Người gieo mầm"
+            placeholder={language === 'en' ? 'E.g., Cloud or Sower of Seeds' : 'Ví dụ: Mây hoặc Người gieo mầm'}
             value={penName}
             onChange={(e) => setPenName(e.target.value)}
             maxLength={50}
@@ -173,7 +206,7 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
         {/* Right Side: Leaf Preview */}
         <div style={{ paddingTop: '50px', textAlign: 'center', display: 'flex', flexDirection: 'column' }}>
           <div className="muted" style={{ marginBottom: '8px' }}>
-            Chiếc lá của bạn
+            {language === 'en' ? 'Your Wish Leaf' : 'Chiếc lá của bạn'}
           </div>
 
           <div
@@ -219,7 +252,9 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
           >
             <Icon name="shield" size={16} />
             <span>
-              Lá sẽ được đội ngũ đọc trước khi treo lên cây. Bạn sẽ nhận thông báo khi lá đã lên cây.
+              {language === 'en'
+                ? 'Leaves are reviewed by our curatorial team before hanging. You will receive a notification once it is on the tree.'
+                : 'Lá sẽ được đội ngũ đọc trước khi treo lên cây. Bạn sẽ nhận thông báo khi lá đã lên cây.'}
             </span>
           </div>
 
@@ -230,7 +265,7 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
             onClick={handleSubmit}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Đang gửi...' : '✦ Treo lên cây'}
+            {isSubmitting ? (language === 'en' ? 'Sending...' : 'Đang gửi...') : (language === 'en' ? '✦ Hang on Tree' : '✦ Treo lên cây')}
           </button>
         </div>
       </div>

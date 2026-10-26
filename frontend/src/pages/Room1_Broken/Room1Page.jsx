@@ -6,14 +6,21 @@ import { SubmitArtworkModal } from './SubmitArtworkModal';
 import { ConfirmSubmitModal } from './ConfirmSubmitModal';
 import { ArtworkPreparedModal } from './ArtworkPreparedModal';
 import { useAuth } from '../../context/AuthContext';
+import { useGuestGuard } from '../../context/GuestGuardContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { room1Service } from '../../services/room1Service';
 
 export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
-  const { isAuthenticated } = useAuth();
-  const [filter, setFilter] = useState('all'); // 'all', 'mine', 'most_sympathy'
+  const { isAuthenticated, isGuest } = useAuth();
+  const { guardAction } = useGuestGuard();
+  const { t, language } = useLanguage();
+  const [filter, setFilter] = useState('all'); // 'all', 'mine', 'reacted', 'most_sympathy'
   const [search, setSearch] = useState('');
   const [artworks, setArtworks] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Modals state
@@ -26,11 +33,14 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
   const [submitError, setSubmitError] = useState('');
 
   const searchDebounceRef = useRef(null);
+  const sentinelRef = useRef(null);
+  const observerRef = useRef(null);
 
-  // Tải danh sách tác phẩm từ backend
+  // Tải danh sách tác phẩm từ backend (trang đầu tiên)
   const fetchArtworks = useCallback(async (currentFilter = filter, currentSearch = search) => {
     setIsLoading(true);
     setErrorMsg('');
+    setPage(1);
 
     try {
       if (currentSearch && currentSearch.trim().length > 0) {
@@ -39,36 +49,113 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
         const res = await room1Service.searchArtworks({
           q: currentSearch.trim(),
           scope,
-          limit: 30,
+          page: 1,
+          limit: 12,
         });
         const items = res?.items || (Array.isArray(res) ? res : []);
         setArtworks(items);
+        const totalHits = res?.pagination?.total_hits ?? items.length;
+        setHasMore(items.length < totalHits);
       } else {
         // Duyệt theo filter thông thường
-        if (currentFilter === 'mine' && !isAuthenticated) {
+        if ((currentFilter === 'mine' || currentFilter === 'reacted') && !isAuthenticated) {
           setArtworks([]);
+          setHasMore(false);
           setIsLoading(false);
           return;
         }
 
         const res = await room1Service.getArtworks({
           filter: currentFilter,
-          limit: 30,
+          page: 1,
+          limit: 12,
         });
         const items = res?.items || (Array.isArray(res) ? res : []);
         setArtworks(items);
+        const totalPages = res?.pagination?.total_pages ?? 1;
+        setHasMore(1 < totalPages);
       }
     } catch (err) {
       if (err.errorCode === 'UNAUTHORIZED' || err.status === 401) {
-        setErrorMsg('Vui lòng đăng nhập để xem tác phẩm của bạn.');
+        setErrorMsg(language === 'en' ? 'Please log in to view artworks for this filter.' : 'Vui lòng đăng nhập để xem tác phẩm theo bộ lọc này.');
       } else {
-        setErrorMsg(err.message || 'Không thể tải danh sách tác phẩm.');
+        setErrorMsg(err.message || (language === 'en' ? 'Could not load artworks.' : 'Không thể tải danh sách tác phẩm.'));
       }
       setArtworks([]);
+      setHasMore(false);
     } finally {
       setIsLoading(false);
     }
-  }, [filter, search, isAuthenticated]);
+  }, [filter, search, isAuthenticated, language]);
+
+  // Tải thêm tác phẩm khi cuộn đến mỏ neo (Infinite scroll)
+  const loadMoreArtworks = useCallback(async () => {
+    if (isLoading || isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+
+    const nextPage = page + 1;
+    try {
+      if (search && search.trim().length > 0) {
+        const scope = filter === 'mine' ? 'mine' : 'all';
+        const res = await room1Service.searchArtworks({
+          q: search.trim(),
+          scope,
+          page: nextPage,
+          limit: 12,
+        });
+        const items = res?.items || [];
+        if (items.length > 0) {
+          setArtworks((prev) => [...prev, ...items]);
+          setPage(nextPage);
+          const totalHits = res?.pagination?.total_hits ?? 0;
+          setHasMore(artworks.length + items.length < totalHits);
+        } else {
+          setHasMore(false);
+        }
+      } else {
+        const res = await room1Service.getArtworks({
+          filter,
+          page: nextPage,
+          limit: 12,
+        });
+        const items = res?.items || [];
+        if (items.length > 0) {
+          setArtworks((prev) => [...prev, ...items]);
+          setPage(nextPage);
+          const totalPages = res?.pagination?.total_pages ?? nextPage;
+          setHasMore(nextPage < totalPages);
+        } else {
+          setHasMore(false);
+        }
+      }
+    } catch (err) {
+      console.warn('Error loading more artworks:', err);
+      setHasMore(false);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoading, isLoadingMore, hasMore, page, filter, search, artworks.length]);
+
+  // Thiết lập IntersectionObserver cho sentinel
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    if (observerRef.current) observerRef.current.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading && !isLoadingMore) {
+          loadMoreArtworks();
+        }
+      },
+      { rootMargin: '200px' }
+    );
+
+    observerRef.current.observe(sentinelRef.current);
+
+    return () => {
+      if (observerRef.current) observerRef.current.disconnect();
+    };
+  }, [loadMoreArtworks, hasMore, isLoading, isLoadingMore]);
 
   // Gọi khi filter thay đổi
   useEffect(() => {
@@ -88,32 +175,29 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
 
   // Cập nhật cảm xúc trên thẻ
   const handleSelectReaction = async (artworkId, reactionType) => {
-    if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để gửi sự đồng cảm đến tác phẩm này.');
-      return;
-    }
-
-    try {
-      const res = await room1Service.toggleReaction(artworkId, reactionType);
-      if (res) {
-        setArtworks((prev) =>
-          prev.map((item) => {
-            if (item.id === artworkId) {
-              return {
-                ...item,
-                my_reaction: res.current_reaction,
-                user_reaction: res.current_reaction,
-                reactions: res.reactions_summary || item.reactions,
-                total_reactions: res.reactions_summary?.total ?? item.total_reactions,
-              };
-            }
-            return item;
-          })
-        );
+    guardAction(async () => {
+      try {
+        const res = await room1Service.toggleReaction(artworkId, reactionType);
+        if (res) {
+          setArtworks((prev) =>
+            prev.map((item) => {
+              if (item.id === artworkId) {
+                return {
+                  ...item,
+                  my_reaction: res.current_reaction,
+                  user_reaction: res.current_reaction,
+                  reactions_count: res.reactions_count || item.reactions_count,
+                  reactions: res.reactions || item.reactions,
+                };
+              }
+              return item;
+            })
+          );
+        }
+      } catch (err) {
+        console.warn('Không thể gửi cảm xúc:', err);
       }
-    } catch (err) {
-      console.warn('Lỗi khi thả cảm xúc:', err);
-    }
+    }, 'bày tỏ sự đồng cảm');
   };
 
   // Callback khi cập nhật reaction trong modal chi tiết
@@ -136,14 +220,12 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
 
   // Bước 1: Khởi động gửi tác phẩm
   const handleStartSubmit = (formData) => {
-    if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập trước khi trưng bày tác phẩm.');
-      return;
-    }
-    setTempSubmission(formData);
-    setShowSubmitModal(false);
-    setShowConfirmModal(true);
-    setSubmitError('');
+    guardAction(() => {
+      setTempSubmission(formData);
+      setShowSubmitModal(false);
+      setShowConfirmModal(true);
+      setSubmitError('');
+    }, 'trưng bày tác phẩm đổ vỡ');
   };
 
   // Bước 2: Xác nhận gửi tác phẩm (POST /api/v1/rooms/1/artworks)
@@ -176,8 +258,8 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
       {/* Top Header */}
       <TopNav
         roomNo="01"
-        roomName="Triển lãm Đổ vỡ"
-        searchPlaceholder="Tìm theo tiêu đề, câu chuyện, bút danh…"
+        roomName={t('r1_name')}
+        searchPlaceholder={t('r1_search_placeholder')}
         searchValue={search}
         onSearchChange={handleSearchChange}
         onOpenNotifications={onOpenNotifications}
@@ -191,19 +273,29 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
             className={`chip glass ${filter === 'all' ? 'on' : ''}`}
             onClick={() => setFilter('all')}
           >
-            Tất cả tác phẩm
+            {t('r1_filter_all')}
           </span>
           <span
             className={`chip glass ${filter === 'mine' ? 'on' : ''}`}
-            onClick={() => setFilter('mine')}
+            onClick={() => {
+              guardAction(() => setFilter('mine'), 'xem tác phẩm của tôi');
+            }}
           >
-            Tác phẩm của tôi
+            {t('r1_filter_mine')}
+          </span>
+          <span
+            className={`chip glass ${filter === 'reacted' ? 'on' : ''}`}
+            onClick={() => {
+              guardAction(() => setFilter('reacted'), 'xem tác phẩm bạn đã thả cảm xúc');
+            }}
+          >
+            {t('r1_filter_reacted')}
           </span>
           <span
             className={`chip glass ${filter === 'most_sympathy' ? 'on' : ''}`}
             onClick={() => setFilter('most_sympathy')}
           >
-            Nhiều đồng cảm nhất
+            {t('r1_filter_most_sympathy')}
           </span>
         </div>
 
@@ -211,19 +303,15 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
           type="button"
           className="btn main"
           onClick={() => {
-            if (!isAuthenticated) {
-              alert('Vui lòng đăng nhập để trưng bày tác phẩm của bạn.');
-              return;
-            }
-            setShowSubmitModal(true);
+            guardAction(() => setShowSubmitModal(true), 'trưng bày tác phẩm đổ vỡ');
           }}
         >
-          ✦ Trưng bày tác phẩm
+          {t('r1_btn_submit')}
         </button>
       </div>
 
-      {/* Gallery of Works */}
-      <div className="gallery" style={{ minHeight: '380px' }}>
+      {/* Gallery of Works with bespoke custom scrollbar extending to screen edge */}
+      <div className="gallery custom-scrollbar" style={{ minHeight: '380px' }}>
         {isLoading ? (
           <div
             style={{
@@ -234,7 +322,7 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
               fontStyle: 'italic',
             }}
           >
-            Đang thắp sáng phòng triển lãm...
+            {language === 'en' ? 'Lighting up the exhibition room...' : 'Đang thắp sáng phòng triển lãm...'}
           </div>
         ) : errorMsg ? (
           <div
@@ -247,7 +335,7 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
           >
             {errorMsg}
           </div>
-        ) : filter === 'mine' && !isAuthenticated ? (
+        ) : (filter === 'mine' || filter === 'reacted') && !isAuthenticated ? (
           <div
             style={{
               gridColumn: '1 / -1',
@@ -257,9 +345,17 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
             }}
           >
             <div className="hand" style={{ fontSize: '24px', marginBottom: '6px' }}>
-              chốn lưu giữ những nỗi niềm
+              {language === 'en' ? 'a sanctuary for gentle thoughts' : 'chốn lưu giữ những nỗi niềm'}
             </div>
-            <div>Vui lòng đăng nhập để xem các tác phẩm bạn đã gửi gắm tại Phòng 1.</div>
+            <div>
+              {filter === 'mine'
+                ? (language === 'en'
+                    ? 'Please log in to view the artworks you have submitted to Room 1.'
+                    : 'Vui lòng đăng nhập để xem các tác phẩm bạn đã gửi gắm tại Phòng 1.')
+                : (language === 'en'
+                    ? 'Please log in to view the artworks you have reacted to.'
+                    : 'Vui lòng đăng nhập để xem các tác phẩm bạn đã thả cảm xúc.')}
+            </div>
           </div>
         ) : artworks.length === 0 ? (
           <div
@@ -271,24 +367,70 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
             }}
           >
             <div className="hand" style={{ fontSize: '24px', marginBottom: '6px' }}>
-              chưa có tác phẩm nào phù hợp
+              {language === 'en' ? 'no matching artworks found' : 'chưa có tác phẩm nào phù hợp'}
             </div>
-            <div>Hãy thử đổi bộ lọc hoặc từ khóa tìm kiếm nhé.</div>
+            <div>
+              {language === 'en'
+                ? 'Try changing filters or search terms.'
+                : 'Hãy thử đổi bộ lọc hoặc từ khóa tìm kiếm nhé.'}
+            </div>
           </div>
         ) : (
-          artworks.map((work, idx) => (
-            <ArtworkCard
-              key={work.id || idx}
-              artwork={work}
-              index={idx}
-              onClick={() => {
-                if (work.status !== 'PENDING' && work.status !== 'REJECTED') {
-                  setSelectedArtwork(work);
-                }
+          <>
+            {artworks.map((work, idx) => (
+              <ArtworkCard
+                key={work.id || idx}
+                artwork={work}
+                index={idx}
+                onClick={() => {
+                  if (work.status !== 'PENDING' && work.status !== 'REJECTED') {
+                    setSelectedArtwork(work);
+                  }
+                }}
+                onSelectReaction={handleSelectReaction}
+              />
+            ))}
+
+            {/* Infinite Scroll Sentinel */}
+            <div
+              ref={sentinelRef}
+              style={{
+                gridColumn: '1 / -1',
+                height: '24px',
+                pointerEvents: 'none',
               }}
-              onSelectReaction={handleSelectReaction}
             />
-          ))
+
+            {isLoadingMore && (
+              <div
+                style={{
+                  gridColumn: '1 / -1',
+                  textAlign: 'center',
+                  padding: '20px 12px',
+                  color: 'var(--ink2)',
+                  fontStyle: 'italic',
+                }}
+              >
+                {t('r1_loading_more')}
+              </div>
+            )}
+
+            {!hasMore && artworks.length > 0 && !isLoading && (
+              <div
+                style={{
+                  gridColumn: '1 / -1',
+                  textAlign: 'center',
+                  padding: '24px 16px',
+                  color: 'var(--ink2)',
+                  opacity: 0.8,
+                  fontSize: '13.5px',
+                  letterSpacing: '0.04em',
+                }}
+              >
+                {t('r1_all_loaded')}
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { adminCapsuleService } from '../../services/adminCapsuleService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
+  const { t, language, localize } = useLanguage();
   const [capsules, setCapsules] = useState([]);
   const [categoriesSummary, setCategoriesSummary] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -29,9 +31,9 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
 
   // Categories mapping
   const categoryMap = {
-    COURAGE: { label: 'Can đảm', badgeClass: 'b-wait', color: '#B57424' },
-    HEALING: { label: 'Chữa lành', badgeClass: 'b-ok', color: '#2D7D46' },
-    PERSPECTIVE: { label: 'Góc nhìn', badgeClass: 'b-priv', color: '#5B4EB5' },
+    COURAGE: { label: language === 'en' ? 'Courage' : 'Can đảm', badgeClass: 'b-wait', color: '#B57424' },
+    HEALING: { label: language === 'en' ? 'Healing' : 'Chữa lành', badgeClass: 'b-ok', color: '#2D7D46' },
+    PERSPECTIVE: { label: language === 'en' ? 'Perspective' : 'Góc nhìn', badgeClass: 'b-priv', color: '#5B4EB5' },
   };
 
   // -------------------------------------------------------------

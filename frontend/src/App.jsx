@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { LanguageProvider } from './context/LanguageContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { GuestGuardProvider } from './context/GuestGuardContext';
 import { Sidebar } from './components/layout/Sidebar';
 import { ThemeDropdown } from './components/overlays/ThemeDropdown';
 import { NotificationDropdown } from './components/overlays/NotificationDropdown';
@@ -21,11 +23,18 @@ import { INITIAL_NOTEBOOK_ITEMS } from './data/mockData';
 
 function MainApp() {
   const { theme, setTheme } = useTheme();
-  const { user, isAdmin, login } = useAuth();
+  const { user, isAdmin, isGuest, login } = useAuth();
   const [currentRoute, setCurrentRoute] = useState('login'); // Ban đầu bắt buộc vào trang đăng nhập thay vì trang chính
   const [isMailboxOpen, setIsMailboxOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+
+  // Bảo vệ route: Khách vãng lai không được truy cập các trang đòi hỏi tài khoản
+  React.useEffect(() => {
+    if (isGuest && (currentRoute === 'diary' || currentRoute === 'notebook' || currentRoute === 'admin' || currentRoute === 'owner' || currentRoute === 'profile')) {
+      setCurrentRoute('home');
+    }
+  }, [isGuest, currentRoute]);
 
   // Notebook items state with localStorage sync
   const [notebookItems, setNotebookItems] = useState(() => {
@@ -66,10 +75,11 @@ function MainApp() {
   };
 
   return (
-    <div className="app-wrapper">
-      {/* Main Museum Screen Viewport */}
-      <div className="screen-container">
-        <div className="screen" data-theme={theme}>
+    <GuestGuardProvider onNavigateToLogin={() => setCurrentRoute('login')}>
+      <div className="app-wrapper">
+        {/* Main Museum Screen Viewport */}
+        <div className="screen-container">
+          <div className="screen" data-theme={theme}>
           {/* Sidebar Navigation */}
           {currentRoute !== 'login' && (
             <Sidebar
@@ -183,23 +193,26 @@ function MainApp() {
             }}
           />
 
-          <ThemeDropdown
-            isOpen={isThemeModalOpen}
-            onClose={() => setIsThemeModalOpen(false)}
-          />
+            <ThemeDropdown
+              isOpen={isThemeModalOpen}
+              onClose={() => setIsThemeModalOpen(false)}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </GuestGuardProvider>
   );
 }
 
 export function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <MainApp />
-      </AuthProvider>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <MainApp />
+        </AuthProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }
 

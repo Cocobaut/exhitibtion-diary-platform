@@ -1,27 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Icon } from '../common/Icons';
 import { useAuth } from '../../context/AuthContext';
+import { useGuestGuard } from '../../context/GuestGuardContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { authService } from '../../services/authService';
 import { AccountSettingsModal } from '../../pages/Profile/AccountSettingsModal';
 
 export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null }) {
-  const { logout, isAuthenticated, user: authUser } = useAuth();
+  const { logout, isAuthenticated, isGuest, user: authUser } = useAuth();
+  const { guardAction, openLoginModal } = useGuestGuard();
+  const { t, language } = useLanguage();
   const currentUser = user || authUser;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const menuRef = useRef(null);
 
   const navItems = [
-    { key: 'home', icon: 'home', label: 'Sảnh' },
-    { key: 'r1', icon: 'r1', label: 'Phòng 1' },
-    { key: 'r2', icon: 'r2', label: 'Phòng 2' },
-    { key: 'r3', icon: 'r3', label: 'Phòng 3' },
-    { key: 'diary', icon: 'diary', label: 'Nhật ký' },
-    { key: 'notebook', icon: 'bookmark', label: 'Sổ tay' },
+    { key: 'home', icon: 'home', label: t('nav_lobby'), requireAuth: false },
+    { key: 'r1', icon: 'r1', label: t('nav_room1'), requireAuth: false },
+    { key: 'r2', icon: 'r2', label: t('nav_room2'), requireAuth: false },
+    { key: 'r3', icon: 'r3', label: t('nav_room3'), requireAuth: false },
+    { key: 'diary', icon: 'diary', label: t('nav_diary'), requireAuth: true },
+    { key: 'notebook', icon: 'bookmark', label: t('nav_notebook'), requireAuth: true },
   ];
 
-  const displayName = currentUser?.nickname || currentUser?.username || 'Khách';
-  const initialLetter = displayName.charAt(0).toUpperCase();
+  const displayName = isGuest
+    ? t('nav_guest')
+    : currentUser?.nickname || currentUser?.username || (language === 'en' ? 'User' : 'Khách');
+  const initialLetter = isGuest ? (language === 'en' ? 'G' : 'K') : displayName.charAt(0).toUpperCase();
 
   // Đóng popover khi click ra ngoài
   useEffect(() => {
@@ -40,10 +46,6 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
   }, [isMenuOpen]);
 
   const handleAvatarClick = () => {
-    if (!isAuthenticated) {
-      onNavigate('login');
-      return;
-    }
     setIsMenuOpen((prev) => !prev);
   };
 
@@ -76,22 +78,57 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
           scrollbarWidth: 'none',
         }}
       >
-        {navItems.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            className={`side-btn ${currentRoute === item.key ? 'on' : ''}`}
-            onClick={() => {
-              setIsMenuOpen(false);
-              onNavigate(item.key);
-            }}
-          >
-            <Icon name={item.icon} size={22} />
-            <span>{item.label}</span>
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isLocked = isGuest && item.requireAuth;
 
-        {isAdmin && (
+          return (
+            <button
+              key={item.key}
+              type="button"
+              className={`side-btn ${currentRoute === item.key ? 'on' : ''} ${
+                isLocked ? 'opacity-40 cursor-not-allowed filter grayscale-[40%]' : ''
+              }`}
+              style={
+                isLocked
+                  ? {
+                      opacity: 0.4,
+                      cursor: 'not-allowed',
+                      filter: 'grayscale(40%)',
+                    }
+                  : {}
+              }
+              title={isLocked ? `${item.label} (Cần đăng nhập)` : item.label}
+              onClick={(e) => {
+                if (isLocked) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  guardAction(
+                    null,
+                    item.key === 'diary' ? 'truy cập Nhật ký cá nhân' : 'truy cập Bộ sưu tập / Sổ tay'
+                  );
+                  return;
+                }
+                setIsMenuOpen(false);
+                onNavigate(item.key);
+              }}
+            >
+              <Icon name={item.icon} size={22} />
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  justifyContent: 'center',
+                }}
+              >
+                {item.label}
+                {isLocked && <span style={{ fontSize: '10px' }}>🔒</span>}
+              </span>
+            </button>
+          );
+        })}
+
+        {!isGuest && isAdmin && (
           <button
             type="button"
             className={`side-btn ${currentRoute === 'admin' ? 'on' : ''}`}
@@ -101,11 +138,11 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
             }}
           >
             <Icon name="shield" size={22} />
-            <span>Quản trị</span>
+            <span>{t('nav_admin')}</span>
           </button>
         )}
 
-        {(currentUser?.role === 'OWNER' || String(currentUser?.role).toUpperCase() === 'OWNER') && (
+        {!isGuest && (currentUser?.role === 'OWNER' || String(currentUser?.role).toUpperCase() === 'OWNER') && (
           <button
             type="button"
             className={`side-btn ${currentRoute === 'owner' ? 'on' : ''}`}
@@ -223,7 +260,7 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
                   overflow: 'hidden',
                 }}
               >
-                @{currentUser?.username || 'user'}
+                {isGuest ? (language === 'en' ? 'Visitor' : 'Khách vãng lai') : `@${currentUser?.username || 'user'}`}
               </div>
             </div>
           </div>
@@ -237,11 +274,11 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
               fontSize: '11px',
               fontWeight: 600,
               letterSpacing: '0.05em',
-              background: isAdmin ? 'rgba(201, 154, 59, 0.16)' : 'rgba(110, 90, 78, 0.12)',
-              color: isAdmin ? 'var(--gold)' : 'var(--ink2)',
+              background: isGuest ? 'rgba(110, 90, 78, 0.12)' : isAdmin ? 'rgba(201, 154, 59, 0.16)' : 'rgba(110, 90, 78, 0.12)',
+              color: isGuest ? 'var(--ink2)' : isAdmin ? 'var(--gold)' : 'var(--ink2)',
             }}
           >
-            {currentUser?.role || 'USER'}
+            {isGuest ? 'GUEST' : (currentUser?.role || 'USER')}
           </div>
 
           <div
@@ -252,45 +289,91 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
             }}
           />
 
-          <button
-            type="button"
-            className="btn line"
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: '13.5px',
-              color: 'var(--ink)',
-              borderColor: 'var(--line)',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              justifyContent: 'center',
-              marginBottom: '8px',
-            }}
-            onClick={() => {
-              setIsMenuOpen(false);
-              setIsProfileModalOpen(true);
-            }}
-          >
-            Hồ sơ & Cài đặt
-          </button>
+          {isGuest || !isAuthenticated ? (
+            <>
+              {/* Lựa chọn 1: Mở form login */}
+              <button
+                type="button"
+                className="btn main"
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  fontSize: '13.5px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  justifyContent: 'center',
+                  marginBottom: '8px',
+                }}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  openLoginModal(language === 'en' ? 'log in to your account' : 'đăng nhập tài khoản');
+                }}
+              >
+                {language === 'en' ? 'Log in' : 'Đăng nhập'}
+              </button>
 
-          <button
-            type="button"
-            className="btn line"
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: '13.5px',
-              color: 'var(--acc)',
-              borderColor: 'rgba(161, 52, 44, 0.3)',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              justifyContent: 'center',
-            }}
-            onClick={handleLogout}
-          >
-            Đăng xuất
-          </button>
+              {/* Lựa chọn 2: Logout */}
+              <button
+                type="button"
+                className="btn line"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  fontSize: '13.5px',
+                  color: 'var(--acc)',
+                  borderColor: 'rgba(161, 52, 44, 0.3)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  justifyContent: 'center',
+                }}
+                onClick={handleLogout}
+              >
+                {language === 'en' ? 'Log out' : 'Đăng xuất'}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="btn line"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  fontSize: '13.5px',
+                  color: 'var(--ink)',
+                  borderColor: 'var(--line)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  justifyContent: 'center',
+                  marginBottom: '8px',
+                }}
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  setIsProfileModalOpen(true);
+                }}
+              >
+                {t('nav_profile_settings')}
+              </button>
+
+              <button
+                type="button"
+                className="btn line"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  fontSize: '13.5px',
+                  color: 'var(--acc)',
+                  borderColor: 'rgba(161, 52, 44, 0.3)',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  justifyContent: 'center',
+                }}
+                onClick={handleLogout}
+              >
+                {t('nav_logout')}
+              </button>
+            </>
+          )}
         </div>
       )}
 

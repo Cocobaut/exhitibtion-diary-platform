@@ -270,15 +270,15 @@ p {
 /* Header & Top Navigation */
 .top {
   position: absolute;
-  left: 30px;
-  right: 30px;
-  top: 22px;
+  left: clamp(20px, 2.2vw, 36px);
+  right: clamp(20px, 2.2vw, 36px);
+  top: clamp(14px, 1.8vh, 22px);
   height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  z-index: 6;
+  gap: clamp(10px, 1.5vw, 18px);
+  z-index: 10;
 }
 
 .tr {
@@ -374,6 +374,7 @@ p {
 .search {
   flex: 1;
   max-width: 460px;
+  min-width: 140px;
   height: 44px;
   border-radius: 999px;
   display: flex;
@@ -400,18 +401,34 @@ p {
 /* Filter Chips */
 .chips-row {
   position: absolute;
-  left: 30px;
-  right: 30px;
-  top: 88px;
+  left: clamp(20px, 2.2vw, 36px);
+  right: clamp(20px, 2.2vw, 36px);
+  top: clamp(74px, 9.5vh, 88px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  z-index: 6;
+  gap: 16px;
+  z-index: 8;
+  pointer-events: none;
+}
+
+.chips-row > * {
+  pointer-events: auto;
 }
 
 .chips {
   display: flex;
+  align-items: center;
   gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
 }
 
 .chip {
@@ -795,19 +812,58 @@ p {
 .b-priv { background: #E6E1EE; color: #4C4170; }
 .b-arch { background: #E7E2DA; color: #5C524A; }
 
-/* Room 1 Gallery */
+/* Bespoke Museum Scrollbar & Room 1 Gallery */
+.custom-scrollbar,
+.gallery,
+.diary-scroll,
+.notebook-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 176, 106, 0.45) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar,
+.gallery::-webkit-scrollbar,
+.diary-scroll::-webkit-scrollbar,
+.notebook-scroll::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track,
+.gallery::-webkit-scrollbar-track,
+.diary-scroll::-webkit-scrollbar-track,
+.notebook-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.gallery::-webkit-scrollbar-thumb,
+.diary-scroll::-webkit-scrollbar-thumb,
+.notebook-scroll::-webkit-scrollbar-thumb {
+  background: rgba(212, 176, 106, 0.45);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover,
+.gallery::-webkit-scrollbar-thumb:hover,
+.diary-scroll::-webkit-scrollbar-thumb:hover,
+.notebook-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 176, 106, 0.85);
+}
+
 .gallery {
   position: absolute;
-  top: 160px;
-  left: 58px;
-  right: 58px;
+  top: 148px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 40px 34px;
+  gap: 36px 30px;
   isolation: isolate;
   overflow-y: auto;
-  max-height: calc(100% - 190px);
-  padding-bottom: 30px;
+  padding: 10px clamp(24px, 4vw, 58px) 50px;
 }
 
 .work {
@@ -1011,6 +1067,53 @@ p {
   8% { opacity: 1; }
   85% { opacity: 1; }
   100% { transform: translate(-90px, 430px) rotate(420deg); opacity: 0; }
+}
+
+/* Room 3 Tree Shake & Interactive Falling Leaves */
+@keyframes treeShake {
+  0% { transform: rotate(0deg); }
+  20% { transform: rotate(-2.4deg) skewX(-1.2deg); }
+  40% { transform: rotate(2.2deg) skewX(1.4deg); }
+  60% { transform: rotate(-1.8deg) skewX(-1deg); }
+  80% { transform: rotate(1.2deg) skewX(0.6deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.tree-shaking {
+  animation: treeShake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+  transform-origin: 50% 92%;
+}
+
+@keyframes dynamicFallLeaf {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: translate(calc(var(--fall-drift, 40px) * 0.35), 110px) rotate(110deg) scale(0.96);
+    opacity: 0.95;
+  }
+  65% {
+    transform: translate(calc(var(--fall-drift, 40px) * 0.8), 270px) rotate(250deg) scale(0.9);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(var(--fall-drift, 60px), 440px) rotate(380deg) scale(0.82);
+    opacity: 0;
+  }
+}
+
+.falling-leaf-particle {
+  animation: dynamicFallLeaf 1.7s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  pointer-events: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .ff {

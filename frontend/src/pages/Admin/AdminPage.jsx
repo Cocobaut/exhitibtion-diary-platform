@@ -12,9 +12,11 @@ import { adminRoomService } from '../../services/adminRoomService';
 import { adminDiaryService } from '../../services/adminDiaryService';
 import { adminCapsuleService } from '../../services/adminCapsuleService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminPage({ onOpenNotifications }) {
   const { user } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
 
   const [activeTab, setActiveTab] = useState(0); // 0: Phòng 1, 1: Phòng 2, 2: Phòng 3, 3: Nhật ký, 4: Kho thông điệp
   const [statusSegment, setStatusSegment] = useState(0); // 0: Chờ phê duyệt, 1: Đang trưng bày, 2: Lưu trữ
@@ -83,13 +85,13 @@ export function AdminPage({ onOpenNotifications }) {
   const currentRoomId = isRoomTab ? activeTab + 1 : 1;
 
   const tabs = [
-    { name: 'Phòng 1 (Đổ vỡ)', count: roomPendingCounts[1] || 0 },
-    { name: 'Phòng 2 (Lồng đèn)', count: roomPendingCounts[2] || 0 },
-    { name: 'Phòng 3 (Cây thông điệp)', count: roomPendingCounts[3] || 0 },
-    { name: 'Nhật ký', count: diaryPendingCount || 0 },
-    { name: 'Kho thông điệp', count: capsuleCount || 0 },
-    { name: 'Studio', count: 0 },
-    { name: 'Nhật ký quản trị', count: 0 },
+    { name: t('admin_tab_r1'), count: roomPendingCounts[1] || 0 },
+    { name: t('admin_tab_r2'), count: roomPendingCounts[2] || 0 },
+    { name: t('admin_tab_r3'), count: roomPendingCounts[3] || 0 },
+    { name: t('admin_tab_diary'), count: diaryPendingCount || 0 },
+    { name: t('admin_tab_capsules'), count: capsuleCount || 0 },
+    { name: t('admin_tab_studio'), count: 0 },
+    { name: t('admin_tab_audit'), count: 0 },
   ];
 
   const handleOpenRejectModal = (artwork) => {
@@ -165,13 +167,13 @@ export function AdminPage({ onOpenNotifications }) {
                 color: 'var(--acc)',
               }}
             >
-              BẢNG QUẢN TRỊ
+              {language === 'en' ? 'ADMIN PANEL' : 'BẢNG QUẢN TRỊ'}
             </div>
-            <h1>Kiểm duyệt &amp; trưng bày</h1>
+            <h1>{language === 'en' ? 'Moderation & Exhibition' : 'Kiểm duyệt & trưng bày'}</h1>
           </div>
 
           <div className="row" style={{ gap: '14px' }}>
-            <span className="muted">Đang trực</span>
+            <span className="muted">{language === 'en' ? 'Online' : 'Đang trực'}</span>
             <div className="avs">
               {ADMINS.map((adm, i) => (
                 <i
@@ -185,8 +187,27 @@ export function AdminPage({ onOpenNotifications }) {
               ))}
             </div>
             <span className="muted">
-              {user?.nickname ? `${user.nickname} (${user.role})` : 'Ban Quản trị online'}
+              {language === 'en' ? 'Admin' : 'Ban Quản Trị'}
             </span>
+
+            {/* Language Switcher (Same format and style as rooms) */}
+            <div className="lang glass" style={{ cursor: 'pointer', userSelect: 'none' }}>
+              <b
+                className={language === 'vi' ? 'on' : ''}
+                onClick={() => setLanguage('vi')}
+                title="Tiếng Việt"
+              >
+                VI
+              </b>
+              <b
+                className={language === 'en' ? 'on' : ''}
+                onClick={() => setLanguage('en')}
+                title="English"
+              >
+                EN
+              </b>
+            </div>
+
             <div
               className="iconbtn"
               style={{ border: '1px solid var(--line)', background: 'var(--paper)', cursor: 'pointer' }}
@@ -224,19 +245,19 @@ export function AdminPage({ onOpenNotifications }) {
               className={statusSegment === 0 ? 'on' : ''}
               onClick={() => setStatusSegment(0)}
             >
-              Chờ phê duyệt · {roomPendingCounts[currentRoomId] || 0}
+              {t('admin_seg_pending')} · {roomPendingCounts[currentRoomId] || 0}
             </span>
             <span
               className={statusSegment === 1 ? 'on' : ''}
               onClick={() => setStatusSegment(1)}
             >
-              Đang trưng bày
+              {t('admin_seg_live')}
             </span>
             <span
               className={statusSegment === 2 ? 'on' : ''}
               onClick={() => setStatusSegment(2)}
             >
-              Lưu trữ
+              {t('admin_seg_archive')}
             </span>
           </div>
         </div>

@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { ReactionButton } from '../../components/common/Reactions';
 import { leafPath } from './WishTree';
-import { room3Service, CATEGORY_MAP, toFrontendCategory } from '../../services/room3Service';
 import { useAuth } from '../../context/AuthContext';
+import { useGuestGuard } from '../../context/GuestGuardContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { room3Service, toFrontendCategory, CATEGORY_MAP } from '../../services/room3Service';
 
 export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) {
   const { user } = useAuth();
+  const { guardAction } = useGuestGuard();
+  const { localize, language } = useLanguage();
 
   const [leaf, setLeaf] = useState(leafData || null);
   const [energyCount, setEnergyCount] = useState(86);
@@ -67,9 +71,16 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
   if (!isOpen) return null;
 
   const currentLeaf = leaf || {
-    title: 'Gửi bạn đang mệt mỏi',
-    content: 'Hôm nay nghỉ ngơi cũng là một cách cố gắng. Cái cây cũng đâu ra lá quanh năm.',
-    author_display_name: 'Mây',
+    title: language === 'en' ? 'To You Who Feel Weary' : 'Gửi bạn đang mệt mỏi',
+    title_vi: 'Gửi bạn đang mệt mỏi',
+    title_en: 'To You Who Feel Weary',
+    content:
+      language === 'en'
+        ? 'Resting today is also a way of persevering. Even trees do not grow leaves all year round.'
+        : 'Hôm nay nghỉ ngơi cũng là một cách cố gắng. Cái cây cũng đâu ra lá quanh năm.',
+    content_vi: 'Hôm nay nghỉ ngơi cũng là một cách cố gắng. Cái cây cũng đâu ra lá quanh năm.',
+    content_en: 'Resting today is also a way of persevering. Even trees do not grow leaves all year round.',
+    author_display_name: language === 'en' ? 'Cloud' : 'Mây',
     tag_category: 'CL',
     color_code: '#94C590',
     created_at: '2026-10-18T08:00:00Z',
@@ -94,43 +105,61 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
   };
 
   const handleToggleAction = async (actionType) => {
-    if (!currentLeaf?.id) {
-      // Mock toggle fallback
-      if (actionType === 'ENERGY') {
-        const next = !hasEnergized;
-        setHasEnergized(next);
-        setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-      } else {
-        const next = !hasHearted;
-        setHasHearted(next);
-        setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-      }
-      return;
-    }
-
-    const isHeart = actionType === 'HEART';
-    if (isHeart) {
-      if (isTogglingHeart) return;
-      setIsTogglingHeart(true);
-    } else {
-      if (isTogglingEnergy) return;
-      setIsTogglingEnergy(true);
-    }
-
-    try {
-      const res = await room3Service.toggleEnergy(currentLeaf.id, actionType);
-      const data = res?.data || res;
-
-      if (data?.reactions) {
-        setEnergyCount(data.reactions.ENERGY);
-        setHeartCount(data.reactions.HEART);
-        if (isHeart) {
-          setHasHearted(data.current_action === 'HEART');
+    guardAction(async () => {
+      if (!currentLeaf?.id) {
+        // Mock toggle fallback
+        if (actionType === 'ENERGY') {
+          const next = !hasEnergized;
+          setHasEnergized(next);
+          setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
         } else {
-          setHasEnergized(data.current_action === 'INSPIRED');
+          const next = !hasHearted;
+          setHasHearted(next);
+          setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
         }
+        return;
+      }
+
+      const isHeart = actionType === 'HEART';
+      if (isHeart) {
+        if (isTogglingHeart) return;
+        setIsTogglingHeart(true);
       } else {
-        // Fallback toggle
+        if (isTogglingEnergy) return;
+        setIsTogglingEnergy(true);
+      }
+
+      try {
+        const res = await room3Service.toggleEnergy(currentLeaf.id, actionType);
+        const data = res?.data || res;
+
+        if (data?.reactions) {
+          setEnergyCount(data.reactions.ENERGY);
+          setHeartCount(data.reactions.HEART);
+          if (isHeart) {
+            setHasHearted(data.current_action === 'HEART');
+          } else {
+            setHasEnergized(data.current_action === 'INSPIRED');
+          }
+        } else {
+          // Fallback toggle
+          if (isHeart) {
+            const next = !hasHearted;
+            setHasHearted(next);
+            setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
+          } else {
+            const next = !hasEnergized;
+            setHasEnergized(next);
+            setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
+          }
+        }
+
+        if (onReactionUpdated) {
+          onReactionUpdated(currentLeaf.id, data?.reactions);
+        }
+      } catch (err) {
+        console.error('Error toggling reaction:', err);
+        // Fallback optimistic
         if (isHeart) {
           const next = !hasHearted;
           setHasHearted(next);
@@ -140,27 +169,11 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
           setHasEnergized(next);
           setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
         }
+      } finally {
+        if (isHeart) setIsTogglingHeart(false);
+        else setIsTogglingEnergy(false);
       }
-
-      if (onReactionUpdated) {
-        onReactionUpdated(currentLeaf.id, data?.reactions);
-      }
-    } catch (err) {
-      console.error('Error toggling reaction:', err);
-      // Fallback optimistic
-      if (isHeart) {
-        const next = !hasHearted;
-        setHasHearted(next);
-        setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-      } else {
-        const next = !hasEnergized;
-        setHasEnergized(next);
-        setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-      }
-    } finally {
-      if (isHeart) setIsTogglingHeart(false);
-      else setIsTogglingEnergy(false);
-    }
+    }, actionType === 'HEART' ? 'thả tim thông điệp' : 'truyền năng lượng');
   };
 
   return (
@@ -206,16 +219,18 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
         >
           <i className="dot" style={{ background: leafColor }} />
           <span>
-            {catConfig.name} · {catConfig.desc}
+            {(language === 'en' ? catConfig.name_en : catConfig.name) || catConfig.name} · {(language === 'en' ? catConfig.desc_en : catConfig.desc) || catConfig.desc}
           </span>
         </div>
 
         <h2 style={{ marginTop: '6px', fontSize: '24px' }}>
-          {currentLeaf.title || 'Thông điệp động viên'}
+          {localize(currentLeaf, 'title') || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên')}
         </h2>
 
         {isLoading ? (
-          <div style={{ padding: '24px 0', color: 'var(--muted)' }}>Đang tải nội dung...</div>
+          <div style={{ padding: '24px 0', color: 'var(--muted)' }}>
+            {language === 'en' ? 'Loading message...' : 'Đang tải nội dung...'}
+          </div>
         ) : (
           <div
             className="hand"
@@ -227,13 +242,15 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
               whiteSpace: 'pre-wrap',
             }}
           >
-            {currentLeaf.content || currentLeaf.short_content}
+            {localize(currentLeaf, 'content') || localize(currentLeaf, 'short_content')}
           </div>
         )}
 
         <div className="muted" style={{ fontSize: '13px' }}>
-          {currentLeaf.author_display_name || 'Người lạ'} · treo lên cây ngày{' '}
-          {formatDate(currentLeaf.created_at)}
+          {currentLeaf.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ')} ·{' '}
+          {language === 'en'
+            ? `hung on tree on ${formatDate(currentLeaf.created_at)}`
+            : `treo lên cây ngày ${formatDate(currentLeaf.created_at)}`}
         </div>
 
         {/* Interactive Reaction Buttons */}
@@ -259,7 +276,9 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
         </div>
 
         <div className="muted" style={{ fontSize: '13px', marginTop: '16px' }}>
-          Lời nhắn này cũng có trong hòm thư ở sảnh chính.
+          {language === 'en'
+            ? 'This message is also preserved in the lobby mailbox.'
+            : 'Lời nhắn này cũng có trong hòm thư ở sảnh chính.'}
         </div>
       </div>
     </>

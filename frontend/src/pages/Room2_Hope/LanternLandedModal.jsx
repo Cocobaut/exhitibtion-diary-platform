@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { SingleLantern } from './LanternSky';
 import { room2Service } from '../../services/room2Service';
+import { useGuestGuard } from '../../context/GuestGuardContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function LanternLandedModal({
   isOpen,
@@ -10,6 +12,8 @@ export function LanternLandedModal({
   onReplyFuture,
   letterData,
 }) {
+  const { guardAction } = useGuestGuard();
+  const { localize, language } = useLanguage();
   const [letter, setLetter] = useState(letterData || null);
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,11 +62,19 @@ export function LanternLandedModal({
   if (!isOpen) return null;
 
   const currentLetter = letter || {
-    title: 'Gửi mình của năm 2026,',
+    title: language === 'en' ? 'To myself in 2026,' : 'Gửi mình của năm 2026,',
+    title_vi: 'Gửi mình của năm 2026,',
+    title_en: 'To myself in 2026,',
     content:
+      language === 'en'
+        ? 'Writing this while sitting in the library after failing my IELTS exam for the second time. If you are reading this, I hope you have stopped comparing yourself with others. Whatever the outcome, I am still proud that we never gave up.'
+        : 'Lúc viết thư này mình đang ngồi ở thư viện, vừa trượt kỳ thi IELTS lần hai. Nếu cậu đọc được những dòng này, mong là cậu đã thôi so mình với người khác. Dù kết quả ra sao, mình vẫn tự hào vì tụi mình đã không bỏ cuộc.',
+    content_vi:
       'Lúc viết thư này mình đang ngồi ở thư viện, vừa trượt kỳ thi IELTS lần hai. Nếu cậu đọc được những dòng này, mong là cậu đã thôi so mình với người khác. Dù kết quả ra sao, mình vẫn tự hào vì tụi mình đã không bỏ cuộc.',
-    author: 'Linh, 24.10.2023',
-    statusNote: 'Đã tới giờ hẹn · 09:00, 25.10.2026',
+    content_en:
+      'Writing this while sitting in the library after failing my IELTS exam for the second time. If you are reading this, I hope you have stopped comparing yourself with others. Whatever the outcome, I am still proud that we never gave up.',
+    author: language === 'en' ? 'Linh, Oct 24, 2023' : 'Linh, 24.10.2023',
+    statusNote: language === 'en' ? 'Arrival time reached · 09:00, Oct 25, 2026' : 'Đã tới giờ hẹn · 09:00, 25.10.2026',
     symbol: 'heart',
   };
 
@@ -137,8 +149,10 @@ export function LanternLandedModal({
   };
 
   const formattedTarget = currentLetter.target_date
-    ? `Hạ xuống: ${formatTargetDate(currentLetter.target_date)}`
-    : currentLetter.statusNote || 'Đã tới giờ hẹn';
+    ? `${language === 'en' ? 'Landed' : 'Hạ xuống'}: ${formatTargetDate(currentLetter.target_date)}`
+    : language === 'en'
+    ? currentLetter.statusNote_en || currentLetter.statusNote || 'Arrival time reached'
+    : currentLetter.statusNote_vi || currentLetter.statusNote || 'Đã tới giờ hẹn';
 
   return (
     <>
@@ -195,12 +209,12 @@ export function LanternLandedModal({
             fontWeight: 700,
           }}
         >
-          {currentLetter.title}
+          {localize(currentLetter, 'title')}
         </div>
 
         {isLoading ? (
           <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)' }}>
-            Đang mở bức thư lồng đèn...
+            {language === 'en' ? 'Unfolding lantern letter...' : 'Đang mở bức thư lồng đèn...'}
           </div>
         ) : (
           <div
@@ -212,7 +226,7 @@ export function LanternLandedModal({
               color: '#3A2016',
             }}
           >
-            {currentLetter.content}
+            {localize(currentLetter, 'content')}
           </div>
         )}
 
@@ -225,7 +239,7 @@ export function LanternLandedModal({
             color: '#5C341F',
           }}
         >
-          {currentLetter.author_display_name || currentLetter.author || 'Người gửi ẩn danh'}
+          {currentLetter.author_display_name || currentLetter.author || (language === 'en' ? 'Anonymous sender' : 'Người gửi ẩn danh')}
         </div>
 
         <div
@@ -239,21 +253,29 @@ export function LanternLandedModal({
           <button
             type="button"
             className={`btn ${isSaved ? 'main' : 'line'} sm`}
-            onClick={handleSaveToggle}
+            onClick={() => {
+              guardAction(handleSaveToggle, 'lưu lồng đèn vào sổ tay');
+            }}
             disabled={saveLoading}
           >
             <Icon name={isSaved ? 'check' : 'bookmark'} size={16} />
-            {saveLoading ? 'Đang lưu...' : isSaved ? 'Đã lưu vào sổ tay' : 'Lưu vào sổ tay'}
+            {saveLoading
+              ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+              : isSaved
+              ? (language === 'en' ? 'Saved to notebook' : 'Đã lưu vào sổ tay')
+              : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}
           </button>
           <button
             type="button"
             className="btn main sm"
             onClick={() => {
-              onClose();
-              if (onReplyFuture) onReplyFuture();
+              guardAction(() => {
+                onClose();
+                if (onReplyFuture) onReplyFuture();
+              }, 'viết thư trả lời tương lai');
             }}
           >
-            <Icon name="r2" size={16} /> Viết thư trả lời tương lai
+            <Icon name="r2" size={16} /> {language === 'en' ? 'Reply to future' : 'Viết thư trả lời tương lai'}
           </button>
         </div>
       </div>

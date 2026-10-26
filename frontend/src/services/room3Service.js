@@ -9,7 +9,9 @@ export const CATEGORY_MAP = {
   KL: {
     backendKey: 'ENCOURAGEMENT',
     name: 'Khích lệ',
+    name_en: 'Encouragement',
     desc: 'Lời khích lệ, động viên kiên trì',
+    desc_en: 'Words of encouragement and perseverance',
     color: '#E2BC55',
     backendColor: '#FFD700',
     hi: '#F6DD8F',
@@ -17,7 +19,9 @@ export const CATEGORY_MAP = {
   CL: {
     backendKey: 'HEALING',
     name: 'Chữa lành',
+    name_en: 'Healing',
     desc: 'Lời chữa lành, bình an tâm hồn',
+    desc_en: 'Words of healing and inner tranquility',
     color: '#94C590',
     backendColor: '#98FB98',
     hi: '#C6E6BE',
@@ -25,7 +29,9 @@ export const CATEGORY_MAP = {
   BO: {
     backendKey: 'GRATITUDE',
     name: 'Biết ơn',
+    name_en: 'Gratitude',
     desc: 'Lời cảm ơn, trân trọng cuộc sống',
+    desc_en: 'Words of gratitude and cherishing life',
     color: '#E9A2AE',
     backendColor: '#FFB6C1',
     hi: '#F6CDD3',
@@ -33,7 +39,9 @@ export const CATEGORY_MAP = {
   GN: {
     backendKey: 'PERSPECTIVE',
     name: 'Góc nhìn',
+    name_en: 'Perspective',
     desc: 'Lời chia sẻ góc nhìn cuộc sống',
+    desc_en: 'Sharing comforting viewpoints on life',
     color: '#8FBCD9',
     backendColor: '#87CEFA',
     hi: '#C4DDEE',

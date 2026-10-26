@@ -1,29 +1,31 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../common/Icons';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { capsuleService } from '../../services/capsuleService';
 
-const TOPICS = [
-  { label: 'Ngẫu nhiên', key: null, badge: 'b-wait' },
-  { label: 'Can đảm', key: 'COURAGE', badge: 'b-wait' },
-  { label: 'Chữa lành', key: 'HEALING', badge: 'b-ok' },
-  { label: 'Góc nhìn', key: 'PERSPECTIVE', badge: 'b-priv' },
+const TOPIC_KEYS = [
+  { key: null, badge: 'b-wait', vi: 'Ngẫu nhiên', en: 'Random' },
+  { key: 'COURAGE', badge: 'b-wait', vi: 'Can đảm', en: 'Courage' },
+  { key: 'HEALING', badge: 'b-ok', vi: 'Chữa lành', en: 'Healing' },
+  { key: 'PERSPECTIVE', badge: 'b-priv', vi: 'Góc nhìn', en: 'Perspective' },
 ];
 
 export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems = [] }) {
   const { isAuthenticated } = useAuth();
-  const [activeTopic, setActiveTopic] = useState('Ngẫu nhiên');
+  const { language, localize } = useLanguage();
+  const [activeTopicKey, setActiveTopicKey] = useState(null);
   const [drawnData, setDrawnData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const currentTopicObj = TOPICS.find((t) => t.label === activeTopic) || TOPICS[0];
+  const currentTopicObj = TOPIC_KEYS.find((t) => t.key === activeTopicKey) || TOPIC_KEYS[0];
 
   // Rút thông điệp mới từ backend
   const handleDraw = useCallback(
-    async (topicLabel = activeTopic) => {
-      const topicObj = TOPICS.find((t) => t.label === topicLabel) || TOPICS[0];
+    async (topicKey = activeTopicKey) => {
+      const topicObj = TOPIC_KEYS.find((t) => t.key === topicKey) || TOPIC_KEYS[0];
       setIsLoading(true);
       setErrorMsg('');
 
@@ -41,8 +43,16 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
                 : topicObj.key === 'PERSPECTIVE'
                 ? 'Mười năm nữa, chuyện hôm nay chỉ là một dòng trong câu chuyện dài của bạn.'
                 : 'Bạn có thể bắt đầu lại bao nhiêu lần cũng được.',
+            message_en:
+              topicObj.key === 'COURAGE'
+                ? 'Courage is not the absence of fear. Courage is applying one more time even when your hands shake.'
+                : topicObj.key === 'HEALING'
+                ? 'Resting today is also a form of trying. Even trees do not blossom leaves all year round.'
+                : topicObj.key === 'PERSPECTIVE'
+                ? 'Ten years from now, today will merely be one line in your long story.'
+                : 'You are allowed to start over as many times as you need.',
             category: topicObj.key || 'HEALING',
-            author_name: 'Người lữ khách bảo tàng',
+            author_name: language === 'en' ? 'Museum wanderer' : 'Người lữ khách bảo tàng',
             is_saved: false,
           });
           setIsLoading(false);
@@ -53,27 +63,27 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
         setDrawnData(res);
       } catch (err) {
         if (err.errorCode === 'CAPSULE_POOL_EMPTY' || err.status === 404) {
-          setErrorMsg('Kho thông điệp chủ đề này hiện đang được chuẩn bị thêm.');
+          setErrorMsg(language === 'en' ? 'Capsules for this topic are currently being prepared.' : 'Kho thông điệp chủ đề này hiện đang được chuẩn bị thêm.');
         } else {
-          setErrorMsg(err.message || 'Không thể rút thông điệp lúc này.');
+          setErrorMsg(err.message || (language === 'en' ? 'Unable to draw a message right now.' : 'Không thể rút thông điệp lúc này.'));
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [activeTopic, isAuthenticated]
+    [activeTopicKey, isAuthenticated, language]
   );
 
   // Tự động rút 1 thông điệp khi mở modal
   useEffect(() => {
     if (isOpen) {
-      handleDraw(activeTopic);
+      handleDraw(activeTopicKey);
     }
   }, [isOpen]);
 
-  const handleTopicChange = (newTopic) => {
-    setActiveTopic(newTopic);
-    handleDraw(newTopic);
+  const handleTopicChange = (newKey) => {
+    setActiveTopicKey(newKey);
+    handleDraw(newKey);
   };
 
   // Lưu hoặc bỏ lưu vào sổ tay
@@ -86,13 +96,13 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
         onSaveToNotebook({
           id: drawnData.draw_id,
           source: 'mailbox',
-          sourceLabel: `Hòm thư · ${activeTopic}`,
+          sourceLabel: language === 'en' ? `Mailbox · ${currentTopicObj.en}` : `Hòm thư · ${currentTopicObj.vi}`,
           badgeClass: currentTopicObj.badge,
           icon: 'sparkle',
-          content: drawnData.message,
-          author: drawnData.author_name || 'Ẩn danh',
-          category: activeTopic,
-          savedAt: 'Vừa xong',
+          content: localize(drawnData, 'message'),
+          author: drawnData.author_name || (language === 'en' ? 'Anonymous' : 'Ẩn danh'),
+          category: currentTopicObj.key,
+          savedAt: language === 'en' ? 'Just now' : 'Vừa xong',
         });
       }
       setDrawnData((prev) => ({ ...prev, is_saved: true }));
@@ -150,14 +160,14 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
         }}
       >
         <div className="serif" style={{ fontSize: '32px', fontWeight: 700 }}>
-          Hôm nay bạn cần nghe điều gì?
+          {language === 'en' ? 'What do you need to hear today?' : 'Hôm nay bạn cần nghe điều gì?'}
         </div>
         <div className="row" style={{ justifyContent: 'center', marginTop: '12px', gap: '8px' }}>
-          {TOPICS.map((t) => (
+          {TOPIC_KEYS.map((t) => (
             <span
-              key={t.label}
-              onClick={() => handleTopicChange(t.label)}
-              className={`chip glass ${activeTopic === t.label ? 'on' : ''}`}
+              key={t.vi}
+              onClick={() => handleTopicChange(t.key)}
+              className={`chip glass ${activeTopicKey === t.key ? 'on' : ''}`}
               style={{
                 cursor: 'pointer',
                 '--onw': '#F6E9DD',
@@ -166,7 +176,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
                 transition: 'all 0.15s ease',
               }}
             >
-              {t.label}
+              {language === 'en' ? t.en : t.vi}
             </span>
           ))}
         </div>
@@ -214,11 +224,11 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
 
         <div className="row between" style={{ marginBottom: '12px' }}>
           <span className={`badge ${currentTopicObj.badge}`}>
-            <Icon name="sparkle" size={14} /> {activeTopic}
+            <Icon name="sparkle" size={14} /> {language === 'en' ? currentTopicObj.en : currentTopicObj.vi}
           </span>
           {drawnData?.capsule_id && (
             <span className="muted" style={{ fontSize: '13px' }}>
-              thông điệp #{drawnData.capsule_id}
+              {language === 'en' ? `message #${drawnData.capsule_id}` : `thông điệp #${drawnData.capsule_id}`}
             </span>
           )}
         </div>
@@ -233,7 +243,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
               fontStyle: 'italic',
             }}
           >
-            Đang rút thông điệp từ hòm thư...
+            {language === 'en' ? 'Drawing a message from mailbox...' : 'Đang rút thông điệp từ hòm thư...'}
           </div>
         ) : errorMsg ? (
           <div
@@ -259,7 +269,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
                 minHeight: '80px',
               }}
             >
-              {drawnData?.message}
+              {localize(drawnData, 'message')}
             </div>
 
             <div
@@ -271,7 +281,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
                 marginTop: '12px',
               }}
             >
-              - {drawnData?.author_name || 'Ẩn danh'}
+              - {drawnData?.author_name || (language === 'en' ? 'Anonymous' : 'Ẩn danh')}
             </div>
           </>
         )}
@@ -288,24 +298,26 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
           <button
             type="button"
             className="btn line sm"
-            onClick={() => handleDraw(activeTopic)}
+            onClick={() => handleDraw(activeTopicKey)}
             disabled={isLoading}
           >
-            <Icon name="refresh" size={16} /> Rút thông điệp mới
+            <Icon name="refresh" size={16} /> {language === 'en' ? 'Draw new message' : 'Rút thông điệp mới'}
           </button>
 
           <span className="row" style={{ gap: '14px' }}>
             <span className="muted" style={{ fontSize: '13px' }}>
-              Sổ tay ({notebookItems.length})
+              {language === 'en' ? `Notebook (${notebookItems.length})` : `Sổ tay (${notebookItems.length})`}
             </span>
             <button
               type="button"
-              className={`btn ${isSaved ? 'main' : 'line'} sm`}
+              className={`btn ${drawnData?.is_saved ? 'main' : 'line'} sm`}
               onClick={handleSaveToggle}
               disabled={isLoading || isSaving || !drawnData}
             >
-              <Icon name={isSaved ? 'check' : 'bookmark'} size={16} />
-              {isSaved ? 'Đã lưu vào sổ tay' : 'Lưu vào sổ tay'}
+              <Icon name={drawnData?.is_saved ? 'check' : 'bookmark'} size={16} />
+              {drawnData?.is_saved
+                ? (language === 'en' ? 'Saved to notebook' : 'Đã lưu vào sổ tay')
+                : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}
             </button>
           </span>
         </div>

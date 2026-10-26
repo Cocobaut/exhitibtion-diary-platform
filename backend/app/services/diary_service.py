@@ -370,12 +370,22 @@ class DiaryService:
                 "avatar_url": d.user.avatar_url if d.user else None,
             }
 
+            snippet_en = (d.content_en[:150] + "...") if d.content_en and len(d.content_en) > 150 else d.content_en
+            snippet_vi = (d.content_vi[:150] + "...") if d.content_vi and len(d.content_vi) > 150 else d.content_vi
+
             items.append({
                 "id": d.id,
                 "entry_date": d.entry_date,
                 "title": d.title,
+                "title_vi": d.title_vi,
+                "title_en": d.title_en,
                 "mood": d.mood,
+                "content": d.content,
+                "content_vi": d.content_vi,
+                "content_en": d.content_en,
                 "snippet": snippet,
+                "snippet_vi": snippet_vi,
+                "snippet_en": snippet_en,
                 "media_urls": d.media_urls or [],
                 "author": author_info,
                 "reactions": rx_obj,

@@ -3,13 +3,13 @@ import { Icon } from '../../components/common/Icons';
 import { SYM, SYM_KEYS } from '../../data/mockData';
 import { poly } from './LanternSky';
 import { room2Service } from '../../services/room2Service';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
-  const [title, setTitle] = useState('Gửi mình của năm 2030');
-  const [message, setMessage] = useState(
-    'Hôm nay mình vừa trượt vòng phỏng vấn thứ ba. Mình viết lá thư này để cậu nhớ rằng đã có lúc mọi thứ thật khó, và mình vẫn đi tiếp.'
-  );
-  const [penName, setPenName] = useState('Linh của năm 2026');
+  const { language } = useLanguage();
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [penName, setPenName] = useState('');
   const [selectedSymbol, setSelectedSymbol] = useState('heart');
   const [isPrivate, setIsPrivate] = useState(true);
 
@@ -22,7 +22,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
   };
 
   const [targetDateObj, setTargetDateObj] = useState(getInitialTargetDate);
-  const [quickOption, setQuickOption] = useState('4 năm');
+  const [quickOption, setQuickOption] = useState('4y');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -30,8 +30,21 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
     if (isOpen) {
       setErrorMessage('');
       setIsSubmitting(false);
+      if (!title) {
+        setTitle(language === 'en' ? 'To myself in 2030' : 'Gửi mình của năm 2030');
+      }
+      if (!message) {
+        setMessage(
+          language === 'en'
+            ? 'Today I failed my third interview round. I am writing this letter so you remember that once things were tough, and I kept going.'
+            : 'Hôm nay mình vừa trượt vòng phỏng vấn thứ ba. Mình viết lá thư này để cậu nhớ rằng đã có lúc mọi thứ thật khó, và mình vẫn đi tiếp.'
+        );
+      }
+      if (!penName) {
+        setPenName(language === 'en' ? 'Me in 2026' : 'Linh của năm 2026');
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, language]);
 
   if (!isOpen) return null;
 
@@ -46,29 +59,23 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
     return `${y}-${m}-${d}T${hh}:${mm}`;
   };
 
-  const handleQuickDate = (option) => {
-    setQuickOption(option);
+  const quickOptions = [
+    { key: '1d', label: language === 'en' ? '1 day' : '1 ngày', days: 1 },
+    { key: '1m', label: language === 'en' ? '1 month' : '1 tháng', months: 1 },
+    { key: '1y', label: language === 'en' ? '1 year' : '1 năm', years: 1 },
+    { key: '3y', label: language === 'en' ? '3 years' : '3 năm', years: 3 },
+    { key: '4y', label: language === 'en' ? '4 years' : '4 năm', years: 4 },
+  ];
+
+  const handleQuickDate = (item) => {
+    setQuickOption(item.key);
     const now = new Date();
     const next = new Date(now);
 
-    switch (option) {
-      case '1 ngày':
-        next.setDate(now.getDate() + 1);
-        break;
-      case '1 tháng':
-        next.setMonth(now.getMonth() + 1);
-        break;
-      case '1 năm':
-        next.setFullYear(now.getFullYear() + 1);
-        break;
-      case '3 năm':
-        next.setFullYear(now.getFullYear() + 3);
-        break;
-      case '4 năm':
-      default:
-        next.setFullYear(now.getFullYear() + 4);
-        break;
-    }
+    if (item.days) next.setDate(now.getDate() + item.days);
+    if (item.months) next.setMonth(now.getMonth() + item.months);
+    if (item.years) next.setFullYear(now.getFullYear() + item.years);
+
     next.setHours(9, 0, 0, 0);
     setTargetDateObj(next);
   };
@@ -94,15 +101,27 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
     const diffHours = (targetDateObj.getTime() - now.getTime()) / (1000 * 60 * 60);
 
     if (cleanTitle.length < 3 || cleanTitle.length > 150) {
-      setErrorMessage('Tiêu đề phải từ 3 đến 150 ký tự.');
+      setErrorMessage(
+        language === 'en'
+          ? 'Title must be between 3 and 150 characters.'
+          : 'Tiêu đề phải từ 3 đến 150 ký tự.'
+      );
       return;
     }
     if (cleanContent.length < 10) {
-      setErrorMessage('Nội dung thư phải tối thiểu 10 ký tự.');
+      setErrorMessage(
+        language === 'en'
+          ? 'Letter content must be at least 10 characters.'
+          : 'Nội dung thư phải tối thiểu 10 ký tự.'
+      );
       return;
     }
     if (diffHours < 0.95) {
-      setErrorMessage('Thời điểm hạ xuống phải là thời gian trong tương lai (tối thiểu sau thời điểm hiện tại 1 giờ).');
+      setErrorMessage(
+        language === 'en'
+          ? 'Descent time must be in the future (at least 1 hour from now).'
+          : 'Thời điểm hạ xuống phải là thời gian trong tương lai (tối thiểu sau thời điểm hiện tại 1 giờ).'
+      );
       return;
     }
 
@@ -133,7 +152,9 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
       const apiMsg =
         err?.response?.data?.message ||
         err?.message ||
-        'Không thể thả lồng đèn lúc này. Vui lòng kiểm tra lại thông tin.';
+        (language === 'en'
+          ? 'Could not release lantern right now. Please check your information.'
+          : 'Không thể thả lồng đèn lúc này. Vui lòng kiểm tra lại thông tin.');
       setErrorMessage(apiMsg);
     } finally {
       setIsSubmitting(false);
@@ -142,6 +163,11 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
 
   const formatDisplayDate = (d) => {
     const pad = (n) => String(n).padStart(2, '0');
+    if (language === 'en') {
+      return `${pad(d.getHours())}:${pad(d.getMinutes())} on ${pad(d.getMonth() + 1)}/${pad(
+        d.getDate()
+      )}/${d.getFullYear()}`;
+    }
     return `${pad(d.getHours())}:${pad(d.getMinutes())} ngày ${pad(d.getDate())}.${pad(
       d.getMonth() + 1
     )}.${d.getFullYear()}`;
@@ -168,8 +194,12 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
 
         {/* Left Side: Content & Privacy */}
         <div>
-          <h2>Thả lồng đèn tương lai</h2>
-          <div className="sub">Viết cho chính mình, hẹn ngày giờ lồng đèn hạ xuống.</div>
+          <h2>{language === 'en' ? 'Release Future Lantern' : 'Thả lồng đèn tương lai'}</h2>
+          <div className="sub">
+            {language === 'en'
+              ? 'Write to your future self, choose the moment your lantern descends.'
+              : 'Viết cho chính mình, hẹn ngày giờ lồng đèn hạ xuống.'}
+          </div>
 
           {errorMessage && (
             <div
@@ -187,30 +217,32 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             </div>
           )}
 
-          <div className="fieldl">Tiêu đề</div>
+          <div className="fieldl">{language === 'en' ? 'Title' : 'Tiêu đề'}</div>
           <input
             className="inp"
-            placeholder="Ví dụ: Gửi mình của năm 2030..."
+            placeholder={language === 'en' ? 'E.g., To myself in 2030...' : 'Ví dụ: Gửi mình của năm 2030...'}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             maxLength={150}
           />
 
-          <div className="fieldl">Lời gửi tương lai</div>
+          <div className="fieldl">{language === 'en' ? 'Words to the future' : 'Lời gửi tương lai'}</div>
           <textarea
             className="inp area focus"
             style={{ minHeight: '180px' }}
-            placeholder="Tâm sự, lời hứa hoặc những điều bạn muốn nhắn nhủ..."
+            placeholder={language === 'en'
+              ? 'Thoughts, promises, or things you want to share with your future self...'
+              : 'Tâm sự, lời hứa hoặc những điều bạn muốn nhắn nhủ...'}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '6px' }}>
             <div>
-              <div className="fieldl">Bút danh</div>
+              <div className="fieldl">{language === 'en' ? 'Pen name' : 'Bút danh'}</div>
               <input
                 className="inp"
-                placeholder="Ví dụ: Linh của năm 2026"
+                placeholder={language === 'en' ? 'E.g., Me in 2026' : 'Ví dụ: Linh của năm 2026'}
                 value={penName}
                 onChange={(e) => setPenName(e.target.value)}
                 maxLength={50}
@@ -218,7 +250,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             </div>
 
             <div>
-              <div className="fieldl">Biểu tượng trên đèn</div>
+              <div className="fieldl">{language === 'en' ? 'Symbol on lantern' : 'Biểu tượng trên đèn'}</div>
               <div className="row" style={{ height: '46px', gap: '6px' }}>
                 {SYM_KEYS.map((k) => {
                   const sym = SYM[k]().map(([a, b]) => [a * 10, b * 10]);
@@ -227,7 +259,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
                     <span
                       key={k}
                       onClick={() => setSelectedSymbol(k)}
-                      title={`Biểu tượng ${k}`}
+                      title={language === 'en' ? `Symbol: ${k}` : `Biểu tượng ${k}`}
                       style={{
                         width: '38px',
                         height: '38px',
@@ -256,7 +288,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             </div>
           </div>
 
-          <div className="fieldl">Ai được thấy lồng đèn này?</div>
+          <div className="fieldl">{language === 'en' ? 'Who can see this lantern?' : 'Ai được thấy lồng đèn này?'}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div
               className={`opt ${isPrivate ? 'on' : ''}`}
@@ -264,10 +296,12 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
               style={{ cursor: 'pointer' }}
             >
               <b>
-                <Icon name="lock" size={17} /> Riêng tư
+                <Icon name="lock" size={17} /> {language === 'en' ? 'Private' : 'Riêng tư'}
               </b>
               <div className="muted" style={{ fontSize: '12px', marginTop: '2px' }}>
-                Chỉ bạn thấy. Không cần duyệt, bay lên ngay.
+                {language === 'en'
+                  ? 'Only you see it. Floats immediately without moderation.'
+                  : 'Chỉ bạn thấy. Không cần duyệt, bay lên ngay.'}
               </div>
             </div>
             <div
@@ -276,10 +310,12 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
               style={{ cursor: 'pointer' }}
             >
               <b>
-                <Icon name="globe" size={17} /> Công khai
+                <Icon name="globe" size={17} /> {language === 'en' ? 'Public' : 'Công khai'}
               </b>
               <div className="muted" style={{ fontSize: '12px', marginTop: '2px' }}>
-                Admin duyệt rồi thả lên bầu trời chung.
+                {language === 'en'
+                  ? 'Moderated by admin then released into the shared sky.'
+                  : 'Admin duyệt rồi thả lên bầu trời chung.'}
               </div>
             </div>
           </div>
@@ -288,19 +324,19 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
         {/* Right Side: Calendar & Target Date */}
         <div style={{ paddingTop: '28px', display: 'flex', flexDirection: 'column' }}>
           <div className="fieldl" style={{ marginTop: 0 }}>
-            Thời điểm hạ xuống
+            {language === 'en' ? 'Descent Moment' : 'Thời điểm hạ xuống'}
           </div>
 
           {/* Quick preset chips */}
           <div className="row" style={{ gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
-            {['1 ngày', '1 tháng', '1 năm', '3 năm', '4 năm'].map((opt) => (
+            {quickOptions.map((opt) => (
               <span
-                key={opt}
-                className={`ichip ${quickOption === opt ? 'on' : ''}`}
+                key={opt.key}
+                className={`ichip ${quickOption === opt.key ? 'on' : ''}`}
                 onClick={() => handleQuickDate(opt)}
                 style={{ cursor: 'pointer' }}
               >
-                {opt} nữa
+                {opt.label} {language === 'en' ? 'later' : 'nữa'}
               </span>
             ))}
           </div>
@@ -315,7 +351,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             }}
           >
             <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '8px' }}>
-              Chọn ngày và giờ chính xác:
+              {language === 'en' ? 'Select exact date and time:' : 'Chọn ngày và giờ chính xác:'}
             </div>
             <input
               type="datetime-local"
@@ -348,13 +384,15 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             >
               <Icon name="clock" size={16} />
               <span>
-                Hạ xuống: <b>{formatDisplayDate(targetDateObj)}</b>
+                {language === 'en' ? 'Descends at:' : 'Hạ xuống:'} <b>{formatDisplayDate(targetDateObj)}</b>
               </span>
             </div>
           </div>
 
           <div className="muted" style={{ fontSize: '13px', marginTop: '16px', lineHeight: 1.6 }}>
-            Đúng {formatDisplayDate(targetDateObj)}, lồng đèn sẽ hạ xuống và bạn sẽ nhận thông báo trong hộp thư.
+            {language === 'en'
+              ? `At ${formatDisplayDate(targetDateObj)}, the lantern will descend and you will receive a notification in your mailbox.`
+              : `Đúng ${formatDisplayDate(targetDateObj)}, lồng đèn sẽ hạ xuống và bạn sẽ nhận thông báo trong hộp thư.`}
           </div>
 
           <div
@@ -372,7 +410,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
               onClick={onClose}
               disabled={isSubmitting}
             >
-              Huỷ
+              {language === 'en' ? 'Cancel' : 'Huỷ'}
             </button>
             <button
               type="button"
@@ -381,7 +419,9 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
               disabled={isSubmitting}
             >
               <Icon name="r2" size={17} />
-              {isSubmitting ? 'Đang thả...' : '✦ Thả lồng đèn'}
+              {isSubmitting
+                ? (language === 'en' ? 'Releasing...' : 'Đang thả...')
+                : (language === 'en' ? '✦ Release Lantern' : '✦ Thả lồng đèn')}
             </button>
           </div>
         </div>

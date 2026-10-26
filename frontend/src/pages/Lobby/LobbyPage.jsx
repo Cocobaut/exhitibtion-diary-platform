@@ -8,6 +8,8 @@ import {
   BenchGraphic,
 } from './LobbyScene';
 import { useAuth } from '../../context/AuthContext';
+import { useGuestGuard } from '../../context/GuestGuardContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function LobbyPage({
   onNavigate,
@@ -15,30 +17,42 @@ export function LobbyPage({
   onOpenNotifications,
   onOpenThemeModal,
 }) {
-  const { user } = useAuth();
-  const displayName = user?.nickname || user?.username || 'bạn';
+  const { user, isGuest } = useAuth();
+  const { guardAction } = useGuestGuard();
+  const { t, language } = useLanguage();
   const showcaseRef = useRef(null);
+
+  // Câu chào song ngữ
+  const displayName = user?.nickname || user?.username || '';
+  const greetingText = isGuest
+    ? t('lobby_greeting_guest')
+    : displayName
+    ? t('lobby_greeting_user', { name: displayName })
+    : t('lobby_greeting_guest');
 
   const rooms = [
     {
       roomNum: 1,
       no: '01',
-      name: 'Triển lãm Đổ vỡ',
-      count: '1.284 tác phẩm',
+      badge: t('lobby_room01_badge'),
+      name: t('lobby_room01_title'),
+      count: t('lobby_room01_count'),
       route: 'r1',
     },
     {
       roomNum: 2,
       no: '02',
-      name: 'Bầu trời Lồng đèn',
-      count: '3.402 lồng đèn đang bay',
+      badge: t('lobby_room02_badge'),
+      name: t('lobby_room02_title'),
+      count: t('lobby_room02_count'),
       route: 'r2',
     },
     {
       roomNum: 3,
       no: '03',
-      name: 'Cây Thông điệp',
-      count: '862 lời động viên',
+      badge: t('lobby_room03_badge'),
+      name: t('lobby_room03_title'),
+      count: t('lobby_room03_count'),
       route: 'r3',
     },
   ];
@@ -51,6 +65,18 @@ export function LobbyPage({
     }
   };
 
+  const handleMailboxClick = () => {
+    guardAction(() => {
+      if (onOpenMailbox) onOpenMailbox();
+    }, 'rút một thông điệp từ Hòm thư');
+  };
+
+  const handleDiaryClick = () => {
+    guardAction(() => {
+      if (onNavigate) onNavigate('diary');
+    }, 'mở Nhật ký cá nhân');
+  };
+
   return (
     <div className="lobby-stage">
       {/* 1. Ambient Museum Hall Backdrop (Wall, Horizon boundary, Dark Floor) */}
@@ -59,7 +85,7 @@ export function LobbyPage({
       {/* 2. Top Header Bar spanning full width, with utility buttons pinned right */}
       <header className="lobby-header-bar">
         <TopNav
-          greeting={`Chào ${displayName}, hôm nay bạn muốn ghé đâu?`}
+          greeting={greetingText}
           onOpenNotifications={onOpenNotifications}
           onOpenThemeModal={onOpenThemeModal}
         />
@@ -70,11 +96,23 @@ export function LobbyPage({
 
       {/* Mobile Quick Navigator Pills */}
       <div className="lobby-mobile-quicknav" aria-label="Điều hướng nhanh phòng">
-        <button type="button" onClick={() => scrollToItem(0)}>Phòng 01</button>
-        <button type="button" onClick={() => scrollToItem(1)}>Hòm thư</button>
-        <button type="button" onClick={() => scrollToItem(2)}>Phòng 02</button>
-        <button type="button" onClick={() => scrollToItem(3)}>Sổ tay</button>
-        <button type="button" onClick={() => scrollToItem(4)}>Phòng 03</button>
+        <button type="button" onClick={() => scrollToItem(0)}>{t('lobby_quick_r1')}</button>
+        <button type="button" onClick={() => scrollToItem(1)}>{t('lobby_quick_mailbox')}</button>
+        <button type="button" onClick={() => scrollToItem(2)}>{t('lobby_quick_r2')}</button>
+        <button
+          type="button"
+          style={isGuest ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+          onClick={() => {
+            if (isGuest) {
+              guardAction(null, t('nav_diary'));
+            } else {
+              scrollToItem(3);
+            }
+          }}
+        >
+          {t('lobby_quick_diary')} {isGuest && '🔒'}
+        </button>
+        <button type="button" onClick={() => scrollToItem(4)}>{t('lobby_quick_r3')}</button>
       </div>
 
       {/* 3. Main Units Row:
@@ -88,7 +126,7 @@ export function LobbyPage({
           onClick={() => onNavigate(rooms[0].route)}
           role="button"
           tabIndex={0}
-          title="Ghé thăm Phòng 01: Triển lãm Đổ vỡ"
+          title={rooms[0].name}
           onKeyDown={(e) => e.key === 'Enter' && onNavigate(rooms[0].route)}
         >
           <div className="unit-top-box door-arch-box">
@@ -96,7 +134,7 @@ export function LobbyPage({
           </div>
           <div className="unit-bottom-box door-card-box">
             <div className="door-info-card">
-              <div className="door-card-badge">PHÒNG {rooms[0].no}</div>
+              <div className="door-card-badge">{rooms[0].badge}</div>
               <h2 className="door-card-title">{rooms[0].name}</h2>
               <div className="door-card-count">{rooms[0].count}</div>
             </div>
@@ -106,11 +144,11 @@ export function LobbyPage({
         {/* Unit 2: Hòm thư đỏ & Nhãn tương tác */}
         <section
           className="lobby-unit item-unit mailbox-unit"
-          onClick={onOpenMailbox}
+          onClick={handleMailboxClick}
           role="button"
           tabIndex={0}
-          title="Mở Hòm thư · rút một thông điệp"
-          onKeyDown={(e) => e.key === 'Enter' && onOpenMailbox()}
+          title={t('lobby_mailbox_badge')}
+          onKeyDown={(e) => e.key === 'Enter' && handleMailboxClick()}
         >
           <div className="unit-top-box item-graphic-box mailbox-graphic-box">
             <MailboxGraphic />
@@ -118,7 +156,7 @@ export function LobbyPage({
           <div className="unit-bottom-box item-badge-box">
             <div className="interactive-badge-pill">
               <span className="badge-star">✦</span>
-              <span>hòm thư · rút một thông điệp</span>
+              <span>{t('lobby_mailbox_badge')}</span>
             </div>
           </div>
         </section>
@@ -129,7 +167,7 @@ export function LobbyPage({
           onClick={() => onNavigate(rooms[1].route)}
           role="button"
           tabIndex={0}
-          title="Ghé thăm Phòng 02: Bầu trời Lồng đèn"
+          title={rooms[1].name}
           onKeyDown={(e) => e.key === 'Enter' && onNavigate(rooms[1].route)}
         >
           <div className="unit-top-box door-arch-box">
@@ -137,28 +175,43 @@ export function LobbyPage({
           </div>
           <div className="unit-bottom-box door-card-box">
             <div className="door-info-card">
-              <div className="door-card-badge">PHÒNG {rooms[1].no}</div>
+              <div className="door-card-badge">{rooms[1].badge}</div>
               <h2 className="door-card-title">{rooms[1].name}</h2>
               <div className="door-card-count">{rooms[1].count}</div>
             </div>
           </div>
         </section>
 
-        {/* Unit 4: Ghế gỗ & Nhãn Nhật ký */}
+        {/* Unit 4: Ghế gỗ & Nhãn Nhật ký (Bị vô hiệu hóa khi ở chế độ Khách vãng lai) */}
         <section
-          className="lobby-unit item-unit bench-unit"
-          onClick={() => onNavigate('diary')}
+          className={`lobby-unit item-unit bench-unit ${
+            isGuest ? 'opacity-40 cursor-not-allowed filter grayscale-[40%]' : ''
+          }`}
+          style={
+            isGuest
+              ? {
+                  opacity: 0.45,
+                  cursor: 'not-allowed',
+                  filter: 'grayscale(40%)',
+                }
+              : {}
+          }
+          onClick={handleDiaryClick}
           role="button"
           tabIndex={0}
-          title="Mở Nhật ký của bạn"
-          onKeyDown={(e) => e.key === 'Enter' && onNavigate('diary')}
+          title={isGuest ? `${t('lobby_diary_badge')} (${t('login_required')})` : t('lobby_diary_badge')}
+          onKeyDown={(e) => e.key === 'Enter' && handleDiaryClick()}
         >
           <div className="unit-top-box item-graphic-box bench-graphic-box">
             <BenchGraphic />
           </div>
           <div className="unit-bottom-box item-badge-box">
-            <div className="interactive-badge-pill">
-              <span>nhật ký của bạn</span>
+            <div
+              className="interactive-badge-pill"
+              style={isGuest ? { cursor: 'not-allowed' } : {}}
+            >
+              <span>{t('lobby_diary_badge')}</span>
+              {isGuest && <span style={{ fontSize: '11px', marginLeft: '4px' }}>🔒</span>}
             </div>
           </div>
         </section>
@@ -169,7 +222,7 @@ export function LobbyPage({
           onClick={() => onNavigate(rooms[2].route)}
           role="button"
           tabIndex={0}
-          title="Ghé thăm Phòng 03: Cây Thông điệp"
+          title={rooms[2].name}
           onKeyDown={(e) => e.key === 'Enter' && onNavigate(rooms[2].route)}
         >
           <div className="unit-top-box door-arch-box">
@@ -177,7 +230,7 @@ export function LobbyPage({
           </div>
           <div className="unit-bottom-box door-card-box">
             <div className="door-info-card">
-              <div className="door-card-badge">PHÒNG {rooms[2].no}</div>
+              <div className="door-card-badge">{rooms[2].badge}</div>
               <h2 className="door-card-title">{rooms[2].name}</h2>
               <div className="door-card-count">{rooms[2].count}</div>
             </div>
@@ -187,7 +240,7 @@ export function LobbyPage({
 
       {/* 4. Footer Inspiration Quote in dark floor area */}
       <footer className="lobby-footer-bar">
-        <i>Bạn hơn cả thành tích của mình.</i>
+        <i>{t('lobby_quote')}</i>
       </footer>
     </div>
   );

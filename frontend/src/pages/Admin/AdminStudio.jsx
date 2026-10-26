@@ -3,15 +3,17 @@ import { Painting } from '../../components/common/Painting';
 import { Icon } from '../../components/common/Icons';
 import { adminStudioService } from '../../services/adminStudioService';
 import { adminRoomService } from '../../services/adminRoomService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminStudio({ triggerToast, onPublished }) {
+  const { t, language } = useLanguage();
   const [roomId, setRoomId] = useState(1);
   const [titleVi, setTitleVi] = useState('');
   const [titleEn, setTitleEn] = useState('');
-  const [authorName, setAuthorName] = useState('Ban Giám Tuyển Triển Lãm');
+  const [authorName, setAuthorName] = useState(language === 'en' ? 'Exhibition Curatorial Team' : 'Ban Giám Tuyển Triển Lãm');
   const [summaryVi, setSummaryVi] = useState('');
   const [contentVi, setContentVi] = useState('');
-  const [quote, setQuote] = useState('“Cảm xúc là thứ duy nhất chân thật trong mọi khoảnh khắc.”');
+  const [quote, setQuote] = useState(language === 'en' ? '“Emotion is the only truth in every moment.”' : '“Cảm xúc là thứ duy nhất chân thật trong mọi khoảnh khắc.”');
   const [mediaUrl, setMediaUrl] = useState('');
   const [isBilingual, setIsBilingual] = useState(false);
   const [summaryEn, setSummaryEn] = useState('');
@@ -32,16 +34,16 @@ export function AdminStudio({ triggerToast, onPublished }) {
   const fileInputRef = useRef(null);
 
   const roomCategories = [
-    { id: 1, name: 'Phòng 1 · Đổ vỡ' },
-    { id: 2, name: 'Phòng 2 · Lồng đèn Hy vọng' },
-    { id: 3, name: 'Phòng 3 · Cây thông điệp' },
+    { id: 1, name: language === 'en' ? 'Room 1 · Broken Exhibition' : 'Phòng 1 · Đổ vỡ' },
+    { id: 2, name: language === 'en' ? 'Room 2 · Lantern Sky' : 'Phòng 2 · Lồng đèn Hy vọng' },
+    { id: 3, name: language === 'en' ? 'Room 3 · Wish Tree' : 'Phòng 3 · Cây thông điệp' },
   ];
 
   const leafCategories = [
-    { key: 'ENCOURAGEMENT', label: 'Khích lệ, kiên trì', color: '#FFD700' },
-    { key: 'HEALING', label: 'Chữa lành, bình an', color: '#98FB98' },
-    { key: 'GRATITUDE', label: 'Cảm ơn, trân trọng', color: '#FFB6C1' },
-    { key: 'PERSPECTIVE', label: 'Góc nhìn cuộc sống', color: '#87CEFA' },
+    { key: 'ENCOURAGEMENT', label: language === 'en' ? 'Encouragement' : 'Khích lệ, kiên trì', color: '#FFD700' },
+    { key: 'HEALING', label: language === 'en' ? 'Healing' : 'Chữa lành, bình an', color: '#98FB98' },
+    { key: 'GRATITUDE', label: language === 'en' ? 'Gratitude' : 'Cảm ơn, trân trọng', color: '#FFB6C1' },
+    { key: 'PERSPECTIVE', label: language === 'en' ? 'Perspective' : 'Góc nhìn cuộc sống', color: '#87CEFA' },
   ];
 
   const handleUploadImage = async (e) => {
@@ -58,7 +60,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
       }
     } catch (err) {
       console.error('Error uploading artwork image:', err);
-      setErrorMsg('Không thể tải ảnh minh họa lên. Vui lòng kiểm tra lại kích thước file.');
+      setErrorMsg(language === 'en' ? 'Could not upload artwork image. Please check file size.' : 'Không thể tải ảnh minh họa lên. Vui lòng kiểm tra lại kích thước file.');
     } finally {
       setIsUploading(false);
     }
@@ -69,17 +71,17 @@ export function AdminStudio({ triggerToast, onPublished }) {
     setErrorMsg('');
 
     if (!titleVi.trim()) {
-      setErrorMsg('Vui lòng nhập tiêu đề tác phẩm.');
+      setErrorMsg(language === 'en' ? 'Please enter artwork title.' : 'Vui lòng nhập tiêu đề tác phẩm.');
       return;
     }
 
     if (!contentVi.trim()) {
-      setErrorMsg('Vui lòng nhập nội dung tác phẩm.');
+      setErrorMsg(language === 'en' ? 'Please enter artwork content.' : 'Vui lòng nhập nội dung tác phẩm.');
       return;
     }
 
     if (roomId === 1 && !mediaUrl) {
-      setErrorMsg('Tranh minh họa là bắt buộc ở Phòng 1.');
+      setErrorMsg(language === 'en' ? 'Artwork illustration is required in Room 1.' : 'Tranh minh họa là bắt buộc ở Phòng 1.');
       return;
     }
 
@@ -89,7 +91,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
         room_id: roomId,
         title_vi: titleVi.trim(),
         title_en: isBilingual ? (titleEn.trim() || titleVi.trim()) : titleVi.trim(),
-        author_display_name: authorName.trim() || 'Ban Giám Tuyển Triển Lãm',
+        author_display_name: authorName.trim() || (language === 'en' ? 'Exhibition Curatorial Team' : 'Ban Giám Tuyển Triển Lãm'),
         short_content_vi: summaryVi.trim() || titleVi.trim(),
         short_content_en: isBilingual ? (summaryEn.trim() || summaryVi.trim()) : (summaryVi.trim() || titleVi.trim()),
         content_vi: contentVi.trim(),
@@ -105,7 +107,11 @@ export function AdminStudio({ triggerToast, onPublished }) {
       const res = await adminStudioService.publishArtwork(payload);
 
       if (triggerToast) {
-        triggerToast('✦ Tác phẩm chuyên đề của Studio đã xuất bản trực tiếp lên phòng triển lãm thành công!');
+        triggerToast(
+          language === 'en'
+            ? '✦ Curatorial artwork published directly to exhibition gallery!'
+            : '✦ Tác phẩm chuyên đề của Studio đã xuất bản trực tiếp lên phòng triển lãm thành công!'
+        );
       }
 
       // Reset form
@@ -123,7 +129,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
       }
     } catch (err) {
       console.error('Error publishing studio artwork:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể xuất bản tác phẩm lúc này.';
+      const msg = err?.response?.data?.message || err?.message || (language === 'en' ? 'Could not publish artwork right now.' : 'Không thể xuất bản tác phẩm lúc này.');
       setErrorMsg(msg);
     } finally {
       setIsPublishing(false);
@@ -145,12 +151,16 @@ export function AdminStudio({ triggerToast, onPublished }) {
       <div className="row between" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '14px', marginBottom: '20px' }}>
         <div>
           <div style={{ fontSize: '12px', letterSpacing: '.15em', fontWeight: 600, color: 'var(--acc)' }}>
-            STUDIO GIÁM TUYỂN
+            {language === 'en' ? 'CURATORIAL STUDIO' : 'STUDIO GIÁM TUYỂN'}
           </div>
-          <h2 style={{ fontSize: '24px', margin: '4px 0 0' }}>Xuất bản trực tiếp tác phẩm chuyên đề</h2>
+          <h2 style={{ fontSize: '24px', margin: '4px 0 0' }}>
+            {language === 'en' ? 'Direct Publish Curated Artwork' : 'Xuất bản trực tiếp tác phẩm chuyên đề'}
+          </h2>
         </div>
         <div className="muted" style={{ fontSize: '13px', maxWidth: '420px', textAlign: 'right' }}>
-          Tác phẩm xuất bản tại đây sẽ lập tức có trạng thái <b>APPROVED</b> và hiển thị trực tiếp lên tường triển lãm mà không cần qua quy trình duyệt.
+          {language === 'en'
+            ? <>Artworks published here will immediately be <b>APPROVED</b> and displayed live on the exhibition wall without needing prior moderation.</>
+            : <>Tác phẩm xuất bản tại đây sẽ lập tức có trạng thái <b>APPROVED</b> và hiển thị trực tiếp lên tường triển lãm mà không cần qua quy trình duyệt.</>}
         </div>
       </div>
 
@@ -174,7 +184,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '32px' }}>
           {/* Left Column: Form Fields */}
           <div>
-            <div className="fieldl">Chọn Phòng Triển Lãm đích</div>
+            <div className="fieldl">{language === 'en' ? 'Select Target Exhibition Room' : 'Chọn Phòng Triển Lãm đích'}</div>
             <div className="row" style={{ gap: '8px', marginBottom: '18px' }}>
               {roomCategories.map((r) => (
                 <span
@@ -190,58 +200,58 @@ export function AdminStudio({ triggerToast, onPublished }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <div className="fieldl">Tiêu đề tác phẩm (Tiếng Việt)</div>
+                <div className="fieldl">{language === 'en' ? 'Artwork Title (Vietnamese / Primary)' : 'Tiêu đề tác phẩm (Tiếng Việt)'}</div>
                 <input
                   className="inp"
                   value={titleVi}
                   onChange={(e) => setTitleVi(e.target.value)}
-                  placeholder="Ví dụ: Kỷ niệm ngày thành lập bảo tàng"
+                  placeholder={language === 'en' ? 'E.g., In celebration of museum anniversary' : 'Ví dụ: Kỷ niệm ngày thành lập bảo tàng'}
                   required
                 />
               </div>
               <div>
-                <div className="fieldl">Bút danh hiển thị</div>
+                <div className="fieldl">{language === 'en' ? 'Author Display Name' : 'Bút danh hiển thị'}</div>
                 <input
                   className="inp"
                   value={authorName}
                   onChange={(e) => setAuthorName(e.target.value)}
-                  placeholder="Ban Giám Tuyển Triển Lãm"
+                  placeholder={language === 'en' ? 'Exhibition Curatorial Team' : 'Ban Giám Tuyển Triển Lãm'}
                 />
               </div>
             </div>
 
             <div className="fieldl" style={{ marginTop: '14px' }}>
-              Tóm tắt ngắn trên thẻ (Short Content) <span>{summaryVi.length} / 120 ký tự</span>
+              {language === 'en' ? 'Short Summary on Card' : 'Tóm tắt ngắn trên thẻ (Short Content)'} <span>{summaryVi.length} / 120 {language === 'en' ? 'chars' : 'ký tự'}</span>
             </div>
             <input
               className="inp"
               value={summaryVi}
               onChange={(e) => setSummaryVi(e.target.value)}
-              placeholder="Đoạn văn ngắn gọn xuất hiện khi nhìn lướt trên tường triển lãm..."
+              placeholder={language === 'en' ? 'Brief excerpt visible when scanning the exhibition wall...' : 'Đoạn văn ngắn gọn xuất hiện khi nhìn lướt trên tường triển lãm...'}
               maxLength={120}
             />
 
             <div className="fieldl" style={{ marginTop: '14px' }}>
-              Nội dung đầy đủ của tác phẩm
+              {language === 'en' ? 'Full Artwork Story & Content' : 'Nội dung đầy đủ của tác phẩm'}
             </div>
             <textarea
               className="inp area"
               style={{ minHeight: '180px', fontSize: '14.5px', lineHeight: 1.6, fontFamily: 'var(--sans)' }}
               value={contentVi}
               onChange={(e) => setContentVi(e.target.value)}
-              placeholder="Toàn văn câu chuyện hoặc lời tựa của giám tuyển..."
+              placeholder={language === 'en' ? 'Full curatorial story or narrative...' : 'Toàn văn câu chuyện hoặc lời tựa của giám tuyển...'}
               required
             />
 
             {/* Room 1 specific: Quote */}
             {roomId === 1 && (
               <div style={{ marginTop: '14px' }}>
-                <div className="fieldl">Lời trích dẫn nghệ thuật (Quote trên tường)</div>
+                <div className="fieldl">{language === 'en' ? 'Curatorial Wall Quote' : 'Lời trích dẫn nghệ thuật (Quote trên tường)'}</div>
                 <input
                   className="inp"
                   value={quote}
                   onChange={(e) => setQuote(e.target.value)}
-                  placeholder="“Một câu nói lắng đọng...”"
+                  placeholder={language === 'en' ? '“A reflective quote...”' : '“Một câu nói lắng đọng...”'}
                 />
               </div>
             )}
@@ -250,7 +260,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
             {roomId === 2 && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '14px' }}>
                 <div>
-                  <div className="fieldl">Ngày gửi gắm (Target Date - Tùy chọn)</div>
+                  <div className="fieldl">{language === 'en' ? 'Target Date (Optional)' : 'Ngày gửi gắm (Target Date - Tùy chọn)'}</div>
                   <input
                     type="date"
                     className="inp"
@@ -259,14 +269,14 @@ export function AdminStudio({ triggerToast, onPublished }) {
                   />
                 </div>
                 <div>
-                  <div className="fieldl">Chế độ hiển thị lồng đèn</div>
+                  <div className="fieldl">{language === 'en' ? 'Lantern Visibility' : 'Chế độ hiển thị lồng đèn'}</div>
                   <select
                     className="inp"
                     value={visibility}
                     onChange={(e) => setVisibility(e.target.value)}
                   >
-                    <option value="PUBLIC">Công khai trên bầu trời hy vọng</option>
-                    <option value="PRIVATE">Chỉ hiển thị riêng tư</option>
+                    <option value="PUBLIC">{language === 'en' ? 'Public on the Hope Sky' : 'Công khai trên bầu trời hy vọng'}</option>
+                    <option value="PRIVATE">{language === 'en' ? 'Private only' : 'Chỉ hiển thị riêng tư'}</option>
                   </select>
                 </div>
               </div>
@@ -275,7 +285,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
             {/* Room 3 specific: Leaf Category & Color */}
             {roomId === 3 && (
               <div style={{ marginTop: '14px' }}>
-                <div className="fieldl">Chủ đề lá thông điệp</div>
+                <div className="fieldl">{language === 'en' ? 'Wish Leaf Category' : 'Chủ đề lá thông điệp'}</div>
                 <div className="row" style={{ gap: '8px', flexWrap: 'wrap' }}>
                   {leafCategories.map((cat) => (
                     <span
@@ -303,34 +313,34 @@ export function AdminStudio({ triggerToast, onPublished }) {
                   checked={isBilingual}
                   onChange={(e) => setIsBilingual(e.target.checked)}
                 />
-                <span>Bổ sung bản dịch tiếng Anh (English Content)</span>
+                <span>{language === 'en' ? 'Add English translation (Bilingual Content)' : 'Bổ sung bản dịch tiếng Anh (English Content)'}</span>
               </label>
 
               {isBilingual && (
                 <div style={{ marginTop: '12px', padding: '16px', background: 'var(--wall)', borderRadius: '10px', border: '1px solid var(--line)' }}>
-                  <div className="fieldl">English Title</div>
+                  <div className="fieldl">{language === 'en' ? 'English Title' : 'Tiêu đề tiếng Anh'}</div>
                   <input
                     className="inp"
                     value={titleEn}
                     onChange={(e) => setTitleEn(e.target.value)}
-                    placeholder="English title of the artwork..."
+                    placeholder={language === 'en' ? 'English title of the artwork...' : 'Tiêu đề tiếng Anh của tác phẩm...'}
                   />
 
-                  <div className="fieldl" style={{ marginTop: '10px' }}>English Short Summary</div>
+                  <div className="fieldl" style={{ marginTop: '10px' }}>{language === 'en' ? 'English Short Summary' : 'Tóm tắt tiếng Anh'}</div>
                   <input
                     className="inp"
                     value={summaryEn}
                     onChange={(e) => setSummaryEn(e.target.value)}
-                    placeholder="English short summary..."
+                    placeholder={language === 'en' ? 'English short summary...' : 'Đoạn tóm tắt tiếng Anh...'}
                   />
 
-                  <div className="fieldl" style={{ marginTop: '10px' }}>English Full Content</div>
+                  <div className="fieldl" style={{ marginTop: '10px' }}>{language === 'en' ? 'English Full Content' : 'Nội dung đầy đủ tiếng Anh'}</div>
                   <textarea
                     className="inp area"
                     style={{ minHeight: '120px', fontSize: '13.5px', fontFamily: 'var(--sans)' }}
                     value={contentEn}
                     onChange={(e) => setContentEn(e.target.value)}
-                    placeholder="English content of the artwork..."
+                    placeholder={language === 'en' ? 'English content of the artwork...' : 'Toàn văn nội dung tiếng Anh của tác phẩm...'}
                   />
                 </div>
               )}
@@ -344,7 +354,9 @@ export function AdminStudio({ triggerToast, onPublished }) {
                 disabled={isPublishing || isUploading}
               >
                 <Icon name="check" size={18} />
-                {isPublishing ? 'Đang xuất bản...' : 'Xuất bản trực tiếp lên triển lãm'}
+                {isPublishing
+                  ? (language === 'en' ? 'Publishing...' : 'Đang xuất bản...')
+                  : (language === 'en' ? 'Publish directly to exhibition' : 'Xuất bản trực tiếp lên triển lãm')}
               </button>
             </div>
           </div>
@@ -352,7 +364,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
           {/* Right Column: Image Upload & Live Wall Preview */}
           <div>
             <div className="fieldl">
-              Tranh minh họa {roomId === 1 && <span style={{ color: 'var(--acc)' }}>(Bắt buộc ở Phòng 1)</span>}
+              {language === 'en' ? 'Illustration Artwork' : 'Tranh minh họa'} {roomId === 1 && <span style={{ color: 'var(--acc)' }}>({language === 'en' ? 'Required in Room 1' : 'Bắt buộc ở Phòng 1'})</span>}
             </div>
 
             <div
@@ -370,7 +382,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
               {mediaUrl ? (
                 <img
                   src={mediaUrl}
-                  alt="Tranh minh họa Studio"
+                  alt={language === 'en' ? 'Studio artwork illustration' : 'Tranh minh họa Studio'}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               ) : (
@@ -385,7 +397,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
               >
-                <Icon name="upload" size={15} /> {isUploading ? 'Đang tải ảnh...' : 'Tải tranh lên'}
+                <Icon name="upload" size={15} /> {isUploading ? (language === 'en' ? 'Uploading...' : 'Đang tải ảnh...') : (language === 'en' ? 'Upload artwork' : 'Tải tranh lên')}
               </button>
               <input
                 type="file"
@@ -400,13 +412,13 @@ export function AdminStudio({ triggerToast, onPublished }) {
                   className="btn ghost sm"
                   onClick={() => setMediaUrl('')}
                 >
-                  Xóa ảnh
+                  {language === 'en' ? 'Remove image' : 'Xóa ảnh'}
                 </button>
               )}
             </div>
 
             <div className="fieldl" style={{ marginTop: '22px' }}>
-              Xem trước trên bức tường ảo
+              {language === 'en' ? 'Live Exhibition Wall Preview' : 'Xem trước trên bức tường ảo'}
             </div>
             <div
               style={{
@@ -428,7 +440,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
                   {mediaUrl ? (
                     <img
                       src={mediaUrl}
-                      alt="Xem trước"
+                      alt={language === 'en' ? 'Preview' : 'Xem trước'}
                       style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                   ) : (
@@ -436,8 +448,8 @@ export function AdminStudio({ triggerToast, onPublished }) {
                   )}
                 </div>
                 <div className="cap">
-                  <h4>{titleVi || 'Tiêu đề tác phẩm'}</h4>
-                  <p style={{ height: 'auto' }}>{summaryVi || 'Tóm tắt nội dung tác phẩm...'}</p>
+                  <h4>{(language === 'en' && isBilingual && titleEn ? titleEn : titleVi) || (language === 'en' ? 'Artwork Title' : 'Tiêu đề tác phẩm')}</h4>
+                  <p style={{ height: 'auto' }}>{(language === 'en' && isBilingual && summaryEn ? summaryEn : summaryVi) || (language === 'en' ? 'Short summary of the artwork...' : 'Tóm tắt nội dung tác phẩm...')}</p>
                 </div>
               </article>
             </div>

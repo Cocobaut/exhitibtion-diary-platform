@@ -45,8 +45,8 @@ class Room2Service:
         current_user: Optional[User] = None,
     ) -> Dict[str, Any]:
         """Get list of lanterns in Room 2 based on visible set and filters."""
-        valid_filters = {"all", "mine", "opened", "locked"}
-        if filter_type not in valid_filters:
+        valid_filters = {"all", "mine"}
+        if filter_type not in valid_filters and filter_type not in {"opened", "locked"}:
             raise AppException(
                 status_code=400,
                 error_code="VALIDATION_ERROR",
@@ -70,12 +70,33 @@ class Room2Service:
         conditions = Room2Service.get_visible_conditions(current_user)
         now = datetime.now(timezone.utc)
 
+        # Silent Auto-landing check for user's personal lanterns that reached maturity
+        freshly_landed = []
+        if current_user:
+            due_stmt = (
+                select(Artwork)
+                .where(
+                    Artwork.room_id == ROOM_HOPE,
+                    Artwork.user_id == current_user.id,
+                    Artwork.target_date.isnot(None),
+                    Artwork.target_date <= now,
+                    Artwork.is_opened.is_(False),
+                )
+            )
+            due_items = (await db.scalars(due_stmt)).all()
+            if due_items:
+                for due_art in due_items:
+                    due_art.is_opened = True
+                    freshly_landed.append({
+                        "id": str(due_art.id),
+                        "title": due_art.title,
+                        "title_vi": due_art.title_vi or due_art.title,
+                        "title_en": due_art.title_en or due_art.title,
+                    })
+                await db.commit()
+
         if filter_type == "mine" and current_user:
             conditions.append(Artwork.user_id == current_user.id)
-        elif filter_type == "opened":
-            conditions.append(Artwork.is_opened.is_(True))
-        elif filter_type == "locked":
-            conditions.append(Artwork.target_date > now)
 
         if title:
             term = f"%{title.strip()}%"
@@ -149,6 +170,7 @@ class Room2Service:
         return {
             "items": items,
             "total_lanterns": total_lanterns,
+            "freshly_landed": freshly_landed,
         }
 
     @staticmethod

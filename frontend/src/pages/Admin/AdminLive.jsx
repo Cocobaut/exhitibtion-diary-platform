@@ -3,8 +3,10 @@ import { Painting } from '../../components/common/Painting';
 import { ReactionStack } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
 import { adminRoomService } from '../../services/adminRoomService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminLive({ roomId = 1, onRefreshCounts }) {
+  const { t, language, localize } = useLanguage();
   const [approvedItems, setApprovedItems] = useState([]);
   const [summary, setSummary] = useState({
     total_approved_artworks: 0,
@@ -91,24 +93,24 @@ export function AdminLive({ roomId = 1, onRefreshCounts }) {
 
   const stats = [
     {
-      label: 'Tác phẩm đang trưng bày',
-      val: summary.total_approved_artworks.toLocaleString('vi-VN'),
-      sub: `Phòng ${roomId}`,
+      label: language === 'en' ? 'Artworks on Exhibition' : 'Tác phẩm đang trưng bày',
+      val: summary.total_approved_artworks.toLocaleString(language === 'en' ? 'en-US' : 'vi-VN'),
+      sub: language === 'en' ? `Room ${roomId}` : `Phòng ${roomId}`,
     },
     {
-      label: 'Lượt xem tích lũy',
-      val: summary.total_views.toLocaleString('vi-VN'),
-      sub: 'Lượt khách tham quan',
+      label: language === 'en' ? 'Cumulative Views' : 'Lượt xem tích lũy',
+      val: summary.total_views.toLocaleString(language === 'en' ? 'en-US' : 'vi-VN'),
+      sub: language === 'en' ? 'Visitors reached' : 'Lượt khách tham quan',
     },
     {
-      label: 'Lượt thả cảm xúc',
-      val: summary.total_reactions.toLocaleString('vi-VN'),
-      sub: 'Tương tác cộng đồng',
+      label: language === 'en' ? 'Total Reactions' : 'Lượt thả cảm xúc',
+      val: summary.total_reactions.toLocaleString(language === 'en' ? 'en-US' : 'vi-VN'),
+      sub: language === 'en' ? 'Community engagement' : 'Tương tác cộng đồng',
     },
     {
-      label: 'Thời gian duyệt trung bình',
-      val: '5,2 giờ',
-      sub: 'Mục tiêu dưới 24 giờ',
+      label: language === 'en' ? 'Avg. Review Time' : 'Thời gian duyệt trung bình',
+      val: language === 'en' ? '5.2 hrs' : '5,2 giờ',
+      sub: language === 'en' ? 'Target under 24 hours' : 'Mục tiêu dưới 24 giờ',
     },
   ];
 
@@ -164,23 +166,23 @@ export function AdminLive({ roomId = 1, onRefreshCounts }) {
             <Icon name="search" size={17} />
             <input
               type="text"
-              placeholder="Tìm kiếm tác phẩm đang trưng bày…"
+              placeholder={language === 'en' ? 'Search exhibited artworks…' : 'Tìm kiếm tác phẩm đang trưng bày…'}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          {isLoading && <span className="muted" style={{ fontSize: '13px' }}>Đang tải...</span>}
+          {isLoading && <span className="muted" style={{ fontSize: '13px' }}>{language === 'en' ? 'Loading...' : 'Đang tải...'}</span>}
         </div>
 
         <table className="at">
           <thead>
             <tr>
               <th style={{ width: '90px' }} />
-              <th>Tác phẩm</th>
-              <th>Bút danh</th>
-              <th>Lượt xem</th>
-              <th>Cảm xúc</th>
-              <th>Ngày duyệt</th>
+              <th>{t('admin_col_artwork')}</th>
+              <th>{t('admin_col_author')}</th>
+              <th>{language === 'en' ? 'Views' : 'Lượt xem'}</th>
+              <th>{language === 'en' ? 'Reactions' : 'Cảm xúc'}</th>
+              <th>{language === 'en' ? 'Approved Date' : 'Ngày duyệt'}</th>
               <th style={{ width: '210px' }} />
             </tr>
           </thead>
@@ -188,7 +190,7 @@ export function AdminLive({ roomId = 1, onRefreshCounts }) {
             {approvedItems.length === 0 && !isLoading && (
               <tr>
                 <td colSpan={7} style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)' }}>
-                  Chưa có tác phẩm nào đang trưng bày trong phòng này.
+                  {t('admin_empty_live')}
                 </td>
               </tr>
             )}
@@ -217,20 +219,20 @@ export function AdminLive({ roomId = 1, onRefreshCounts }) {
                   </div>
                 </td>
                 <td>
-                  <b>{w.title}</b>
+                  <b>{localize(w, 'title') || w.title}</b>
                   <div className="muted" style={{ fontSize: '12.5px' }}>
-                    trưng bày {formatDate(w.reviewed_at || w.created_at)}
+                    {language === 'en' ? 'exhibited' : 'trưng bày'} {formatDate(w.reviewed_at || w.created_at)}
                   </div>
                 </td>
-                <td>{w.author_display_name || w.author?.username || 'Ẩn danh'}</td>
-                <td>{(w.view_count || 0).toLocaleString('vi-VN')}</td>
+                <td>{w.author_display_name || w.author?.username || (language === 'en' ? 'Anonymous' : 'Ẩn danh')}</td>
+                <td>{(w.view_count || 0).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN')}</td>
                 <td>
                   <span className="rxs">
                     <ReactionStack types={['HEART', 'HUG']} size={18} />
-                    <span>{(w.reactions_count || 0).toLocaleString('vi-VN')}</span>
+                    <span>{(w.reactions_count || 0).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN')}</span>
                   </span>
                 </td>
-                <td>{formatDate(w.reviewed_at) || 'Đã duyệt'}</td>
+                <td>{formatDate(w.reviewed_at) || (language === 'en' ? 'Approved' : 'Đã duyệt')}</td>
                 <td>
                   <span className="row" style={{ gap: '8px' }}>
                     <button
@@ -238,7 +240,7 @@ export function AdminLive({ roomId = 1, onRefreshCounts }) {
                       className="btn line sm"
                       onClick={() => handleStartEdit(w)}
                     >
-                      <Icon name="edit" size={14} /> Sửa
+                      <Icon name="edit" size={14} /> {t('admin_btn_edit')}
                     </button>
                     <button
                       type="button"
@@ -246,7 +248,7 @@ export function AdminLive({ roomId = 1, onRefreshCounts }) {
                       style={{ color: '#A1342C' }}
                       onClick={() => setArchivingItem(w)}
                     >
-                      <Icon name="archive" size={14} /> Lưu trữ
+                      <Icon name="archive" size={14} /> {t('admin_btn_archive')}
                     </button>
                   </span>
                 </td>
@@ -336,7 +338,7 @@ export function AdminLive({ roomId = 1, onRefreshCounts }) {
                 onClick={() => setArchivingItem(null)}
                 disabled={isArchiving}
               >
-                Huỷ
+                {t('admin_reject_cancel')}
               </button>
               <button
                 type="button"
@@ -345,7 +347,9 @@ export function AdminLive({ roomId = 1, onRefreshCounts }) {
                 onClick={handleConfirmArchive}
                 disabled={isArchiving || !archiveNote.trim()}
               >
-                {isArchiving ? 'Đang lưu trữ...' : 'Xác nhận gỡ & lưu trữ'}
+                {isArchiving
+                  ? (language === 'en' ? 'Archiving...' : 'Đang lưu trữ...')
+                  : (language === 'en' ? 'Confirm Archive' : 'Xác nhận gỡ & lưu trữ')}
               </button>
             </div>
           </div>

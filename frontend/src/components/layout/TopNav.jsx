@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../common/Icons';
 import { useAuth } from '../../context/AuthContext';
+import { useGuestGuard } from '../../context/GuestGuardContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { notificationService } from '../../services/notificationService';
 
 export function TopNav({
@@ -15,7 +17,9 @@ export function TopNav({
   onOpenThemeModal,
   rightAddon,
 }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isGuest } = useAuth();
+  const { guardAction, openLoginModal } = useGuestGuard();
+  const { language, setLanguage, t } = useLanguage();
   const [unreadCount, setUnreadCount] = useState(propUnreadCount ?? 0);
 
   const fetchCount = useCallback(async () => {
@@ -59,7 +63,7 @@ export function TopNav({
     <div className="top">
       {roomNo ? (
         <div className="room-tag">
-          <small>Phòng {roomNo}</small>
+          <small>{language === 'en' ? `Room ${roomNo}` : `Phòng ${roomNo}`}</small>
           <b>{roomName}</b>
         </div>
       ) : greeting ? (
@@ -78,6 +82,12 @@ export function TopNav({
             placeholder={searchPlaceholder}
             value={searchValue}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (isGuest || !isAuthenticated)) {
+                e.preventDefault();
+                openLoginModal(language === 'en' ? 'search exhibition items' : 'tìm kiếm nội dung triển lãm');
+              }
+            }}
           />
         </div>
       )}
@@ -88,22 +98,38 @@ export function TopNav({
         <button
           type="button"
           className="iconbtn glass"
-          title="Bảng màu"
+          title={t('theme_palette')}
           onClick={onOpenThemeModal}
         >
           <Icon name="palette" size={20} />
         </button>
 
-        <div className="lang glass">
-          <b className="on">VI</b>
-          <b>EN</b>
+        <div className="lang glass" style={{ cursor: 'pointer', userSelect: 'none' }}>
+          <b
+            className={language === 'vi' ? 'on' : ''}
+            onClick={() => setLanguage('vi')}
+            title="Tiếng Việt"
+          >
+            VI
+          </b>
+          <b
+            className={language === 'en' ? 'on' : ''}
+            onClick={() => setLanguage('en')}
+            title="English"
+          >
+            EN
+          </b>
         </div>
 
         <button
           type="button"
           className="iconbtn glass"
-          title="Thông báo"
-          onClick={onOpenNotifications}
+          title={t('notifications')}
+          onClick={() => {
+            guardAction(() => {
+              if (onOpenNotifications) onOpenNotifications();
+            }, language === 'en' ? 'view notifications' : 'xem thông báo');
+          }}
         >
           <Icon name="bell" size={20} />
           {unreadCount > 0 && <span className="n">{unreadCount}</span>}

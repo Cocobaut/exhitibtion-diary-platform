@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { Painting } from '../../components/common/Painting';
 import { ReactionStack, ReactionPicker } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
   const [isHovered, setIsHovered] = useState(false);
+  const { localize, language } = useLanguage();
 
-  const title = artwork.title || artwork.t || 'Chưa có tiêu đề';
-  const summary = artwork.short_content || artwork.summary || artwork.s || '';
-  const author = artwork.author_display_name || artwork.a || (artwork.is_anonymous ? 'Ẩn danh' : 'Tác giả');
+  const title = localize(artwork, 'title') || artwork.t || (language === 'en' ? 'Untitled' : 'Chưa có tiêu đề');
+  const summary = localize(artwork, 'short_content') || artwork.summary || artwork.s || '';
+  const author = artwork.author_display_name || artwork.a || (artwork.is_anonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : (language === 'en' ? 'Author' : 'Tác giả'));
   const viewCount = artwork.view_count !== undefined ? artwork.view_count : (artwork.v || 0);
 
   const totalReactions =

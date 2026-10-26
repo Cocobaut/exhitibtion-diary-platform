@@ -4,9 +4,11 @@ import { Painting } from '../../components/common/Painting';
 import { Icon } from '../../components/common/Icons';
 import { diaryService } from '../../services/diaryService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigger = 0 }) {
   const { user } = useAuth();
+  const { language, localize } = useLanguage();
 
   const [entries, setEntries] = useState([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -94,18 +96,22 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
   };
 
   const parseDateParts = (dateStr) => {
-    if (!dateStr) return { day: '25', weekday: 'Hôm nay', monthYear: 'Tháng 10 · 2026' };
+    if (!dateStr) return { day: '25', weekday: language === 'en' ? 'Today' : 'Hôm nay', monthYear: language === 'en' ? 'Oct · 2026' : 'Tháng 10 · 2026' };
     try {
       const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return { day: '25', weekday: 'Hôm nay', monthYear: 'Tháng 10 · 2026' };
+      if (isNaN(d.getTime())) return { day: '25', weekday: language === 'en' ? 'Today' : 'Hôm nay', monthYear: language === 'en' ? 'Oct · 2026' : 'Tháng 10 · 2026' };
 
-      const daysOfWeek = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
+      const daysOfWeek = language === 'en'
+        ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+        : ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
       const day = String(d.getDate()).padStart(2, '0');
       const weekday = daysOfWeek[d.getDay()];
-      const monthYear = `Tháng ${d.getMonth() + 1} · ${d.getFullYear()}`;
+      const monthYear = language === 'en'
+        ? `Month ${d.getMonth() + 1} · ${d.getFullYear()}`
+        : `Tháng ${d.getMonth() + 1} · ${d.getFullYear()}`;
       return { day, weekday, monthYear };
     } catch {
-      return { day: '25', weekday: 'Hôm nay', monthYear: 'Tháng 10 · 2026' };
+      return { day: '25', weekday: language === 'en' ? 'Today' : 'Hôm nay', monthYear: language === 'en' ? 'Oct · 2026' : 'Tháng 10 · 2026' };
     }
   };
 
@@ -116,14 +122,15 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
     <>
       {/* Left Timeline */}
       <div
-        className="abs"
+        className="abs custom-scrollbar diary-scroll"
         style={{
           left: '30px',
           top: '90px',
           width: '420px',
-          bottom: '30px',
+          bottom: 0,
           overflowY: 'auto',
-          paddingRight: '6px',
+          paddingRight: '10px',
+          paddingBottom: '30px',
         }}
       >
         <div
@@ -138,10 +145,10 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
             justifyContent: 'space-between',
           }}
         >
-          <span>Dòng thời gian</span>
+          <span>{language === 'en' ? 'Timeline' : 'Dòng thời gian'}</span>
           {isLoadingList && (
             <span style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 'normal' }}>
-              Đang tải...
+              {language === 'en' ? 'Loading...' : 'Đang tải...'}
             </span>
           )}
         </div>
@@ -157,7 +164,11 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
               fontSize: '14px',
             }}
           >
-            Chưa có trang nhật ký nào. Hãy bấm <b>"Viết nhật ký mới"</b> để lưu lại khoảnh khắc hôm nay.
+            {language === 'en' ? (
+              <>No diary entries yet. Click <b>"✦ New Entry"</b> to capture today’s moment.</>
+            ) : (
+              <>Chưa có trang nhật ký nào. Hãy bấm <b>"Viết nhật ký mới"</b> để lưu lại khoảnh khắc hôm nay.</>
+            )}
           </div>
         )}
 
@@ -203,19 +214,19 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
                   style={{ gap: '6px', fontSize: '12.5px', opacity: 0.85 }}
                 >
                   <i className="dot" style={{ background: moodColor }} />
-                  <span>{entry.mood || 'Bình yên'}</span>
+                  <span>{entry.mood || (language === 'en' ? 'Peaceful' : 'Bình yên')}</span>
                   <span style={{ marginLeft: 'auto' }} className="row">
                     {!entry.is_public ? (
                       <span className="row" style={{ gap: '4px' }}>
-                        <Icon name="lock" size={13} /> Chỉ mình tôi
+                        <Icon name="lock" size={13} /> {language === 'en' ? 'Only me' : 'Chỉ mình tôi'}
                       </span>
                     ) : !entry.is_approved ? (
                       <span className="badge b-wait" style={{ fontSize: '11px' }}>
-                        Chờ duyệt công khai
+                        {language === 'en' ? 'Pending approval' : 'Chờ duyệt công khai'}
                       </span>
                     ) : (
                       <span className="row" style={{ gap: '4px', color: '#4E7A4A' }}>
-                        <Icon name="globe" size={13} /> Công khai
+                        <Icon name="globe" size={13} /> {language === 'en' ? 'Public' : 'Công khai'}
                       </span>
                     )}
                   </span>
@@ -230,7 +241,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
                     textOverflow: 'ellipsis',
                   }}
                 >
-                  {entry.title || 'Không tiêu đề'}
+                  {localize(entry, 'title') || (language === 'en' ? 'Untitled' : 'Không tiêu đề')}
                 </b>
                 <div
                   style={{
@@ -242,7 +253,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
                     marginTop: '2px',
                   }}
                 >
-                  {entry.snippet || entry.content || 'Trang nhật ký riêng tư...'}
+                  {localize(entry, 'snippet') || localize(entry, 'content') || (language === 'en' ? 'Private diary entry...' : 'Trang nhật ký riêng tư...')}
                 </div>
               </div>
             </div>
@@ -253,17 +264,17 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
       {/* Right Reading Notebook */}
       {currentDisplay ? (
         <div
-          className="abs"
+          className="abs custom-scrollbar diary-scroll"
           style={{
             left: '480px',
-            right: '30px',
+            right: 0,
             top: '90px',
-            bottom: '30px',
+            bottom: 0,
             background: 'var(--paper)',
             color: 'var(--ink)',
-            borderRadius: '6px 18px 18px 6px',
+            borderRadius: '6px 0 0 0',
             boxShadow: '0 24px 50px rgba(0,0,0,.35)',
-            padding: '36px 48px',
+            padding: '36px clamp(32px, 4vw, 56px) 48px',
             overflowY: 'auto',
           }}
         >
@@ -283,14 +294,16 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
           <div className="row between">
             <div className="row muted" style={{ gap: '10px' }}>
               <span>
-                {activeDateInfo.weekday}, ngày {activeDateInfo.day} · {activeDateInfo.monthYear}
+                {language === 'en'
+                  ? `${activeDateInfo.weekday}, day ${activeDateInfo.day} · ${activeDateInfo.monthYear}`
+                  : `${activeDateInfo.weekday}, ngày ${activeDateInfo.day} · ${activeDateInfo.monthYear}`}
               </span>
               <span className="row" style={{ gap: '6px' }}>
                 <i
                   className="dot"
                   style={{ background: MOODS[currentDisplay.mood] || '#E2BC55' }}
                 />{' '}
-                {currentDisplay.mood || 'Bình yên'}
+                {currentDisplay.mood || (language === 'en' ? 'Peaceful' : 'Bình yên')}
               </span>
             </div>
 
@@ -298,7 +311,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
               <button
                 type="button"
                 className="iconbtn"
-                title="Chỉnh sửa trang này"
+                title={language === 'en' ? 'Edit this page' : 'Chỉnh sửa trang này'}
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
                 onClick={() => onOpenWriteModal && onOpenWriteModal(currentDisplay)}
               >
@@ -307,7 +320,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
               <button
                 type="button"
                 className="iconbtn"
-                title="Xóa trang này"
+                title={language === 'en' ? 'Delete this page' : 'Xóa trang này'}
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#A1342C' }}
                 onClick={() => setConfirmDeleteId(currentDisplay.id)}
               >
@@ -316,13 +329,13 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
               <span className="row" style={{ gap: '4px' }}>
                 {!currentDisplay.is_public ? (
                   <>
-                    <Icon name="lock" size={17} /> Chỉ mình tôi
+                    <Icon name="lock" size={17} /> {language === 'en' ? 'Only me' : 'Chỉ mình tôi'}
                   </>
                 ) : !currentDisplay.is_approved ? (
-                  <span className="badge b-wait">Chờ duyệt</span>
+                  <span className="badge b-wait">{language === 'en' ? 'Pending' : 'Chờ duyệt'}</span>
                 ) : (
                   <>
-                    <Icon name="globe" size={17} /> Công khai
+                    <Icon name="globe" size={17} /> {language === 'en' ? 'Public' : 'Công khai'}
                   </>
                 )}
               </span>
@@ -330,7 +343,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
           </div>
 
           <h2 style={{ fontSize: '34px', margin: '12px 0 14px' }}>
-            {currentDisplay.title || 'Không tiêu đề'}
+            {localize(currentDisplay, 'title') || (language === 'en' ? 'Untitled' : 'Không tiêu đề')}
           </h2>
 
           <div
@@ -349,7 +362,9 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
                 color: '#3A2016',
               }}
             >
-              {isLoadingDetail ? 'Đang mở trang nhật ký...' : currentDisplay.content || currentDisplay.snippet}
+              {isLoadingDetail
+                ? (language === 'en' ? 'Opening diary page...' : 'Đang mở trang nhật ký...')
+                : (localize(currentDisplay, 'content') || localize(currentDisplay, 'snippet'))}
             </div>
 
             {currentDisplay.media_urls && currentDisplay.media_urls.length > 0 && (

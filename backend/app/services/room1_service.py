@@ -35,7 +35,7 @@ class Room1Service:
         current_user: Optional[User] = None,
     ) -> Dict[str, Any]:
         """Get gallery artworks list for Room 1."""
-        valid_filters = {"all", "latest", "most_sympathetic", "my_artworks"}
+        valid_filters = {"all", "latest", "most_sympathetic", "my_artworks", "reacted", "my_reactions"}
         if filter_type not in valid_filters:
             raise AppException(
                 status_code=400,
@@ -43,12 +43,12 @@ class Room1Service:
                 message="Tham số filter không hợp lệ"
             )
 
-        if filter_type == "my_artworks":
+        if filter_type in ("my_artworks", "reacted", "my_reactions"):
             if not current_user:
                 raise AppException(
                     status_code=401,
                     error_code="UNAUTHORIZED",
-                    message="Vui lòng đăng nhập để xem tác phẩm của bạn"
+                    message="Vui lòng đăng nhập để xem tác phẩm theo bộ lọc này"
                 )
 
         base_conditions = [
@@ -58,6 +58,13 @@ class Room1Service:
 
         if filter_type == "my_artworks":
             base_conditions.append(Artwork.user_id == current_user.id)
+        elif filter_type in ("reacted", "my_reactions"):
+            rx_subq = (
+                select(ArtworkInteraction.artwork_id)
+                .where(ArtworkInteraction.user_id == current_user.id)
+                .scalar_subquery()
+            )
+            base_conditions.append(Artwork.id.in_(rx_subq))
 
         if title:
             term = f"%{title.strip()}%"

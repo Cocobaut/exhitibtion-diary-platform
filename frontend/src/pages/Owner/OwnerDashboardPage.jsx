@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ownerService } from '../../services/ownerService';
 import { adminStudioService } from '../../services/adminStudioService';
 import { UserRoleManagementModal } from './UserRoleManagementModal';
 
 export function OwnerDashboardPage({ onNavigate }) {
   const { user, isOwner } = useAuth();
+  const { language, setLanguage } = useLanguage();
 
-  const [activeSegment, setActiveSegment] = useState(0); // 0: Danh sách người dùng, 1: Yêu cầu xóa từ Admin, 2: Nhật ký kiểm toán Owner
+  const [activeSegment, setActiveSegment] = useState(0); // 0: Users, 1: Deletion Requests, 2: Audit Logs
   const [toastMessage, setToastMessage] = useState('');
 
   // -------------------------------------------------------------
@@ -148,23 +150,31 @@ export function OwnerDashboardPage({ onNavigate }) {
   // -------------------------------------------------------------
   // Actions: Role Change
   // -------------------------------------------------------------
-  const handleConfirmRoleChange = async ({ userId, newRole }) => {
+  const handleConfirmRoleChange = async ({ userId, newRole, reason }) => {
     if (userId === user?.id) {
-      alert('Chủ sở hữu không thể tự thay đổi vai trò của chính mình.');
+      alert(
+        language === 'en'
+          ? 'Platform owner cannot alter their own role.'
+          : 'Chủ sở hữu không thể tự thay đổi vai trò của chính mình.'
+      );
       return;
     }
 
     setIsUpdatingRole(true);
     try {
-      await ownerService.updateUserRole(userId, { role: newRole });
-      triggerToast(`✦ Đã cập nhật thành công vai trò của tài khoản thành ${newRole}.`);
+      await ownerService.updateUserRole(userId, { role: newRole, reason });
+      triggerToast(
+        language === 'en'
+          ? `✦ Successfully updated account role to ${newRole}.`
+          : `✦ Đã cập nhật thành công vai trò của tài khoản thành ${newRole}.`
+      );
       setSelectedUserForRole(null);
       loadUsers();
       loadStats();
     } catch (err) {
       console.error('Error updating role:', err);
       const msg = err?.response?.data?.message || err?.message || 'Không thể đổi vai trò lúc này.';
-      alert(`Lỗi: ${msg}`);
+      alert(`Error: ${msg}`);
     } finally {
       setIsUpdatingRole(false);
     }
@@ -175,20 +185,32 @@ export function OwnerDashboardPage({ onNavigate }) {
   // -------------------------------------------------------------
   const handleToggleUserStatus = async (targetUser) => {
     if (targetUser.id === user?.id) {
-      alert('Chủ sở hữu không thể tự vô hiệu hóa tài khoản của chính mình.');
+      alert(
+        language === 'en'
+          ? 'Platform owner cannot deactivate their own account.'
+          : 'Chủ sở hữu không thể tự vô hiệu hóa tài khoản của chính mình.'
+      );
       return;
     }
 
     if (targetUser.role === 'OWNER') {
-      alert('Không thể thay đổi trạng thái của tài khoản Chủ sở hữu khác.');
+      alert(
+        language === 'en'
+          ? 'Cannot alter the status of another Owner account.'
+          : 'Không thể thay đổi trạng thái của tài khoản Chủ sở hữu khác.'
+      );
       return;
     }
 
     const newStatus = !targetUser.is_active;
     const confirmPrompt = window.confirm(
       newStatus
-        ? `Bạn có chắc muốn MỞ KHÓA cho tài khoản @${targetUser.username}?`
-        : `Bạn có chắc muốn KHÓA tài khoản @${targetUser.username}? Phiên làm việc của tài khoản sẽ bị vô hiệu ngay lập tức.`
+        ? (language === 'en'
+            ? `Are you sure you want to UNLOCK account @${targetUser.username}?`
+            : `Bạn có chắc muốn MỞ KHÓA cho tài khoản @${targetUser.username}?`)
+        : (language === 'en'
+            ? `Are you sure you want to LOCK account @${targetUser.username}? Active sessions will be terminated immediately.`
+            : `Bạn có chắc muốn KHÓA tài khoản @${targetUser.username}? Phiên làm việc của tài khoản sẽ bị vô hiệu ngay lập tức.`)
     );
     if (!confirmPrompt) return;
 
@@ -196,14 +218,18 @@ export function OwnerDashboardPage({ onNavigate }) {
       await ownerService.updateUserStatus(targetUser.id, {
         is_active: newStatus,
         reason: newStatus
-          ? 'Chủ sở hữu mở khóa tài khoản'
-          : 'Chủ sở hữu vô hiệu hóa tài khoản do vi phạm',
+          ? (language === 'en' ? 'Owner unlocked user account' : 'Chủ sở hữu mở khóa tài khoản')
+          : (language === 'en' ? 'Owner locked user account due to violation' : 'Chủ sở hữu vô hiệu hóa tài khoản do vi phạm'),
       });
 
       triggerToast(
         newStatus
-          ? `✦ Đã mở khóa thành công tài khoản @${targetUser.username}.`
-          : `Đã khóa tài khoản @${targetUser.username}.`
+          ? (language === 'en'
+              ? `✦ Successfully unlocked account @${targetUser.username}.`
+              : `✦ Đã mở khóa thành công tài khoản @${targetUser.username}.`)
+          : (language === 'en'
+              ? `Locked account @${targetUser.username}.`
+              : `Đã khóa tài khoản @${targetUser.username}.`)
       );
 
       loadUsers();
@@ -211,7 +237,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     } catch (err) {
       console.error('Error toggling user status:', err);
       const msg = err?.response?.data?.message || err?.message || 'Không thể thay đổi trạng thái.';
-      alert(`Lỗi: ${msg}`);
+      alert(`Error: ${msg}`);
     }
   };
 
@@ -222,19 +248,31 @@ export function OwnerDashboardPage({ onNavigate }) {
     if (!deletingUser) return;
 
     if (deletingUser.id === user?.id) {
-      alert('Chủ sở hữu không thể tự xóa tài khoản của chính mình.');
+      alert(
+        language === 'en'
+          ? 'Platform owner cannot delete their own account.'
+          : 'Chủ sở hữu không thể tự xóa tài khoản của chính mình.'
+      );
       return;
     }
 
     if (deletingUser.role === 'OWNER') {
-      alert('Không thể xóa tài khoản của Chủ sở hữu.');
+      alert(
+        language === 'en'
+          ? 'Cannot delete an Owner account.'
+          : 'Không thể xóa tài khoản của Chủ sở hữu.'
+      );
       return;
     }
 
     setIsDeleting(true);
     try {
       await ownerService.deleteUser(deletingUser.id);
-      triggerToast(`Đã xóa vĩnh viễn tài khoản @${deletingUser.username} khỏi hệ thống.`);
+      triggerToast(
+        language === 'en'
+          ? `Permanently deleted account @${deletingUser.username} from system.`
+          : `Đã xóa vĩnh viễn tài khoản @${deletingUser.username} khỏi hệ thống.`
+      );
       setDeletingUser(null);
       loadUsers();
       loadStats();
@@ -244,7 +282,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     } catch (err) {
       console.error('Error deleting user:', err);
       const msg = err?.response?.data?.message || err?.message || 'Không thể xóa tài khoản lúc này.';
-      alert(`Lỗi: ${msg}`);
+      alert(`Error: ${msg}`);
     } finally {
       setIsDeleting(false);
     }
@@ -284,9 +322,13 @@ export function OwnerDashboardPage({ onNavigate }) {
       <div className="stage admin" style={{ display: 'grid', placeItems: 'center' }}>
         <div className="box" style={{ padding: '36px', textAlign: 'center', maxWidth: '480px' }}>
           <div style={{ fontSize: '42px', marginBottom: '12px' }}>🔒</div>
-          <h2 style={{ fontSize: '24px', margin: '0 0 10px' }}>Yêu cầu quyền Chủ sở hữu (Owner)</h2>
+          <h2 style={{ fontSize: '24px', margin: '0 0 10px' }}>
+            {language === 'en' ? 'Owner Access Required' : 'Yêu cầu quyền Chủ sở hữu (Owner)'}
+          </h2>
           <p className="muted" style={{ lineHeight: 1.6, fontSize: '14.5px' }}>
-            Khu vực này được bảo vệ nghiêm ngặt và chỉ dành riêng cho tài khoản có vai trò <b>OWNER</b> tối cao của nền tảng.
+            {language === 'en'
+              ? 'This area is strictly restricted to accounts with the supreme OWNER role on the platform.'
+              : 'Khu vực này được bảo vệ nghiêm ngặt và chỉ dành riêng cho tài khoản có vai trò OWNER tối cao của nền tảng.'}
           </p>
           <div style={{ marginTop: '20px' }}>
             <button
@@ -294,7 +336,7 @@ export function OwnerDashboardPage({ onNavigate }) {
               className="btn main"
               onClick={() => (onNavigate ? onNavigate('home') : window.location.reload())}
             >
-              Quay về Sảnh chính
+              {language === 'en' ? 'Back to Main Lobby' : 'Quay về Sảnh chính'}
             </button>
           </div>
         </div>
@@ -303,7 +345,18 @@ export function OwnerDashboardPage({ onNavigate }) {
   }
 
   return (
-    <div className="stage admin">
+    <div
+      className="stage admin custom-scrollbar"
+      style={{
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        padding: '24px 32px 56px',
+        boxSizing: 'border-box',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+      }}
+    >
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -330,9 +383,10 @@ export function OwnerDashboardPage({ onNavigate }) {
         </div>
       )}
 
-      {/* Top Header */}
-      <div className="abs" style={{ left: '32px', right: '32px', top: '22px' }}>
-        <div className="row between">
+      {/* Top Header Section */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Title Row & Actions */}
+        <div className="row between" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <div
               style={{
@@ -345,15 +399,37 @@ export function OwnerDashboardPage({ onNavigate }) {
                 gap: '6px',
               }}
             >
-              <span>👑</span> QUẢN TRỊ TỐI CAO · CHỦ SỞ HỮU (OWNER)
+              <span>👑</span> {language === 'en' ? 'SUPREME ADMIN · PLATFORM OWNER' : 'QUẢN TRỊ TỐI CAO · CHỦ SỞ HỮU (OWNER)'}
             </div>
-            <h1 style={{ margin: '4px 0 0' }}>Bảng Điều Hành &amp; Phân Quyền Toàn Hệ Thống</h1>
+            <h1 style={{ margin: '4px 0 0', fontSize: '26px' }}>
+              {language === 'en'
+                ? 'System Operations & Access Control'
+                : 'Bảng Điều Hành & Phân Quyền Toàn Hệ Thống'}
+            </h1>
           </div>
 
-          <div className="row" style={{ gap: '14px' }}>
+          <div className="row" style={{ gap: '14px', alignItems: 'center' }}>
             <span className="badge" style={{ background: '#B57424', color: '#fff', fontSize: '13px' }}>
-              Chủ sở hữu: {user?.nickname || user?.username}
+              {language === 'en' ? 'Owner' : 'Chủ sở hữu'}: {user?.nickname || user?.username}
             </span>
+
+            {/* Language Switcher */}
+            <div className="lang glass" style={{ cursor: 'pointer', userSelect: 'none' }}>
+              <b
+                className={language === 'vi' ? 'on' : ''}
+                onClick={() => setLanguage('vi')}
+                title="Tiếng Việt"
+              >
+                VI
+              </b>
+              <b
+                className={language === 'en' ? 'on' : ''}
+                onClick={() => setLanguage('en')}
+                title="English"
+              >
+                EN
+              </b>
+            </div>
           </div>
         </div>
 
@@ -361,13 +437,12 @@ export function OwnerDashboardPage({ onNavigate }) {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             gap: '14px',
-            marginTop: '16px',
           }}
         >
           <div className="box stat">
-            <small>NGƯỜI DÙNG &amp; NHÂN SỰ</small>
+            <small>{language === 'en' ? 'USERS & STAFF' : 'NGƯỜI DÙNG & NHÂN SỰ'}</small>
             <b>{stats?.users_summary?.total_users ?? totalUsers}</b>
             <small>
               {stats?.users_summary?.by_role?.ADMIN ?? 0} Admins ·{' '}
@@ -376,282 +451,339 @@ export function OwnerDashboardPage({ onNavigate }) {
           </div>
 
           <div className="box stat">
-            <small>TRẠNG THÁI TÀI KHOẢN</small>
+            <small>{language === 'en' ? 'ACCOUNT STATUS' : 'TRẠNG THÁI TÀI KHOẢN'}</small>
             <b style={{ color: '#2D7D46' }}>
               {stats?.users_summary?.active_users ?? totalUsers}
             </b>
-            <small style={{ color: stats?.users_summary?.deactivated_users > 0 ? '#C44B2B' : 'var(--muted)' }}>
-              {stats?.users_summary?.deactivated_users ?? 0} tài khoản bị khóa
+            <small style={{ color: (stats?.users_summary?.deactivated_users > 0) ? '#C44B2B' : 'var(--muted)' }}>
+              {stats?.users_summary?.deactivated_users ?? 0} {language === 'en' ? 'locked accounts' : 'tài khoản bị khóa'}
             </small>
           </div>
 
           <div className="box stat">
-            <small>TÁC PHẨM TRIỂN LÃM</small>
+            <small>{language === 'en' ? 'EXHIBITION ARTWORKS' : 'TÁC PHẨM TRIỂN LÃM'}</small>
             <b>{stats?.exhibition_summary?.total_artworks ?? 0}</b>
             <small>
-              {stats?.exhibition_summary?.approved_artworks ?? 0} đang treo ·{' '}
-              {stats?.exhibition_summary?.pending_artworks ?? 0} chờ duyệt
+              {stats?.exhibition_summary?.approved_artworks ?? 0} {language === 'en' ? 'on display' : 'đang treo'} ·{' '}
+              {stats?.exhibition_summary?.pending_artworks ?? 0} {language === 'en' ? 'pending' : 'chờ duyệt'}
             </small>
           </div>
 
           <div className="box stat">
-            <small>NHẬT KÝ &amp; HÒM THƯ</small>
+            <small>{language === 'en' ? 'DIARIES & CAPSULES' : 'NHẬT KÝ & HÒM THƯ'}</small>
             <b>{stats?.diaries_summary?.total_diaries ?? 0}</b>
             <small>
-              {stats?.capsules_summary?.total_capsules ?? 0} thông điệp ·{' '}
-              {stats?.capsules_summary?.total_draws ?? 0} lượt rút
+              {stats?.capsules_summary?.total_capsules ?? 0} {language === 'en' ? 'messages' : 'thông điệp'} ·{' '}
+              {stats?.capsules_summary?.total_draws ?? 0} {language === 'en' ? 'draws' : 'lượt rút'}
             </small>
           </div>
         </div>
 
         {/* Segment Switcher */}
-        <div className="seg" style={{ marginTop: '16px' }}>
+        <div className="seg" style={{ marginTop: '4px' }}>
           <span
             className={activeSegment === 0 ? 'on' : ''}
             onClick={() => setActiveSegment(0)}
           >
-            Danh sách người dùng &amp; Admin · {totalUsers}
+            {language === 'en' ? 'Users & Admins Directory' : 'Danh sách người dùng & Admin'} · {totalUsers}
           </span>
           <span
             className={activeSegment === 1 ? 'on' : ''}
             onClick={() => setActiveSegment(1)}
           >
-            Yêu cầu xóa tài khoản từ Admin {deletionRequests.length > 0 && `· ${deletionRequests.length}`}
+            {language === 'en' ? 'Account Deletion Requests' : 'Yêu cầu xóa tài khoản từ Admin'} {deletionRequests.length > 0 ? `· ${deletionRequests.length}` : ''}
           </span>
           <span
             className={activeSegment === 2 ? 'on' : ''}
             onClick={() => setActiveSegment(2)}
           >
-            Nhật ký kiểm toán toàn hệ thống
+            {language === 'en' ? 'System-wide Audit Logs' : 'Nhật ký kiểm toán toàn hệ thống'}
           </span>
         </div>
       </div>
 
       {/* SEGMENT 0: USER & ADMIN MANAGEMENT */}
       {activeSegment === 0 && (
-        <div
-          className="abs box"
-          style={{
-            left: '32px',
-            right: '32px',
-            top: '246px',
-            bottom: '26px',
-            overflowY: 'auto',
-            padding: '18px 22px',
-          }}
-        >
+        <div className="box" style={{ padding: '20px 24px', width: '100%', boxSizing: 'border-box' }}>
           {/* Filters Bar */}
           <div className="row between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-            <div className="row" style={{ gap: '10px', alignItems: 'center' }}>
+            <div className="row" style={{ gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
               <div className="search" style={{ width: '280px', background: 'var(--paper)' }}>
                 <Icon name="search" size={16} />
                 <input
                   type="text"
-                  placeholder="Tìm theo username, email, tên..."
+                  placeholder={language === 'en' ? 'Search by username, email, name...' : 'Tìm theo username, email, tên...'}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setPage(1);
+                  }}
                 />
               </div>
 
-              <span className="muted" style={{ fontSize: '13px' }}>Vai trò:</span>
+              <span className="muted" style={{ fontSize: '13px' }}>
+                {language === 'en' ? 'Role:' : 'Vai trò:'}
+              </span>
               <select
                 className="inp"
                 style={{ width: '130px', padding: '6px 10px', fontSize: '13px' }}
                 value={filterRole}
-                onChange={(e) => setFilterRole(e.target.value)}
+                onChange={(e) => {
+                  setFilterRole(e.target.value);
+                  setPage(1);
+                }}
               >
-                <option value="ALL">Tất cả vai trò</option>
+                <option value="ALL">{language === 'en' ? 'All roles' : 'Tất cả vai trò'}</option>
                 <option value="USER">USER</option>
                 <option value="ADMIN">ADMIN</option>
                 <option value="OWNER">OWNER</option>
               </select>
 
-              <span className="muted" style={{ fontSize: '13px' }}>Trạng thái:</span>
+              <span className="muted" style={{ fontSize: '13px' }}>
+                {language === 'en' ? 'Status:' : 'Trạng thái:'}
+              </span>
               <select
                 className="inp"
-                style={{ width: '150px', padding: '6px 10px', fontSize: '13px' }}
+                style={{ width: '160px', padding: '6px 10px', fontSize: '13px' }}
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setPage(1);
+                }}
               >
-                <option value="ALL">Tất cả</option>
-                <option value="ACTIVE">Đang hoạt động</option>
-                <option value="LOCKED">Bị khóa (Inactive)</option>
+                <option value="ALL">{language === 'en' ? 'All' : 'Tất cả'}</option>
+                <option value="ACTIVE">{language === 'en' ? 'Active' : 'Đang hoạt động'}</option>
+                <option value="LOCKED">{language === 'en' ? 'Locked (Inactive)' : 'Bị khóa (Inactive)'}</option>
               </select>
             </div>
 
-            {isLoadingUsers && <span className="muted" style={{ fontSize: '13px' }}>Đang tải người dùng...</span>}
+            {isLoadingUsers && (
+              <span className="muted" style={{ fontSize: '13px' }}>
+                {language === 'en' ? 'Loading users...' : 'Đang tải người dùng...'}
+              </span>
+            )}
           </div>
 
           {/* Users Table */}
-          <table className="at">
-            <thead>
-              <tr>
-                <th style={{ width: '220px' }}>Người dùng</th>
-                <th style={{ width: '180px' }}>Email</th>
-                <th style={{ width: '110px' }}>Vai trò</th>
-                <th style={{ width: '130px' }}>Trạng thái</th>
-                <th style={{ width: '110px' }}>Ngày tạo</th>
-                <th style={{ textAlign: 'right' }}>Thao tác Chủ sở hữu</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.length === 0 ? (
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="at" style={{ width: '100%' }}>
+              <thead>
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
-                    Không tìm thấy người dùng nào phù hợp với bộ lọc
-                  </td>
+                  <th style={{ minWidth: '200px' }}>{language === 'en' ? 'User' : 'Người dùng'}</th>
+                  <th style={{ minWidth: '180px' }}>{language === 'en' ? 'Email' : 'Email'}</th>
+                  <th style={{ minWidth: '100px' }}>{language === 'en' ? 'Role' : 'Vai trò'}</th>
+                  <th style={{ minWidth: '120px' }}>{language === 'en' ? 'Status' : 'Trạng thái'}</th>
+                  <th style={{ minWidth: '110px' }}>{language === 'en' ? 'Created At' : 'Ngày tạo'}</th>
+                  <th style={{ textAlign: 'right', minWidth: '180px' }}>{language === 'en' ? 'Owner Actions' : 'Thao tác Chủ sở hữu'}</th>
                 </tr>
-              ) : (
-                users.map((u) => {
-                  const roleStr = String(u.role || 'USER').toUpperCase();
-                  const isCurrentSelf = u.id === user?.id;
+              </thead>
+              <tbody>
+                {users.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
+                      {language === 'en' ? 'No users matching the filters found' : 'Không tìm thấy người dùng nào phù hợp với bộ lọc'}
+                    </td>
+                  </tr>
+                ) : (
+                  users.map((u) => {
+                    const roleStr = String(u.role || 'USER').toUpperCase();
+                    const isCurrentSelf = u.id === user?.id;
 
-                  return (
-                    <tr key={u.id}>
-                      <td>
-                        <div className="row" style={{ gap: '10px', alignItems: 'center' }}>
-                          <div
+                    return (
+                      <tr key={u.id}>
+                        <td>
+                          <div className="row" style={{ gap: '10px', alignItems: 'center' }}>
+                            <div
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                background: roleStr === 'OWNER' ? '#B57424' : roleStr === 'ADMIN' ? 'var(--acc)' : 'var(--line)',
+                                color: '#fff',
+                                display: 'grid',
+                                placeItems: 'center',
+                                fontWeight: 600,
+                                fontSize: '13px',
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {u.avatar_url ? (
+                                <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                (u.nickname || u.username || 'U')[0].toUpperCase()
+                              )}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 600, fontSize: '13.5px' }}>
+                                {u.nickname || u.username} {isCurrentSelf && <small className="muted">({language === 'en' ? 'You' : 'Bạn'})</small>}
+                              </div>
+                              <div className="muted" style={{ fontSize: '12px' }}>@{u.username}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="muted" style={{ fontSize: '13px' }}>{u.email}</td>
+                        <td>
+                          <span
+                            className={`badge ${
+                              roleStr === 'OWNER' ? 'b-wait' : roleStr === 'ADMIN' ? 'b-blue' : 'b-priv'
+                            }`}
                             style={{
-                              width: '32px',
-                              height: '32px',
-                              borderRadius: '50%',
-                              background: roleStr === 'OWNER' ? '#B57424' : roleStr === 'ADMIN' ? 'var(--acc)' : 'var(--line)',
-                              color: '#fff',
-                              display: 'grid',
-                              placeItems: 'center',
-                              fontWeight: 600,
-                              fontSize: '13px',
-                              overflow: 'hidden',
-                              flexShrink: 0,
+                              fontWeight: 700,
+                              letterSpacing: '.05em',
+                              background: roleStr === 'OWNER' ? '#B57424' : undefined,
+                              color: roleStr === 'OWNER' ? '#fff' : undefined,
                             }}
                           >
-                            {u.avatar_url ? (
-                              <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              (u.nickname || u.username || 'U')[0].toUpperCase()
-                            )}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: '13.5px' }}>
-                              {u.nickname || u.username} {isCurrentSelf && <small className="muted">(Bạn)</small>}
-                            </div>
-                            <div className="muted" style={{ fontSize: '12px' }}>@{u.username}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="muted" style={{ fontSize: '13px' }}>{u.email}</td>
-                      <td>
-                        <span
-                          className={`badge ${
-                            roleStr === 'OWNER' ? 'b-wait' : roleStr === 'ADMIN' ? 'b-blue' : 'b-priv'
-                          }`}
-                          style={{
-                            fontWeight: 700,
-                            letterSpacing: '.05em',
-                            background: roleStr === 'OWNER' ? '#B57424' : undefined,
-                            color: roleStr === 'OWNER' ? '#fff' : undefined,
-                          }}
-                        >
-                          {roleStr}
-                        </span>
-                      </td>
-                      <td>
-                        {u.is_active ? (
-                          <span className="badge b-ok" style={{ fontSize: '11px' }}>HOẠT ĐỘNG</span>
-                        ) : (
-                          <span className="badge" style={{ background: '#8E2A22', color: '#fff', fontSize: '11px' }}>
-                            BỊ KHÓA
+                            {roleStr}
                           </span>
-                        )}
-                      </td>
-                      <td className="muted" style={{ fontSize: '12.5px' }}>{formatDate(u.created_at)}</td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div className="row" style={{ gap: '6px', justifyContent: 'flex-end' }}>
-                          {/* Xem chi tiết */}
-                          <button
-                            type="button"
-                            className="btn line sm"
-                            onClick={() => handleOpenUserDetail(u)}
-                            title="Xem chi tiết hoạt động"
-                            style={{ padding: '4px 8px', fontSize: '12.5px' }}
-                          >
-                            Chi tiết
-                          </button>
+                        </td>
+                        <td>
+                          {u.is_active ? (
+                            <span className="badge b-ok" style={{ fontSize: '11px' }}>
+                              {language === 'en' ? 'ACTIVE' : 'HOẠT ĐỘNG'}
+                            </span>
+                          ) : (
+                            <span className="badge" style={{ background: '#8E2A22', color: '#fff', fontSize: '11px' }}>
+                              {language === 'en' ? 'LOCKED' : 'BỊ KHÓA'}
+                            </span>
+                          )}
+                        </td>
+                        <td className="muted" style={{ fontSize: '12.5px' }}>{formatDate(u.created_at)}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <div className="row" style={{ gap: '6px', justifyContent: 'flex-end' }}>
+                            {/* Xem chi tiết */}
+                            <button
+                              type="button"
+                              className="btn line sm"
+                              onClick={() => handleOpenUserDetail(u)}
+                              title={language === 'en' ? 'View activity details' : 'Xem chi tiết hoạt động'}
+                              style={{ padding: '4px 8px', fontSize: '12.5px' }}
+                            >
+                              {language === 'en' ? 'Details' : 'Chi tiết'}
+                            </button>
 
-                          {/* Đổi vai trò (Không cho tự đổi role của chính mình) */}
-                          <button
-                            type="button"
-                            className="btn line sm"
-                            onClick={() => setSelectedUserForRole(u)}
-                            disabled={isCurrentSelf || roleStr === 'OWNER'}
-                            title={isCurrentSelf ? 'Không thể tự đổi vai trò của mình' : 'Thăng cấp / Hạ cấp vai trò'}
-                            style={{ padding: '4px 8px', fontSize: '12.5px' }}
-                          >
-                            Đổi vai trò
-                          </button>
+                            {/* Đổi vai trò */}
+                            <button
+                              type="button"
+                              className="btn line sm"
+                              onClick={() => setSelectedUserForRole(u)}
+                              disabled={isCurrentSelf || roleStr === 'OWNER'}
+                              title={
+                                isCurrentSelf
+                                  ? (language === 'en' ? 'Cannot change own role' : 'Không thể tự đổi vai trò của mình')
+                                  : (language === 'en' ? 'Promote / Demote role' : 'Thăng cấp / Hạ cấp vai trò')
+                              }
+                              style={{ padding: '4px 8px', fontSize: '12.5px' }}
+                            >
+                              {language === 'en' ? 'Change Role' : 'Đổi vai trò'}
+                            </button>
 
-                          {/* Khóa / Mở khóa */}
-                          <button
-                            type="button"
-                            className={`btn line sm ${u.is_active ? 'danger' : ''}`}
-                            onClick={() => handleToggleUserStatus(u)}
-                            disabled={isCurrentSelf || roleStr === 'OWNER'}
-                            title={u.is_active ? 'Khóa tài khoản' : 'Mở khóa tài khoản'}
-                            style={{ padding: '4px 8px', fontSize: '12.5px' }}
-                          >
-                            {u.is_active ? 'Khóa' : 'Mở'}
-                          </button>
+                            {/* Khóa / Mở khóa */}
+                            <button
+                              type="button"
+                              className={`btn line sm ${u.is_active ? 'danger' : ''}`}
+                              onClick={() => handleToggleUserStatus(u)}
+                              disabled={isCurrentSelf || roleStr === 'OWNER'}
+                              title={
+                                u.is_active
+                                  ? (language === 'en' ? 'Lock account' : 'Khóa tài khoản')
+                                  : (language === 'en' ? 'Unlock account' : 'Mở khóa tài khoản')
+                              }
+                              style={{ padding: '4px 8px', fontSize: '12.5px' }}
+                            >
+                              {u.is_active ? (language === 'en' ? 'Lock' : 'Khóa') : (language === 'en' ? 'Unlock' : 'Mở')}
+                            </button>
 
-                          {/* Xóa vĩnh viễn (Hard delete) */}
-                          <button
-                            type="button"
-                            className="iconbtn danger"
-                            onClick={() => setDeletingUser(u)}
-                            disabled={isCurrentSelf || roleStr === 'OWNER'}
-                            title="Xóa vĩnh viễn tài khoản khỏi hệ thống"
-                            style={{ width: '28px', height: '28px', border: '1px solid var(--line)', background: 'var(--paper)' }}
-                          >
-                            <Icon name="x" size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                            {/* Xóa vĩnh viễn (Hard delete) */}
+                            <button
+                              type="button"
+                              className="iconbtn danger"
+                              onClick={() => setDeletingUser(u)}
+                              disabled={isCurrentSelf || roleStr === 'OWNER'}
+                              title={language === 'en' ? 'Permanently delete user from system' : 'Xóa vĩnh viễn tài khoản khỏi hệ thống'}
+                              style={{ width: '28px', height: '28px', border: '1px solid var(--line)', background: 'var(--paper)' }}
+                            >
+                              <Icon name="x" size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination bar */}
+          <div className="row between" style={{ marginTop: '16px', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+            <span className="muted" style={{ fontSize: '13px' }}>
+              {language === 'en'
+                ? `Showing ${users.length} of ${totalUsers} users`
+                : `Hiển thị ${users.length} / ${totalUsers} người dùng`}
+            </span>
+            <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn line sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                {language === 'en' ? 'Previous' : 'Trước'}
+              </button>
+              <span className="muted" style={{ fontSize: '13px', padding: '0 6px' }}>
+                {language === 'en' ? 'Page' : 'Trang'} {page}
+              </span>
+              <button
+                type="button"
+                className="btn line sm"
+                disabled={users.length < 30}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                {language === 'en' ? 'Next' : 'Tiếp'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* SEGMENT 1: DELETION REQUESTS QUEUE */}
       {activeSegment === 1 && (
-        <div
-          className="abs box"
-          style={{
-            left: '32px',
-            right: '32px',
-            top: '246px',
-            bottom: '26px',
-            overflowY: 'auto',
-            padding: '20px 24px',
-          }}
-        >
-          <div className="row between" style={{ marginBottom: '16px', borderBottom: '1px solid var(--line)', paddingBottom: '12px' }}>
+        <div className="box" style={{ padding: '20px 24px', width: '100%', boxSizing: 'border-box' }}>
+          <div className="row between" style={{ marginBottom: '16px', borderBottom: '1px solid var(--line)', paddingBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
             <div>
-              <h3 style={{ fontSize: '18px', margin: 0 }}>Hàng đợi yêu cầu xóa tài khoản từ Quản trị viên</h3>
+              <h3 style={{ fontSize: '18px', margin: 0 }}>
+                {language === 'en'
+                  ? 'Account Deletion Requests Queue from Admins'
+                  : 'Hàng đợi yêu cầu xóa tài khoản từ Quản trị viên'}
+              </h3>
               <small className="muted">
-                Admin không có quyền xóa trực tiếp tài khoản mà phải gửi phiếu yêu cầu có xác thực danh tính lên Chủ sở hữu.
+                {language === 'en'
+                  ? 'Admins cannot directly delete user accounts; they must submit an authenticated deletion request to the Owner.'
+                  : 'Admin không có quyền xóa trực tiếp tài khoản mà phải gửi phiếu yêu cầu có xác thực danh tính lên Chủ sở hữu.'}
               </small>
             </div>
-            {isLoadingRequests && <span className="muted" style={{ fontSize: '13px' }}>Đang tải...</span>}
+            {isLoadingRequests && (
+              <span className="muted" style={{ fontSize: '13px' }}>
+                {language === 'en' ? 'Loading...' : 'Đang tải...'}
+              </span>
+            )}
           </div>
 
           {deletionRequests.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--muted)' }}>
               <Icon name="check" size={32} />
-              <div style={{ marginTop: '10px', fontWeight: 600 }}>Không có yêu cầu xóa tài khoản nào đang chờ duyệt</div>
-              <small className="muted">Hệ thống đang hoạt động an toàn và ổn định</small>
+              <div style={{ marginTop: '10px', fontWeight: 600 }}>
+                {language === 'en'
+                  ? 'No account deletion requests waiting for approval'
+                  : 'Không có yêu cầu xóa tài khoản nào đang chờ duyệt'}
+              </div>
+              <small className="muted">
+                {language === 'en'
+                  ? 'System is operating safely and stably'
+                  : 'Hệ thống đang hoạt động an toàn và ổn định'}
+              </small>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -666,17 +798,21 @@ export function OwnerDashboardPage({ onNavigate }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '12px',
                   }}
                 >
                   <div>
                     <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
                       <span className="badge" style={{ background: '#8E2A22', color: '#fff', fontSize: '11px' }}>
-                        YÊU CẦU XÓA
+                        {language === 'en' ? 'DELETION REQUEST' : 'YÊU CẦU XÓA'}
                       </span>
-                      <b style={{ fontSize: '15px' }}>{req.details || req.summary || req.note || 'Yêu cầu xóa tài khoản vi phạm'}</b>
+                      <b style={{ fontSize: '15px' }}>
+                        {req.details || req.summary || req.note || (language === 'en' ? 'Request to delete violating account' : 'Yêu cầu xóa tài khoản vi phạm')}
+                      </b>
                     </div>
                     <div className="muted" style={{ fontSize: '13px', marginTop: '6px' }}>
-                      Admin gửi yêu cầu: <b>{req.created_by_admin?.nickname || 'Admin'}</b> · Thời gian: {formatDate(req.performed_at)}
+                      {language === 'en' ? 'Admin requested' : 'Admin gửi yêu cầu'}: <b>{req.created_by_admin?.nickname || 'Admin'}</b> · {language === 'en' ? 'Time' : 'Thời gian'}: {formatDate(req.performed_at)}
                     </div>
                   </div>
 
@@ -685,16 +821,20 @@ export function OwnerDashboardPage({ onNavigate }) {
                       type="button"
                       className="btn danger sm"
                       onClick={() => {
-                        // Look up or prompt for target user id
                         const promptId = window.prompt(
-                          'Nhập ID (UUID) của tài khoản cần xóa vĩnh viễn để xác nhận duyệt yêu cầu này:'
+                          language === 'en'
+                            ? 'Enter ID (UUID) of the account to permanently delete to approve this request:'
+                            : 'Nhập ID (UUID) của tài khoản cần xóa vĩnh viễn để xác nhận duyệt yêu cầu này:'
                         );
                         if (promptId && promptId.trim()) {
-                          setDeletingUser({ id: promptId.trim(), username: 'mục tiêu yêu cầu xóa' });
+                          setDeletingUser({
+                            id: promptId.trim(),
+                            username: language === 'en' ? 'requested deletion target' : 'mục tiêu yêu cầu xóa',
+                          });
                         }
                       }}
                     >
-                      Duyệt xóa vĩnh viễn
+                      {language === 'en' ? 'Approve Permanent Deletion' : 'Duyệt xóa vĩnh viễn'}
                     </button>
                   </div>
                 </div>
@@ -706,52 +846,60 @@ export function OwnerDashboardPage({ onNavigate }) {
 
       {/* SEGMENT 2: OWNER AUDIT LOGS */}
       {activeSegment === 2 && (
-        <div
-          className="abs box"
-          style={{
-            left: '32px',
-            right: '32px',
-            top: '246px',
-            bottom: '26px',
-            overflowY: 'auto',
-            padding: '20px 24px',
-          }}
-        >
-          <div className="row between" style={{ marginBottom: '14px' }}>
-            <h3 style={{ fontSize: '18px', margin: 0 }}>Toàn bộ nhật ký kiểm toán hệ thống (Owner View)</h3>
-            {isLoadingAudit && <span className="muted" style={{ fontSize: '13px' }}>Đang tải...</span>}
+        <div className="box" style={{ padding: '20px 24px', width: '100%', boxSizing: 'border-box' }}>
+          <div className="row between" style={{ marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+            <h3 style={{ fontSize: '18px', margin: 0 }}>
+              {language === 'en'
+                ? 'Complete System Audit Logs (Owner View)'
+                : 'Toàn bộ nhật ký kiểm toán hệ thống (Owner View)'}
+            </h3>
+            {isLoadingAudit && (
+              <span className="muted" style={{ fontSize: '13px' }}>
+                {language === 'en' ? 'Loading...' : 'Đang tải...'}
+              </span>
+            )}
           </div>
 
-          <table className="at">
-            <thead>
-              <tr>
-                <th style={{ width: '150px' }}>Thời gian</th>
-                <th style={{ width: '170px' }}>Người thực hiện</th>
-                <th style={{ width: '140px' }}>Hành động</th>
-                <th style={{ width: '120px' }}>Phòng</th>
-                <th>Tác phẩm / Đối tượng</th>
-                <th>Chi tiết kiểm toán</th>
-              </tr>
-            </thead>
-            <tbody>
-              {auditLogs.map((log, i) => (
-                <tr key={i}>
-                  <td className="muted" style={{ fontSize: '12.5px' }}>{formatDate(log.performed_at)}</td>
-                  <td><b>{log.created_by_admin?.nickname || log.admin_name || 'Hệ thống'}</b></td>
-                  <td>
-                    <span className="badge b-priv" style={{ fontSize: '11px' }}>
-                      {log.action_type}
-                    </span>
-                  </td>
-                  <td className="muted" style={{ fontSize: '12.5px' }}>
-                    {log.room_code ? `Phòng ${log.room_id}` : 'Hệ thống'}
-                  </td>
-                  <td style={{ fontWeight: 600 }}>{log.artwork_title || `Đối tượng #${log.artwork_id || ''}`}</td>
-                  <td className="muted" style={{ fontSize: '13px' }}>{log.details || log.note || '—'}</td>
+          <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="at" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th style={{ width: '150px' }}>{language === 'en' ? 'Time' : 'Thời gian'}</th>
+                  <th style={{ width: '170px' }}>{language === 'en' ? 'Performer' : 'Người thực hiện'}</th>
+                  <th style={{ width: '140px' }}>{language === 'en' ? 'Action' : 'Hành động'}</th>
+                  <th style={{ width: '120px' }}>{language === 'en' ? 'Room' : 'Phòng'}</th>
+                  <th>{language === 'en' ? 'Artwork / Target' : 'Tác phẩm / Đối tượng'}</th>
+                  <th>{language === 'en' ? 'Audit Details' : 'Chi tiết kiểm toán'}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {auditLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
+                      {language === 'en' ? 'No audit logs recorded yet' : 'Chưa có nhật ký kiểm toán nào'}
+                    </td>
+                  </tr>
+                ) : (
+                  auditLogs.map((log, i) => (
+                    <tr key={i}>
+                      <td className="muted" style={{ fontSize: '12.5px' }}>{formatDate(log.performed_at)}</td>
+                      <td><b>{log.created_by_admin?.nickname || log.admin_name || (language === 'en' ? 'System' : 'Hệ thống')}</b></td>
+                      <td>
+                        <span className="badge b-priv" style={{ fontSize: '11px' }}>
+                          {log.action_type}
+                        </span>
+                      </td>
+                      <td className="muted" style={{ fontSize: '12.5px' }}>
+                        {log.room_code ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id}` : (language === 'en' ? 'System' : 'Hệ thống')}
+                      </td>
+                      <td style={{ fontWeight: 600 }}>{log.artwork_title || `${language === 'en' ? 'Target' : 'Đối tượng'} #${log.artwork_id || ''}`}</td>
+                      <td className="muted" style={{ fontSize: '13px' }}>{log.details || log.note || '—'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -773,9 +921,13 @@ export function OwnerDashboardPage({ onNavigate }) {
               <Icon name="x" size={22} />
             </span>
 
-            <h2 style={{ fontSize: '24px' }}>Chi tiết tài khoản</h2>
+            <h2 style={{ fontSize: '24px' }}>
+              {language === 'en' ? 'Account Details' : 'Chi tiết tài khoản'}
+            </h2>
             <div className="sub">
-              Thông tin chi tiết và thống kê hoạt động trên toàn hệ thống bảo tàng.
+              {language === 'en'
+                ? 'Detailed information and activity metrics across the museum platform.'
+                : 'Thông tin chi tiết và thống kê hoạt động trên toàn hệ thống bảo tàng.'}
             </div>
 
             <div style={{ background: 'var(--wall)', padding: '16px', borderRadius: '12px', border: '1px solid var(--line)', marginBottom: '16px' }}>
@@ -804,34 +956,40 @@ export function OwnerDashboardPage({ onNavigate }) {
                   <div style={{ fontWeight: 700, fontSize: '16px' }}>{selectedUserDetail.nickname}</div>
                   <div className="muted" style={{ fontSize: '13px' }}>@{selectedUserDetail.username} · {selectedUserDetail.email}</div>
                   <div style={{ marginTop: '4px' }}>
-                    <span className="badge b-priv" style={{ fontSize: '11px' }}>Vai trò: {selectedUserDetail.role}</span>{' '}
+                    <span className="badge b-priv" style={{ fontSize: '11px' }}>
+                      {language === 'en' ? 'Role' : 'Vai trò'}: {selectedUserDetail.role}
+                    </span>{' '}
                     <span className={`badge ${selectedUserDetail.is_active ? 'b-ok' : 'b-wait'}`} style={{ fontSize: '11px' }}>
-                      {selectedUserDetail.is_active ? 'Đang hoạt động' : 'Bị khóa'}
+                      {selectedUserDetail.is_active
+                        ? (language === 'en' ? 'Active' : 'Đang hoạt động')
+                        : (language === 'en' ? 'Locked' : 'Bị khóa')}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="fieldl">Thống kê hoạt động</div>
+            <div className="fieldl">
+              {language === 'en' ? 'Activity Metrics' : 'Thống kê hoạt động'}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
               <div className="box stat" style={{ padding: '12px' }}>
-                <small>Tác phẩm</small>
+                <small>{language === 'en' ? 'Artworks' : 'Tác phẩm'}</small>
                 <b style={{ fontSize: '20px' }}>{selectedUserDetail.stats?.artworks_count ?? 0}</b>
               </div>
               <div className="box stat" style={{ padding: '12px' }}>
-                <small>Nhật ký</small>
+                <small>{language === 'en' ? 'Diaries' : 'Nhật ký'}</small>
                 <b style={{ fontSize: '20px' }}>{selectedUserDetail.stats?.diaries_count ?? 0}</b>
               </div>
               <div className="box stat" style={{ padding: '12px' }}>
-                <small>Thông báo</small>
+                <small>{language === 'en' ? 'Notifications' : 'Thông báo'}</small>
                 <b style={{ fontSize: '20px' }}>{selectedUserDetail.stats?.notifications_count ?? 0}</b>
               </div>
             </div>
 
             <div className="row" style={{ justifyContent: 'flex-end', marginTop: '22px' }}>
               <button type="button" className="btn main" onClick={() => setSelectedUserDetail(null)}>
-                Đóng
+                {language === 'en' ? 'Close' : 'Đóng'}
               </button>
             </div>
           </div>
@@ -849,11 +1007,21 @@ export function OwnerDashboardPage({ onNavigate }) {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '26px' }}>⚠️</span>
-              <h2 style={{ fontSize: '22px', margin: 0, color: '#C42B1C' }}>Xác nhận xóa vĩnh viễn tài khoản</h2>
+              <h2 style={{ fontSize: '22px', margin: 0, color: '#C42B1C' }}>
+                {language === 'en' ? 'Confirm Permanent Account Deletion' : 'Xác nhận xóa vĩnh viễn tài khoản'}
+              </h2>
             </div>
 
             <div className="sub" style={{ marginTop: '12px', lineHeight: 1.6 }}>
-              Hành động này là <b>KHÔNG THỂ KHÔI PHỤC</b>. Toàn bộ tác phẩm, trang nhật ký, lượt tương tác và thông tin của tài khoản <b>@{deletingUser.username}</b> ({deletingUser.id}) sẽ bị dọn dẹp sạch sẽ khỏi cơ sở dữ liệu.
+              {language === 'en' ? (
+                <>
+                  This action is <b>IRREVERSIBLE</b>. All artworks, diary entries, interactions, and profile data belonging to account <b>@{deletingUser.username}</b> ({deletingUser.id}) will be permanently wiped from the database.
+                </>
+              ) : (
+                <>
+                  Hành động này là <b>KHÔNG THỂ KHÔI PHỤC</b>. Toàn bộ tác phẩm, trang nhật ký, lượt tương tác và thông tin của tài khoản <b>@{deletingUser.username}</b> ({deletingUser.id}) sẽ bị dọn dẹp sạch sẽ khỏi cơ sở dữ liệu.
+                </>
+              )}
             </div>
 
             <div
@@ -867,7 +1035,9 @@ export function OwnerDashboardPage({ onNavigate }) {
                 color: '#8A180E',
               }}
             >
-              Chỉ duy nhất Chủ sở hữu (Owner) mới có quyền thực hiện xóa vĩnh viễn tài khoản.
+              {language === 'en'
+                ? 'Only the Platform Owner has the authority to permanently delete user accounts.'
+                : 'Chỉ duy nhất Chủ sở hữu (Owner) mới có quyền thực hiện xóa vĩnh viễn tài khoản.'}
             </div>
 
             <div className="row" style={{ justifyContent: 'flex-end', marginTop: '24px', gap: '10px' }}>
@@ -877,7 +1047,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                 onClick={() => setDeletingUser(null)}
                 disabled={isDeleting}
               >
-                Hủy bỏ
+                {language === 'en' ? 'Cancel' : 'Hủy bỏ'}
               </button>
               <button
                 type="button"
@@ -886,7 +1056,9 @@ export function OwnerDashboardPage({ onNavigate }) {
                 onClick={handleConfirmDelete}
                 disabled={isDeleting}
               >
-                {isDeleting ? 'Đang xóa...' : 'Xác nhận xóa vĩnh viễn'}
+                {isDeleting
+                  ? (language === 'en' ? 'Deleting...' : 'Đang xóa...')
+                  : (language === 'en' ? 'Confirm Permanent Deletion' : 'Xác nhận xóa vĩnh viễn')}
               </button>
             </div>
           </div>

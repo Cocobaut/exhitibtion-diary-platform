@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../../components/common/Icons';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function UserRoleManagementModal({
   isOpen,
@@ -8,20 +9,26 @@ export function UserRoleManagementModal({
   onConfirmRoleChange,
   isSubmitting = false,
 }) {
+  const { language } = useLanguage();
   const [selectedRole, setSelectedRole] = useState('ADMIN');
-  const [reason, setReason] = useState('Bổ nhiệm thêm nhân sự cho Ban kiểm duyệt triển lãm');
+  const [reason, setReason] = useState('');
 
   useEffect(() => {
     if (user) {
       const currentRole = user.role ? String(user.role).toUpperCase() : 'USER';
-      setSelectedRole(currentRole === 'ADMIN' ? 'USER' : 'ADMIN');
+      const targetRole = currentRole === 'ADMIN' ? 'USER' : 'ADMIN';
+      setSelectedRole(targetRole);
       setReason(
-        currentRole === 'ADMIN'
-          ? 'Hạ cấp vai trò quản trị viên về người dùng thông thường'
-          : 'Bổ nhiệm thêm nhân sự cho Ban kiểm duyệt triển lãm'
+        language === 'en'
+          ? (currentRole === 'ADMIN'
+              ? 'Demote moderator to standard user'
+              : 'Appoint additional moderator for exhibition moderation')
+          : (currentRole === 'ADMIN'
+              ? 'Hạ cấp vai trò quản trị viên về người dùng thông thường'
+              : 'Bổ nhiệm thêm nhân sự cho Ban kiểm duyệt triển lãm')
       );
     }
-  }, [user]);
+  }, [user, language]);
 
   if (!isOpen || !user) return null;
 
@@ -35,12 +42,24 @@ export function UserRoleManagementModal({
           <Icon name="x" size={22} />
         </span>
 
-        <h2 style={{ fontSize: '24px' }}>Điều chỉnh vai trò tài khoản</h2>
+        <h2 style={{ fontSize: '24px' }}>
+          {language === 'en' ? 'Adjust Account Role' : 'Điều chỉnh vai trò tài khoản'}
+        </h2>
         <div className="sub">
-          Tài khoản: <b>{user.nickname || user.username}</b> (@{user.username}) · {user.email}. Vai trò hiện tại: <b>{currentRole}</b>.
+          {language === 'en' ? (
+            <>
+              Account: <b>{user.nickname || user.username}</b> (@{user.username}) · {user.email}. Current role: <b>{currentRole}</b>.
+            </>
+          ) : (
+            <>
+              Tài khoản: <b>{user.nickname || user.username}</b> (@{user.username}) · {user.email}. Vai trò hiện tại: <b>{currentRole}</b>.
+            </>
+          )}
         </div>
 
-        <div className="fieldl">Chọn vai trò mới</div>
+        <div className="fieldl">
+          {language === 'en' ? 'Select New Role' : 'Chọn vai trò mới'}
+        </div>
         <div className="row" style={{ gap: '12px', marginBottom: '16px' }}>
           <div
             onClick={() => setSelectedRole('USER')}
@@ -56,7 +75,9 @@ export function UserRoleManagementModal({
           >
             <div style={{ fontWeight: 600, fontSize: '14.5px' }}>USER</div>
             <small className="muted" style={{ display: 'block', marginTop: '4px' }}>
-              Người dùng thông thường (Tham quan, đăng bài chờ duyệt, viết nhật ký)
+              {language === 'en'
+                ? 'Standard user (Explore exhibitions, submit artworks for review, write diaries)'
+                : 'Người dùng thông thường (Tham quan, đăng bài chờ duyệt, viết nhật ký)'}
             </small>
           </div>
 
@@ -74,24 +95,32 @@ export function UserRoleManagementModal({
           >
             <div style={{ fontWeight: 600, fontSize: '14.5px', color: '#B57424' }}>ADMIN</div>
             <small className="muted" style={{ display: 'block', marginTop: '4px' }}>
-              Quản trị viên (Kiểm duyệt 3 phòng, nhật ký, kho thông điệp, studio)
+              {language === 'en'
+                ? 'Moderator (Review 3 exhibition rooms, diaries, time capsules, studio)'
+                : 'Quản trị viên (Kiểm duyệt 3 phòng, nhật ký, kho thông điệp, studio)'}
             </small>
           </div>
         </div>
 
-        <div className="fieldl">Lý do điều chỉnh vai trò</div>
+        <div className="fieldl">
+          {language === 'en' ? 'Reason for Role Adjustment' : 'Lý do điều chỉnh vai trò'}
+        </div>
         <textarea
           className="inp area"
           style={{ minHeight: '90px', fontSize: '14px', fontFamily: 'var(--sans)' }}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="Nhập lý do điều chỉnh để lưu vào lịch sử kiểm toán..."
+          placeholder={
+            language === 'en'
+              ? 'Enter reason for adjustment to save into system audit history...'
+              : 'Nhập lý do điều chỉnh để lưu vào lịch sử kiểm toán...'
+          }
           required
         />
 
         <div className="row" style={{ justifyContent: 'flex-end', marginTop: '22px', gap: '10px' }}>
           <button type="button" className="btn ghost" onClick={onClose} disabled={isSubmitting}>
-            Hủy
+            {language === 'en' ? 'Cancel' : 'Hủy'}
           </button>
           <button
             type="button"
@@ -108,7 +137,9 @@ export function UserRoleManagementModal({
             }}
             disabled={isSubmitting || selectedRole === currentRole}
           >
-            {isSubmitting ? 'Đang cập nhật...' : 'Xác nhận đổi vai trò'}
+            {isSubmitting
+              ? (language === 'en' ? 'Updating...' : 'Đang cập nhật...')
+              : (language === 'en' ? 'Confirm Role Change' : 'Xác nhận đổi vai trò')}
           </button>
         </div>
       </div>

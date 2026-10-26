@@ -3,10 +3,14 @@ import { Painting } from '../../components/common/Painting';
 import { ReactionButton } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
 import { useAuth } from '../../context/AuthContext';
+import { useGuestGuard } from '../../context/GuestGuardContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { room1Service } from '../../services/room1Service';
 
 export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated }) {
   const { isAuthenticated } = useAuth();
+  const { guardAction } = useGuestGuard();
+  const { localize, language, t } = useLanguage();
   const [detail, setDetail] = useState(artwork);
   const [isLoading, setIsLoading] = useState(false);
   const [currentReaction, setCurrentReaction] = useState(null);
@@ -63,33 +67,30 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
 
   // Toggle thả cảm xúc
   const handleToggleReaction = async (type) => {
-    if (!isAuthenticated) {
-      alert('Vui lòng đăng nhập để gửi sự đồng cảm đến tác phẩm này.');
-      return;
-    }
-
-    try {
-      const res = await room1Service.toggleReaction(artwork.id, type);
-      if (res) {
-        setCurrentReaction(res.current_reaction);
-        if (res.reactions_summary) {
-          setReactionsMap(res.reactions_summary);
+    guardAction(async () => {
+      try {
+        const res = await room1Service.toggleReaction(artwork.id, type);
+        if (res) {
+          setCurrentReaction(res.current_reaction);
+          if (res.reactions_summary) {
+            setReactionsMap(res.reactions_summary);
+          }
+          if (onReactionUpdated) {
+            onReactionUpdated(artwork.id, {
+              my_reaction: res.current_reaction,
+              reactions: res.reactions_summary,
+            });
+          }
         }
-        if (onReactionUpdated) {
-          onReactionUpdated(artwork.id, {
-            my_reaction: res.current_reaction,
-            reactions: res.reactions_summary,
-          });
-        }
+      } catch (err) {
+        console.warn('Lỗi khi cập nhật cảm xúc:', err);
       }
-    } catch (err) {
-      console.warn('Lỗi khi cập nhật cảm xúc:', err);
-    }
+    }, 'bày tỏ sự đồng cảm với tác phẩm');
   };
 
-  const title = detail?.title || artwork.title || artwork.t || 'Tác phẩm';
-  const author = detail?.author_display_name || artwork.author_display_name || artwork.a || (artwork.is_anonymous ? 'Ẩn danh' : 'Tác giả');
-  const story = detail?.content || detail?.short_content || artwork.story || artwork.s || '';
+  const title = localize(detail, 'title') || localize(artwork, 'title') || artwork.t || (language === 'en' ? 'Artwork' : 'Tác phẩm');
+  const author = detail?.author_display_name || artwork.author_display_name || artwork.a || (artwork.is_anonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : (language === 'en' ? 'Author' : 'Tác giả'));
+  const story = localize(detail, 'content') || localize(detail, 'short_content') || localize(artwork, 'content') || localize(artwork, 'short_content') || artwork.story || artwork.s || '';
   const viewCount = detail?.view_count !== undefined ? detail.view_count : (artwork.view_count || artwork.v || 0);
 
   const reactionTypes = ['HEART', 'HUG', 'SYMPATHY'];
@@ -168,7 +169,7 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
               color: 'var(--acc)',
             }}
           >
-            PHÒNG 01 · TRIỂN LÃM ĐỔ VỠ
+            {language === 'en' ? 'ROOM 01 · BROKEN EXHIBITION' : 'PHÒNG 01 · TRIỂN LÃM ĐỔ VỠ'}
           </div>
 
           <h2 style={{ fontSize: '34px', marginTop: '6px', color: 'var(--ink)' }}>
@@ -180,10 +181,10 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
               {author}
             </span>
             <span>
-              {detail?.created_at ? new Date(detail.created_at).toLocaleDateString('vi-VN') : '21.10.2026'}
+              {detail?.created_at ? new Date(detail.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN') : '21.10.2026'}
             </span>
             <span className="row" style={{ gap: '4px' }}>
-              <Icon name="eye" size={15} /> {viewCount} lượt xem
+              <Icon name="eye" size={15} /> {viewCount} {language === 'en' ? 'views' : 'lượt xem'}
             </span>
           </div>
 
@@ -197,10 +198,10 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
               color: 'var(--ink)',
             }}
           >
-            {isLoading ? 'Đang mở tác phẩm...' : story}
+            {isLoading ? (language === 'en' ? 'Opening artwork...' : 'Đang mở tác phẩm...') : story}
           </div>
 
-          {detail?.quote && (
+          {(localize(detail, 'quote') || detail?.quote) && (
             <div
               style={{
                 fontFamily: 'var(--serif)',
@@ -210,7 +211,7 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
                 margin: '16px 0 20px',
               }}
             >
-              {detail.quote}
+              {localize(detail, 'quote') || detail?.quote}
             </div>
           )}
 
@@ -229,8 +230,12 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
             </div>
             <div className="muted" style={{ marginTop: '10px', fontSize: '13px' }}>
               {reactionsMap.total > 0
-                ? `${reactionsMap.total} người đã gửi gắm sự đồng cảm đến tác phẩm này.`
-                : 'Hãy là người đầu tiên gửi gắm sự an ủi đến tác giả.'}
+                ? (language === 'en'
+                    ? `${reactionsMap.total} people shared empathy with this artwork.`
+                    : `${reactionsMap.total} người đã gửi gắm sự đồng cảm đến tác phẩm này.`)
+                : (language === 'en'
+                    ? 'Be the first to share comforting words with the author.'
+                    : 'Hãy là người đầu tiên gửi gắm sự an ủi đến tác giả.')}
             </div>
           </div>
         </div>

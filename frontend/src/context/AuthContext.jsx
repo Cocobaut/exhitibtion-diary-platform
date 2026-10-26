@@ -36,22 +36,50 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(getInitialUser);
   const [token, setToken] = useState(getInitialToken);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGuest, setIsGuest] = useState(() => {
+    try {
+      return localStorage.getItem('is_guest') === 'true' && !localStorage.getItem(STORAGE_KEYS.TOKEN);
+    } catch {
+      return false;
+    }
+  });
+
+  // Chuyển sang chế độ Khách vãng lai
+  const enterGuestMode = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+      localStorage.setItem('is_guest', 'true');
+    } catch (err) {
+      console.warn('Lỗi khi lưu guest mode vào localStorage:', err);
+    }
+    setToken(null);
+    setUser(null);
+    setIsGuest(true);
+  }, []);
 
   // Đăng xuất và dọn dẹp bộ nhớ cục bộ
   const logout = useCallback(() => {
     try {
       localStorage.removeItem(STORAGE_KEYS.TOKEN);
       localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+      localStorage.removeItem('is_guest');
     } catch (err) {
       console.warn('Lỗi khi xoá dữ liệu xác thực từ localStorage:', err);
     }
     setToken(null);
     setUser(null);
+    setIsGuest(false);
   }, []);
 
   // Đăng nhập thành công: lưu token & user vào state và localStorage
   const login = useCallback((authPayload) => {
     if (!authPayload) return;
+
+    try {
+      localStorage.removeItem('is_guest');
+    } catch {}
+    setIsGuest(false);
 
     // Hỗ trợ cả { access_token, user } hoặc { token, user } hoặc payload phẳng
     const accessToken = authPayload.access_token || authPayload.token;
@@ -162,10 +190,12 @@ export function AuthProvider({ children }) {
     isLoading,
     setIsLoading,
     isAuthenticated,
+    isGuest,
     isAdmin,
     isOwner,
     login,
     logout,
+    enterGuestMode,
     updateUser,
     refreshProfile,
   };

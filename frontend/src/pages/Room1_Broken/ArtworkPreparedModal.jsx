@@ -1,6 +1,8 @@
 import React from 'react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function ArtworkPreparedModal({ isOpen, onClose, onViewMyArtworks }) {
+  const { language } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -25,17 +27,21 @@ export function ArtworkPreparedModal({ isOpen, onClose, onViewMyArtworks }) {
           <circle className="pulse" cx="56" cy="32" r="4" fill="#D4B06A" />
         </svg>
 
-        <h2 style={{ fontSize: '28px' }}>Tác phẩm của bạn đang được chuẩn bị</h2>
+        <h2 style={{ fontSize: '28px' }}>
+          {language === 'en' ? 'Your artwork is being prepared' : 'Tác phẩm của bạn đang được chuẩn bị'}
+        </h2>
         <div className="muted" style={{ fontSize: '15.5px', margin: '8px 0 22px' }}>
-          Chúng mình sẽ thông báo trong hộp tin nhắn cho bạn sau khi tác phẩm hoàn thành.
+          {language === 'en'
+            ? 'We will notify you in your mailbox once your artwork is illustrated and exhibited.'
+            : 'Chúng mình sẽ thông báo trong hộp tin nhắn cho bạn sau khi tác phẩm hoàn thành.'}
         </div>
 
         <div className="row" style={{ justifyContent: 'center', gap: '12px' }}>
           <button type="button" className="btn line" onClick={onViewMyArtworks}>
-            Xem tác phẩm của tôi
+            {language === 'en' ? 'View my artworks' : 'Xem tác phẩm của tôi'}
           </button>
           <button type="button" className="btn main" onClick={onClose}>
-            Về phòng triển lãm
+            {language === 'en' ? 'Back to gallery' : 'Về phòng triển lãm'}
           </button>
         </div>
       </div>

@@ -1,7 +1,9 @@
 import React from 'react';
 import { Icon } from '../../components/common/Icons';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function ConfirmSubmitModal({ isOpen, onClose, onConfirm, isSubmitting = false, errorMsg = '' }) {
+  const { language } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -23,10 +25,12 @@ export function ConfirmSubmitModal({ isOpen, onClose, onConfirm, isSubmitting = 
           <Icon name="r1" size={30} />
         </div>
         <h2 className="serif" style={{ fontSize: '28px', color: 'var(--ink)' }}>
-          Bạn có chắc chắn muốn tạo tác phẩm?
+          {language === 'en' ? 'Are you sure you want to submit your artwork?' : 'Bạn có chắc chắn muốn tạo tác phẩm?'}
         </h2>
         <div className="muted" style={{ fontSize: '15px', margin: '8px 0 20px', lineHeight: 1.5 }}>
-          Vui lòng kiểm tra kỹ nội dung đã viết. Tác phẩm sau khi gửi sẽ được đưa vào hàng đợi kiểm duyệt và minh họa.
+          {language === 'en'
+            ? 'Please review your story carefully. Once submitted, it will enter the curation and illustration queue.'
+            : 'Vui lòng kiểm tra kỹ nội dung đã viết. Tác phẩm sau khi gửi sẽ được đưa vào hàng đợi kiểm duyệt và minh họa.'}
         </div>
 
         {errorMsg && (
@@ -48,10 +52,12 @@ export function ConfirmSubmitModal({ isOpen, onClose, onConfirm, isSubmitting = 
 
         <div className="row" style={{ justifyContent: 'center', gap: '12px' }}>
           <button type="button" className="btn line" onClick={onClose} disabled={isSubmitting}>
-            Để mình đọc lại
+            {language === 'en' ? 'Let me review' : 'Để mình đọc lại'}
           </button>
           <button type="button" className="btn main" onClick={onConfirm} disabled={isSubmitting}>
-            {isSubmitting ? 'Đang gửi tác phẩm...' : 'Chắc chắn'}
+            {isSubmitting
+              ? (language === 'en' ? 'Submitting artwork...' : 'Đang gửi tác phẩm...')
+              : (language === 'en' ? 'Confirm' : 'Chắc chắn')}
           </button>
         </div>
       </div>

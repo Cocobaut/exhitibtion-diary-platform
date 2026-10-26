@@ -1,18 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MOODS } from '../../data/mockData';
+import { MOODS, COMMUNITY_DIARY_ENTRIES } from '../../data/mockData';
 import { ReactionStack } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
 import { diaryService } from '../../services/diaryService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+
+const MOOD_TRANSLATIONS = {
+  'Bình yên': 'Peaceful',
+  'Trầm lắng': 'Contemplative',
+  'Biết ơn': 'Grateful',
+  'Hy vọng': 'Hopeful',
+  'Mệt mỏi': 'Weary',
+};
 
 export function DiaryCommunity({ searchQuery = '' }) {
   const { user } = useAuth();
+  const { language, localize } = useLanguage();
   const rotations = [-0.6, 0.5, -0.3, 0.4, -0.5, 0.3];
 
   const [communityNotes, setCommunityNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
+
+  const getMoodLabel = (m) => (language === 'en' ? (MOOD_TRANSLATIONS[m] || m) : m);
 
   const loadCommunityDiaries = useCallback(async () => {
     setIsLoading(true);
@@ -24,14 +36,17 @@ export function DiaryCommunity({ searchQuery = '' }) {
           limit: 30,
         });
         const data = res?.data || res;
-        setCommunityNotes(data?.items || []);
+        const items = data?.items || [];
+        setCommunityNotes(items.length > 0 ? items : COMMUNITY_DIARY_ENTRIES);
       } else {
         const res = await diaryService.getCommunityDiaries({ limit: 30 });
         const data = res?.data || res;
-        setCommunityNotes(data?.items || []);
+        const items = data?.items || [];
+        setCommunityNotes(items.length > 0 ? items : COMMUNITY_DIARY_ENTRIES);
       }
     } catch (err) {
-      console.warn('Error loading community diaries from API:', err);
+      console.warn('Error loading community diaries from API, using fallback:', err);
+      setCommunityNotes(COMMUNITY_DIARY_ENTRIES);
     } finally {
       setIsLoading(false);
     }
@@ -86,23 +101,29 @@ export function DiaryCommunity({ searchQuery = '' }) {
     <>
       <div className="abs" style={{ left: '30px', right: '30px', top: '96px' }}>
         <div className="muted" style={{ color: 'var(--onw2)', fontSize: '14px' }}>
-          Những trang nhật ký các thành viên chọn chia sẻ và đã qua kiểm duyệt.
-          {isLoading && <span style={{ marginLeft: '10px' }}>Đang tải...</span>}
+          {language === 'en'
+            ? 'Curated diary pages shared by community members.'
+            : 'Những trang nhật ký các thành viên chọn chia sẻ và đã qua kiểm duyệt.'}
+          {isLoading && (
+            <span style={{ marginLeft: '10px' }}>
+              {language === 'en' ? 'Loading...' : 'Đang tải...'}
+            </span>
+          )}
         </div>
       </div>
 
       <div
-        className="abs"
+        className="abs custom-scrollbar diary-scroll"
         style={{
-          left: '30px',
-          right: '30px',
+          left: 0,
+          right: 0,
           top: '134px',
+          bottom: 0,
           display: 'grid',
           gridTemplateColumns: 'repeat(3, 1fr)',
           gap: '24px',
           overflowY: 'auto',
-          maxHeight: 'calc(100% - 150px)',
-          paddingBottom: '30px',
+          padding: '0 clamp(20px, 3.5vw, 44px) 44px',
         }}
       >
         {communityNotes.length === 0 && !isLoading && (
@@ -114,13 +135,15 @@ export function DiaryCommunity({ searchQuery = '' }) {
               color: 'var(--onw2)',
             }}
           >
-            Chưa có bài nhật ký cộng đồng nào phù hợp.
+            {language === 'en'
+              ? 'No matching community diary entries found.'
+              : 'Chưa có bài nhật ký cộng đồng nào phù hợp.'}
           </div>
         )}
 
         {communityNotes.map((note, i) => {
           const authorName =
-            note.author?.nickname || note.author_name || 'Người bạn ẩn danh';
+            note.author?.nickname || note.author_name || (language === 'en' ? 'Anonymous friend' : 'Người bạn ẩn danh');
           const totalReactions =
             note.reactions?.total ?? note.reaction_count ?? 0;
           const userReacted = Boolean(note.my_reaction || note.user_reaction);
@@ -154,7 +177,7 @@ export function DiaryCommunity({ searchQuery = '' }) {
                 style={{ gap: '6px', fontSize: '12.5px' }}
               >
                 <i className="dot" style={{ background: MOODS[note.mood] || '#E2BC55' }} />
-                <span>{note.mood || 'Bình yên'}</span> ·{' '}
+                <span>{getMoodLabel(note.mood) || (language === 'en' ? 'Peaceful' : 'Bình yên')}</span> ·{' '}
                 <span>{formatDate(note.entry_date || note.created_at)}</span>
               </div>
 
@@ -169,7 +192,7 @@ export function DiaryCommunity({ searchQuery = '' }) {
                   textOverflow: 'ellipsis',
                 }}
               >
-                {note.title || 'Trang nhật ký'}
+                {localize(note, 'title') || (language === 'en' ? 'Community diary page' : 'Trang nhật ký')}
               </b>
 
               <div
@@ -185,7 +208,7 @@ export function DiaryCommunity({ searchQuery = '' }) {
                   WebkitBoxOrient: 'vertical',
                 }}
               >
-                {note.snippet || note.content}
+                {localize(note, 'snippet') || localize(note, 'content')}
               </div>
 
               <div
@@ -256,12 +279,12 @@ export function DiaryCommunity({ searchQuery = '' }) {
                 className="dot"
                 style={{ background: MOODS[selectedNote.mood] || '#E2BC55' }}
               />
-              <span>{selectedNote.mood || 'Bình yên'}</span> ·{' '}
+              <span>{getMoodLabel(selectedNote.mood) || (language === 'en' ? 'Peaceful' : 'Bình yên')}</span> ·{' '}
               <span>{formatDate(selectedNote.entry_date || selectedNote.created_at)}</span>
             </div>
 
             <h2 style={{ fontSize: '28px', margin: '10px 0 14px' }}>
-              {selectedNote.title || 'Trang nhật ký cộng đồng'}
+              {localize(selectedNote, 'title') || (language === 'en' ? 'Community diary entry' : 'Trang nhật ký cộng đồng')}
             </h2>
 
             <div
@@ -274,7 +297,7 @@ export function DiaryCommunity({ searchQuery = '' }) {
                 margin: '14px 0 20px',
               }}
             >
-              {selectedNote.content || selectedNote.snippet}
+              {localize(selectedNote, 'content') || localize(selectedNote, 'snippet')}
             </div>
 
             {selectedNote.media_urls && selectedNote.media_urls.length > 0 && (
@@ -305,7 +328,7 @@ export function DiaryCommunity({ searchQuery = '' }) {
               }}
             >
               <span className="hand" style={{ fontSize: '22px', color: '#5C341F' }}>
-                — {selectedNote.author?.nickname || selectedNote.author_name || 'Người bạn ẩn danh'}
+                — {selectedNote.author?.nickname || selectedNote.author_name || (language === 'en' ? 'Anonymous friend' : 'Người bạn ẩn danh')}
               </span>
 
               <button

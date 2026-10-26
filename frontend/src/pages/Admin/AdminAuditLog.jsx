@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { adminStudioService } from '../../services/adminStudioService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminAuditLog({ triggerToast }) {
+  const { t, language } = useLanguage();
   const [logs, setLogs] = useState([]);
   const [totalLogs, setTotalLogs] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -24,14 +26,14 @@ export function AdminAuditLog({ triggerToast }) {
 
   // Action display mapping
   const actionMap = {
-    CREATE_DIRECT: { label: 'XUẤT BẢN STUDIO', badgeClass: 'b-priv', color: '#5B4EB5' },
-    APPROVE: { label: 'PHÊ DUYỆT', badgeClass: 'b-ok', color: '#2D7D46' },
-    APPROVE_AND_UPLOAD_MEDIA: { label: 'DUYỆT & TẢI ẢNH', badgeClass: 'b-ok', color: '#2D7D46' },
-    REJECT: { label: 'TỪ CHỐI', badgeClass: 'b-wait', color: '#C44B2B' },
-    ARCHIVE: { label: 'LƯU TRỮ (GỠ BÀI)', badgeClass: 'b-wait', color: '#888888' },
-    UPDATE: { label: 'CHỈNH SỬA', badgeClass: 'b-blue', color: '#1B6FB5' },
-    REQUEST_DELETE_USER: { label: 'YÊU CẦU XÓA USER', badgeClass: 'b-wait', color: '#D97706' },
-    LOCK_USER: { label: 'KHÓA TÀI KHOẢN', badgeClass: 'b-wait', color: '#8E2A22' },
+    CREATE_DIRECT: { label: language === 'en' ? 'STUDIO PUBLISH' : 'XUẤT BẢN STUDIO', badgeClass: 'b-priv', color: '#5B4EB5' },
+    APPROVE: { label: language === 'en' ? 'APPROVE' : 'PHÊ DUYỆT', badgeClass: 'b-ok', color: '#2D7D46' },
+    APPROVE_AND_UPLOAD_MEDIA: { label: language === 'en' ? 'APPROVE & UPLOAD' : 'DUYỆT & TẢI ẢNH', badgeClass: 'b-ok', color: '#2D7D46' },
+    REJECT: { label: language === 'en' ? 'REJECT' : 'TỪ CHỐI', badgeClass: 'b-wait', color: '#C44B2B' },
+    ARCHIVE: { label: language === 'en' ? 'ARCHIVE' : 'LƯU TRỮ (GỠ BÀI)', badgeClass: 'b-wait', color: '#888888' },
+    UPDATE: { label: language === 'en' ? 'UPDATE' : 'CHỈNH SỬA', badgeClass: 'b-blue', color: '#1B6FB5' },
+    REQUEST_DELETE_USER: { label: language === 'en' ? 'REQUEST DELETE USER' : 'YÊU CẦU XÓA USER', badgeClass: 'b-wait', color: '#D97706' },
+    LOCK_USER: { label: language === 'en' ? 'LOCK USER' : 'KHÓA TÀI KHOẢN', badgeClass: 'b-wait', color: '#8E2A22' },
   };
 
   const loadAuditLogs = useCallback(async () => {

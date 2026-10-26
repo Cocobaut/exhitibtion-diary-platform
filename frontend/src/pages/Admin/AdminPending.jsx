@@ -3,6 +3,7 @@ import { Painting } from '../../components/common/Painting';
 import { Icon } from '../../components/common/Icons';
 import { adminRoomService } from '../../services/adminRoomService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminPending({
   roomId = 1,
@@ -11,6 +12,7 @@ export function AdminPending({
   refreshTrigger = 0,
 }) {
   const { user } = useAuth();
+  const { t, language, localize } = useLanguage();
 
   const [pendingItems, setPendingItems] = useState([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -61,13 +63,13 @@ export function AdminPending({
   // Sync form inputs when current item changes
   useEffect(() => {
     if (currentItem) {
-      setTitle(currentItem.title || '');
-      setSummary(currentItem.short_content || currentItem.summary || '');
-      setContent(currentItem.content || '');
+      setTitle(localize(currentItem, 'title') || currentItem.title || '');
+      setSummary(localize(currentItem, 'short_content') || currentItem.short_content || currentItem.summary || '');
+      setContent(localize(currentItem, 'content') || currentItem.content || '');
       setMediaUrl(currentItem.media_url || '');
       setQuote(
         currentItem.quote ||
-          (roomId === 1 ? '“Thất bại là một khúc quanh, không phải điểm dừng chân.”' : '')
+          (roomId === 1 ? (language === 'en' ? '“Failure is a bend, not the end of the road.”' : '“Thất bại là một khúc quanh, không phải điểm dừng chân.”') : '')
       );
       setErrorMessage('');
     } else {
@@ -77,7 +79,7 @@ export function AdminPending({
       setMediaUrl('');
       setQuote('');
     }
-  }, [currentItem, roomId]);
+  }, [currentItem, roomId, language, localize]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -175,23 +177,27 @@ export function AdminPending({
             style={{ cursor: 'pointer', fontSize: '13px' }}
             onClick={() => setSortOrder((prev) => (prev === 'oldest' ? 'latest' : 'oldest'))}
           >
-            {sortOrder === 'oldest' ? 'Cũ nhất trước ↓' : 'Mới nhất trước ↑'}
+            {sortOrder === 'oldest'
+              ? (language === 'en' ? 'Oldest first ↓' : 'Cũ nhất trước ↓')
+              : (language === 'en' ? 'Newest first ↑' : 'Mới nhất trước ↑')}
           </span>
           <span className="muted" style={{ fontSize: '13px' }}>
-            {isLoading ? 'Đang tải...' : `${pendingItems.length} bài chờ`}
+            {isLoading
+              ? (language === 'en' ? 'Loading...' : 'Đang tải...')
+              : `${pendingItems.length} ${language === 'en' ? 'pending' : 'bài chờ'}`}
           </span>
         </div>
 
         {pendingItems.length === 0 && !isLoading && (
           <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--muted)' }}>
-            Hàng đợi hiện đang trống. Không có tác phẩm nào chờ duyệt trong phòng này.
+            {t('admin_empty_pending')}
           </div>
         )}
 
         {pendingItems.map((item, idx) => {
           const isSelected = selectedIdx === idx;
           const authorDisplay =
-            item.author_display_name || item.author?.username || 'Ẩn danh';
+            item.author_display_name || item.author?.username || (language === 'en' ? 'Anonymous' : 'Ẩn danh');
           const authorUser = item.author?.username ? `@${item.author.username}` : '';
 
           return (
@@ -210,11 +216,11 @@ export function AdminPending({
                     <Icon name="eye" size={12} /> {item.locked_by}
                   </span>
                 ) : (
-                  <span className="badge b-wait">Chờ duyệt</span>
+                  <span className="badge b-wait">{t('admin_seg_pending')}</span>
                 )}
               </div>
               <b style={{ fontSize: '15px', margin: '3px 0 2px', display: 'block' }}>
-                {item.title}
+                {localize(item, 'title') || item.title}
               </b>
               <div className="muted" style={{ fontSize: '12.5px' }}>
                 {authorDisplay} {authorUser && `· ${authorUser}`}
@@ -275,7 +281,7 @@ export function AdminPending({
                 onClick={() => onOpenRejectModal && onOpenRejectModal(currentItem)}
                 disabled={isApproving}
               >
-                <Icon name="x" size={16} /> Từ chối
+                <Icon name="x" size={16} /> {t('admin_btn_reject')}
               </button>
               <button
                 type="button"
@@ -284,7 +290,9 @@ export function AdminPending({
                 disabled={isApproving}
               >
                 <Icon name="check" size={16} />{' '}
-                {isApproving ? 'Đang duyệt...' : 'Phê duyệt & trưng bày'}
+                {isApproving
+                  ? (language === 'en' ? 'Approving...' : 'Đang duyệt...')
+                  : (language === 'en' ? 'Approve & Exhibit' : 'Phê duyệt & trưng bày')}
               </button>
             </div>
           </div>
@@ -299,7 +307,7 @@ export function AdminPending({
           >
             {/* Editor fields */}
             <div>
-              <div className="fieldl">Tiêu đề</div>
+              <div className="fieldl">{language === 'en' ? 'Title' : 'Tiêu đề'}</div>
               <input
                 className="inp"
                 value={title}
@@ -308,7 +316,8 @@ export function AdminPending({
               />
 
               <div className="fieldl">
-                Tóm tắt trên thẻ <span>{summary.length} / 120</span>
+                {language === 'en' ? 'Card summary' : 'Tóm tắt trên thẻ'}{' '}
+                <span>{summary.length} / 120</span>
               </div>
               <input
                 className="inp"
@@ -318,7 +327,8 @@ export function AdminPending({
               />
 
               <div className="fieldl">
-                Nội dung đầy đủ <span>Admin được sửa câu chữ</span>
+                {language === 'en' ? 'Full story / content' : 'Nội dung đầy đủ'}{' '}
+                <span>{language === 'en' ? 'Editable by admin' : 'Admin được sửa câu chữ'}</span>
               </div>
               <textarea
                 className="inp area"
@@ -385,7 +395,9 @@ export function AdminPending({
                   disabled={isUploadingImage}
                 >
                   <Icon name="upload" size={15} />{' '}
-                  {isUploadingImage ? 'Đang tải...' : 'Tải ảnh khác'}
+                  {isUploadingImage
+                    ? (language === 'en' ? 'Uploading...' : 'Đang tải...')
+                    : (language === 'en' ? 'Upload different image' : 'Tải ảnh khác')}
                 </button>
                 <input
                   type="file"
@@ -397,7 +409,7 @@ export function AdminPending({
               </div>
 
               <div className="fieldl" style={{ marginTop: '18px' }}>
-                Xem trước trên tường
+                {language === 'en' ? 'Wall preview' : 'Xem trước trên tường'}
               </div>
               <div
                 style={{
@@ -426,8 +438,8 @@ export function AdminPending({
                     )}
                   </div>
                   <div className="cap">
-                    <h4>{title || 'Tiêu đề tác phẩm'}</h4>
-                    <p style={{ height: 'auto' }}>{summary || 'Tóm tắt câu chuyện...'}</p>
+                    <h4>{title || (language === 'en' ? 'Artwork Title' : 'Tiêu đề tác phẩm')}</h4>
+                    <p style={{ height: 'auto' }}>{summary || (language === 'en' ? 'Story summary...' : 'Tóm tắt câu chuyện...')}</p>
                   </div>
                 </article>
               </div>
@@ -447,7 +459,11 @@ export function AdminPending({
             color: 'var(--muted)',
           }}
         >
-          <div>Chọn một tác phẩm từ hàng đợi bên trái để bắt đầu kiểm duyệt</div>
+          <div>
+            {language === 'en'
+              ? 'Select an artwork from the left queue to begin moderation'
+              : 'Chọn một tác phẩm từ hàng đợi bên trái để bắt đầu kiểm duyệt'}
+          </div>
         </div>
       )}
     </>

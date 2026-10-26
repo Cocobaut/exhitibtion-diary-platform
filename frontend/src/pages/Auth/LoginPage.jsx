@@ -6,9 +6,11 @@ import { RegisterModal } from './RegisterModal';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function LoginPage({ onLoginSuccess, onExploreGuest }) {
-  const { login } = useAuth();
+  const { login, enterGuestMode } = useAuth();
+  const { language, setLanguage } = useLanguage();
   const [account, setAccount] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -20,44 +22,23 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isForgotOpen, setIsForgotOpen] = useState(false);
 
-  // Quick Preset Accounts for fast evaluation & testing
-  const demoAccounts = [
-    { label: 'Khách tham quan', user: 'regular_user', pass: 'UserPass123@', role: 'USER', icon: 'user' },
-    { label: 'Quản trị viên (An)', user: 'admin_tester', pass: 'AdminPass123@', role: 'ADMIN', icon: 'shield' },
-    { label: 'Chủ sở hữu (Owner)', user: 'owner_tester', pass: 'OwnerPass123@', role: 'OWNER', icon: 'crown' },
-  ];
-
-  const handleQuickFill = async (demo) => {
-    setAccount(demo.user);
-    setPassword(demo.pass);
-    setErrorMsg('');
-    setInfoMsg(`Đã chọn tài khoản mẫu: ${demo.label}`);
-
-    // Auto submit demo login for supreme convenience
-    setIsLoading(true);
-    try {
-      const res = await authService.login({
-        account: demo.user,
-        password: demo.pass,
-      });
-
-      if (res && res.access_token) {
-        login(res);
-      }
-      setIsLoading(false);
-      if (onLoginSuccess) {
-        onLoginSuccess(res);
-      }
-    } catch (err) {
-      setIsLoading(false);
-      console.warn('Demo login error:', err);
+  const handleGuestEntry = () => {
+    if (enterGuestMode) {
+      enterGuestMode();
+    }
+    if (onExploreGuest) {
+      onExploreGuest();
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!account.trim() || !password) {
-      setErrorMsg('Vui lòng nhập đầy đủ tài khoản và mật khẩu.');
+      setErrorMsg(
+        language === 'en'
+          ? 'Please enter both your account and password.'
+          : 'Vui lòng nhập đầy đủ tài khoản và mật khẩu.'
+      );
       return;
     }
 
@@ -82,11 +63,24 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
     } catch (err) {
       setIsLoading(false);
       if (err.errorCode === 'INVALID_CREDENTIALS' || err.status === 401) {
-        setErrorMsg('Tài khoản hoặc mật khẩu không chính xác.');
+        setErrorMsg(
+          language === 'en'
+            ? 'Incorrect username or password.'
+            : 'Tài khoản hoặc mật khẩu không chính xác.'
+        );
       } else if (err.errorCode === 'ACCOUNT_LOCKED' || err.status === 403) {
-        setErrorMsg('Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên.');
+        setErrorMsg(
+          language === 'en'
+            ? 'Your account has been locked. Please contact an administrator.'
+            : 'Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên.'
+        );
       } else {
-        setErrorMsg(err.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.');
+        setErrorMsg(
+          err.message ||
+            (language === 'en'
+              ? 'An error occurred. Please try again.'
+              : 'Đã có lỗi xảy ra. Vui lòng thử lại.')
+        );
       }
     }
   };
@@ -96,7 +90,11 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
     setAccount(username);
     setPassword('');
     setErrorMsg('');
-    setInfoMsg('Tài khoản tạo thành công. Mời bạn nhập mật khẩu để bước vào bảo tàng.');
+    setInfoMsg(
+      language === 'en'
+        ? 'Account created successfully! Please enter your password to enter the museum.'
+        : 'Tài khoản tạo thành công. Mời bạn nhập mật khẩu để bước vào bảo tàng.'
+    );
   };
 
   const handleForgotSuccess = ({ username }) => {
@@ -104,7 +102,11 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
     setAccount(username);
     setPassword('');
     setErrorMsg('');
-    setInfoMsg('Đổi mật khẩu thành công. Mời bạn đăng nhập bằng mật khẩu mới.');
+    setInfoMsg(
+      language === 'en'
+        ? 'Password updated successfully! Please sign in with your new password.'
+        : 'Đổi mật khẩu thành công. Mời bạn đăng nhập bằng mật khẩu mới.'
+    );
   };
 
   return (
@@ -123,6 +125,63 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
           WebkitBackdropFilter: 'blur(10px)',
         }}
       />
+
+      {/* Top-Right Language Switcher */}
+      <div
+        className="glass"
+        style={{
+          position: 'absolute',
+          top: '24px',
+          right: '32px',
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '2px',
+          background: 'rgba(255, 255, 255, 0.22)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255, 255, 255, 0.35)',
+          borderRadius: '24px',
+          padding: '4px 8px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setLanguage('vi')}
+          style={{
+            background: language === 'vi' ? 'var(--gold)' : 'transparent',
+            color: language === 'vi' ? '#2B1810' : '#F3EADD',
+            fontWeight: 700,
+            fontSize: '12.5px',
+            border: 'none',
+            borderRadius: '16px',
+            padding: '4px 10px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          VI
+        </button>
+        <span style={{ color: 'rgba(243, 234, 221, 0.55)', fontSize: '13px', margin: '0 1px' }}>/</span>
+        <button
+          type="button"
+          onClick={() => setLanguage('en')}
+          style={{
+            background: language === 'en' ? 'var(--gold)' : 'transparent',
+            color: language === 'en' ? '#2B1810' : '#F3EADD',
+            fontWeight: 700,
+            fontSize: '12.5px',
+            border: 'none',
+            borderRadius: '16px',
+            padding: '4px 10px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          EN
+        </button>
+      </div>
 
       {/* Center Museum Entrance Card */}
       <div
@@ -158,7 +217,7 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
             marginBottom: '4px',
           }}
         >
-          ✦ The Name of Feeling Museum ✦
+          ✦ {language === 'en' ? 'The Name of Feeling Museum' : 'Bảo tàng Tên của Cảm xúc'} ✦
         </div>
 
         <h1
@@ -170,7 +229,7 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
             letterSpacing: '.02em',
           }}
         >
-          Bảo Tàng Cảm Xúc
+          {language === 'en' ? 'Museum of Feelings' : 'Bảo Tàng Cảm Xúc'}
         </h1>
 
         <div
@@ -182,7 +241,9 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
             lineHeight: 1.4,
           }}
         >
-          “Mỗi cảm xúc đều tìm thấy một góc nương náu...”
+          {language === 'en'
+            ? '“Every feeling finds a gentle sanctuary...”'
+            : '“Mỗi cảm xúc đều tìm thấy một góc nương náu...”'}
         </div>
 
         {/* Notifications / Alerts */}
@@ -229,11 +290,11 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
         {/* Form Inputs */}
         <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
           <div className="fieldl" style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span>Tên đăng nhập hoặc Email</span>
+            <span>{language === 'en' ? 'Username or Email' : 'Tên đăng nhập hoặc Email'}</span>
           </div>
           <input
             className="inp focus"
-            placeholder="ví dụ: linh.ng hoặc email@example.com"
+            placeholder={language === 'en' ? 'e.g. linh.ng or email@example.com' : 'ví dụ: linh.ng hoặc email@example.com'}
             value={account}
             onChange={(e) => {
               setAccount(e.target.value);
@@ -252,13 +313,15 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
           />
 
           <div className="fieldl" style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>Mật khẩu</span>
+            <span>{language === 'en' ? 'Password' : 'Mật khẩu'}</span>
             <div style={{ display: 'flex', gap: '14px', fontSize: '12px' }}>
               <span
                 style={{ color: 'var(--ink2)', cursor: 'pointer', userSelect: 'none' }}
                 onClick={() => setShowPassword((prev) => !prev)}
               >
-                {showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                {showPassword
+                  ? (language === 'en' ? 'Hide password' : 'Ẩn mật khẩu')
+                  : (language === 'en' ? 'Show password' : 'Hiện mật khẩu')}
               </span>
               <span
                 style={{ color: 'var(--acc)', cursor: 'pointer', fontWeight: 600 }}
@@ -267,7 +330,7 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
                   setIsForgotOpen(true);
                 }}
               >
-                Quên mật khẩu?
+                {language === 'en' ? 'Forgot password?' : 'Quên mật khẩu?'}
               </span>
             </div>
           </div>
@@ -275,7 +338,7 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
           <input
             className="inp focus"
             type={showPassword ? 'text' : 'password'}
-            placeholder="Nhập mật khẩu của bạn"
+            placeholder={language === 'en' ? 'Enter your password' : 'Nhập mật khẩu của bạn'}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
@@ -312,7 +375,11 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
               }}
               disabled={isLoading}
             >
-              <span>{isLoading ? 'Đang mở cánh cửa bảo tàng...' : 'Bước vào bảo tàng'}</span>
+              <span>
+                {isLoading
+                  ? (language === 'en' ? 'Opening museum doors...' : 'Đang mở cánh cửa bảo tàng...')
+                  : (language === 'en' ? 'Enter the museum' : 'Bước vào bảo tàng')}
+              </span>
               {!isLoading && <span>→</span>}
             </button>
           </div>
@@ -323,7 +390,7 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
           <button
             type="button"
             className="btn line"
-            onClick={onExploreGuest}
+            onClick={handleGuestEntry}
             style={{
               width: '100%',
               padding: '10px',
@@ -334,71 +401,13 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
               background: 'transparent',
             }}
           >
-            Dạo bước tham quan (Khách vãng lai)
+            {language === 'en' ? '✦ Wander as Guest' : 'Dạo bước tham quan (Khách vãng lai)'}
           </button>
-        </div>
-
-        {/* Quick Demo Accounts Helper Strip */}
-        <div
-          style={{
-            marginTop: '20px',
-            paddingTop: '16px',
-            borderTop: '1px dashed var(--line)',
-          }}
-        >
-          <div
-            style={{
-              fontSize: '12px',
-              color: 'var(--ink2)',
-              marginBottom: '10px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-            }}
-          >
-            <span>✦</span>
-            <span>Trải nghiệm nhanh theo vai trò:</span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            {demoAccounts.map((d) => (
-              <button
-                key={d.user}
-                type="button"
-                onClick={() => handleQuickFill(d)}
-                style={{
-                  background: 'var(--paper2)',
-                  border: '1px solid var(--line)',
-                  borderRadius: '20px',
-                  padding: '5px 12px',
-                  fontSize: '12px',
-                  color: 'var(--ink)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--acc)';
-                  e.currentTarget.style.background = '#fff';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--line)';
-                  e.currentTarget.style.background = 'var(--paper2)';
-                }}
-              >
-                <span>{d.role === 'OWNER' ? '👑' : d.role === 'ADMIN' ? '🛡️' : '👤'}</span>
-                <b>{d.label}</b>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Registration Prompt */}
         <div className="muted" style={{ marginTop: '18px', fontSize: '13.5px' }}>
-          Chưa có tài khoản?{' '}
+          {language === 'en' ? "Don't have an account? " : 'Chưa có tài khoản? '}
           <b
             style={{ color: 'var(--acc)', cursor: 'pointer', textDecoration: 'underline' }}
             onClick={() => {
@@ -406,7 +415,7 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
               setIsRegisterOpen(true);
             }}
           >
-            Đăng ký thành viên
+            {language === 'en' ? 'Sign up' : 'Đăng ký thành viên'}
           </b>
         </div>
       </div>

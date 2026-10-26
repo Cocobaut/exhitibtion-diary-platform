@@ -3,6 +3,7 @@ import { TopNav } from '../../components/layout/TopNav';
 import { Icon } from '../../components/common/Icons';
 import { notebookService } from '../../services/notebookService';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function NotebookPage({
   notebookItems = [],
@@ -11,6 +12,7 @@ export function NotebookPage({
   onOpenThemeModal,
 }) {
   const { user } = useAuth();
+  const { language, localize, t } = useLanguage();
 
   const [filter, setFilter] = useState('all'); // 'all', 'mailbox', 'lantern'
   const [search, setSearch] = useState('');
@@ -54,15 +56,19 @@ export function NotebookPage({
           const mapped = data.items.map((it) => ({
             id: it.id,
             source: it.source,
-            sourceLabel: it.source_label || (it.source === 'mailbox' ? 'Hòm thư' : 'Lồng đèn hạ xuống · Phòng 2'),
+            sourceLabel: it.source_label || (it.source === 'mailbox' ? (language === 'en' ? 'Mailbox' : 'Hòm thư') : (language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2')),
             badgeClass: it.badge_class || (it.source === 'mailbox' ? 'b-ok' : 'b-wait'),
             icon: it.icon || (it.source === 'mailbox' ? 'sparkle' : 'r2'),
             title: it.title,
+            title_vi: it.title_vi,
+            title_en: it.title_en,
             content: it.content,
-            author: it.author || 'Người lạ',
+            content_vi: it.content_vi,
+            content_en: it.content_en,
+            author: it.author || (language === 'en' ? 'Stranger' : 'Người lạ'),
             category: it.category,
             symbol: it.symbol || 'heart',
-            savedAt: it.saved_at || 'Gần đây',
+            savedAt: it.saved_at || (language === 'en' ? 'Recently' : 'Gần đây'),
             source_id: it.source_id,
             artwork_id: it.artwork_id,
             draw_id: it.draw_id,
@@ -135,9 +141,9 @@ export function NotebookPage({
     <div className="stage" style={{ background: 'var(--wall)' }}>
       {/* Top Header */}
       <TopNav
-        roomNo="SỔ TAY"
-        roomName="Sổ tay Ký ức"
-        searchPlaceholder="Tìm kiếm thông điệp, thư đã lưu…"
+        roomNo="NOTEBOOK"
+        roomName={t('nav_notebook')}
+        searchPlaceholder={language === 'en' ? 'Search saved messages, letters…' : 'Tìm kiếm thông điệp, thư đã lưu…'}
         searchValue={search}
         onSearchChange={handleSearchChange}
         onOpenNotifications={onOpenNotifications}
@@ -176,25 +182,25 @@ export function NotebookPage({
             onClick={() => setFilter('all')}
             style={{ cursor: 'pointer' }}
           >
-            Tất cả ({totalCount})
+            {language === 'en' ? `All (${totalCount})` : `Tất cả (${totalCount})`}
           </span>
           <span
             className={`chip glass ${filter === 'mailbox' ? 'on' : ''}`}
             onClick={() => setFilter('mailbox')}
             style={{ cursor: 'pointer' }}
           >
-            <Icon name="sparkle" size={14} /> Từ Hòm thư ({mailboxCount})
+            <Icon name="sparkle" size={14} /> {language === 'en' ? `From Mailbox (${mailboxCount})` : `Từ Hòm thư (${mailboxCount})`}
           </span>
           <span
             className={`chip glass ${filter === 'lantern' ? 'on' : ''}`}
             onClick={() => setFilter('lantern')}
             style={{ cursor: 'pointer' }}
           >
-            <Icon name="r2" size={14} /> Từ Lồng đèn ({lanternCount})
+            <Icon name="r2" size={14} /> {language === 'en' ? `From Lanterns (${lanternCount})` : `Từ Lồng đèn (${lanternCount})`}
           </span>
           {isLoading && (
             <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
-              Đang tải...
+              {language === 'en' ? 'Loading...' : 'Đang tải...'}
             </span>
           )}
         </div>
@@ -202,14 +208,14 @@ export function NotebookPage({
 
       {/* Notebook Cards Container */}
       <div
-        className="abs"
+        className="abs custom-scrollbar notebook-scroll"
         style={{
-          left: '30px',
-          right: '30px',
+          left: 0,
+          right: 0,
           top: '144px',
-          bottom: '30px',
+          bottom: 0,
           overflowY: 'auto',
-          paddingBottom: '30px',
+          padding: '0 clamp(24px, 4vw, 48px) 44px',
         }}
       >
         {displayItems.length === 0 ? (
@@ -222,11 +228,12 @@ export function NotebookPage({
           >
             <div style={{ fontSize: '40px', color: 'var(--gold)', marginBottom: '12px' }}>✦</div>
             <h3 style={{ fontFamily: 'var(--serif)', fontSize: '24px', color: 'var(--onw)' }}>
-              Sổ tay hiện đang trống
+              {language === 'en' ? 'Your notebook is currently empty' : 'Sổ tay hiện đang trống'}
             </h3>
             <p className="book" style={{ maxWidth: '480px', margin: '0 auto', fontSize: '15px' }}>
-              Bạn có thể rút thông điệp ở Hòm thư sảnh chính hoặc mở những bức thư Lồng đèn hạ xuống ở
-              Phòng 2 và bấm "Lưu vào sổ tay" để lưu giữ tại đây.
+              {language === 'en'
+                ? 'You can draw comforting messages from the lobby Mailbox or open landed lantern letters in Room 2 and click "Save to notebook" to preserve them here.'
+                : 'Bạn có thể rút thông điệp ở Hòm thư sảnh chính hoặc mở những bức thư Lồng đèn hạ xuống ở Phòng 2 và bấm "Lưu vào sổ tay" để lưu giữ tại đây.'}
             </p>
           </div>
         ) : (
@@ -267,7 +274,7 @@ export function NotebookPage({
                 <div className="row between" style={{ marginBottom: '12px' }}>
                   <span className={`badge ${item.badgeClass || 'b-ok'}`}>
                     <Icon name={item.icon || 'sparkle'} size={13} />
-                    {item.sourceLabel || (item.source === 'mailbox' ? 'Hòm thư' : 'Lồng đèn hạ xuống · Phòng 2')}
+                    {item.sourceLabel || (item.source === 'mailbox' ? (language === 'en' ? 'Mailbox' : 'Hòm thư') : (language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2'))}
                   </span>
                   <span className="muted" style={{ fontSize: '12.5px' }}>
                     {item.savedAt}
@@ -275,7 +282,7 @@ export function NotebookPage({
                 </div>
 
                 {/* Optional Letter Title */}
-                {item.title && (
+                {(item.title || item.title_en || item.title_vi) && (
                   <div
                     className="book"
                     style={{
@@ -286,7 +293,7 @@ export function NotebookPage({
                       marginBottom: '8px',
                     }}
                   >
-                    {item.title}
+                    {localize(item, 'title')}
                   </div>
                 )}
 
@@ -305,7 +312,7 @@ export function NotebookPage({
                     WebkitBoxOrient: 'vertical',
                   }}
                 >
-                  {item.content}
+                  {localize(item, 'content')}
                 </div>
 
                 {/* Author & Footer Actions */}
@@ -371,14 +378,14 @@ export function NotebookPage({
             <div className="row between" style={{ marginBottom: '14px' }}>
               <span className={`badge ${readingItem.badgeClass || 'b-ok'}`}>
                 <Icon name={readingItem.icon || 'sparkle'} size={13} />
-                {readingItem.sourceLabel || (readingItem.source === 'mailbox' ? 'Hòm thư' : 'Lồng đèn hạ xuống · Phòng 2')}
+                {readingItem.sourceLabel || (readingItem.source === 'mailbox' ? (language === 'en' ? 'Mailbox' : 'Hòm thư') : (language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2'))}
               </span>
               <span className="muted" style={{ fontSize: '13px' }}>
                 {readingItem.savedAt}
               </span>
             </div>
 
-            {readingItem.title && (
+            {(readingItem.title || readingItem.title_en || readingItem.title_vi) && (
               <h2
                 className="book"
                 style={{
@@ -389,7 +396,7 @@ export function NotebookPage({
                   margin: '4px 0 14px',
                 }}
               >
-                {readingItem.title}
+                {localize(readingItem, 'title')}
               </h2>
             )}
 
@@ -403,7 +410,7 @@ export function NotebookPage({
                 margin: '14px 0 20px',
               }}
             >
-              {readingItem.content}
+              {localize(readingItem, 'content')}
             </div>
 
             <div
@@ -415,7 +422,7 @@ export function NotebookPage({
               }}
             >
               <span className="hand" style={{ fontSize: '22px', color: '#5C341F' }}>
-                — {readingItem.author}
+                — {readingItem.author || (language === 'en' ? 'Stranger' : 'Người lạ')}
               </span>
 
               <button
@@ -426,7 +433,7 @@ export function NotebookPage({
                   setReadingItem(null);
                 }}
               >
-                <Icon name="x" size={14} /> Bỏ lưu khỏi sổ tay
+                <Icon name="x" size={14} /> {language === 'en' ? 'Remove from notebook' : 'Bỏ lưu khỏi sổ tay'}
               </button>
             </div>
           </div>
@@ -435,7 +442,11 @@ export function NotebookPage({
 
       {/* Counter */}
       <div className="counter">
-        <i>Sổ tay lưu lại những dòng chữ nâng đỡ bạn trên từng chặng đường.</i>
+        <i>
+          {language === 'en'
+            ? 'A notebook preserving comforting words to support you on your journey.'
+            : 'Sổ tay lưu lại những dòng chữ nâng đỡ bạn trên từng chặng đường.'}
+        </i>
       </div>
     </div>
   );

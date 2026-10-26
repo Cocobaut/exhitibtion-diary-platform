@@ -3,8 +3,10 @@ import { Icon } from '../../components/common/Icons';
 import { DiaryPersonal } from './DiaryPersonal';
 import { DiaryCommunity } from './DiaryCommunity';
 import { WriteDiaryModal } from './WriteDiaryModal';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
+  const { language, setLanguage, t } = useLanguage();
   const [activeTab, setActiveTab] = useState(0); // 0: Bản thân, 1: Cộng đồng
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -38,8 +40,8 @@ export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
   const handleSaveDiary = (savedData) => {
     triggerToast(
       savedData?.is_public
-        ? '✦ Trang nhật ký đã lưu và gửi vào hàng đợi duyệt công khai!'
-        : '✦ Trang nhật ký đã được lưu an toàn vào cuốn sổ của bạn.'
+        ? (language === 'en' ? '✦ Diary page saved and queued for public approval!' : '✦ Trang nhật ký đã lưu và gửi vào hàng đợi duyệt công khai!')
+        : (language === 'en' ? '✦ Diary page safely saved to your notebook.' : '✦ Trang nhật ký đã được lưu an toàn vào cuốn sổ của bạn.')
     );
     setRefreshTrigger((prev) => prev + 1);
   };
@@ -49,8 +51,8 @@ export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
       {/* Diary Header */}
       <div className="top">
         <div className="room-tag">
-          <small>Không gian riêng</small>
-          <b>Nhật ký</b>
+          <small>{language === 'en' ? 'Private space' : 'Không gian riêng'}</small>
+          <b>{language === 'en' ? 'Diary' : 'Nhật ký'}</b>
         </div>
 
         <div className="row" style={{ gap: '12px', flex: 1, justifyContent: 'center' }}>
@@ -67,7 +69,7 @@ export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
                 cursor: 'pointer',
               }}
             >
-              <Icon name="lock" size={14} /> Bản thân
+              <Icon name="lock" size={14} /> {language === 'en' ? 'Personal' : 'Bản thân'}
             </span>
             <span
               className={activeTab === 1 ? 'on' : ''}
@@ -78,7 +80,7 @@ export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
                 cursor: 'pointer',
               }}
             >
-              <Icon name="globe" size={14} /> Cộng đồng
+              <Icon name="globe" size={14} /> {language === 'en' ? 'Community' : 'Cộng đồng'}
             </span>
           </div>
 
@@ -87,9 +89,9 @@ export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
             <input
               type="text"
               placeholder={
-                activeTab === 0
-                  ? 'Tìm trong nhật ký của bạn…'
-                  : 'Tìm trong nhật ký cộng đồng…'
+                language === 'en'
+                  ? (activeTab === 0 ? 'Search in your diary…' : 'Search in community diary…')
+                  : (activeTab === 0 ? 'Tìm trong nhật ký của bạn…' : 'Tìm trong nhật ký cộng đồng…')
               }
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -103,27 +105,39 @@ export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
             className="btn main"
             onClick={() => handleOpenWrite(null)}
           >
-            <Icon name="edit" size={16} /> Viết nhật ký mới
+            <Icon name="edit" size={16} /> {language === 'en' ? '✦ New Entry' : '✦ Viết nhật ký mới'}
           </button>
 
           <button
             type="button"
             className="iconbtn glass"
-            title="Bảng màu"
+            title={language === 'en' ? 'Color theme' : 'Bảng màu'}
             onClick={onOpenThemeModal}
           >
             <Icon name="palette" size={20} />
           </button>
 
           <div className="lang glass">
-            <b className="on">VI</b>
-            <b>EN</b>
+            <b
+              className={language === 'vi' ? 'on' : ''}
+              onClick={() => setLanguage('vi')}
+              style={{ cursor: 'pointer' }}
+            >
+              VI
+            </b>
+            <b
+              className={language === 'en' ? 'on' : ''}
+              onClick={() => setLanguage('en')}
+              style={{ cursor: 'pointer' }}
+            >
+              EN
+            </b>
           </div>
 
           <button
             type="button"
             className="iconbtn glass"
-            title="Thông báo"
+            title={language === 'en' ? 'Notifications' : 'Thông báo'}
             onClick={onOpenNotifications}
           >
             <Icon name="bell" size={20} />

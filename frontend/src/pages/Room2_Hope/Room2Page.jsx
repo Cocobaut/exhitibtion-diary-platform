@@ -7,13 +7,8 @@ import { ReleaseLanternModal } from './ReleaseLanternModal';
 import { LanternLandedModal } from './LanternLandedModal';
 import { room2Service } from '../../services/room2Service';
 import { useAuth } from '../../context/AuthContext';
-
-const FILTER_MAPPING = [
-  { label: 'Tất cả', value: 'all' },
-  { label: 'Của tôi', value: 'mine' },
-  { label: 'Lồng đèn đã mở', value: 'opened' },
-  { label: 'Đang chờ ngày hạ xuống', value: 'locked' },
-];
+import { useGuestGuard } from '../../context/GuestGuardContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function Room2Page({
   onOpenNotifications,
@@ -21,7 +16,14 @@ export function Room2Page({
   onNavigate,
   onSaveToNotebook,
 }) {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
+  const { guardAction } = useGuestGuard();
+  const { t, language } = useLanguage();
+
+  const filterMapping = [
+    { label: t('r2_filter_all'), value: 'all' },
+    { label: t('r2_filter_mine'), value: 'mine' },
+  ];
 
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchValue, setSearchValue] = useState('');
@@ -90,13 +92,23 @@ export function Room2Page({
             total_opened: data.total_opened ?? 128,
           });
         }
+
+        // Silent auto-landing check result
+        if (data?.freshly_landed && data.freshly_landed.length > 0) {
+          triggerToast(
+            language === 'en'
+              ? '✦ A future lantern of yours has reached its time and landed gently on the dunes! ✦'
+              : '✦ Một lồng đèn gửi gắm tương lai của bạn đã tới hạn và hạ cánh êm đềm! ✦'
+          );
+          checkReadyToFall();
+        }
       }
     } catch (err) {
       console.warn('Error loading lanterns from API, using fallback:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [activeFilter, debouncedSearch]);
+  }, [activeFilter, debouncedSearch, language]);
 
   // Load personal lantern & countdown widget
   const loadPersonalLantern = useCallback(async () => {
@@ -229,14 +241,15 @@ export function Room2Page({
         isLanded={showLandedModal}
         lanterns={lanterns}
         personalLantern={personalLantern}
+        activeFilter={activeFilter}
         onOpenLandedModal={handleOpenLantern}
       />
 
       {/* Top Header */}
       <TopNav
         roomNo="02"
-        roomName="Bầu trời Lồng đèn"
-        searchPlaceholder="Tìm lồng đèn theo từ khoá hoặc bút danh…"
+        roomName={t('r2_name')}
+        searchPlaceholder={t('r2_search_placeholder')}
         searchValue={searchValue}
         onSearchChange={handleSearchChange}
         onOpenNotifications={onOpenNotifications}
@@ -295,9 +308,9 @@ export function Room2Page({
         >
           <span style={{ fontSize: '20px', color: 'var(--gold)' }}>✦</span>
           <div>
-            <b>Lồng đèn của bạn đã tới hẹn hạ xuống!</b>
+            <b>{language === 'en' ? 'Your lantern has landed!' : 'Lồng đèn của bạn đã tới hẹn hạ xuống!'}</b>
             <div style={{ fontSize: '12.5px', color: '#EAD2BE' }}>
-              &ldquo;{readyLanterns[0].title}&rdquo; đang đợi bạn mở đọc. Nhấn vào đây để xem thư.
+              &ldquo;{readyLanterns[0].title}&rdquo; {language === 'en' ? 'is waiting for you. Click here to read.' : 'đang đợi bạn mở đọc. Nhấn vào đây để xem thư.'}
             </div>
           </div>
           <button
@@ -310,7 +323,7 @@ export function Room2Page({
               setShowReadyBanner(false);
             }}
           >
-            Mở thư
+            {language === 'en' ? 'Open' : 'Mở thư'}
           </button>
         </div>
       )}
@@ -318,11 +331,17 @@ export function Room2Page({
       {/* Filter Chips & Action */}
       <div className="chips-row">
         <div className="chips">
-          {FILTER_MAPPING.map(({ label, value }) => (
+          {filterMapping.map(({ label, value }) => (
             <span
               key={value}
               className={`chip glass ${activeFilter === value ? 'on' : ''}`}
-              onClick={() => setActiveFilter(value)}
+              onClick={() => {
+                if (value === 'mine') {
+                  guardAction(() => setActiveFilter('mine'), 'xem lồng đèn của tôi');
+                } else {
+                  setActiveFilter(value);
+                }
+              }}
               style={{ cursor: 'pointer' }}
             >
               {label}
@@ -330,7 +349,7 @@ export function Room2Page({
           ))}
           {isLoading && (
             <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
-              Đang tải...
+              {language === 'en' ? 'Loading...' : 'Đang tải...'}
             </span>
           )}
         </div>
@@ -338,91 +357,13 @@ export function Room2Page({
         <button
           type="button"
           className="btn main"
-          onClick={() => setShowReleaseModal(true)}
-        >
-          ✦ Thả lồng đèn
-        </button>
-      </div>
-
-      {/* Personal Flying Lantern Countdown Widget */}
-      {!showLandedModal && (
-        <div
-          className="abs"
-          onClick={() => handleOpenLantern(personalLantern || MOCK_LANTERN_LETTERS[0])}
-          title="Nhấn để kéo lồng đèn của bạn xuống"
-          style={{
-            left: '1060px',
-            top: '168px',
-            width: '260px',
-            zIndex: 7,
-            background: 'rgba(30,12,18,.78)',
-            border: '1px solid rgba(255,235,220,.24)',
-            borderRadius: '14px',
-            padding: '12px 14px',
-            color: '#F6E9DD',
-            cursor: 'pointer',
-            transition: 'transform 0.15s ease',
-            backdropFilter: 'blur(8px)',
+          onClick={() => {
+            guardAction(() => setShowReleaseModal(true), 'thả lồng đèn lên bầu trời');
           }}
         >
-          <div className="row" style={{ gap: '6px', fontSize: '13px', color: '#F2C9A8' }}>
-            <Icon name="lock" size={14} /> Lồng đèn riêng của bạn
-          </div>
-          <div
-            className="serif"
-            style={{
-              fontSize: '18px',
-              fontWeight: 700,
-              margin: '3px 0 8px',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {personalLantern?.title || 'Gửi mình của năm 2030'}
-          </div>
-
-          {remainingSeconds === 0 ? (
-            <div
-              style={{
-                background: 'rgba(127,25,22,0.6)',
-                borderRadius: '8px',
-                padding: '8px 10px',
-                textAlign: 'center',
-                color: '#FFF0D2',
-                fontWeight: 600,
-                fontSize: '13px',
-              }}
-            >
-              ✦ Đã tới giờ hẹn · Nhấn để mở thư
-            </div>
-          ) : (
-            <div className="row" style={{ gap: '6px' }}>
-              {formatCountdown(remainingSeconds ?? 126144000).map(([n, u]) => (
-                <div
-                  key={u}
-                  style={{
-                    flex: 1,
-                    textAlign: 'center',
-                    background: 'rgba(255,240,225,.08)',
-                    borderRadius: '8px',
-                    padding: '4px 0',
-                  }}
-                >
-                  <b style={{ fontSize: '16px' }}>{n}</b>
-                  <div style={{ fontSize: '10.5px', color: '#D9BBA8' }}>{u}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div style={{ fontSize: '12px', color: '#D9BBA8', marginTop: '8px' }}>
-            {remainingSeconds === 0
-              ? 'Lồng đèn đã hạ cánh an toàn'
-              : 'Đang đếm ngược tới ngày hạ xuống (nhấn để mở)'}
-          </div>
-        </div>
-      )}
+          {t('r2_btn_release')}
+        </button>
+      </div>
 
       {/* Interactive "Kéo xuống để đọc" Tag */}
       {!showLandedModal && (
@@ -447,15 +388,16 @@ export function Room2Page({
               transition: 'all 0.2s ease',
             }}
           >
-            <span style={{ color: 'var(--gold)' }}>✦</span> nhấn hoặc kéo lồng đèn xuống để đọc ↓
+            <span style={{ color: 'var(--gold)' }}>✦</span> {language === 'en' ? 'tap or pull lantern down to read ↓' : 'nhấn hoặc kéo lồng đèn xuống để đọc ↓'}
           </span>
         </div>
       )}
 
       {/* Footer Counter */}
       <div className="counter">
-        {stats.total_lanterns.toLocaleString('vi-VN')} lồng đèn đang bay ·{' '}
-        {stats.total_opened.toLocaleString('vi-VN')} lồng đèn đã hạ xuống năm nay
+        {language === 'en'
+          ? `${stats.total_lanterns.toLocaleString('en-US')} lanterns drifting · ${stats.total_opened.toLocaleString('en-US')} lanterns landed this year`
+          : `${stats.total_lanterns.toLocaleString('vi-VN')} lồng đèn đang bay · ${stats.total_opened.toLocaleString('vi-VN')} lồng đèn đã hạ xuống năm nay`}
       </div>
 
       {/* Modals */}

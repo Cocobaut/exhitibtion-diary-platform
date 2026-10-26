@@ -2,8 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { MOODS } from '../../data/mockData';
 import { diaryService } from '../../services/diaryService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
+  const { language } = useLanguage();
+
   const getTodayISO = () => {
     const d = new Date();
     const pad = (n) => String(n).padStart(2, '0');
@@ -11,12 +14,10 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
   };
 
   const [date, setDate] = useState(getTodayISO);
-  const [title, setTitle] = useState('Một ngày bình thường');
+  const [title, setTitle] = useState('');
   const [mood, setMood] = useState('Bình yên');
-  const [selectedFont, setSelectedFont] = useState('Lora');
-  const [content, setContent] = useState(
-    'Sáng nay trời mưa nhỏ. Mình ngồi ở quán quen, viết lại kế hoạch cho tháng tới mà không thấy áp lực như mọi khi...'
-  );
+  const [selectedFont, setSelectedFont] = useState('Lora'); // 'Lora' | 'Hand' | 'Sans'
+  const [content, setContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(true);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -24,6 +25,20 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
   const [errorMessage, setErrorMessage] = useState('');
 
   const fileInputRef = useRef(null);
+
+  const MOOD_TRANSLATIONS = {
+    'Bình yên': { vi: 'Bình yên', en: 'Peaceful' },
+    'Trầm lắng': { vi: 'Trầm lắng', en: 'Reflective' },
+    'Biết ơn': { vi: 'Biết ơn', en: 'Grateful' },
+    'Hy vọng': { vi: 'Hy vọng', en: 'Hopeful' },
+    'Mệt mỏi': { vi: 'Mệt mỏi', en: 'Exhausted' },
+  };
+
+  const fontOptions = [
+    { id: 'Lora', labelVi: 'Lora', labelEn: 'Lora', family: 'var(--book)' },
+    { id: 'Hand', labelVi: 'Viết tay', labelEn: 'Handwritten', family: 'var(--hand)' },
+    { id: 'Sans', labelVi: 'Gọn gàng', labelEn: 'Clean', family: 'var(--sans)' },
+  ];
 
   useEffect(() => {
     if (isOpen) {
@@ -52,18 +67,16 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
 
   if (!isOpen) return null;
 
-  const fontOptions = [
-    { label: 'Lora', family: 'var(--book)' },
-    { label: 'Viết tay', family: 'var(--hand)' },
-    { label: 'Gọn gàng', family: 'var(--sans)' },
-  ];
-
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
     if (previewUrls.length + files.length > 5) {
-      setErrorMessage('Chỉ được đính kèm tối đa 5 hình ảnh.');
+      setErrorMessage(
+        language === 'en'
+          ? 'You can attach up to 5 photos only.'
+          : 'Chỉ được đính kèm tối đa 5 hình ảnh.'
+      );
       return;
     }
 
@@ -83,7 +96,11 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
 
     const cleanContent = content.trim();
     if (!cleanContent) {
-      setErrorMessage('Nội dung trang nhật ký không được để trống.');
+      setErrorMessage(
+        language === 'en'
+          ? 'Diary entry content cannot be empty.'
+          : 'Nội dung trang nhật ký không được để trống.'
+      );
       return;
     }
 
@@ -134,7 +151,9 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
       const apiMsg =
         err?.response?.data?.message ||
         err?.message ||
-        'Không thể lưu trang nhật ký. Vui lòng kiểm tra lại.';
+        (language === 'en'
+          ? 'Could not save diary entry. Please try again.'
+          : 'Không thể lưu trang nhật ký. Vui lòng kiểm tra lại.');
       setErrorMessage(apiMsg);
     } finally {
       setIsSubmitting(false);
@@ -162,8 +181,16 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
 
         {/* Left Side: Editor */}
         <div>
-          <h2>{editData ? 'Chỉnh sửa nhật ký' : 'Viết nhật ký mới'}</h2>
-          <div className="sub">Không ai đọc được trang này nếu bạn không muốn.</div>
+          <h2>
+            {editData
+              ? (language === 'en' ? 'Edit Diary Entry' : 'Chỉnh sửa nhật ký')
+              : (language === 'en' ? 'Write New Entry' : 'Viết nhật ký mới')}
+          </h2>
+          <div className="sub">
+            {language === 'en'
+              ? 'No one can read this page unless you choose to share.'
+              : 'Không ai đọc được trang này nếu bạn không muốn.'}
+          </div>
 
           {errorMessage && (
             <div
@@ -183,7 +210,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '14px', marginTop: '10px' }}>
             <div>
-              <div className="fieldl">Ngày ghi</div>
+              <div className="fieldl">{language === 'en' ? 'Entry Date' : 'Ngày ghi'}</div>
               <input
                 type="date"
                 className="inp"
@@ -192,10 +219,10 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
               />
             </div>
             <div>
-              <div className="fieldl">Tiêu đề trang</div>
+              <div className="fieldl">{language === 'en' ? 'Entry Title' : 'Tiêu đề trang'}</div>
               <input
                 className="inp"
-                placeholder="Ví dụ: Một chiều bình yên..."
+                placeholder={language === 'en' ? 'e.g. A peaceful afternoon...' : 'Ví dụ: Một chiều bình yên...'}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 maxLength={150}
@@ -203,7 +230,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
             </div>
           </div>
 
-          <div className="fieldl">Tâm trạng</div>
+          <div className="fieldl">{language === 'en' ? 'Mood' : 'Tâm trạng'}</div>
           <div className="row" style={{ gap: '6px', flexWrap: 'wrap' }}>
             {Object.keys(MOODS).map((m) => (
               <span
@@ -213,21 +240,21 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
                 style={{ cursor: 'pointer' }}
               >
                 <i className="dot" style={{ background: MOODS[m] }} />
-                {m}
+                {MOOD_TRANSLATIONS[m]?.[language] || m}
               </span>
             ))}
           </div>
 
-          <div className="fieldl">Nội dung</div>
+          <div className="fieldl">{language === 'en' ? 'Content' : 'Nội dung'}</div>
           <div className="row" style={{ gap: '6px', marginBottom: '6px' }}>
             {fontOptions.map((opt) => (
               <span
-                key={opt.label}
-                className={`ichip ${selectedFont === opt.label ? 'on' : ''}`}
+                key={opt.id}
+                className={`ichip ${selectedFont === opt.id ? 'on' : ''}`}
                 style={{ fontFamily: opt.family, cursor: 'pointer' }}
-                onClick={() => setSelectedFont(opt.label)}
+                onClick={() => setSelectedFont(opt.id)}
               >
-                {opt.label}
+                {language === 'en' ? opt.labelEn : opt.labelVi}
               </span>
             ))}
             <span className="muted" style={{ marginLeft: '6px' }}>
@@ -237,23 +264,29 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
 
           <textarea
             className="inp area focus"
-            placeholder="Kể lại những gì diễn ra trong ngày hoặc những suy nghĩ của bạn..."
+            placeholder={
+              language === 'en'
+                ? 'Write about what happened today or share your thoughts...'
+                : 'Kể lại những gì diễn ra trong ngày hoặc những suy nghĩ của bạn...'
+            }
             style={{
               minHeight: '180px',
               fontFamily:
-                selectedFont === 'Viết tay'
+                selectedFont === 'Hand'
                   ? 'var(--hand)'
-                  : selectedFont === 'Gọn gàng'
+                  : selectedFont === 'Sans'
                   ? 'var(--sans)'
                   : 'var(--book)',
-              fontSize: selectedFont === 'Viết tay' ? '20px' : '16px',
+              fontSize: selectedFont === 'Hand' ? '20px' : '16px',
               lineHeight: 1.8,
             }}
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
 
-          <div className="fieldl">Ảnh đính kèm ({previewUrls.length}/5)</div>
+          <div className="fieldl">
+            {language === 'en' ? 'Attached Photos' : 'Ảnh đính kèm'} ({previewUrls.length}/5)
+          </div>
           <div className="row" style={{ gap: '10px', flexWrap: 'wrap' }}>
             {previewUrls.map((url, idx) => (
               <div
@@ -298,7 +331,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
               <div
                 className="drop"
                 onClick={() => fileInputRef.current?.click()}
-                title="Thêm ảnh"
+                title={language === 'en' ? 'Add photo' : 'Thêm ảnh'}
                 style={{
                   width: '84px',
                   height: '64px',
@@ -328,7 +361,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
         {/* Right Side: Privacy & Save */}
         <div style={{ paddingTop: '56px', display: 'flex', flexDirection: 'column' }}>
           <div className="fieldl" style={{ marginTop: 0 }}>
-            Ai được đọc?
+            {language === 'en' ? 'Who can read?' : 'Ai được đọc?'}
           </div>
 
           <div
@@ -337,10 +370,12 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
             onClick={() => setIsPrivate(true)}
           >
             <b>
-              <Icon name="lock" size={17} /> Chỉ mình tôi
+              <Icon name="lock" size={17} /> {language === 'en' ? 'Only Me' : 'Chỉ mình tôi'}
             </b>
             <div className="muted" style={{ fontSize: '12px' }}>
-              Lưu ngay, riêng tư tuyệt đối.
+              {language === 'en'
+                ? 'Saved instantly, completely private.'
+                : 'Lưu ngay, riêng tư tuyệt đối.'}
             </div>
           </div>
 
@@ -350,10 +385,12 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
             onClick={() => setIsPrivate(false)}
           >
             <b>
-              <Icon name="globe" size={17} /> Chia sẻ lên Cộng đồng
+              <Icon name="globe" size={17} /> {language === 'en' ? 'Share with Community' : 'Chia sẻ lên Cộng đồng'}
             </b>
             <div className="muted" style={{ fontSize: '12px' }}>
-              Vào hàng chờ duyệt. Nếu không được duyệt, trang vẫn ở lại nhật ký riêng của bạn.
+              {language === 'en'
+                ? 'Enters moderation queue. If not approved, it stays safely in your private diary.'
+                : 'Vào hàng chờ duyệt. Nếu không được duyệt, trang vẫn ở lại nhật ký riêng của bạn.'}
             </div>
           </div>
 
@@ -372,7 +409,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
               onClick={onClose}
               disabled={isSubmitting}
             >
-              Huỷ
+              {language === 'en' ? 'Cancel' : 'Huỷ'}
             </button>
             <button
               type="button"
@@ -380,7 +417,11 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
               onClick={handleSubmit}
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Đang lưu...' : editData ? 'Cập nhật trang' : 'Lưu trang này'}
+              {isSubmitting
+                ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+                : editData
+                ? (language === 'en' ? 'Update Entry' : 'Cập nhật trang')
+                : (language === 'en' ? 'Save This Entry' : 'Lưu trang này')}
             </button>
           </div>
         </div>

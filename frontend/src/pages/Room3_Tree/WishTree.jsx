@@ -1,7 +1,8 @@
-import React, { useId, useMemo } from 'react';
+import React, { useId, useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { rng, f } from '../../utils/rng';
 import { CATS, CAT_KEYS } from '../../data/mockData';
 import { toFrontendCategory, CATEGORY_MAP } from '../../services/room3Service';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const leafPath = (l, w) =>
   `M0 0 Q${f(l * 0.45)} ${f(-w)} ${f(l)} 0 Q${f(l * 0.45)} ${f(w)} 0 0Z`;
@@ -20,275 +21,573 @@ function stringToSeed(str) {
 export function WishTree({
   leaves = [],
   filterCategory,
-  selectedLeaf,
-  onSelectLeaf,
+  hoveredLeaf,
+  onHoverLeaf,
+  onOpenLeafModal,
+  onDrawRandomLeaf,
 }) {
+  const { language } = useLanguage();
   const compId = useId().replace(/:/g, '');
   const id = `wt_${compId}_`;
-  const r = rng(3);
 
-  // Generate branch skeleton
+  // Tree sway and shake animation state
+  const [swayAngle, setSwayAngle] = useState(0);
+  const [isShaking, setIsShaking] = useState(false);
+  const [fallingParticles, setFallingParticles] = useState([]);
+
+  // Interactive Slider State (located beside tree trunk on the right)
+  const [sliderX, setSliderX] = useState(0);
+  const [isSliding, setIsSliding] = useState(false);
+  const sliderDragStart = useRef(0);
+  const hasTriggeredDraw = useRef(false);
+  const maxSlideDistance = 94; // Compact half-size track slide range
+
+  const nextParticleId = useRef(1);
+
+  // Exact coordinates for balanced, fully visible tree with prominent trunk & roots
+  const cx = 600;
+  const base = 590; // Soil contact boundary
+  const crotchY = 400; // Main trunk height ~190px (1.5x taller than previous 125px)
+
+  // Generate 100% interconnected branch skeleton: every branch starts at its parent's exact endpoint
   const { br, tips } = useMemo(() => {
     const branches = [];
     const endTips = [];
-    const cx = 682;
-    const base = 812;
-    const genR = rng(3);
+    const genR = rng(23);
 
-    function grow(x, y, len, ang, d) {
-      const x2 = x + Math.cos(ang) * len;
-      const y2 = y + Math.sin(ang) * len;
-      const bend = (genR() - 0.5) * len * 0.3;
-      const qx = (x + x2) / 2 + Math.cos(ang + Math.PI / 2) * bend;
-      const qy = (y + y2) / 2 + Math.sin(ang + Math.PI / 2) * bend;
+    // Tier 0: Sculpted trunk (190px tall, majestic oak proportions)
+    branches.push([
+      `M${cx} ${base} Q${cx - 6} 495 ${cx} ${crotchY}`,
+      44, // Sturdy oak trunk
+    ]);
+
+    // Tier 1: 4 Primary Limbs starting EXACTLY at main crotch (cx, crotchY)
+    const t1Endpoints = [
+      { startX: cx, startY: crotchY, endX: cx - 135, endY: 330, ctrlX: cx - 68, ctrlY: 370, width: 28 },
+      { startX: cx, startY: crotchY, endX: cx - 46, endY: 295, ctrlX: cx - 23, ctrlY: 350, width: 24 },
+      { startX: cx, startY: crotchY, endX: cx + 46, endY: 295, ctrlX: cx + 23, ctrlY: 350, width: 24 },
+      { startX: cx, startY: crotchY, endX: cx + 135, endY: 330, ctrlX: cx + 68, ctrlY: 370, width: 28 },
+    ];
+
+    t1Endpoints.forEach((limb) => {
       branches.push([
-        `M${f(x)} ${f(y)} Q${f(qx)} ${f(qy)} ${f(x2)} ${f(y2)}`,
-        Math.max(1.4, d * d * 0.5),
+        `M${limb.startX} ${limb.startY} Q${limb.ctrlX} ${limb.ctrlY} ${limb.endX} ${limb.endY}`,
+        limb.width,
       ]);
-      if (d <= 3) endTips.push([x2, y2]);
-      if (d === 0) return;
-      const n = d >= 6 ? 2 : genR() < 0.3 ? 3 : 2;
-      const spread = d >= 6 ? 0.62 : 0.55;
-      for (let i = 0; i < n; i++) {
-        grow(
-          x2,
-          y2,
-          len * (0.72 + genR() * 0.12),
-          ang + (i - (n - 1) / 2) * spread * (0.8 + genR() * 0.5) + (genR() - 0.5) * 0.22,
-          d - 1
+    });
+
+    // Recursive child branch grower: child branches ALWAYS start at parent's (startX, startY)
+    function growBoughs(startX, startY, len, ang, depth) {
+      const endX = startX + Math.cos(ang) * len;
+      const endY = startY + Math.sin(ang) * len;
+      const bend = (genR() - 0.5) * len * 0.26;
+      const qx = (startX + endX) / 2 + Math.cos(ang + Math.PI / 2) * bend;
+      const qy = (startY + endY) / 2 + Math.sin(ang + Math.PI / 2) * bend;
+
+      // Scaled stroke width
+      const w = Math.max(4.5, depth * depth * 0.95);
+      branches.push([
+        `M${f(startX)} ${f(startY)} Q${f(qx)} ${f(qy)} ${f(endX)} ${f(endY)}`,
+        w,
+      ]);
+
+      // Tips for leaf attachment
+      if (depth <= 2) {
+        endTips.push([endX, endY]);
+      }
+
+      if (depth <= 1) return;
+
+      // Children branches: all begin at this branch's end point (endX, endY)
+      const count = depth >= 3 ? (genR() < 0.35 ? 3 : 2) : 2;
+      const spread = depth >= 3 ? 0.60 : 0.48;
+
+      for (let i = 0; i < count; i++) {
+        const angleOffset = (i - (count - 1) / 2) * spread * (0.85 + genR() * 0.3);
+        growBoughs(
+          endX,
+          endY,
+          len * (0.68 + genR() * 0.12),
+          ang + angleOffset + (genR() - 0.5) * 0.12,
+          depth - 1
         );
       }
     }
 
-    grow(cx, base, 150, -Math.PI / 2, 7);
+    // Tier 2: Directly connected to Tier 1 endpoints
+    // Left Limb (endX: cx - 135, endY: 330)
+    growBoughs(cx - 135, 330, 68, -Math.PI * 0.78, 3);
+    growBoughs(cx - 135, 330, 58, -Math.PI * 0.58, 3);
+
+    // Center-Left Limb (endX: cx - 46, endY: 295)
+    growBoughs(cx - 46, 295, 65, -Math.PI * 0.62, 3);
+    growBoughs(cx - 46, 295, 58, -Math.PI * 0.48, 3);
+
+    // Center-Right Limb (endX: cx + 46, endY: 295)
+    growBoughs(cx + 46, 295, 58, -Math.PI * 0.52, 3);
+    growBoughs(cx + 46, 295, 65, -Math.PI * 0.38, 3);
+
+    // Right Limb (endX: cx + 135, endY: 330)
+    growBoughs(cx + 135, 330, 58, -Math.PI * 0.42, 3);
+    growBoughs(cx + 135, 330, 68, -Math.PI * 0.22, 3);
+
+    // Mid-limb connected branches (growing seamlessly from midpoints of major limbs)
+    growBoughs(cx - 72, 350, 54, -Math.PI * 0.82, 2);
+    growBoughs(cx + 72, 350, 54, -Math.PI * 0.18, 2);
+
     return { br: branches, tips: endTips };
-  }, []);
+  }, [base, crotchY]);
 
-  // Map real leaves + ambient leaves onto branch tips
-  const renderedLeaves = useMemo(() => {
-    const list = [];
-    const hasApiLeaves = Array.isArray(leaves) && leaves.length > 0;
-    const tipCount = tips.length;
-    if (tipCount === 0) return list;
+  // Spawn dynamic falling leaf particles
+  const spawnLeafParticles = useCallback((count = 2) => {
+    if (tips.length === 0) return;
+    const catKeys = ['KL', 'CL', 'BO', 'GN'];
+    const newItems = [];
 
-    // 1. Map real API items first
-    if (hasApiLeaves) {
-      leaves.forEach((item, idx) => {
-        const seed = stringToSeed(item.id || `leaf_${idx}`);
-        const leafR = rng(seed);
-        const tipIdx = idx % tipCount;
-        const [tx, ty] = tips[tipIdx];
+    for (let i = 0; i < count; i++) {
+      const tip = tips[Math.floor(Math.random() * tips.length)];
+      const drift = (Math.random() - 0.5) * 140;
+      const catKey = catKeys[Math.floor(Math.random() * catKeys.length)];
 
-        const catKey = toFrontendCategory(item.tag_category);
-        const dim = filterCategory && filterCategory !== catKey;
-        const x = tx + (leafR() - 0.5) * 44;
-        const y = ty + (leafR() - 0.5) * 36;
-        const l = 15 + leafR() * 9;
-        const isSelected = selectedLeaf?.id && selectedLeaf.id === item.id;
-
-        list.push(
-          <g
-            key={item.id || `leaf_${idx}`}
-            transform={`translate(${f(x)} ${f(y)}) rotate(${f(leafR() * 360)})`}
-            opacity={dim ? 0.15 : isSelected ? 1 : 0.95}
-            style={{
-              cursor: 'pointer',
-              transition: 'opacity 0.2s ease, transform 0.2s ease',
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectLeaf &&
-                onSelectLeaf({
-                  ...item,
-                  x,
-                  y,
-                  catKey,
-                });
-            }}
-          >
-            <title>{`${item.title} — ${item.author_display_name || 'Người lạ'}`}</title>
-            <path
-              className="lf"
-              style={{
-                animationDelay: `-${f(leafR() * 5)}s`,
-                animationDuration: `${f(4 + leafR() * 3)}s`,
-                stroke: isSelected ? '#FFFFFF' : 'none',
-                strokeWidth: isSelected ? 2.5 : 0,
-                filter: isSelected
-                  ? 'drop-shadow(0 0 12px rgba(255,245,210,1))'
-                  : 'none',
-              }}
-              d={leafPath(l, l * 0.36)}
-              fill={`url(#${id}${catKey})`}
-            />
-          </g>
-        );
+      newItems.push({
+        id: nextParticleId.current++,
+        x: tip[0] + (Math.random() - 0.5) * 16,
+        y: tip[1] + (Math.random() - 0.5) * 16,
+        catKey,
+        drift,
+        rotation: Math.floor(Math.random() * 360),
       });
     }
 
-    // 2. Supplement with lush ambient leaves so the tree always looks majestic
-    const ambientR = rng(45);
-    const ambientCount = Math.max(24, 80 - (hasApiLeaves ? leaves.length : 0));
-    tips.forEach(([tx, ty], tipIdx) => {
-      const perTip = Math.max(1, Math.floor(ambientCount / tipCount));
-      for (let k = 0; k < perTip; k++) {
-        const catKey = CAT_KEYS[Math.floor(ambientR() * 4)];
-        const dim = filterCategory && filterCategory !== catKey;
-        const x = tx + (ambientR() - 0.5) * 38;
-        const y = ty + (ambientR() - 0.5) * 30;
-        const l = 13 + ambientR() * 8;
+    setFallingParticles((prev) => [...prev.slice(-16), ...newItems]);
+  }, [tips]);
 
-        list.push(
-          <g
-            key={`amb_${tipIdx}_${k}`}
-            transform={`translate(${f(x)} ${f(y)}) rotate(${f(ambientR() * 360)})`}
-            opacity={dim ? 0.12 : 0.88}
-            style={{ cursor: 'pointer' }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectLeaf &&
-                onSelectLeaf({
-                  x,
-                  y,
-                  catKey,
-                  title: 'Gửi bạn đang cố gắng',
-                  author_display_name: 'Người gieo mầm',
-                  tag_category: catKey,
-                  content:
-                    'Mỗi bước đi dù chậm cũng đưa bạn tới gần hơn với đích đến. Hãy kiên nhẫn với chính mình.',
-                });
+  // Clean up completed particles
+  useEffect(() => {
+    if (fallingParticles.length === 0) return;
+    const timer = setTimeout(() => {
+      setFallingParticles((prev) => prev.filter((p) => Date.now() - p.id < 2200));
+    }, 1800);
+    return () => clearTimeout(timer);
+  }, [fallingParticles]);
+
+  // Trigger random leaf draw action with tree wobble and leaf burst
+  const triggerDrawSuccess = useCallback(() => {
+    setIsShaking(true);
+    setSwayAngle(0);
+    spawnLeafParticles(8);
+
+    if (leaves && leaves.length > 0 && onDrawRandomLeaf) {
+      const randomItem = leaves[Math.floor(Math.random() * leaves.length)];
+      onDrawRandomLeaf(randomItem);
+    }
+
+    setTimeout(() => {
+      setIsShaking(false);
+    }, 500);
+  }, [leaves, onDrawRandomLeaf, spawnLeafParticles]);
+
+  // Interactive Slider Handlers (Right side of trunk)
+  const handleSliderPointerDown = (clientX) => {
+    setIsSliding(true);
+    sliderDragStart.current = clientX - sliderX;
+    hasTriggeredDraw.current = false;
+  };
+
+  const handleSliderPointerMove = (clientX) => {
+    if (!isSliding) return;
+    const currentOffset = Math.max(0, Math.min(maxSlideDistance, clientX - sliderDragStart.current));
+    setSliderX(currentOffset);
+
+    const progress = currentOffset / maxSlideDistance;
+    const computedAngle = Math.max(-5, Math.min(5, progress * 4.2));
+    setSwayAngle(computedAngle);
+
+    if (progress > 0.35 && Math.random() < 0.2) {
+      spawnLeafParticles(1);
+    }
+
+    // Auto complete if dragged past 85%
+    if (progress >= 0.85 && !hasTriggeredDraw.current) {
+      hasTriggeredDraw.current = true;
+      setIsSliding(false);
+      setSliderX(maxSlideDistance);
+
+      triggerDrawSuccess();
+
+      setTimeout(() => {
+        setSliderX(0);
+        setSwayAngle(0);
+      }, 600);
+    }
+  };
+
+  const handleSliderPointerUp = () => {
+    if (!isSliding) return;
+    setIsSliding(false);
+
+    if (sliderX >= maxSlideDistance * 0.72 && !hasTriggeredDraw.current) {
+      hasTriggeredDraw.current = true;
+      triggerDrawSuccess();
+    }
+
+    // Spring back smoothly
+    setSliderX(0);
+    setSwayAngle(0);
+  };
+
+  // Direct click on slider track to auto-slide & draw
+  const handleSliderTrackClick = () => {
+    if (isSliding || isShaking) return;
+    setSliderX(maxSlideDistance);
+    setSwayAngle(3.5);
+    spawnLeafParticles(3);
+
+    setTimeout(() => {
+      triggerDrawSuccess();
+      setTimeout(() => {
+        setSliderX(0);
+        setSwayAngle(0);
+      }, 500);
+    }, 250);
+  };
+
+  // Exactly 1 leaf per record from DB (100% Data-Driven)
+  const renderedLeaves = useMemo(() => {
+    const list = [];
+    const count = leaves.length;
+    if (count === 0 || tips.length === 0) return list;
+
+    const tipCount = tips.length;
+
+    leaves.forEach((item, idx) => {
+      const seed = stringToSeed(item.id || `leaf_${idx}`);
+      const leafR = rng(seed);
+      // Distribute evenly across branch tips
+      const tipIdx = idx % tipCount;
+      const [tx, ty] = tips[tipIdx];
+
+      const catKey = toFrontendCategory(item.tag_category);
+      const dim = filterCategory && filterCategory !== catKey;
+      const x = tx + (leafR() - 0.5) * 30;
+      const y = ty + (leafR() - 0.5) * 24;
+      const l = 19 + leafR() * 5; // Beautiful visible size
+      const isHovered = hoveredLeaf?.id && hoveredLeaf.id === item.id;
+
+      list.push(
+        <g
+          key={item.id || `leaf_${idx}`}
+          transform={`translate(${f(x)} ${f(y)}) rotate(${f(leafR() * 360)})`}
+          opacity={dim ? 0.12 : 1}
+          style={{
+            cursor: dim ? 'default' : 'pointer',
+            pointerEvents: dim ? 'none' : 'auto',
+            filter: dim
+              ? 'blur(1.6px) grayscale(0.5)'
+              : isHovered
+              ? 'drop-shadow(0 0 14px rgba(255,245,210,1))'
+              : 'drop-shadow(0 2px 5px rgba(0,0,0,0.22))',
+            transition: 'opacity 0.3s ease, filter 0.3s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }}
+          className="group"
+          onMouseEnter={() => {
+            if (dim) return;
+            onHoverLeaf &&
+              onHoverLeaf({
+                ...item,
+                x,
+                y,
+                catKey,
+              });
+          }}
+          onMouseLeave={() => {
+            if (dim) return;
+            onHoverLeaf && onHoverLeaf(null);
+          }}
+          onClick={(e) => {
+            if (dim) return;
+            e.stopPropagation();
+            onHoverLeaf && onHoverLeaf(null); // Clear preview when opening modal
+            if (onOpenLeafModal) {
+              onOpenLeafModal({
+                ...item,
+                x,
+                y,
+                catKey,
+              });
+            }
+          }}
+        >
+          <title>{`${item.title} — ${item.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ')}`}</title>
+          {/* Main Leaf Body with hover zoom */}
+          <path
+            className="transition-transform duration-200 hover:scale-125"
+            style={{
+              animationDelay: `-${f(leafR() * 5)}s`,
+              animationDuration: `${f(4 + leafR() * 3)}s`,
+              stroke: isHovered ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+              strokeWidth: isHovered ? 2.4 : 0.8,
             }}
-          >
-            <path
-              className="lf"
-              style={{
-                animationDelay: `-${f(ambientR() * 5)}s`,
-                animationDuration: `${f(4 + ambientR() * 3)}s`,
-              }}
-              d={leafPath(l, l * 0.36)}
-              fill={`url(#${id}${catKey})`}
-            />
-          </g>
-        );
-      }
+            d={leafPath(l, l * 0.42)}
+            fill={`url(#${id}${catKey})`}
+          />
+          {/* Subtle Central Leaf Vein */}
+          <path
+            d={`M0 0 L${f(l * 0.72)} 0`}
+            stroke="rgba(0, 0, 0, 0.18)"
+            strokeWidth="0.9"
+            strokeLinecap="round"
+          />
+        </g>
+      );
     });
 
     return list;
-  }, [leaves, filterCategory, selectedLeaf, tips, id, onSelectLeaf]);
+  }, [leaves, filterCategory, hoveredLeaf, tips, id, onHoverLeaf, onOpenLeafModal, language]);
 
-  // Ambient fireflies
-  const flies = useMemo(() => {
-    const list = [];
-    const flyR = rng(21);
-    for (let i = 0; i < 28; i++) {
-      list.push(
-        <circle
-          key={i}
-          className="ff"
-          cx={f(240 + flyR() * 880)}
-          cy={f(170 + flyR() * 580)}
-          r={f(1.2 + flyR() * 1.8)}
-          style={{ fill: 'var(--gold)', animationDelay: `-${f(flyR() * 3)}s` }}
-        />
-      );
-    }
-    return list;
-  }, []);
+  // Sturdy root buttresses resting safely on the ground line (well within viewBox height)
+  const roots = (
+    <g>
+      {/* Ground shadow beneath trunk */}
+      <ellipse cx={cx} cy={base + 4} rx="240" ry="10" fill="#000" opacity="0.32" />
 
-  // Falling leaves animation
-  const fallingData = [
-    [560, 330, 'BO'],
-    [820, 280, 'KL'],
-    [470, 420, 'GN'],
-    [900, 430, 'CL'],
-  ];
-  const fall = fallingData.map(([x, y, c], i) => (
-    <g key={i} className="fall" style={{ animationDelay: `-${i * 2.7}s` }}>
-      <g transform={`translate(${x} ${y}) rotate(${i * 70})`}>
-        <path d={leafPath(19, 7)} fill={`url(#${id}${c})`} />
-      </g>
+      {/* Primary root flares */}
+      <path
+        d={`M${cx - 20} ${base - 8} Q${cx - 65} ${base + 2} ${cx - 130} ${base + 5}`}
+        stroke="#4A3326"
+        strokeWidth="18"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d={`M${cx + 18} ${base - 8} Q${cx + 65} ${base + 2} ${cx + 130} ${base + 5}`}
+        stroke="#4A3326"
+        strokeWidth="18"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* Secondary roots extending into the dark earth */}
+      <path
+        d={`M${cx - 10} ${base - 4} Q${cx - 40} ${base + 3} ${cx - 75} ${base + 5}`}
+        stroke="#5A3E2E"
+        strokeWidth="10"
+        strokeLinecap="round"
+        fill="none"
+      />
+      <path
+        d={`M${cx + 10} ${base - 4} Q${cx + 40} ${base + 3} ${cx + 75} ${base + 5}`}
+        stroke="#5A3E2E"
+        strokeWidth="10"
+        strokeLinecap="round"
+        fill="none"
+      />
     </g>
-  ));
+  );
 
   const branches = br.map(([d, w], idx) => (
     <path
       key={idx}
       d={d}
       fill="none"
-      stroke={`url(#${id}b)`}
+      stroke={`url(#${id}bark)`}
       strokeWidth={f(w)}
       strokeLinecap="round"
+      strokeLinejoin="round"
     />
   ));
 
-  const cx = 682;
-  const base = 812;
-  const roots = (
-    <path
-      d={`M${cx - 30} ${base} C ${cx - 60} ${base + 8}, ${cx - 110} ${base + 10}, ${cx - 150} ${base + 22} M${cx + 26} ${base} C ${cx + 70} ${base + 6}, ${cx + 120} ${base + 14}, ${cx + 160} ${base + 20}`}
-      stroke="#5A3E2E"
-      strokeWidth="9"
-      strokeLinecap="round"
-      fill="none"
-    />
-  );
-
   return (
-    <svg className="scene" viewBox="0 0 1364 900" aria-hidden="true">
-      <defs>
-        <linearGradient id={`${id}b`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#5A3E2E" />
-          <stop offset="0.55" stopColor="#8A6448" />
-          <stop offset="1" stopColor="#4A3326" />
-        </linearGradient>
-        <radialGradient id={`${id}glow`}>
-          <stop offset="0" style={{ stopColor: 'var(--gold)', stopOpacity: 0.36 }} />
-          <stop offset="1" style={{ stopColor: 'var(--gold)', stopOpacity: 0 }} />
-        </radialGradient>
-
-        {CAT_KEYS.map((k) => (
-          <linearGradient key={k} id={`${id}${k}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor={CATS[k].c} />
-            <stop offset="1" stopColor={CATS[k].hi} />
-          </linearGradient>
-        ))}
-      </defs>
-
-      {/* Background & Sky beam */}
-      <rect width="1364" height="900" style={{ fill: 'var(--wall)' }} />
-      <path
-        d="M612 0 L752 0 L1080 820 L284 820 Z"
-        style={{ fill: 'var(--gold)' }}
-        opacity="0.05"
-      />
-      <rect y="800" width="1364" height="100" style={{ fill: 'var(--wall3)' }} />
-      <ellipse cx="682" cy="812" rx="300" ry="22" fill="#000" opacity="0.2" />
-
-      {/* Tree glow, trunk, branches & leaves */}
-      <ellipse cx={cx} cy="430" rx="520" ry="360" fill={`url(#${id}glow)`} />
-      {roots}
-      {branches}
-      {renderedLeaves}
-      {fall}
-      {flies}
-
-      {/* Selected Leaf Glow Marker */}
-      {selectedLeaf && (
-        <g
-          transform={`translate(${selectedLeaf.x || 760} ${selectedLeaf.y || 330}) rotate(-30)`}
-          style={{ cursor: 'pointer' }}
-          onClick={() => onSelectLeaf && onSelectLeaf(null)}
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+        userSelect: 'none',
+        overflow: 'hidden',
+      }}
+      onMouseLeave={() => {
+        // Automatically hide hover preview card when cursor leaves tree area
+        onHoverLeaf && onHoverLeaf(null);
+        handleSliderPointerUp();
+      }}
+      onMouseMove={(e) => handleSliderPointerMove(e.clientX)}
+      onMouseUp={handleSliderPointerUp}
+      onTouchMove={(e) => {
+        if (e.touches[0]) handleSliderPointerMove(e.touches[0].clientX);
+      }}
+      onTouchEnd={handleSliderPointerUp}
+    >
+      {/* Interactive Compact Slider on the Right of Tree Trunk (Half-size) */}
+      <div
+        className="tree-draw-slider"
+        style={{
+          position: 'absolute',
+          right: 'clamp(16px, 4.5vw, 80px)',
+          bottom: '22px',
+          zIndex: 25,
+          width: '130px',
+          height: '38px',
+          borderRadius: '999px',
+          background: 'rgba(32, 20, 14, 0.88)',
+          border: '1.2px solid rgba(212, 176, 106, 0.5)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(12px)',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '3px',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+        onClick={handleSliderTrackClick}
+        title={language === 'en' ? 'Slide or click to draw a wish' : 'Trượt hoặc nhấn để rút thông điệp'}
+      >
+        {/* Shimmering Track Guide Text */}
+        <span
+          style={{
+            position: 'absolute',
+            left: '36px',
+            right: '8px',
+            textAlign: 'center',
+            fontSize: '10.5px',
+            fontWeight: 600,
+            letterSpacing: '0.02em',
+            color: '#EAD7BA',
+            opacity: isSliding ? Math.max(0.15, 1 - sliderX / 60) : 0.85,
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
         >
-          <path
-            d={leafPath(46, 17)}
-            fill={CATEGORY_MAP[toFrontendCategory(selectedLeaf.tag_category)]?.color || '#94C590'}
-            stroke="#fff"
-            strokeWidth="2.5"
-            style={{ filter: 'drop-shadow(0 0 14px rgba(255,240,190,0.95))' }}
-          />
-        </g>
-      )}
-    </svg>
+          {isSliding
+            ? (language === 'en' ? 'Release!' : 'Thả ra!')
+            : (language === 'en' ? 'Draw wish →' : 'Rút lá →')}
+        </span>
+
+        {/* Golden Slider Knob */}
+        <div
+          onMouseDown={(e) => {
+            e.stopPropagation();
+            handleSliderPointerDown(e.clientX);
+          }}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            if (e.touches[0]) handleSliderPointerDown(e.touches[0].clientX);
+          }}
+          style={{
+            width: '30px',
+            height: '30px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #ECC880 0%, #A67830 100%)',
+            border: '1.5px solid #FFF5DC',
+            boxShadow: isSliding
+              ? '0 0 14px rgba(236,200,128,0.9), 0 4px 10px rgba(0,0,0,0.5)'
+              : '0 2px 8px rgba(0,0,0,0.4)',
+            transform: `translateX(${sliderX}px)`,
+            transition: isSliding ? 'none' : 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
+            display: 'grid',
+            placeItems: 'center',
+            fontSize: '13px',
+            cursor: isSliding ? 'grabbing' : 'grab',
+            zIndex: 2,
+          }}
+          title={language === 'en' ? 'Drag to draw wish' : 'Kéo để rút thông điệp'}
+        >
+          🍃
+        </div>
+      </div>
+
+      {/* Main Tree SVG Element: fits snugly and shows full trunk & base */}
+      <svg
+        className={isShaking ? 'tree-shaking' : ''}
+        viewBox="0 0 1200 620"
+        preserveAspectRatio="xMidYMax meet"
+        style={{
+          width: 'auto',
+          maxWidth: '100%',
+          height: '100%',
+          maxHeight: '100%',
+          display: 'block',
+          margin: '0 auto',
+          transform: isShaking
+            ? undefined
+            : `rotate(${Math.max(-5, Math.min(5, swayAngle))}deg)`,
+          transformOrigin: '50% 95%',
+          transition: isSliding ? 'none' : 'transform 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.28)',
+        }}
+        aria-label="Cây Thông Điệp Tri Ân & Động Viên"
+      >
+        <defs>
+          {/* Bark Gradient (Deep oak trunk) */}
+          <linearGradient id={`${id}bark`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#3E291E" />
+            <stop offset="0.32" stopColor="#5E3E2E" />
+            <stop offset="0.68" stopColor="#7F5640" />
+            <stop offset="1" stopColor="#342117" />
+          </linearGradient>
+
+          {/* Unified Celestial Canopy Aura (Soft golden radial halo) */}
+          <radialGradient id={`${id}unifiedAura`} cx="50%" cy="45%" r="50%">
+            <stop offset="0%" stopColor="#FFF2D4" stopOpacity="0.45" />
+            <stop offset="35%" stopColor="#E5B974" stopOpacity="0.25" />
+            <stop offset="70%" stopColor="#C9934B" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#C9934B" stopOpacity="0" />
+          </radialGradient>
+
+          {/* Emotional Pastel Gradients for Leaves */}
+          {CAT_KEYS.map((k) => (
+            <linearGradient key={k} id={`${id}${k}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor={CATS[k].c} />
+              <stop offset="1" stopColor={CATS[k].hi} />
+            </linearGradient>
+          ))}
+        </defs>
+
+        {/* Unified harmonious light aura behind tree canopy */}
+        <ellipse cx={cx} cy="290" rx="460" ry="210" fill={`url(#${id}unifiedAura)`} />
+
+        {/* Tree Roots & Massive Sculpted Branches */}
+        {roots}
+        {branches}
+
+        {/* 100% Data-Driven Leaves from Database */}
+        {renderedLeaves}
+
+        {/* Falling Leaves Particles */}
+        {fallingParticles.map((p) => (
+          <g
+            key={`fp_${p.id}`}
+            className="falling-leaf-particle"
+            style={{
+              '--fall-drift': `${p.drift}px`,
+            }}
+            transform={`translate(${p.x} ${p.y}) rotate(${p.rotation})`}
+          >
+            <path d={leafPath(20, 8)} fill={`url(#${id}${p.catKey})`} />
+          </g>
+        ))}
+
+        {/* Hover Leaf Marker Highlight */}
+        {hoveredLeaf && (
+          <g
+            transform={`translate(${hoveredLeaf.x || cx} ${hoveredLeaf.y || 260}) rotate(-25)`}
+            style={{ pointerEvents: 'none' }}
+          >
+            <path
+              d={leafPath(40, 16)}
+              fill={CATEGORY_MAP[toFrontendCategory(hoveredLeaf.tag_category)]?.color || '#94C590'}
+              stroke="#FFF"
+              strokeWidth="2.5"
+              style={{ filter: 'drop-shadow(0 0 16px rgba(255,245,210,1))' }}
+            />
+          </g>
+        )}
+      </svg>
+    </div>
   );
 }
 

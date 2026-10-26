@@ -42,6 +42,8 @@ apiClient.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      const lang = localStorage.getItem('museum_lang') || 'vi';
+      config.headers['Accept-Language'] = lang;
     } catch (err) {
       console.warn('Lỗi khi truy cập localStorage trong Request Interceptor:', err);
     }
