@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { adminDiaryService } from '../../services/adminDiaryService';
+import { aiCopilotService } from '../../services/aiCopilotService';
+import { AiModerationModal } from '../../components/Admin/AiModerationModal';
 import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminDiaries({ onCountChange, triggerToast }) {
@@ -17,7 +19,6 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
   const [totalPending, setTotalPending] = useState(0);
 
   // Form fields for editing/bilingual translation
-  const [isBilingualMode, setIsBilingualMode] = useState(false);
   const [titleVi, setTitleVi] = useState('');
   const [titleEn, setTitleEn] = useState('');
   const [contentVi, setContentVi] = useState('');
@@ -28,6 +29,11 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
   const [rejectReason, setRejectReason] = useState('Chứa thông tin liên lạc cá nhân');
   const [customRejectNote, setCustomRejectNote] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
+
+  // AI Copilot State
+  const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiModerationData, setAiModerationData] = useState(null);
 
   // -------------------------------------------------------------
   // Approved State
@@ -114,10 +120,18 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
 
   useEffect(() => {
     if (currentItem) {
-      setTitleVi(currentItem.title_vi || currentItem.title || '');
-      setTitleEn(currentItem.title_en || '');
-      setContentVi(currentItem.content_vi || currentItem.content || '');
-      setContentEn(currentItem.content_en || '');
+      const isOrigEn = currentItem.original_language === 'en';
+      const rawTitle = currentItem.title || '';
+      const tVi = currentItem.title_vi || (!isOrigEn ? rawTitle : '') || '';
+      const tEn = currentItem.title_en || (isOrigEn ? rawTitle : '') || '';
+      setTitleVi(tVi);
+      setTitleEn(tEn);
+
+      const rawContent = currentItem.content || '';
+      const cVi = currentItem.content_vi || (!isOrigEn ? rawContent : '') || '';
+      const cEn = currentItem.content_en || (isOrigEn ? rawContent : '') || '';
+      setContentVi(cVi);
+      setContentEn(cEn);
     } else {
       setTitleVi('');
       setTitleEn('');
@@ -127,6 +141,66 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
   }, [currentItem]);
 
   // -------------------------------------------------------------
+  // AI Moderation Handler
+  // -------------------------------------------------------------
+  const handleAnalyzeWithAi = async () => {
+    if (!currentItem) return;
+    setIsAnalyzingAi(true);
+    try {
+      const fullText = [
+        titleVi ? `Tiêu đề (VI): ${titleVi}` : '',
+        titleEn ? `Title (EN): ${titleEn}` : '',
+        contentVi ? `Nội dung (VI): ${contentVi}` : '',
+        contentEn ? `Content (EN): ${contentEn}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      const res = await aiCopilotService.moderateArtwork({
+        art_id: currentItem.id,
+        target_room: 'diaries',
+        content: fullText || contentVi || contentEn || currentItem.content || 'Nội dung nhật ký',
+      });
+
+      const data = res?.data || res;
+      setAiModerationData(data);
+      setAiModalOpen(true);
+    } catch (err) {
+      console.error('Lỗi khi phân tích AI cho nhật ký:', err);
+      const errMsg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        err?.message ||
+        'Không thể gọi dịch vụ AI Copilot. Vui lòng kiểm tra cấu hình Owner AI.';
+      if (triggerToast) {
+        triggerToast(`[AI Copilot] ${errMsg}`);
+      } else {
+        alert(`[AI Copilot] ${errMsg}`);
+      }
+    } finally {
+      setIsAnalyzingAi(false);
+    }
+  };
+
+  const handleAcceptAiRewrite = (suggestedCleanContent) => {
+    if (suggestedCleanContent) {
+      if (currentItem?.original_language === 'en') {
+        setContentEn(suggestedCleanContent);
+      } else {
+        setContentVi(suggestedCleanContent);
+      }
+      if (triggerToast) {
+        triggerToast(
+          language === 'en'
+            ? 'Applied AI Copilot suggested rewrite to editor!'
+            : 'Đã cập nhật nội dung đề xuất từ AI Copilot vào khung biên tập!'
+        );
+      }
+    }
+    setAiModalOpen(false);
+  };
+
+  // -------------------------------------------------------------
   // Approve Action
   // -------------------------------------------------------------
   const handleApprove = async () => {
@@ -134,17 +208,12 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
     setIsApproving(true);
     try {
       let payload = null;
-      if (isBilingualMode && (titleVi || titleEn || contentVi || contentEn)) {
-        if (!titleVi || !titleEn || !contentVi || !contentEn) {
-          alert('Chế độ song ngữ yêu cầu điền đầy đủ cả tiêu đề và nội dung cho Tiếng Việt và Tiếng Anh.');
-          setIsApproving(false);
-          return;
-        }
+      if (titleVi.trim() || titleEn.trim() || contentVi.trim() || contentEn.trim()) {
         payload = {
-          title_vi: titleVi.trim(),
-          title_en: titleEn.trim(),
-          content_vi: contentVi.trim(),
-          content_en: contentEn.trim(),
+          title_vi: titleVi.trim() || currentItem.title || undefined,
+          title_en: titleEn.trim() || undefined,
+          content_vi: contentVi.trim() || currentItem.content || undefined,
+          content_en: contentEn.trim() || undefined,
         };
       }
 
@@ -271,11 +340,11 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
             className="abs box"
             style={{
               left: '32px',
-              width: '390px',
+              width: '270px',
               top: '194px',
               bottom: '26px',
               overflowY: 'auto',
-              padding: '16px',
+              padding: '14px',
             }}
           >
             <div className="row between" style={{ marginBottom: '14px', padding: '0 4px' }}>
@@ -362,7 +431,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
             <div
               className="abs box"
               style={{
-                left: '442px',
+                left: '318px',
                 right: '32px',
                 top: '194px',
                 bottom: '26px',
@@ -371,24 +440,36 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
               }}
             >
               {/* Header Action Bar */}
-              <div className="row between" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px', marginBottom: '20px' }}>
-                <div>
-                  <div className="row" style={{ gap: '10px', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '22px', margin: 0 }}>
-                      {currentItem.title || 'Không có tiêu đề'}
-                    </h2>
-                    {currentItem.mood && (
-                      <span className="badge b-wait" style={{ fontSize: '12px' }}>
-                        Tâm trạng: {currentItem.mood}
-                      </span>
-                    )}
-                  </div>
-                  <div className="muted" style={{ fontSize: '13px', marginTop: '6px' }}>
-                    Tác giả: <b>{currentItem.author?.nickname}</b> (@{currentItem.author?.username}) · Ngày ghi: {formatDate(currentItem.entry_date)}
-                  </div>
+              <div className="row between" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px', marginBottom: '20px', alignItems: 'center' }}>
+                <div className="row" style={{ gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <h2 className="serif" style={{ fontSize: '22px', margin: 0, fontWeight: 600 }}>
+                    {currentItem.title || (language === 'en' ? 'Untitled' : 'Không có tiêu đề')}
+                  </h2>
+                  {currentItem.mood && (
+                    <span className="badge b-wait" style={{ fontSize: '12px' }}>
+                      {language === 'en' ? 'Mood:' : 'Tâm trạng:'} {currentItem.mood}
+                    </span>
+                  )}
                 </div>
 
                 <div className="row" style={{ gap: '10px' }}>
+                  <button
+                    type="button"
+                    className="btn line"
+                    onClick={handleAnalyzeWithAi}
+                    disabled={isAnalyzingAi || isApproving}
+                    style={{
+                      borderColor: '#d97706',
+                      color: '#b45309',
+                      fontWeight: 600,
+                      background: isAnalyzingAi ? 'rgba(245, 158, 11, 0.08)' : 'transparent',
+                    }}
+                    title="Phân tích kiểm duyệt và đề xuất văn phong bằng AI Copilot"
+                  >
+                    {isAnalyzingAi
+                      ? (language === 'en' ? 'AI Analyzing...' : 'AI đang phân tích...')
+                      : (language === 'en' ? 'AI Copilot' : 'Phân tích bằng AI')}
+                  </button>
                   <button
                     type="button"
                     className="btn danger"
@@ -432,88 +513,97 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                 </div>
               )}
 
-              {/* Mode Toggle: Simple vs Song ngữ */}
-              <div className="row between" style={{ marginBottom: '14px', alignItems: 'center' }}>
-                <span className="fieldl" style={{ margin: 0 }}>
-                  Nội dung nhật ký gốc
-                </span>
-                <label className="row" style={{ gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--acc)' }}>
+              {/* Bilingual Title & Content Editor */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Title (Vietnamese)' : 'Tiêu đề Tiếng Việt (VN)'}
+                  </div>
                   <input
-                    type="checkbox"
-                    checked={isBilingualMode}
-                    onChange={(e) => setIsBilingualMode(e.target.checked)}
+                    className="inp"
+                    value={titleVi}
+                    onChange={(e) => setTitleVi(e.target.value)}
+                    placeholder={language === 'en' ? 'Vietnamese title...' : 'Tiêu đề tiếng Việt...'}
                   />
-                  <span>Biên tập song ngữ (Anh - Việt)</span>
-                </label>
+                  <div className="fieldl" style={{ marginTop: '14px' }}>
+                    {language === 'en' ? 'Content (Vietnamese)' : 'Nội dung Tiếng Việt (VN)'}{' '}
+                    <span>{language === 'en' ? 'Editable' : 'Admin sửa được'}</span>
+                  </div>
+                  <textarea
+                    className="inp area"
+                    style={{ minHeight: '230px', fontFamily: 'var(--sans)', fontSize: '14.5px', lineHeight: 1.6 }}
+                    value={contentVi}
+                    onChange={(e) => setContentVi(e.target.value)}
+                    placeholder={language === 'en' ? 'Vietnamese diary content...' : 'Nội dung nhật ký tiếng Việt...'}
+                  />
+                </div>
+
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Title (English)' : 'Tiêu đề Tiếng Anh (EN)'}
+                  </div>
+                  <input
+                    className="inp"
+                    value={titleEn}
+                    onChange={(e) => setTitleEn(e.target.value)}
+                    placeholder={language === 'en' ? 'English title...' : 'Tiêu đề tiếng Anh...'}
+                  />
+                  <div className="fieldl" style={{ marginTop: '14px' }}>
+                    {language === 'en' ? 'Content (English)' : 'Nội dung Tiếng Anh (EN)'}{' '}
+                    <span>{language === 'en' ? 'Editable' : 'Admin sửa được'}</span>
+                  </div>
+                  <textarea
+                    className="inp area"
+                    style={{ minHeight: '230px', fontFamily: 'var(--sans)', fontSize: '14.5px', lineHeight: 1.6 }}
+                    value={contentEn}
+                    onChange={(e) => setContentEn(e.target.value)}
+                    placeholder={language === 'en' ? 'English translated content...' : 'Nội dung nhật ký tiếng Anh...'}
+                  />
+                </div>
               </div>
 
-              {!isBilingualMode ? (
-                /* Simple view & quick edit */
-                <div
-                  style={{
-                    background: 'var(--wall)',
-                    padding: '20px',
-                    borderRadius: '12px',
-                    lineHeight: 1.8,
-                    fontSize: '15px',
-                    whiteSpace: 'pre-wrap',
-                    fontFamily: 'var(--serif)',
-                    border: '1px solid var(--line)',
-                    minHeight: '220px',
-                  }}
-                >
-                  {currentItem.content}
+              {/* Submission Metadata Footer */}
+              <div
+                style={{
+                  marginTop: '22px',
+                  paddingTop: '14px',
+                  borderTop: '1px solid var(--line)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '10px',
+                  fontSize: '13px',
+                }}
+                className="muted"
+              >
+                <div>
+                  {language === 'en' ? (
+                    <>
+                      Author: <b>{currentItem.author?.nickname || currentItem.author?.username || 'Anonymous'}</b>
+                      {currentItem.author?.username && <> (@{currentItem.author.username})</>}
+                      {' '}· Entry date: <b>{formatDate(currentItem.entry_date)}</b>
+                    </>
+                  ) : (
+                    <>
+                      Tác giả: <b>{currentItem.author?.nickname || currentItem.author?.username || 'Ẩn danh'}</b>
+                      {currentItem.author?.username && <> (@{currentItem.author.username})</>}
+                      {' '}· Ngày ghi: <b>{formatDate(currentItem.entry_date)}</b>
+                    </>
+                  )}
                 </div>
-              ) : (
-                /* Bilingual form */
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  <div>
-                    <div className="fieldl">Tiêu đề Tiếng Việt</div>
-                    <input
-                      className="inp"
-                      value={titleVi}
-                      onChange={(e) => setTitleVi(e.target.value)}
-                      placeholder="Tiêu đề tiếng Việt..."
-                    />
-                    <div className="fieldl" style={{ marginTop: '12px' }}>
-                      Nội dung Tiếng Việt
-                    </div>
-                    <textarea
-                      className="inp area"
-                      style={{ minHeight: '220px', fontFamily: 'var(--sans)', fontSize: '14px', lineHeight: 1.6 }}
-                      value={contentVi}
-                      onChange={(e) => setContentVi(e.target.value)}
-                      placeholder="Nội dung tiếng Việt..."
-                    />
+                {currentItem.id && (
+                  <div style={{ fontSize: '12px' }}>
+                    ID: <span style={{ fontFamily: 'monospace' }}>#{currentItem.id}</span>
                   </div>
-
-                  <div>
-                    <div className="fieldl">Tiêu đề Tiếng Anh (English Title)</div>
-                    <input
-                      className="inp"
-                      value={titleEn}
-                      onChange={(e) => setTitleEn(e.target.value)}
-                      placeholder="English title..."
-                    />
-                    <div className="fieldl" style={{ marginTop: '12px' }}>
-                      Nội dung Tiếng Anh (English Content)
-                    </div>
-                    <textarea
-                      className="inp area"
-                      style={{ minHeight: '220px', fontFamily: 'var(--sans)', fontSize: '14px', lineHeight: 1.6 }}
-                      value={contentEn}
-                      onChange={(e) => setContentEn(e.target.value)}
-                      placeholder="English translated content..."
-                    />
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ) : (
             <div
               className="abs box"
               style={{
-                left: '442px',
+                left: '318px',
                 right: '32px',
                 top: '194px',
                 bottom: '26px',
@@ -730,6 +820,15 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
           </div>
         </>
       )}
+
+      {/* AI Moderation Analysis & Rewrite Modal */}
+      <AiModerationModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        data={aiModerationData}
+        onAccept={handleAcceptAiRewrite}
+        originalContent={contentVi || currentItem?.content || ''}
+      />
     </>
   );
 }

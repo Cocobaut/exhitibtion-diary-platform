@@ -18,6 +18,24 @@ Thư mục này dùng để lưu trữ toàn bộ các file Postman Collection J
 12. `12_admin_studio_audit.postman_collection.json` - Nhóm 12: Admin Studio & Audit Log
 13. `13_owner.postman_collection.json` - Nhóm 13: Chủ sở hữu hệ thống (Owner)
 14. `14_notebook.postman_collection.json` - Nhóm 14: Sổ tay Ký ức Hợp nhất
+15. `16_ai_copilot.postman_collection.json` - Nhóm 16: AI Copilot Kiểm duyệt bài viết & Sinh ảnh (Human-in-the-loop, Multi-Provider, Kích hoạt/Vô hiệu hóa & Xóa API Key)
+
+### Chi tiết các Request trong Collection `16_ai_copilot`:
+- **Owner - AI Configuration**:
+  - `[1.1] GET /owner/ai-settings`: Xem cấu hình AI hiện tại và các key đã mask.
+  - `[1.2] POST /owner/ai-settings/discover-models`: Khám phá model kiểm duyệt (Gemini, OpenAI, Anthropic).
+  - `[1.3] POST /owner/ai-settings/discover-models`: Khám phá model sinh ảnh (Google Imagen 3, DALL-E 3).
+  - `[1.4] PUT /owner/ai-settings`: Cập nhật cấu hình multi-provider và lưu API Key mã hóa AES-256.
+  - `[1.5] POST /owner/ai-settings/activate`: Kích hoạt dịch vụ AI toàn hệ thống hoặc từng phân hệ.
+  - `[1.6] POST /owner/ai-settings/deactivate`: Vô hiệu hóa dịch vụ AI toàn hệ thống hoặc từng phân hệ.
+  - `[1.7] DELETE /owner/ai-settings/api-key/moderation`: Xóa API Key dịch vụ kiểm duyệt nội dung.
+  - `[1.8] DELETE /owner/ai-settings/api-key/image-generation`: Xóa API Key dịch vụ sinh ảnh nghệ thuật.
+- **Admin - AI Copilot**:
+  - `[2.1] POST /admin/ai/moderate`: Soát lỗi PII/Quảng cáo/Từ cấm & Đề xuất viết lại.
+  - `[2.2] POST /admin/ai/moderate`: Kiểm duyệt phát hiện sai phòng (Room mismatch).
+  - `[2.3] POST /admin/ai/moderate`: Kiểm duyệt bài hợp lệ (Score >= 60).
+  - `[2.4] POST /admin/ai/generate-image`: Sinh ảnh minh họa nghệ thuật từ cảm xúc bài viết.
+
 
 ## ⚙️ Hướng dẫn sử dụng
 1. Mở Postman -> Chọn **Import** -> Kéo thả file JSON vào.
@@ -25,3 +43,5 @@ Thư mục này dùng để lưu trữ toàn bộ các file Postman Collection J
    - `baseUrl`: `http://localhost:8000`
    - `accessToken`: Token nhận được sau khi đăng nhập (được tự động set qua Test Script)
    - `adminToken`: Token của Admin để test các API quản trị
+   - `ownerToken`: Token của Quản trị viên tối cao (Owner)
+

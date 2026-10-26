@@ -7,17 +7,13 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
   const { user } = useAuth();
   const { language } = useLanguage();
   const [title, setTitle] = useState('');
-  const [penName, setPenName] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [summary, setSummary] = useState('');
   const [story, setStory] = useState('');
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    if (user) {
-      setPenName(user.nickname || user.username || '');
-    }
-  }, [user, isOpen]);
+  const accountNickname = user?.nickname || user?.username || (language === 'en' ? 'Author' : 'Tác giả');
+  const displayPenName = isAnonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : accountNickname;
 
   if (!isOpen) return null;
 
@@ -49,7 +45,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
         summary: summary.trim(),
         story: story.trim(),
         isAnonymous,
-        penName: isAnonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : penName || (language === 'en' ? 'Author' : 'Tác giả'),
+        penName: displayPenName,
       });
   };
 
@@ -111,12 +107,24 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
             }}
           >
             <div>
-              <div className="fieldl">{language === 'en' ? 'Pen name for this artwork' : 'Bút danh cho tác phẩm này'}</div>
+              <div className="fieldl">
+                <span>{language === 'en' ? 'Pen name for this artwork' : 'Bút danh cho tác phẩm này'}</span>
+                <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>
+                  {language === 'en' ? '(Account nickname)' : '(Bí danh tài khoản)'}
+                </span>
+              </div>
               <input
                 className="inp"
-                value={isAnonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : penName}
-                disabled={isAnonymous}
-                onChange={(e) => setPenName(e.target.value)}
+                value={displayPenName}
+                readOnly
+                disabled
+                style={{
+                  background: 'rgba(0, 0, 0, 0.04)',
+                  cursor: 'not-allowed',
+                  opacity: 0.85,
+                  color: 'var(--ink)',
+                }}
+                title={language === 'en' ? 'Pen name is locked to your account nickname' : 'Bút danh cố định theo bí danh tài khoản'}
               />
             </div>
             <div

@@ -27,8 +27,10 @@ Bộ tài liệu đặc tả này quy định chi tiết quy trình kết nối 
 | **10** | [10_admin_capsules_page.md](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/frontend/specification/10_admin_capsules_page.md) | Quản trị: Quản lý Kho thông điệp hòm thư (H4), Bật/Tắt trạng thái, Thêm câu mới | ADMIN / OWNER | Nhóm 11 (`/admin/capsules`) |
 | **11** | [11_admin_studio_audit_page.md](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/frontend/specification/11_admin_studio_audit_page.md) | Quản trị: Studio xuất bản trực tiếp, Nhật ký kiểm toán thao tác quản trị, Khóa tài khoản vi phạm | ADMIN / OWNER | Nhóm 12 (`/admin/studio`) |
 | **12** | [12_owner_management_page.md](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/frontend/specification/12_owner_management_page.md) | Quản trị Tối cao của Chủ sở hữu: Quản lý phân quyền USER/ADMIN, Duyệt xóa vĩnh viễn tài khoản | Duy nhất OWNER | Nhóm 13 (`/owner`) |
+| **16** | [16_ai_copilot_integration.md](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/frontend/specification/16_ai_copilot_integration.md) | **AI Copilot Duyệt bài & Quản trị Cấu hình AI**: Nút AI phân tích bài tại Room 1-3 & Diaries, Modal Form Accept/Decline, Tab AI quản trị key & model | ADMIN / OWNER | Nhóm 16 (`/admin/ai`, `/owner/ai-settings`) |
 
 ---
+
 
 ## 3. Ma trận Phân quyền & Vai trò người dùng
 

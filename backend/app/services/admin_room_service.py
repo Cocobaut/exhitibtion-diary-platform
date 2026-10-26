@@ -375,6 +375,7 @@ class AdminRoomService:
     async def get_approved_artworks(
         db: AsyncSession,
         room_id: int,
+        status_filter: str = "APPROVED",
         q: Optional[str] = None,
         title: Optional[str] = None,
         author_display_name: Optional[str] = None,
@@ -382,7 +383,7 @@ class AdminRoomService:
         limit: int = 15,
         sort: str = "latest",
     ) -> ApprovedArtworksData:
-        """9.2.1 Get approved artworks with room summary statistics."""
+        """9.2.1 Get approved or archived artworks with room summary statistics."""
         room = await AdminRoomService.validate_room(db, room_id)
 
         # 1. Calculate room-wide summary for APPROVED artworks
@@ -419,7 +420,7 @@ class AdminRoomService:
         # 2. Query items
         base_filter = [
             Artwork.room_id == room_id,
-            Artwork.status == "APPROVED",
+            Artwork.status == status_filter,
         ]
         if q:
             term = f"%{q.strip()}%"
@@ -485,12 +486,23 @@ class AdminRoomService:
                 ApprovedArtworkListItem(
                     id=artwork.id,
                     title=artwork.title,
+                    title_vi=artwork.title_vi,
+                    title_en=artwork.title_en,
+                    short_content=artwork.short_content,
+                    short_content_vi=artwork.short_content_vi,
+                    short_content_en=artwork.short_content_en,
+                    content=artwork.content,
+                    content_vi=artwork.content_vi,
+                    content_en=artwork.content_en,
+                    original_language=artwork.original_language,
                     author_display_name=artwork.author_display_name,
                     media_url=artwork.media_url,
                     view_count=artwork.view_count,
                     reactions_count=rx_count,
                     status=artwork.status,
                     reviewed_at=artwork.reviewed_at,
+                    tag_category=artwork.tag_category,
+                    color_code=artwork.color_code,
                     author=AuthorInfo(
                         id=artwork.author.id,
                         username=artwork.author.username,
@@ -620,6 +632,45 @@ class AdminRoomService:
             archived_by=admin.id,
             updated_at=artwork.updated_at,
         )
+
+    @staticmethod
+    async def restore_artwork(
+        db: AsyncSession,
+        admin: User,
+        room_id: int,
+        artwork_id_raw: str,
+    ):
+        """Restore an archived artwork back to APPROVED status."""
+        await AdminRoomService.validate_room(db, room_id)
+        artwork_id = AdminRoomService.parse_artwork_id(artwork_id_raw)
+
+        artwork = await db.get(Artwork, artwork_id)
+        if not artwork or artwork.room_id != room_id:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy tác phẩm triển lãm",
+            )
+
+        artwork.status = "APPROVED"
+
+        # Log audit
+        await AuditLogService.log(
+            db,
+            admin_id=admin.id,
+            action_type="UPDATE",
+            artwork=artwork,
+            note="Khôi phục tác phẩm từ kho lưu trữ về phòng triển lãm",
+        )
+
+        await db.commit()
+        await db.refresh(artwork)
+
+        return {
+            "id": artwork.id,
+            "status": artwork.status,
+            "updated_at": artwork.updated_at,
+        }
 
     @staticmethod
     async def get_leaf_categories(

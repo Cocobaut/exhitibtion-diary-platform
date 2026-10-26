@@ -12,9 +12,12 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
   const [selectedCat, setSelectedCat] = useState('KL');
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
-  const [penName, setPenName] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const accountNickname = user?.nickname || user?.username || (language === 'en' ? 'Author' : 'Tác giả');
+  const displayPenName = isAnonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : accountNickname;
 
   useEffect(() => {
     if (isOpen) {
@@ -30,11 +33,8 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
             : 'Bạn không cần phải nhanh, chỉ cần đừng dừng lại.'
         );
       }
-      if (!penName) {
-        setPenName(user?.nickname || (language === 'en' ? 'Cloud' : 'Mây'));
-      }
     }
-  }, [isOpen, user, language]);
+  }, [isOpen, language]);
 
   if (!isOpen) return null;
 
@@ -70,7 +70,8 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
         title: cleanTitle,
         content: cleanContent,
         short_content: cleanContent,
-        author_display_name: penName.trim() || undefined,
+        author_display_name: displayPenName,
+        is_anonymous: isAnonymous,
         tag_category: selectedCat,
         color_code: currentCat.backendColor,
       });
@@ -193,14 +194,46 @@ export function HangLeafModal({ isOpen, onClose, onHangLeaf }) {
             maxLength={280}
           />
 
-          <div className="fieldl">{language === 'en' ? 'Pen Name' : 'Bút danh'}</div>
-          <input
-            className="inp"
-            placeholder={language === 'en' ? 'E.g., Cloud or Sower of Seeds' : 'Ví dụ: Mây hoặc Người gieo mầm'}
-            value={penName}
-            onChange={(e) => setPenName(e.target.value)}
-            maxLength={50}
-          />
+          <div style={{ marginTop: '12px' }}>
+            <div className="fieldl">
+              <span>{language === 'en' ? 'Pen Name' : 'Bút danh'}</span>
+              <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>
+                {language === 'en' ? '(Account nickname)' : '(Bí danh tài khoản)'}
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                className="inp"
+                value={displayPenName}
+                readOnly
+                disabled
+                style={{
+                  background: 'rgba(0, 0, 0, 0.04)',
+                  cursor: 'not-allowed',
+                  opacity: 0.85,
+                  color: 'var(--ink)',
+                  flex: 1,
+                }}
+                title={language === 'en' ? 'Pen name is locked to your account nickname' : 'Bút danh cố định theo bí danh tài khoản'}
+              />
+              <div
+                className="row"
+                style={{
+                  height: '42px',
+                  cursor: 'pointer',
+                  gap: '6px',
+                  userSelect: 'none',
+                  flexShrink: 0,
+                }}
+                onClick={() => setIsAnonymous(!isAnonymous)}
+              >
+                <span className={`tog ${isAnonymous ? 'on' : ''}`} />
+                <span className="muted" style={{ color: 'var(--ink)', fontSize: '13px' }}>
+                  {language === 'en' ? 'Anonymous' : 'Ẩn danh'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Side: Leaf Preview */}

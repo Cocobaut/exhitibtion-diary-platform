@@ -15,6 +15,8 @@ from app.api.v1.endpoints import (
     room2,
     room3,
     users,
+    admin_ai,
+    owner_ai,
 )
 
 api_router = APIRouter()
@@ -60,6 +62,11 @@ api_router.include_router(owner.router)
 
 # - plan_14: /notebook (app.api.v1.endpoints.notebook)
 api_router.include_router(notebook.router, prefix="/notebook", tags=["Unified Notebook"])
+
+# - plan_16: /admin/ai (app.api.v1.endpoints.admin_ai) & /owner/ai-settings (app.api.v1.endpoints.owner_ai)
+api_router.include_router(admin_ai.router)
+api_router.include_router(owner_ai.router)
+
 
 
 

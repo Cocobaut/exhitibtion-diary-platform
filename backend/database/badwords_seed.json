@@ -1,0 +1,205 @@
+[
+  {
+    "term": "địt",
+    "language": "vi",
+    "category": "profanity_severe",
+    "base_penalty": 20,
+    "variants": ["dit", "djt", "d!t", "d1t", "đ!t", "d*t"]
+  },
+  {
+    "term": "đụ",
+    "language": "vi",
+    "category": "profanity_severe",
+    "base_penalty": 20,
+    "variants": ["du", "đù", "đệt", "đéo", "đéch", "đách", "deo", "đ3o"]
+  },
+  {
+    "term": "đụ má",
+    "language": "vi",
+    "category": "profanity_severe",
+    "base_penalty": 25,
+    "variants": ["duma", "dume", "đuma", "đù má", "du me", "du ma", "du moẹ", "đệt mợ"]
+  },
+  {
+    "term": "địt con mẹ",
+    "language": "vi",
+    "category": "profanity_severe",
+    "base_penalty": 25,
+    "variants": ["dm", "dmm", "dcm", "đkm", "đcm", "đmm", "dckm", "cđmm", "d.m", "d_m", "đ.m", "d0 me"]
+  },
+  {
+    "term": "lồn",
+    "language": "vi",
+    "category": "profanity_severe",
+    "base_penalty": 20,
+    "variants": ["lon", "l0n", "l*n", "l**n", "l.o.n", "cl", "vl", "vcl", "vkl", "clgt", "vclgt", "ncl", "hãm l", "ngu l", "sml"]
+  },
+  {
+    "term": "cặc",
+    "language": "vi",
+    "category": "profanity_severe",
+    "base_penalty": 20,
+    "variants": ["cac", "kac", "kax", "cc", "cb", "c@c", "k@c", "c.a.c"]
+  },
+  {
+    "term": "buồi",
+    "language": "vi",
+    "category": "profanity_severe",
+    "base_penalty": 20,
+    "variants": ["buoi", "b**i", "b***i"]
+  },
+  {
+    "term": "dái",
+    "language": "vi",
+    "category": "profanity_severe",
+    "base_penalty": 15,
+    "variants": ["dai", "d*i"]
+  },
+  {
+    "term": "óc chó",
+    "language": "vi",
+    "category": "insult_intellect",
+    "base_penalty": 15,
+    "variants": ["oc cho", "occho", "0c ch0", "oc ch0", "nao cho", "não chó", "não bò", "óc bò"]
+  },
+  {
+    "term": "súc vật",
+    "language": "vi",
+    "category": "insult_intellect",
+    "base_penalty": 15,
+    "variants": ["suc vat", "súc sinh", "suc sinh", "s.v", "sv", "suck vat", "bọ súc sinh"]
+  },
+  {
+    "term": "bại não",
+    "language": "vi",
+    "category": "insult_intellect",
+    "base_penalty": 15,
+    "variants": ["bai nao", "bn", "não tàn", "nao tan", "nt", "ngu hoc", "ngu si", "thần kinh", "dở người"]
+  },
+  {
+    "term": "phò",
+    "language": "vi",
+    "category": "derogatory_sexual",
+    "base_penalty": 20,
+    "variants": ["pho", "4", "công nhân nghành", "cave", "đĩ", "dj~", "d~i~", "p-h-o", "phò phạch", "đĩ thỏa", "đĩ mẹ"]
+  },
+  {
+    "term": "bê đê",
+    "language": "vi",
+    "category": "derogatory_sexual",
+    "base_penalty": 20,
+    "variants": ["be de", "bóng chó", "bóng xà bang", "gay lọ", "les rác"]
+  },
+  {
+    "term": "gạ chịch",
+    "language": "vi",
+    "category": "derogatory_sexual",
+    "base_penalty": 20,
+    "variants": ["chịch", "chich", "ga chich", "chịch dạo"]
+  },
+  {
+    "term": "body shaming",
+    "language": "vi",
+    "category": "insult_bodyshaming",
+    "base_penalty": 15,
+    "variants": ["mập như lợn", "béo như chó", "xấu ma chê quỷ hờn", "dị tật"]
+  },
+  {
+    "term": "vãi đái",
+    "language": "vi",
+    "category": "profanity_mild",
+    "base_penalty": 10,
+    "variants": ["vđ", "vai dai", "vãi lúa", "vãi chưởng", "vch", "vãi nồi", "vãi cả chưởng"]
+  },
+  {
+    "term": "đéo cần",
+    "language": "vi",
+    "category": "profanity_mild",
+    "base_penalty": 10,
+    "variants": ["dell", "đíu", "đéch cần", "mé nó", "má nó", "me no", "ma no", "bực vkl", "cay mắt"]
+  },
+  {
+    "term": "xàm lồn",
+    "language": "vi",
+    "category": "profanity_mild",
+    "base_penalty": 10,
+    "variants": ["xàm l", "xam lon", "xàm xí", "rác rưởi", "nát vcl"]
+  },
+  {
+    "term": "fuck",
+    "language": "en",
+    "category": "profanity_severe",
+    "base_penalty": 20,
+    "variants": ["f*ck", "f**k", "fu*k", "fvk", "fck", "f u c k", "fucking", "fucked", "fucker", "motherfucker", "mf"]
+  },
+  {
+    "term": "shit",
+    "language": "en",
+    "category": "profanity_mild",
+    "base_penalty": 10,
+    "variants": ["sh*t", "sh!t", "s.h.i.t", "bullshit", "bs"]
+  },
+  {
+    "term": "bitch",
+    "language": "en",
+    "category": "insult_derogatory",
+    "base_penalty": 15,
+    "variants": ["b!tch", "b*tch", "b1tch", "biatch", "btch", "son of a bitch", "sob"]
+  },
+  {
+    "term": "asshole",
+    "language": "en",
+    "category": "profanity_severe",
+    "base_penalty": 15,
+    "variants": ["a$$", "a$$hole", "ass", "asshole"]
+  },
+  {
+    "term": "cunt",
+    "language": "en",
+    "category": "profanity_severe",
+    "base_penalty": 20,
+    "variants": ["c*nt", "cunt"]
+  },
+  {
+    "term": "dick",
+    "language": "en",
+    "category": "profanity_severe",
+    "base_penalty": 15,
+    "variants": ["d!ck", "dick", "cock", "prick", "bastard", "pussy"]
+  },
+  {
+    "term": "internet_slang_severe",
+    "language": "en",
+    "category": "profanity_severe",
+    "base_penalty": 15,
+    "variants": ["wtf", "wth", "fml", "stfu", "gtfo", "ffs"]
+  },
+  {
+    "term": "nigger",
+    "language": "en",
+    "category": "hate_speech",
+    "base_penalty": 30,
+    "variants": ["nigga", "n1gga", "n!gger", "n*gger", "chink"]
+  },
+  {
+    "term": "faggot",
+    "language": "en",
+    "category": "hate_speech",
+    "base_penalty": 30,
+    "variants": ["fag", "dyke", "retard", "spastic"]
+  },
+  {
+    "term": "slut",
+    "language": "en",
+    "category": "hate_speech",
+    "base_penalty": 25,
+    "variants": ["whore", "skank", "thot"]
+  },
+  {
+    "term": "minor_slang",
+    "language": "en",
+    "category": "profanity_mild",
+    "base_penalty": 5,
+    "variants": ["damn", "damn it", "hell", "crap", "suck", "sucks", "idiot", "moron", "loser", "jerk", "douche", "dumbass", "piss", "pissed off"]
+  }
+]

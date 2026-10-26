@@ -113,6 +113,14 @@ export const adminStudioService = {
       reason: reason?.trim() || 'Thao tác cập nhật trạng thái từ Quản trị viên',
     });
   },
+
+  /**
+   * 12.5 Lấy danh sách tài khoản Ban Quản Trị kèm trạng thái online/offline, avatar
+   * @returns {Promise<Object>} { total_admins, total_online, total_offline, admins: [...] }
+   */
+  async getAdminPresence() {
+    return await apiClient.get('/admin/studio/presence');
+  },
 };
 
 export default adminStudioService;

@@ -22,12 +22,17 @@ from app.schemas.admin_studio import (
     RequestUserDeletionRequest,
     StudioPublishArtworkData,
     StudioPublishArtworkRequest,
+    AdminPresenceData,
+    AdminPresenceItem,
 )
 from app.services.audit_log_service import AuditLogService
 from app.services.notification_service import NotificationService
 import logging
 
 logger = logging.getLogger("uvicorn.info")
+
+# In-memory heartbeat registry for admin online tracking
+_admin_presence_heartbeat: dict[str, datetime] = {}
 
 
 class AdminStudioService:
@@ -434,4 +439,73 @@ class AdminStudioService:
             is_active=target_user.is_active,
             updated_at=target_user.updated_at,
         )
+
+    @classmethod
+    async def get_admin_presence(
+        cls,
+        db: AsyncSession,
+        current_admin: User,
+    ) -> AdminPresenceData:
+        """12.5 Lấy danh sách toàn bộ tài khoản Admin/Owner kèm trạng thái online/offline và avatar."""
+        now = datetime.now(timezone.utc)
+        # Ghi nhận heartbeat của Admin đang gọi API
+        _admin_presence_heartbeat[str(current_admin.id)] = now
+
+        # Lấy danh sách toàn bộ user có role ADMIN hoặc OWNER đang hoạt động
+        stmt = (
+            select(User)
+            .where(
+                User.role.in_([UserRole.ADMIN.value, "ADMIN", UserRole.OWNER.value, "OWNER"]),
+                User.is_active.is_(True),
+            )
+            .order_by(User.role.desc(), User.nickname.asc())
+        )
+        result = await db.scalars(stmt)
+        admin_users = result.all()
+
+        palette = ["#A1342C", "#5E7A52", "#7E74B4", "#B8893A", "#2D7D46", "#C44B2B", "#4F3E4B", "#3A5A80"]
+
+        items: List[AdminPresenceItem] = []
+        for idx, u in enumerate(admin_users):
+            u_id = str(u.id)
+            is_caller = (u_id == str(current_admin.id))
+            last_seen = _admin_presence_heartbeat.get(u_id)
+
+            if is_caller:
+                is_online = True
+                last_seen_at = now
+            elif last_seen is not None:
+                # Online nếu có tín hiệu trong vòng 5 phút (300 giây)
+                diff = (now - last_seen).total_seconds()
+                is_online = (diff < 300)
+                last_seen_at = last_seen
+            else:
+                is_online = False
+                last_seen_at = u.updated_at or u.created_at
+
+            color = palette[idx % len(palette)]
+
+            items.append(
+                AdminPresenceItem(
+                    id=u.id,
+                    username=u.username,
+                    nickname=u.nickname,
+                    role=u.role,
+                    avatar_url=u.avatar_url,
+                    color=color,
+                    is_online=is_online,
+                    last_seen_at=last_seen_at,
+                )
+            )
+
+        total_online = sum(1 for item in items if item.is_online)
+        total_offline = len(items) - total_online
+
+        return AdminPresenceData(
+            total_admins=len(items),
+            total_online=total_online,
+            total_offline=total_offline,
+            admins=items,
+        )
+
 

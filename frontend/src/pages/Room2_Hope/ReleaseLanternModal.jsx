@@ -3,15 +3,20 @@ import { Icon } from '../../components/common/Icons';
 import { SYM, SYM_KEYS } from '../../data/mockData';
 import { poly } from './LanternSky';
 import { room2Service } from '../../services/room2Service';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
+  const { user } = useAuth();
   const { language } = useLanguage();
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
-  const [penName, setPenName] = useState('');
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState('heart');
   const [isPrivate, setIsPrivate] = useState(true);
+
+  const accountNickname = user?.nickname || user?.username || (language === 'en' ? 'Author' : 'Tác giả');
+  const displayPenName = isAnonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : accountNickname;
 
   // Target date handling (minimum 1 hour in the future)
   const getInitialTargetDate = () => {
@@ -39,9 +44,6 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             ? 'Today I failed my third interview round. I am writing this letter so you remember that once things were tough, and I kept going.'
             : 'Hôm nay mình vừa trượt vòng phỏng vấn thứ ba. Mình viết lá thư này để cậu nhớ rằng đã có lúc mọi thứ thật khó, và mình vẫn đi tiếp.'
         );
-      }
-      if (!penName) {
-        setPenName(language === 'en' ? 'Me in 2026' : 'Linh của năm 2026');
       }
     }
   }, [isOpen, language]);
@@ -136,7 +138,8 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
         title: cleanTitle,
         content: cleanContent,
         short_content: shortContent,
-        author_display_name: penName.trim() || undefined,
+        author_display_name: displayPenName,
+        is_anonymous: isAnonymous,
         symbol: selectedSymbol,
         visibility: isPrivate ? 'PRIVATE' : 'PUBLIC',
         target_date: targetDateObj.toISOString(),
@@ -239,14 +242,44 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '6px' }}>
             <div>
-              <div className="fieldl">{language === 'en' ? 'Pen name' : 'Bút danh'}</div>
-              <input
-                className="inp"
-                placeholder={language === 'en' ? 'E.g., Me in 2026' : 'Ví dụ: Linh của năm 2026'}
-                value={penName}
-                onChange={(e) => setPenName(e.target.value)}
-                maxLength={50}
-              />
+              <div className="fieldl">
+                <span>{language === 'en' ? 'Pen name' : 'Bút danh'}</span>
+                <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>
+                  {language === 'en' ? '(Account nickname)' : '(Bí danh tài khoản)'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  className="inp"
+                  value={displayPenName}
+                  readOnly
+                  disabled
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.04)',
+                    cursor: 'not-allowed',
+                    opacity: 0.85,
+                    color: 'var(--ink)',
+                    flex: 1,
+                  }}
+                  title={language === 'en' ? 'Pen name is locked to your account nickname' : 'Bút danh cố định theo bí danh tài khoản'}
+                />
+                <div
+                  className="row"
+                  style={{
+                    height: '42px',
+                    cursor: 'pointer',
+                    gap: '6px',
+                    userSelect: 'none',
+                    flexShrink: 0,
+                  }}
+                  onClick={() => setIsAnonymous(!isAnonymous)}
+                >
+                  <span className={`tog ${isAnonymous ? 'on' : ''}`} />
+                  <span className="muted" style={{ color: 'var(--ink)', fontSize: '13px' }}>
+                    {language === 'en' ? 'Anonymous' : 'Ẩn danh'}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div>

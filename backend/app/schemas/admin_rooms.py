@@ -135,12 +135,23 @@ class RoomApprovedSummary(BaseModel):
 class ApprovedArtworkListItem(BaseModel):
     id: uuid.UUID
     title: str
+    title_vi: Optional[str] = None
+    title_en: Optional[str] = None
+    short_content: Optional[str] = None
+    short_content_vi: Optional[str] = None
+    short_content_en: Optional[str] = None
+    content: Optional[str] = None
+    content_vi: Optional[str] = None
+    content_en: Optional[str] = None
+    original_language: Optional[str] = None
     author_display_name: Optional[str] = None
     media_url: Optional[str] = None
     view_count: int
     reactions_count: int
     status: str
     reviewed_at: Optional[datetime] = None
+    tag_category: Optional[str] = None
+    color_code: Optional[str] = None
     author: AuthorInfo
 
     model_config = ConfigDict(from_attributes=True)

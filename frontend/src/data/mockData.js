@@ -31,6 +31,7 @@ export const IC = {
   sparkle: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z M19 16l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z",
   font: "M4 20l6-16h1l6 16 M7 14h7 M17 20h4",
   filter: "M4 6h16 M7 12h10 M10 18h4",
+  crown: "M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z M4 20h16",
 };
 
 // ---------- Reactions Config ----------
@@ -43,10 +44,46 @@ export const RX = {
 
 // ---------- In-App Themes ----------
 export const THEMES = [
-  { key: "museum", name: "Bảo tàng chiều", desc: "Mặc định. Tường nâu đất, đèn rọi vàng.", swatches: ["#564640", "#3A2E29", "#F3EADD", "#A1342C", "#D4B06A"] },
-  { key: "moss", name: "Rêu cổ", desc: "Xanh rêu trầm, gạch nung.", swatches: ["#434D46", "#2E3631", "#F0ECE0", "#A55A3A", "#CDB06A"] },
-  { key: "plum", name: "Mận chín", desc: "Tím mận ấm, hồng đất.", swatches: ["#4F3E4B", "#362933", "#F4ECE8", "#B0473F", "#D6AE72"] },
-  { key: "paper", name: "Giấy cũ", desc: "Bản sáng, gần màu trang Facebook.", swatches: ["#E6D7C1", "#CDB79A", "#FBF6EE", "#7F1916", "#B8893A"] },
+  {
+    key: "museum",
+    name: "Bảo tàng chiều",
+    name_vi: "Bảo tàng chiều",
+    name_en: "Dusk Museum",
+    desc: "Mặc định. Tường nâu đất, đèn rọi vàng.",
+    desc_vi: "Mặc định. Tường nâu đất, đèn rọi vàng.",
+    desc_en: "Default. Warm earthy brown walls with golden spotlight glow.",
+    swatches: ["#564640", "#3A2E29", "#F3EADD", "#A1342C", "#D4B06A"],
+  },
+  {
+    key: "moss",
+    name: "Rêu cổ",
+    name_vi: "Rêu cổ",
+    name_en: "Ancient Moss",
+    desc: "Xanh rêu trầm, gạch nung.",
+    desc_vi: "Xanh rêu trầm, gạch nung.",
+    desc_en: "Serene deep moss greens with warm terracotta brick tones.",
+    swatches: ["#434D46", "#2E3631", "#F0ECE0", "#A55A3A", "#CDB06A"],
+  },
+  {
+    key: "plum",
+    name: "Mận chín",
+    name_vi: "Mận chín",
+    name_en: "Ripe Plum",
+    desc: "Tím mận ấm, hồng đất.",
+    desc_vi: "Tím mận ấm, hồng đất.",
+    desc_en: "Contemplative warm plum purple and nostalgic dusty rose hues.",
+    swatches: ["#4F3E4B", "#362933", "#F4ECE8", "#B0473F", "#D6AE72"],
+  },
+  {
+    key: "paper",
+    name: "Giấy cũ",
+    name_vi: "Giấy cũ",
+    name_en: "Vintage Parchment",
+    desc: "Bản sáng, màu trang sách ngả vàng.",
+    desc_vi: "Bản sáng, màu trang sách ngả vàng.",
+    desc_en: "Bright aesthetic with soothing gentle aged book parchment tones.",
+    swatches: ["#E6D7C1", "#CDB79A", "#FBF6EE", "#7F1916", "#B8893A"],
+  },
 ];
 
 // ---------- Room 1 Artworks ----------

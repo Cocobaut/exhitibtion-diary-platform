@@ -3,11 +3,13 @@ import { Modal } from '../../components/common/Modal';
 import { Icon } from '../../components/common/Icons';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { userService } from '../../services/userService';
 
 export function AccountSettingsModal({ isOpen, onClose }) {
   const { user, updateUser, refreshProfile } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { language } = useLanguage();
 
   const [activeTab, setActiveTab] = useState('info'); // 'info', 'security', 'theme'
   const fileInputRef = useRef(null);
@@ -47,15 +49,21 @@ export function AccountSettingsModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  // 2.2 Cập nhật Biệt danh & Bio
+  // Cập nhật Biệt danh & Bio
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (nickname && nickname.trim().length > 50) {
-      setProfileMsg({ type: 'error', text: 'Biệt danh tối đa 50 ký tự' });
+      setProfileMsg({
+        type: 'error',
+        text: language === 'en' ? 'Nickname cannot exceed 50 characters' : 'Biệt danh tối đa 50 ký tự',
+      });
       return;
     }
     if (bio && bio.length > 255) {
-      setProfileMsg({ type: 'error', text: 'Giới thiệu tối đa 255 ký tự' });
+      setProfileMsg({
+        type: 'error',
+        text: language === 'en' ? 'Bio cannot exceed 255 characters' : 'Giới thiệu tối đa 255 ký tự',
+      });
       return;
     }
 
@@ -70,32 +78,41 @@ export function AccountSettingsModal({ isOpen, onClose }) {
 
       updateUser(updated);
       setIsUpdatingProfile(false);
-      setProfileMsg({ type: 'success', text: 'Cập nhật hồ sơ thành công' });
+      setProfileMsg({
+        type: 'success',
+        text: language === 'en' ? 'Profile updated successfully' : 'Cập nhật hồ sơ thành công',
+      });
       refreshProfile && refreshProfile();
     } catch (err) {
       setIsUpdatingProfile(false);
       setProfileMsg({
         type: 'error',
-        text: err.message || 'Không thể cập nhật hồ sơ. Vui lòng thử lại.',
+        text: err.message || (language === 'en' ? 'Could not update profile. Please try again.' : 'Không thể cập nhật hồ sơ. Vui lòng thử lại.'),
       });
     }
   };
 
-  // 2.4 Cập nhật Ảnh đại diện (Avatar)
+  // Cập nhật Ảnh đại diện (Avatar)
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     // Validate size (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setAvatarMsg({ type: 'error', text: 'Ảnh vượt quá dung lượng cho phép (tối đa 5MB)' });
+      setAvatarMsg({
+        type: 'error',
+        text: language === 'en' ? 'Image exceeds maximum allowed size (5MB)' : 'Ảnh vượt quá dung lượng cho phép (tối đa 5MB)',
+      });
       return;
     }
 
     // Validate mime
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setAvatarMsg({ type: 'error', text: 'Chỉ chấp nhận định dạng ảnh PNG, JPEG hoặc WebP' });
+      setAvatarMsg({
+        type: 'error',
+        text: language === 'en' ? 'Only PNG, JPEG or WebP formats are supported' : 'Chỉ chấp nhận định dạng ảnh PNG, JPEG hoặc WebP',
+      });
       return;
     }
 
@@ -107,37 +124,46 @@ export function AccountSettingsModal({ isOpen, onClose }) {
       setIsUploadingAvatar(false);
       if (res?.avatar_url) {
         updateUser({ avatar_url: res.avatar_url });
-        setAvatarMsg({ type: 'success', text: 'Cập nhật ảnh đại diện thành công' });
+        setAvatarMsg({
+          type: 'success',
+          text: language === 'en' ? 'Avatar updated successfully' : 'Cập nhật ảnh đại diện thành công',
+        });
         refreshProfile && refreshProfile();
       }
     } catch (err) {
       setIsUploadingAvatar(false);
       setAvatarMsg({
         type: 'error',
-        text: err.message || 'Không thể tải ảnh đại diện lên.',
+        text: err.message || (language === 'en' ? 'Could not upload avatar.' : 'Không thể tải ảnh đại diện lên.'),
       });
     }
   };
 
-  // 2.3 Đổi mật khẩu
+  // Đổi mật khẩu
   const handleChangePassword = async (e) => {
     e.preventDefault();
     setPasswordMsg({ type: '', text: '' });
 
     if (!currentPassword) {
-      setPasswordMsg({ type: 'error', text: 'Vui lòng nhập mật khẩu hiện tại' });
+      setPasswordMsg({
+        type: 'error',
+        text: language === 'en' ? 'Please enter current password' : 'Vui lòng nhập mật khẩu hiện tại',
+      });
       return;
     }
 
     if (!newPassword) {
-      setPasswordMsg({ type: 'error', text: 'Vui lòng nhập mật khẩu mới' });
+      setPasswordMsg({
+        type: 'error',
+        text: language === 'en' ? 'Please enter new password' : 'Vui lòng nhập mật khẩu mới',
+      });
       return;
     }
 
     if (newPassword.length < 8) {
       setPasswordMsg({
         type: 'error',
-        text: 'Mật khẩu mới cần tối thiểu 8 ký tự',
+        text: language === 'en' ? 'New password requires at least 8 characters' : 'Mật khẩu mới cần tối thiểu 8 ký tự',
       });
       return;
     }
@@ -149,21 +175,26 @@ export function AccountSettingsModal({ isOpen, onClose }) {
     if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
       setPasswordMsg({
         type: 'error',
-        text: 'Mật khẩu mới cần đủ chữ hoa, chữ thường, chữ số và ký tự đặc biệt',
-      });
-      return;
-    }
-
-    if (newPassword === currentPassword) {
-      setPasswordMsg({
-        type: 'error',
-        text: 'Mật khẩu mới không được trùng với mật khẩu cũ',
+        text: language === 'en'
+          ? 'New password requires uppercase, lowercase, numbers, and special characters'
+          : 'Mật khẩu mới cần tối thiểu 8 ký tự gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt',
       });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordMsg({ type: 'error', text: 'Mật khẩu xác nhận không khớp' });
+      setPasswordMsg({
+        type: 'error',
+        text: language === 'en' ? 'Password confirmation does not match' : 'Xác nhận mật khẩu mới không khớp',
+      });
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordMsg({
+        type: 'error',
+        text: language === 'en' ? 'New password cannot be identical to current password' : 'Mật khẩu mới không được trùng với mật khẩu cũ',
+      });
       return;
     }
 
@@ -179,26 +210,33 @@ export function AccountSettingsModal({ isOpen, onClose }) {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setPasswordMsg({ type: 'success', text: 'Đổi mật khẩu thành công' });
+      setPasswordMsg({
+        type: 'success',
+        text: language === 'en' ? 'Password changed successfully' : 'Đổi mật khẩu thành công',
+      });
     } catch (err) {
       setIsUpdatingPassword(false);
-      if (
-        err.errorCode === 'WRONG_CURRENT_PASSWORD' ||
-        err.errorCode === 'INCORRECT_PASSWORD' ||
-        err.status === 401
-      ) {
-        setPasswordMsg({ type: 'error', text: 'Mật khẩu hiện tại không chính xác' });
+      if (err.errorCode === 'INVALID_PASSWORD') {
+        setPasswordMsg({
+          type: 'error',
+          text: language === 'en' ? 'Current password is incorrect' : 'Mật khẩu hiện tại không chính xác',
+        });
       } else if (err.errorCode === 'PASSWORD_UNCHANGED' || err.errorCode === 'SAME_PASSWORD') {
-        setPasswordMsg({ type: 'error', text: 'Mật khẩu mới không được trùng với mật khẩu cũ' });
+        setPasswordMsg({
+          type: 'error',
+          text: language === 'en' ? 'New password cannot be identical to current password' : 'Mật khẩu mới không được trùng với mật khẩu cũ',
+        });
       } else if (err.errorCode === 'WEAK_PASSWORD') {
         setPasswordMsg({
           type: 'error',
-          text: 'Mật khẩu mới cần tối thiểu 8 ký tự gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt',
+          text: language === 'en'
+            ? 'New password requires uppercase, lowercase, numbers, and special characters'
+            : 'Mật khẩu mới cần tối thiểu 8 ký tự gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt',
         });
       } else {
         setPasswordMsg({
           type: 'error',
-          text: err.message || 'Đã có lỗi xảy ra khi đổi mật khẩu.',
+          text: err.message || (language === 'en' ? 'Error occurred while changing password.' : 'Đã có lỗi xảy ra khi đổi mật khẩu.'),
         });
       }
     }
@@ -213,7 +251,7 @@ export function AccountSettingsModal({ isOpen, onClose }) {
     try {
       await userService.updateProfile({ theme_preference: themeKey });
       updateUser({ theme_preference: themeKey });
-      setThemeMsg('Đã lưu bảng màu ưa thích vào tài khoản');
+      setThemeMsg(language === 'en' ? 'Color theme preference saved to your account' : 'Đã lưu bảng màu ưa thích vào tài khoản');
     } catch {
       // Offline fallback
     } finally {
@@ -221,14 +259,30 @@ export function AccountSettingsModal({ isOpen, onClose }) {
     }
   };
 
-  const displayName = user?.nickname || user?.username || 'Bạn';
+  const displayName = user?.nickname || user?.username || (language === 'en' ? 'You' : 'Bạn');
   const initialLetter = displayName.charAt(0).toUpperCase();
 
   const themesList = [
-    { key: 'museum', name: 'Bảo tàng chiều (Mặc định)', desc: 'Tông trầm ấm cổ điển, ánh vàng hoàng hôn' },
-    { key: 'moss', name: 'Rêu cổ', desc: 'Sắc xanh tĩnh lặng của khu vườn tĩnh dưỡng' },
-    { key: 'plum', name: 'Mận chín', desc: 'Gam tím hồng hoài niệm, sâu lắng' },
-    { key: 'paper', name: 'Giấy cũ', desc: 'Màu trang sách ngả vàng, êm dịu ánh mắt' },
+    {
+      key: 'museum',
+      name: language === 'en' ? 'Museum Twilight (Default)' : 'Bảo tàng chiều (Mặc định)',
+      desc: language === 'en' ? 'Classic warm vintage tones with golden sunset glow' : 'Tông trầm ấm cổ điển, ánh vàng hoàng hôn',
+    },
+    {
+      key: 'moss',
+      name: language === 'en' ? 'Ancient Moss' : 'Rêu cổ',
+      desc: language === 'en' ? 'Tranquil serene greens of a meditative botanical garden' : 'Sắc xanh tĩnh lặng của khu vườn tĩnh dưỡng',
+    },
+    {
+      key: 'plum',
+      name: language === 'en' ? 'Ripe Plum' : 'Mận chín',
+      desc: language === 'en' ? 'Nostalgic deep violet and rosé hues, calm and contemplative' : 'Gam tím hồng hoài niệm, sâu lắng',
+    },
+    {
+      key: 'paper',
+      name: language === 'en' ? 'Aged Paper' : 'Giấy cũ',
+      desc: language === 'en' ? 'Gentle yellowed vintage book pages, soothing for the eyes' : 'Màu trang sách ngả vàng, êm dịu ánh mắt',
+    },
   ];
 
   return (
@@ -237,19 +291,32 @@ export function AccountSettingsModal({ isOpen, onClose }) {
       onClose={onClose}
       style={{
         width: '600px',
-        maxWidth: '95vw',
+        maxWidth: '92vw',
         maxHeight: '90vh',
         overflowY: 'auto',
         textAlign: 'left',
+        position: 'fixed',
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+        zIndex: 1000,
+        boxShadow: '0 30px 80px rgba(0, 0, 0, 0.45)',
+      }}
+      scrimStyle={{
+        position: 'fixed',
+        inset: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 999,
       }}
     >
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
         <h2 className="serif" style={{ fontSize: '28px', color: 'var(--ink)' }}>
-          Hồ sơ & Cài đặt
+          {language === 'en' ? 'Profile & Settings' : 'Hồ sơ & Cài đặt'}
         </h2>
         <div className="hand" style={{ fontSize: '18px', color: 'var(--ink2)', marginTop: '2px' }}>
-          chăm chút chốn dừng chân của bạn
+          {language === 'en' ? 'curating your peaceful sanctuary' : 'chăm chút chốn dừng chân của bạn'}
         </div>
       </div>
 
@@ -261,6 +328,7 @@ export function AccountSettingsModal({ isOpen, onClose }) {
           borderBottom: '1px solid var(--line)',
           paddingBottom: '10px',
           marginBottom: '20px',
+          flexWrap: 'wrap',
         }}
       >
         <button
@@ -275,7 +343,7 @@ export function AccountSettingsModal({ isOpen, onClose }) {
             borderColor: activeTab === 'info' ? 'var(--acc)' : 'var(--line)',
           }}
         >
-          Thông tin cá nhân
+          {language === 'en' ? 'Personal Info' : 'Thông tin cá nhân'}
         </button>
         <button
           type="button"
@@ -289,7 +357,7 @@ export function AccountSettingsModal({ isOpen, onClose }) {
             borderColor: activeTab === 'security' ? 'var(--acc)' : 'var(--line)',
           }}
         >
-          Đổi mật khẩu
+          {language === 'en' ? 'Change Password' : 'Đổi mật khẩu'}
         </button>
         <button
           type="button"
@@ -303,7 +371,7 @@ export function AccountSettingsModal({ isOpen, onClose }) {
             borderColor: activeTab === 'theme' ? 'var(--acc)' : 'var(--line)',
           }}
         >
-          Bảng màu giao diện
+          {language === 'en' ? 'Theme & Appearance' : 'Bảng màu giao diện'}
         </button>
       </div>
 
@@ -364,10 +432,12 @@ export function AccountSettingsModal({ isOpen, onClose }) {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploadingAvatar}
               >
-                {isUploadingAvatar ? 'Đang tải ảnh lên...' : 'Đổi ảnh đại diện'}
+                {isUploadingAvatar
+                  ? (language === 'en' ? 'Uploading...' : 'Đang tải ảnh lên...')
+                  : (language === 'en' ? 'Change Avatar' : 'Đổi ảnh đại diện')}
               </button>
               <div style={{ fontSize: '12px', color: 'var(--ink2)', marginTop: '6px' }}>
-                Định dạng PNG, JPG, WebP tối đa 5MB
+                {language === 'en' ? 'PNG, JPG, WebP format up to 5MB' : 'Định dạng PNG, JPG, WebP tối đa 5MB'}
               </div>
               {avatarMsg.text && (
                 <div
@@ -406,23 +476,25 @@ export function AccountSettingsModal({ isOpen, onClose }) {
           <form onSubmit={handleSaveProfile}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <div className="fieldl">Tên đăng nhập</div>
+                <div className="fieldl">{language === 'en' ? 'Username' : 'Tên đăng nhập'}</div>
                 <input className="inp" value={user?.username || ''} disabled style={{ opacity: 0.7 }} />
               </div>
               <div>
-                <div className="fieldl">Email</div>
+                <div className="fieldl">{language === 'en' ? 'Email' : 'Email'}</div>
                 <input className="inp" value={user?.email || ''} disabled style={{ opacity: 0.7 }} />
               </div>
             </div>
 
             <div style={{ marginTop: '12px' }}>
               <div className="fieldl">
-                <span>Biệt danh hiển thị</span>
-                <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>Tối đa 50 ký tự</span>
+                <span>{language === 'en' ? 'Display Nickname' : 'Biệt danh hiển thị'}</span>
+                <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>
+                  {language === 'en' ? 'Max 50 characters' : 'Tối đa 50 ký tự'}
+                </span>
               </div>
               <input
                 className="inp"
-                placeholder="ví dụ: Linh Mùa Thu"
+                placeholder={language === 'en' ? 'e.g. Autumn Soul' : 'ví dụ: Linh Mùa Thu'}
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
                 disabled={isUpdatingProfile}
@@ -431,13 +503,15 @@ export function AccountSettingsModal({ isOpen, onClose }) {
 
             <div style={{ marginTop: '12px' }}>
               <div className="fieldl">
-                <span>Đôi dòng tâm sự (Bio)</span>
-                <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>Tối đa 255 ký tự</span>
+                <span>{language === 'en' ? 'Bio' : 'Đôi dòng tâm sự (Bio)'}</span>
+                <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>
+                  {language === 'en' ? 'Max 255 characters' : 'Tối đa 255 ký tự'}
+                </span>
               </div>
               <textarea
                 className="inp"
                 style={{ minHeight: '80px', resize: 'vertical', fontFamily: 'inherit' }}
-                placeholder="Một câu châm ngôn hoặc đôi lời bạn muốn gửi gắm..."
+                placeholder={language === 'en' ? 'A favorite quote or words you wish to share...' : 'Một câu châm ngôn hoặc đôi lời bạn muốn gửi gắm...'}
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 disabled={isUpdatingProfile}
@@ -446,11 +520,16 @@ export function AccountSettingsModal({ isOpen, onClose }) {
 
             <div style={{ marginTop: '12px', display: 'flex', gap: '12px', alignItems: 'center' }}>
               <div style={{ fontSize: '13px', color: 'var(--ink2)' }}>
-                Vai trò: <b>{user?.role || 'USER'}</b>
+                {language === 'en' ? 'Role:' : 'Vai trò:'} <b>{user?.role || 'USER'}</b>
               </div>
               <span style={{ opacity: 0.4 }}>•</span>
               <div style={{ fontSize: '13px', color: 'var(--ink2)' }}>
-                Tham gia: {user?.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : 'Gần đây'}
+                {language === 'en' ? 'Joined:' : 'Tham gia:'}{' '}
+                {user?.created_at
+                  ? (language === 'en'
+                      ? new Date(user.created_at).toLocaleDateString('en-US')
+                      : new Date(user.created_at).toLocaleDateString('vi-VN'))
+                  : (language === 'en' ? 'Recently' : 'Gần đây')}
               </div>
             </div>
 
@@ -461,7 +540,9 @@ export function AccountSettingsModal({ isOpen, onClose }) {
                 style={{ padding: '10px 24px' }}
                 disabled={isUpdatingProfile}
               >
-                {isUpdatingProfile ? 'Đang lưu...' : 'Lưu thay đổi'}
+                {isUpdatingProfile
+                  ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+                  : (language === 'en' ? 'Save Changes' : 'Lưu thay đổi')}
               </button>
             </div>
           </form>
@@ -491,11 +572,11 @@ export function AccountSettingsModal({ isOpen, onClose }) {
           )}
 
           <div>
-            <div className="fieldl">Mật khẩu hiện tại *</div>
+            <div className="fieldl">{language === 'en' ? 'Current Password *' : 'Mật khẩu hiện tại *'}</div>
             <input
               type={showPassword ? 'text' : 'password'}
               className="inp"
-              placeholder="Nhập mật khẩu bạn đang dùng"
+              placeholder={language === 'en' ? 'Enter current password' : 'Nhập mật khẩu bạn đang dùng'}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               disabled={isUpdatingPassword}
@@ -504,18 +585,18 @@ export function AccountSettingsModal({ isOpen, onClose }) {
 
           <div style={{ marginTop: '12px' }}>
             <div className="fieldl">
-              <span>Mật khẩu mới *</span>
+              <span>{language === 'en' ? 'New Password *' : 'Mật khẩu mới *'}</span>
               <span
                 style={{ color: 'var(--acc)', cursor: 'pointer', fontSize: '12px' }}
                 onClick={() => setShowPassword((prev) => !prev)}
               >
-                {showPassword ? 'Ẩn' : 'Hiện'}
+                {showPassword ? (language === 'en' ? 'Hide' : 'Ẩn') : (language === 'en' ? 'Show' : 'Hiện')}
               </span>
             </div>
             <input
               type={showPassword ? 'text' : 'password'}
               className="inp"
-              placeholder="Tối thiểu 8 ký tự (Hoa, Thường, Số, Ký tự đặc biệt)"
+              placeholder={language === 'en' ? 'Min 8 chars (Upper, Lower, Number, Special)' : 'Tối thiểu 8 ký tự (Hoa, Thường, Số, Ký tự đặc biệt)'}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               disabled={isUpdatingPassword}
@@ -523,11 +604,11 @@ export function AccountSettingsModal({ isOpen, onClose }) {
           </div>
 
           <div style={{ marginTop: '12px' }}>
-            <div className="fieldl">Xác nhận mật khẩu mới *</div>
+            <div className="fieldl">{language === 'en' ? 'Confirm New Password *' : 'Xác nhận mật khẩu mới *'}</div>
             <input
               type={showPassword ? 'text' : 'password'}
               className="inp"
-              placeholder="Nhập lại mật khẩu mới"
+              placeholder={language === 'en' ? 'Re-enter new password' : 'Nhập lại mật khẩu mới'}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={isUpdatingPassword}
@@ -541,7 +622,9 @@ export function AccountSettingsModal({ isOpen, onClose }) {
               style={{ padding: '10px 24px' }}
               disabled={isUpdatingPassword}
             >
-              {isUpdatingPassword ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
+              {isUpdatingPassword
+                ? (language === 'en' ? 'Updating...' : 'Đang cập nhật...')
+                : (language === 'en' ? 'Update Password' : 'Cập nhật mật khẩu')}
             </button>
           </div>
         </form>
@@ -551,7 +634,9 @@ export function AccountSettingsModal({ isOpen, onClose }) {
       {activeTab === 'theme' && (
         <div>
           <div style={{ fontSize: '14.5px', color: 'var(--ink2)', marginBottom: '14px' }}>
-            Chọn phong cách thị giác yêu thích. Lựa chọn này sẽ được lưu đồng bộ vào tài khoản của bạn.
+            {language === 'en'
+              ? 'Choose your favorite visual theme. This preference will be synchronized with your account.'
+              : 'Chọn phong cách thị giác yêu thích. Lựa chọn này sẽ được lưu đồng bộ vào tài khoản của bạn.'}
           </div>
 
           {themeMsg && (

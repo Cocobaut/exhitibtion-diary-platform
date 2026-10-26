@@ -116,6 +116,7 @@ async def reject_artwork(
 @router.get("/approved", status_code=status.HTTP_200_OK)
 async def get_approved_artworks(
     room_id: int,
+    status_filter: Optional[str] = Query("APPROVED", alias="status", pattern="^(APPROVED|ARCHIVED)$", description="Lọc theo trạng thái APPROVED hoặc ARCHIVED"),
     q: Optional[str] = Query(None, description="Từ khóa tìm kiếm theo tiêu đề"),
     title: Optional[str] = Query(None, description="Lọc theo tiêu đề tác phẩm"),
     author_display_name: Optional[str] = Query(None, description="Lọc theo tên hiển thị tác giả"),
@@ -125,10 +126,11 @@ async def get_approved_artworks(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    """9.2.1 Danh sách tác phẩm đang trưng bày kèm thống kê tổng thể phòng."""
+    """9.2.1 Danh sách tác phẩm đang trưng bày hoặc lưu trữ kèm thống kê tổng thể phòng."""
     data = await AdminRoomService.get_approved_artworks(
         db=db,
         room_id=room_id,
+        status_filter=status_filter or "APPROVED",
         q=q,
         title=title,
         author_display_name=author_display_name,
@@ -166,7 +168,7 @@ async def edit_artwork(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    """9.2.2 Cập nhật/hiệu đính nội dung tác phẩm đang trưng bày."""
+    """9.2.2 Cập nhật/hiệu đính nội dung tác phẩm đang trưng bày hoặc lưu trữ."""
     data = await AdminRoomService.edit_artwork(
         db=db,
         admin=admin,
@@ -198,5 +200,25 @@ async def archive_artwork(
     )
     return ok(
         message="Đã gỡ tác phẩm khỏi không gian trưng bày và chuyển vào kho lưu trữ",
+        data=data,
+    )
+
+
+@router.patch("/{artwork_id}/restore", status_code=status.HTTP_200_OK)
+async def restore_artwork(
+    room_id: int,
+    artwork_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """9.2.5 Khôi phục tác phẩm từ kho lưu trữ trở lại phòng triển lãm."""
+    data = await AdminRoomService.restore_artwork(
+        db=db,
+        admin=admin,
+        room_id=room_id,
+        artwork_id_raw=artwork_id,
+    )
+    return ok(
+        message="Đã khôi phục tác phẩm trở lại phòng triển lãm thành công",
         data=data,
     )

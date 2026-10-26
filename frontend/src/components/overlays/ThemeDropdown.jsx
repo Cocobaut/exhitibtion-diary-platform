@@ -1,11 +1,13 @@
 import React from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { THEMES } from '../../data/mockData';
 import { Icon } from '../common/Icons';
 import { userService } from '../../services/userService';
 
 export function ThemeDropdown({ isOpen, onClose }) {
   const { theme, setTheme } = useTheme();
+  const { language } = useLanguage();
 
   if (!isOpen) return null;
 
@@ -26,9 +28,13 @@ export function ThemeDropdown({ isOpen, onClose }) {
           padding: '16px 16px 10px',
         }}
       >
-        <b className="serif" style={{ fontSize: '22px' }}>Bảng màu</b>
+        <b className="serif" style={{ fontSize: '22px' }}>
+          {language === 'en' ? 'Color Themes' : 'Bảng màu'}
+        </b>
         <div className="muted" style={{ fontSize: '13px', marginBottom: '10px' }}>
-          Lưu theo tài khoản, áp dụng cho mọi phòng.
+          {language === 'en'
+            ? 'Saved to your account, applied across all exhibition rooms.'
+            : 'Lưu theo tài khoản, áp dụng cho mọi phòng.'}
         </div>
 
         {THEMES.map((th) => {
@@ -76,8 +82,12 @@ export function ThemeDropdown({ isOpen, onClose }) {
               </span>
 
               <span style={{ flex: 1 }}>
-                <b style={{ fontSize: '15px' }}>{th.name}</b>
-                <div className="muted" style={{ fontSize: '12.5px' }}>{th.desc}</div>
+                <b style={{ fontSize: '15px' }}>
+                  {language === 'en' ? (th.name_en || th.name) : (th.name_vi || th.name)}
+                </b>
+                <div className="muted" style={{ fontSize: '12.5px' }}>
+                  {language === 'en' ? (th.desc_en || th.desc) : (th.desc_vi || th.desc)}
+                </div>
               </span>
 
               {isSelected && (

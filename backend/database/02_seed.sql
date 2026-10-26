@@ -1365,4 +1365,80 @@ VALUES
     )
 ON CONFLICT (id) DO NOTHING;
 
+-- ====================================================================
+-- 14. BẢNG: ai_provider_settings (Khởi tạo cấu hình mặc định cho AI Copilot)
+-- ====================================================================
+INSERT INTO ai_provider_settings (
+    id,
+    is_ai_enabled,
+    is_moderation_enabled,
+    moderation_provider,
+    moderation_base_url,
+    moderation_encrypted_api_key,
+    moderation_model_name,
+    is_image_gen_enabled,
+    image_provider,
+    image_base_url,
+    image_encrypted_api_key,
+    image_model_name,
+    max_tokens_per_req,
+    temperature,
+    updated_by_user_id
+)
+SELECT 
+    'e0000000-0000-0000-0000-000000000001'::uuid,
+    FALSE,
+    TRUE,
+    'gemini',
+    NULL,
+    NULL,
+    'gemini-2.5-flash',
+    TRUE,
+    'gemini',
+    NULL,
+    NULL,
+    'imagen-3.0-generate-002',
+    2048,
+    0.20,
+    id
+FROM users WHERE role = 'OWNER' LIMIT 1
+ON CONFLICT (id) DO NOTHING;
+
+-- ====================================================================
+-- 15. BẢNG: bad_words (Từ điển từ ngữ vi phạm & biến thể teencode/leet)
+-- ====================================================================
+INSERT INTO bad_words (term, language, category, base_penalty, variants, is_active)
+VALUES 
+    ('địt', 'vi', 'profanity_severe', 20, '["dit", "djt", "d!t", "d1t", "đ!t", "d*t"]'::jsonb, TRUE),
+    ('đụ', 'vi', 'profanity_severe', 20, '["du", "đù", "đệt", "đéo", "đéch", "đách", "deo", "đ3o"]'::jsonb, TRUE),
+    ('đụ má', 'vi', 'profanity_severe', 25, '["duma", "dume", "đuma", "đù má", "du me", "du ma", "du moẹ", "đệt mợ"]'::jsonb, TRUE),
+    ('địt con mẹ', 'vi', 'profanity_severe', 25, '["dm", "dmm", "dcm", "đkm", "đcm", "đmm", "dckm", "cđmm", "d.m", "d_m", "đ.m", "d0 me"]'::jsonb, TRUE),
+    ('lồn', 'vi', 'profanity_severe', 20, '["lon", "l0n", "l*n", "l**n", "l.o.n", "cl", "vl", "vcl", "vkl", "clgt", "vclgt", "ncl", "hãm l", "ngu l", "sml"]'::jsonb, TRUE),
+    ('cặc', 'vi', 'profanity_severe', 20, '["cac", "kac", "kax", "cc", "cb", "c@c", "k@c", "c.a.c"]'::jsonb, TRUE),
+    ('buồi', 'vi', 'profanity_severe', 20, '["buoi", "b**i", "b***i"]'::jsonb, TRUE),
+    ('dái', 'vi', 'profanity_severe', 15, '["dai", "d*i"]'::jsonb, TRUE),
+    ('óc chó', 'vi', 'insult_intellect', 15, '["oc cho", "occho", "0c ch0", "oc ch0", "nao cho", "não chó", "não bò", "óc bò"]'::jsonb, TRUE),
+    ('súc vật', 'vi', 'insult_intellect', 15, '["suc vat", "súc sinh", "suc sinh", "s.v", "sv", "suck vat", "bọ súc sinh"]'::jsonb, TRUE),
+    ('bại não', 'vi', 'insult_intellect', 15, '["bai nao", "bn", "não tàn", "nao tan", "nt", "ngu hoc", "ngu si", "thần kinh", "dở người"]'::jsonb, TRUE),
+    ('phò', 'vi', 'derogatory_sexual', 20, '["pho", "4", "công nhân nghành", "cave", "đĩ", "dj~", "d~i~", "p-h-o", "phò phạch", "đĩ thỏa", "đĩ mẹ"]'::jsonb, TRUE),
+    ('bê đê', 'vi', 'derogatory_sexual', 20, '["be de", "bóng chó", "bóng xà bang", "gay lọ", "les rác"]'::jsonb, TRUE),
+    ('gạ chịch', 'vi', 'derogatory_sexual', 20, '["chịch", "chich", "ga chich", "chịch dạo"]'::jsonb, TRUE),
+    ('body shaming', 'vi', 'insult_bodyshaming', 15, '["mập như lợn", "béo như chó", "xấu ma chê quỷ hờn", "dị tật"]'::jsonb, TRUE),
+    ('vãi đái', 'vi', 'profanity_mild', 10, '["vđ", "vai dai", "vãi lúa", "vãi chưởng", "vch", "vãi nồi", "vãi cả chưởng"]'::jsonb, TRUE),
+    ('đéo cần', 'vi', 'profanity_mild', 10, '["dell", "đíu", "đéch cần", "mé nó", "má nó", "me no", "ma no", "bực vkl", "cay mắt"]'::jsonb, TRUE),
+    ('xàm lồn', 'vi', 'profanity_mild', 10, '["xàm l", "xam lon", "xàm xí", "rác rưởi", "nát vcl"]'::jsonb, TRUE),
+    ('fuck', 'en', 'profanity_severe', 20, '["f*ck", "f**k", "fu*k", "fvk", "fck", "f u c k", "fucking", "fucked", "fucker", "motherfucker", "mf"]'::jsonb, TRUE),
+    ('shit', 'en', 'profanity_mild', 10, '["sh*t", "sh!t", "s.h.i.t", "bullshit", "bs"]'::jsonb, TRUE),
+    ('bitch', 'en', 'insult_derogatory', 15, '["b!tch", "b*tch", "b1tch", "biatch", "btch", "son of a bitch", "sob"]'::jsonb, TRUE),
+    ('asshole', 'en', 'profanity_severe', 15, '["a$$", "a$$hole", "ass", "asshole"]'::jsonb, TRUE),
+    ('cunt', 'en', 'profanity_severe', 20, '["c*nt", "cunt"]'::jsonb, TRUE),
+    ('dick', 'en', 'profanity_severe', 15, '["d!ck", "dick", "cock", "prick", "bastard", "pussy"]'::jsonb, TRUE),
+    ('internet_slang_severe', 'en', 'profanity_severe', 15, '["wtf", "wth", "fml", "stfu", "gtfo", "ffs"]'::jsonb, TRUE),
+    ('nigger', 'en', 'hate_speech', 30, '["nigga", "n1gga", "n!gger", "n*gger", "chink"]'::jsonb, TRUE),
+    ('faggot', 'en', 'hate_speech', 30, '["fag", "dyke", "retard", "spastic"]'::jsonb, TRUE),
+    ('slut', 'en', 'hate_speech', 25, '["whore", "skank", "thot"]'::jsonb, TRUE),
+    ('minor_slang', 'en', 'profanity_mild', 5, '["damn", "damn it", "hell", "crap", "suck", "sucks", "idiot", "moron", "loser", "jerk", "douche", "dumbass", "piss", "pissed off"]'::jsonb, TRUE)
+ON CONFLICT DO NOTHING;
+
+
 

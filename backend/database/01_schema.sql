@@ -297,3 +297,56 @@ CREATE INDEX IF NOT EXISTS idx_user_saved_artworks_user
 
 CREATE INDEX IF NOT EXISTS idx_user_saved_artworks_artwork 
     ON user_saved_artworks (artwork_id);
+
+-- ====================================================================
+-- 14. BẢNG: ai_provider_settings (Cấu hình AI Multi-Provider cho Owner)
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS ai_provider_settings (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    is_ai_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- Dịch vụ Kiểm duyệt Văn bản (Text Moderation)
+    is_moderation_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    moderation_provider VARCHAR(50) NOT NULL DEFAULT 'gemini',
+    moderation_base_url VARCHAR(255) NULL,
+    moderation_encrypted_api_key TEXT NULL,
+    moderation_model_name VARCHAR(100) NOT NULL DEFAULT 'gemini-2.5-flash',
+
+    -- Dịch vụ Sinh ảnh Nghệ thuật (Art Image Generation)
+    is_image_gen_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    image_provider VARCHAR(50) NOT NULL DEFAULT 'gemini',
+    image_base_url VARCHAR(255) NULL,
+    image_encrypted_api_key TEXT NULL,
+    image_model_name VARCHAR(100) NOT NULL DEFAULT 'imagen-3.0-generate-002',
+
+    -- Tham số cấu hình nâng cao
+    max_tokens_per_req INTEGER NOT NULL DEFAULT 2048,
+    temperature NUMERIC(3,2) NOT NULL DEFAULT 0.20,
+    updated_by_user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TRIGGER trg_ai_provider_settings_updated_at
+BEFORE UPDATE ON ai_provider_settings
+FOR EACH ROW
+EXECUTE FUNCTION update_updated_at_column();
+
+-- ====================================================================
+-- 15. BẢNG: bad_words (Từ ngữ vi phạm, teencode & biến thể)
+-- ====================================================================
+CREATE TABLE IF NOT EXISTS bad_words (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    term VARCHAR(100) NOT NULL,
+    language VARCHAR(10) NOT NULL DEFAULT 'vi',
+    category VARCHAR(50) NOT NULL,
+    base_penalty INTEGER NOT NULL DEFAULT 15,
+    variants JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_bad_words_term ON bad_words(term);
+CREATE INDEX IF NOT EXISTS idx_bad_words_category ON bad_words(category);
+

@@ -176,7 +176,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
             fontSize: '14px',
           }}
         >
-          ⚠️ {errorMsg}
+          {errorMsg}
         </div>
       )}
 

@@ -120,12 +120,12 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
         onSaveToNotebook({
           id: drawnData.draw_id,
           source: 'mailbox',
-          sourceLabel: `Hòm thư · ${activeTopic}`,
+          sourceLabel: `Hòm thư · ${currentTopicObj.label}`,
           badgeClass: currentTopicObj.badge,
           icon: 'sparkle',
           content: drawnData.message,
           author: drawnData.author_name || 'Người gửi ẩn danh',
-          category: activeTopic,
+          category: currentTopicObj.key,
           savedAt: 'Hôm nay',
         });
       }

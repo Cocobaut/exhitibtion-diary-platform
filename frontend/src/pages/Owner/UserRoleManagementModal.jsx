@@ -39,10 +39,10 @@ export function UserRoleManagementModal({
       <div className="scrim" onClick={onClose} />
       <div className="panel" style={{ width: '560px', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
         <span className="x" onClick={onClose} role="button" tabIndex={0}>
-          <Icon name="x" size={22} />
+          &times;
         </span>
 
-        <h2 style={{ fontSize: '24px' }}>
+        <h2 className="serif" style={{ fontSize: '24px', fontWeight: 600 }}>
           {language === 'en' ? 'Adjust Account Role' : 'Điều chỉnh vai trò tài khoản'}
         </h2>
         <div className="sub">

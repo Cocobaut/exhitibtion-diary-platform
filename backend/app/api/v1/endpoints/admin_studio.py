@@ -114,3 +114,19 @@ async def update_user_status(
         message="Cập nhật trạng thái tài khoản thành công",
         data=data,
     )
+
+
+# -----------------------------------------------------------------------------
+# 12.5 Admin Presence (Online / Offline Status)
+# -----------------------------------------------------------------------------
+
+@router.get("/presence", status_code=status.HTTP_200_OK)
+@router.get("/admins/presence", status_code=status.HTTP_200_OK)
+async def get_admin_presence(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """12.5 Lấy danh sách toàn bộ tài khoản Ban Quản Trị (ADMIN / OWNER) kèm trạng thái online/offline, avatar."""
+    data = await AdminStudioService.get_admin_presence(db=db, current_admin=admin)
+    return ok(data=data.model_dump())
+

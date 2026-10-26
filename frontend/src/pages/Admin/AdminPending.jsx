@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Painting } from '../../components/common/Painting';
 import { Icon } from '../../components/common/Icons';
 import { adminRoomService } from '../../services/adminRoomService';
+import { aiCopilotService } from '../../services/aiCopilotService';
+import { AiModerationModal } from '../../components/Admin/AiModerationModal';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -10,6 +12,7 @@ export function AdminPending({
   onOpenRejectModal,
   onApproveSuccess,
   refreshTrigger = 0,
+  triggerToast,
 }) {
   const { user } = useAuth();
   const { t, language, localize } = useLanguage();
@@ -20,14 +23,23 @@ export function AdminPending({
   const [isApproving, setIsApproving] = useState(false);
   const [sortOrder, setSortOrder] = useState('oldest');
 
-  // Form edit fields
-  const [title, setTitle] = useState('');
-  const [summary, setSummary] = useState('');
-  const [content, setContent] = useState('');
+  // Form edit fields - Bilingual support
+  const [titleVi, setTitleVi] = useState('');
+  const [titleEn, setTitleEn] = useState('');
+  const [shortContentVi, setShortContentVi] = useState('');
+  const [shortContentEn, setShortContentEn] = useState('');
+  const [contentVi, setContentVi] = useState('');
+  const [contentEn, setContentEn] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [quote, setQuote] = useState('');
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // AI Copilot states
+  const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
+  const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiModerationData, setAiModerationData] = useState(null);
 
   const fileInputRef = useRef(null);
 
@@ -63,9 +75,29 @@ export function AdminPending({
   // Sync form inputs when current item changes
   useEffect(() => {
     if (currentItem) {
-      setTitle(localize(currentItem, 'title') || currentItem.title || '');
-      setSummary(localize(currentItem, 'short_content') || currentItem.short_content || currentItem.summary || '');
-      setContent(localize(currentItem, 'content') || currentItem.content || '');
+      const isOrigEn = currentItem.original_language === 'en';
+
+      // Title
+      const rawTitle = currentItem.title || '';
+      const tVi = currentItem.title_vi || (!isOrigEn ? rawTitle : '') || '';
+      const tEn = currentItem.title_en || (isOrigEn ? rawTitle : '') || '';
+      setTitleVi(tVi);
+      setTitleEn(tEn);
+
+      // Short Content / Summary
+      const rawShort = currentItem.short_content || currentItem.summary || '';
+      const scVi = currentItem.short_content_vi || (!isOrigEn ? rawShort : '') || '';
+      const scEn = currentItem.short_content_en || (isOrigEn ? rawShort : '') || '';
+      setShortContentVi(scVi);
+      setShortContentEn(scEn);
+
+      // Full Content
+      const rawContent = currentItem.content || '';
+      const cVi = currentItem.content_vi || (!isOrigEn ? rawContent : '') || '';
+      const cEn = currentItem.content_en || (isOrigEn ? rawContent : '') || '';
+      setContentVi(cVi);
+      setContentEn(cEn);
+
       setMediaUrl(currentItem.media_url || '');
       setQuote(
         currentItem.quote ||
@@ -73,13 +105,16 @@ export function AdminPending({
       );
       setErrorMessage('');
     } else {
-      setTitle('');
-      setSummary('');
-      setContent('');
+      setTitleVi('');
+      setTitleEn('');
+      setShortContentVi('');
+      setShortContentEn('');
+      setContentVi('');
+      setContentEn('');
       setMediaUrl('');
       setQuote('');
     }
-  }, [currentItem, roomId, language, localize]);
+  }, [currentItem, roomId, language]);
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -92,12 +127,133 @@ export function AdminPending({
       const url = res?.media_url || res?.data?.media_url;
       if (url) {
         setMediaUrl(url);
+        if (triggerToast) {
+          triggerToast(
+            language === 'en'
+              ? 'Artwork image uploaded successfully.'
+              : 'Đã tải ảnh nghệ thuật minh họa lên thành công.'
+          );
+        }
       }
     } catch (err) {
       console.error('Error uploading artwork image:', err);
-      setErrorMessage('Không thể tải ảnh minh họa lên. Vui lòng kiểm tra lại kích thước file.');
+      const msg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        (language === 'en'
+          ? 'Failed to upload artwork image. Please check file size.'
+          : 'Không thể tải ảnh minh họa lên. Vui lòng kiểm tra lại kích thước file.');
+      if (triggerToast) {
+        triggerToast(msg);
+      } else {
+        setErrorMessage(msg);
+      }
     } finally {
       setIsUploadingImage(false);
+    }
+  };
+
+  const handleAnalyzeWithAi = async () => {
+    if (!currentItem) return;
+    setIsAnalyzingAi(true);
+    setErrorMessage('');
+    try {
+      const fullContent = [
+        titleVi ? `Tiêu đề (VI): ${titleVi}` : '',
+        titleEn ? `Title (EN): ${titleEn}` : '',
+        shortContentVi ? `Tóm tắt (VI): ${shortContentVi}` : '',
+        shortContentEn ? `Short Content (EN): ${shortContentEn}` : '',
+        contentVi ? `Nội dung (VI): ${contentVi}` : '',
+        contentEn ? `Content (EN): ${contentEn}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+
+      const res = await aiCopilotService.moderateArtwork({
+        art_id: currentItem.id,
+        target_room: `room${roomId}`,
+        content: fullContent || contentVi || contentEn || 'Nội dung tác phẩm',
+      });
+
+      const data = res?.data || res;
+      setAiModerationData(data);
+      setAiModalOpen(true);
+    } catch (err) {
+      console.error('Lỗi khi phân tích bằng AI Copilot:', err);
+      const errMsg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        err?.message ||
+        (language === 'en'
+          ? 'Unable to call AI Copilot service. Please check Owner AI configuration.'
+          : 'Không thể gọi dịch vụ AI Copilot. Vui lòng kiểm tra lại cấu hình Owner AI.');
+      if (triggerToast) {
+        triggerToast(`[AI Copilot] ${errMsg}`);
+      } else {
+        setErrorMessage(`[AI Copilot] ${errMsg}`);
+      }
+    } finally {
+      setIsAnalyzingAi(false);
+    }
+  };
+
+  const handleAcceptAiRewrite = (suggestedCleanContent) => {
+    if (suggestedCleanContent) {
+      if (currentItem?.original_language === 'en') {
+        setContentEn(suggestedCleanContent);
+      } else {
+        setContentVi(suggestedCleanContent);
+      }
+    }
+    setAiModalOpen(false);
+  };
+
+  const handleGenerateAiImage = async () => {
+    if (!currentItem) return;
+    setIsGeneratingAiImage(true);
+    setErrorMessage('');
+    try {
+      const activeTitle = titleVi || titleEn;
+      const activeShort = shortContentVi || shortContentEn;
+      const activeContent = contentVi || contentEn;
+      const sourceContent = `${activeTitle}. ${activeShort}. ${activeContent}`;
+      const res = await aiCopilotService.generateArtImage({
+        art_id: currentItem.id,
+        source_content: sourceContent,
+        custom_prompt_addon:
+          roomId === 1
+            ? 'oil painting, expressive brushwork, reflective museum fine art'
+            : roomId === 2
+            ? 'hopeful vibrant art, digital illustration, museum quality'
+            : 'artistic conceptual digital painting, museum display',
+      });
+      const data = res?.data || res;
+      if (data?.image_url) {
+        setMediaUrl(data.image_url);
+        if (triggerToast) {
+          triggerToast(
+            language === 'en'
+              ? 'AI generated artwork image successfully.'
+              : 'Đã sinh tranh vẽ nghệ thuật bằng AI thành công.'
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Lỗi khi sinh tranh vẽ AI:', err);
+      const errMsg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        err?.message ||
+        (language === 'en'
+          ? 'Failed to generate image via AI. Please check Image Generation settings.'
+          : 'Không thể sinh tranh vẽ bằng AI. Vui lòng kiểm tra cấu hình Image Generation.');
+      if (triggerToast) {
+        triggerToast(`[AI Image] ${errMsg}`);
+      } else {
+        setErrorMessage(`[AI Image] ${errMsg}`);
+      }
+    } finally {
+      setIsGeneratingAiImage(false);
     }
   };
 
@@ -107,16 +263,34 @@ export function AdminPending({
 
     // Room 1 strictly requires media_url
     if (roomId === 1 && !mediaUrl) {
-      setErrorMessage('Tranh minh họa là bắt buộc ở Phòng 1 trước khi phê duyệt.');
+      const reqMsg =
+        language === 'en'
+          ? 'Artwork image is required in Room 1 before approval.'
+          : 'Tranh minh họa là bắt buộc ở Phòng 1 trước khi phê duyệt.';
+      if (triggerToast) {
+        triggerToast(reqMsg);
+      } else {
+        setErrorMessage(reqMsg);
+      }
       return;
     }
 
     setIsApproving(true);
     try {
+      const activeTitle = titleVi.trim() || titleEn.trim() || currentItem.title;
+      const activeShort = shortContentVi.trim() || shortContentEn.trim() || currentItem.short_content;
+      const activeContent = contentVi.trim() || contentEn.trim() || currentItem.content;
+
       const payload = {
-        title: title.trim() || currentItem.title,
-        short_content: summary.trim() || currentItem.short_content || currentItem.summary,
-        content: content.trim() || currentItem.content,
+        title: activeTitle,
+        title_vi: titleVi.trim() || undefined,
+        title_en: titleEn.trim() || undefined,
+        short_content: activeShort,
+        short_content_vi: shortContentVi.trim() || undefined,
+        short_content_en: shortContentEn.trim() || undefined,
+        content: activeContent,
+        content_vi: contentVi.trim() || undefined,
+        content_en: contentEn.trim() || undefined,
         media_url: mediaUrl || undefined,
         quote: quote?.trim() || undefined,
         tag_category: currentItem.tag_category,
@@ -134,10 +308,17 @@ export function AdminPending({
     } catch (err) {
       console.error('Error approving artwork:', err);
       const apiMsg =
+        err?.response?.data?.detail ||
         err?.response?.data?.message ||
         err?.message ||
-        'Không thể phê duyệt tác phẩm lúc này.';
-      setErrorMessage(apiMsg);
+        (language === 'en'
+          ? 'Could not approve artwork at this time.'
+          : 'Không thể phê duyệt tác phẩm lúc này.');
+      if (triggerToast) {
+        triggerToast(`Lỗi: ${apiMsg}`);
+      } else {
+        setErrorMessage(apiMsg);
+      }
     } finally {
       setIsApproving(false);
     }
@@ -163,25 +344,25 @@ export function AdminPending({
         style={{
           left: '32px',
           top: '192px',
-          width: '400px',
+          width: '270px',
           bottom: '26px',
           overflowY: 'auto',
         }}
       >
         <div
           className="row between"
-          style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)' }}
+          style={{ padding: '12px 14px', borderBottom: '1px solid var(--line)' }}
         >
           <span
             className="muted"
-            style={{ cursor: 'pointer', fontSize: '13px' }}
+            style={{ cursor: 'pointer', fontSize: '12.5px' }}
             onClick={() => setSortOrder((prev) => (prev === 'oldest' ? 'latest' : 'oldest'))}
           >
             {sortOrder === 'oldest'
               ? (language === 'en' ? 'Oldest first ↓' : 'Cũ nhất trước ↓')
               : (language === 'en' ? 'Newest first ↑' : 'Mới nhất trước ↑')}
           </span>
-          <span className="muted" style={{ fontSize: '13px' }}>
+          <span className="muted" style={{ fontSize: '12.5px' }}>
             {isLoading
               ? (language === 'en' ? 'Loading...' : 'Đang tải...')
               : `${pendingItems.length} ${language === 'en' ? 'pending' : 'bài chờ'}`}
@@ -189,7 +370,7 @@ export function AdminPending({
         </div>
 
         {pendingItems.length === 0 && !isLoading && (
-          <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--muted)' }}>
+          <div style={{ padding: '40px 14px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
             {t('admin_empty_pending')}
           </div>
         )}
@@ -205,24 +386,42 @@ export function AdminPending({
               key={item.id || idx}
               className={`qrow ${isSelected ? 'sel' : ''}`}
               onClick={() => setSelectedIdx(idx)}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: 'pointer', padding: '12px 14px' }}
             >
-              <div className="row between">
-                <span className="muted" style={{ fontSize: '12px' }}>
+              <div className="row between" style={{ alignItems: 'center', marginBottom: '4px' }}>
+                <span className="muted" style={{ fontSize: '11.5px' }}>
                   {formatTime(item.created_at)}
                 </span>
                 {item.locked_by ? (
-                  <span className="badge b-priv">
-                    <Icon name="eye" size={12} /> {item.locked_by}
+                  <span className="badge b-priv" style={{ fontSize: '10.5px' }}>
+                    <Icon name="eye" size={11} /> {item.locked_by}
                   </span>
                 ) : (
-                  <span className="badge b-wait">{t('admin_seg_pending')}</span>
+                  <span className="badge b-wait" style={{ fontSize: '10.5px' }}>{t('admin_seg_pending')}</span>
                 )}
               </div>
-              <b style={{ fontSize: '15px', margin: '3px 0 2px', display: 'block' }}>
+              <b
+                style={{
+                  fontSize: '14px',
+                  margin: '2px 0 3px',
+                  display: 'block',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+                title={localize(item, 'title') || item.title}
+              >
                 {localize(item, 'title') || item.title}
               </b>
-              <div className="muted" style={{ fontSize: '12.5px' }}>
+              <div
+                className="muted"
+                style={{
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
                 {authorDisplay} {authorUser && `· ${authorUser}`}
               </div>
             </div>
@@ -235,7 +434,7 @@ export function AdminPending({
         <div
           className="abs box"
           style={{
-            left: '452px',
+            left: '318px',
             right: '32px',
             top: '142px',
             bottom: '26px',
@@ -243,38 +442,35 @@ export function AdminPending({
             overflowY: 'auto',
           }}
         >
-          {errorMessage && (
-            <div
-              style={{
-                marginBottom: '14px',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                background: 'rgba(196, 43, 28, 0.1)',
-                border: '1px solid #C42B1C',
-                color: '#8A180E',
-                fontSize: '13.5px',
-              }}
-            >
-              ⚠️ {errorMessage}
-            </div>
-          )}
-
-          <div className="row between">
-            <div>
-              <div className="muted" style={{ fontSize: '13px' }}>
-                Gửi lúc {formatTime(currentItem.created_at)} ·{' '}
-                {currentItem.author?.username && `@${currentItem.author.username} · `}
-                bút danh &ldquo;{currentItem.author_display_name || 'Tác giả'}&rdquo;
-              </div>
-              <div className="row" style={{ gap: '8px', marginTop: '4px' }}>
-                <span className="badge b-wait">PENDING</span>
-                <span className="muted" style={{ fontSize: '13px' }}>
-                  <Icon name="eye" size={13} /> {user?.nickname || 'Bạn'} đang biên tập bài này
-                </span>
-              </div>
+          <div className="row between" style={{ alignItems: 'center' }}>
+            <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
+              <span className="badge b-wait">PENDING</span>
+              <span className="muted" style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Icon name="eye" size={13} />
+                {language === 'en'
+                  ? `${user?.nickname || 'You'} are editing this submission`
+                  : `${user?.nickname || 'Bạn'} đang biên tập bài này`}
+              </span>
             </div>
 
             <div className="row" style={{ gap: '8px' }}>
+              <button
+                type="button"
+                className="btn line"
+                onClick={handleAnalyzeWithAi}
+                disabled={isAnalyzingAi || isApproving}
+                style={{
+                  borderColor: '#d97706',
+                  color: '#b45309',
+                  fontWeight: 600,
+                  background: isAnalyzingAi ? 'rgba(245, 158, 11, 0.08)' : 'transparent',
+                }}
+                title="Phân tích kiểm duyệt và gợi ý tinh chỉnh văn phong bằng AI Copilot"
+              >
+                {isAnalyzingAi
+                  ? (language === 'en' ? 'AI Analyzing...' : 'AI đang phân tích...')
+                  : (language === 'en' ? 'AI Copilot' : 'Phân tích bằng AI')}
+              </button>
               <button
                 type="button"
                 className="btn danger"
@@ -307,51 +503,114 @@ export function AdminPending({
           >
             {/* Editor fields */}
             <div>
-              <div className="fieldl">{language === 'en' ? 'Title' : 'Tiêu đề'}</div>
-              <input
-                className="inp"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                maxLength={150}
-              />
-
-              <div className="fieldl">
-                {language === 'en' ? 'Card summary' : 'Tóm tắt trên thẻ'}{' '}
-                <span>{summary.length} / 120</span>
+              {/* Bilingual Title Fields */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Title (Vietnamese)' : 'Tiêu đề Tiếng Việt (VN)'}
+                  </div>
+                  <input
+                    className="inp"
+                    placeholder={language === 'en' ? 'Vietnamese title...' : 'Tiêu đề tiếng Việt...'}
+                    value={titleVi}
+                    onChange={(e) => setTitleVi(e.target.value)}
+                    maxLength={150}
+                  />
+                </div>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Title (English)' : 'Tiêu đề Tiếng Anh (EN)'}
+                  </div>
+                  <input
+                    className="inp"
+                    placeholder={language === 'en' ? 'English title...' : 'Tiêu đề tiếng Anh...'}
+                    value={titleEn}
+                    onChange={(e) => setTitleEn(e.target.value)}
+                    maxLength={150}
+                  />
+                </div>
               </div>
-              <input
-                className="inp"
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                maxLength={120}
-              />
 
-              <div className="fieldl">
-                {language === 'en' ? 'Full story / content' : 'Nội dung đầy đủ'}{' '}
-                <span>{language === 'en' ? 'Editable by admin' : 'Admin được sửa câu chữ'}</span>
+              {/* Bilingual Short Content / Card Summary Fields */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Short Content (Vietnamese)' : 'Tóm tắt Tiếng Việt (VN)'}{' '}
+                    <span>{shortContentVi.length} / 140</span>
+                  </div>
+                  <input
+                    className="inp"
+                    placeholder={language === 'en' ? 'Short summary in Vietnamese...' : 'Tóm tắt ngắn tiếng Việt...'}
+                    value={shortContentVi}
+                    onChange={(e) => setShortContentVi(e.target.value)}
+                    maxLength={140}
+                  />
+                </div>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Short Content (English)' : 'Tóm tắt Tiếng Anh (EN)'}{' '}
+                    <span>{shortContentEn.length} / 140</span>
+                  </div>
+                  <input
+                    className="inp"
+                    placeholder={language === 'en' ? 'Short summary in English...' : 'Tóm tắt ngắn tiếng Anh...'}
+                    value={shortContentEn}
+                    onChange={(e) => setShortContentEn(e.target.value)}
+                    maxLength={140}
+                  />
+                </div>
               </div>
-              <textarea
-                className="inp area"
-                style={{
-                  minHeight: '230px',
-                  fontSize: '15px',
-                  lineHeight: 1.7,
-                  fontFamily: 'var(--sans)',
-                }}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-              />
+
+              {/* Bilingual Full Content Fields */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Content (Vietnamese)' : 'Nội dung Tiếng Việt (VN)'}{' '}
+                    <span>{language === 'en' ? 'Editable' : 'Admin sửa được'}</span>
+                  </div>
+                  <textarea
+                    className="inp area"
+                    style={{
+                      minHeight: '220px',
+                      fontSize: '14.5px',
+                      lineHeight: 1.6,
+                      fontFamily: 'var(--sans)',
+                    }}
+                    placeholder={language === 'en' ? 'Full story in Vietnamese...' : 'Nội dung câu chuyện tiếng Việt...'}
+                    value={contentVi}
+                    onChange={(e) => setContentVi(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Content (English)' : 'Nội dung Tiếng Anh (EN)'}{' '}
+                    <span>{language === 'en' ? 'Editable' : 'Admin sửa được'}</span>
+                  </div>
+                  <textarea
+                    className="inp area"
+                    style={{
+                      minHeight: '220px',
+                      fontSize: '14.5px',
+                      lineHeight: 1.6,
+                      fontFamily: 'var(--sans)',
+                    }}
+                    placeholder={language === 'en' ? 'Full story in English...' : 'Nội dung câu chuyện tiếng Anh...'}
+                    value={contentEn}
+                    onChange={(e) => setContentEn(e.target.value)}
+                  />
+                </div>
+              </div>
 
               {roomId === 1 && (
-                <>
-                  <div className="fieldl">Trích dẫn nghệ thuật (Quote)</div>
+                <div style={{ marginBottom: '14px' }}>
+                  <div className="fieldl">{language === 'en' ? 'Artistic Quote (Phòng 1)' : 'Trích dẫn nghệ thuật (Phòng 1)'}</div>
                   <input
                     className="inp"
                     value={quote}
                     onChange={(e) => setQuote(e.target.value)}
                     placeholder="“Một lời trích dẫn lắng đọng...”"
                   />
-                </>
+                </div>
               )}
             </div>
 
@@ -387,17 +646,33 @@ export function AdminPending({
                 )}
               </div>
 
-              <div className="row" style={{ gap: '8px', marginTop: '10px' }}>
+              <div className="row" style={{ gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   className="btn line sm"
                   onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingImage}
+                  disabled={isUploadingImage || isGeneratingAiImage}
                 >
                   <Icon name="upload" size={15} />{' '}
                   {isUploadingImage
                     ? (language === 'en' ? 'Uploading...' : 'Đang tải...')
                     : (language === 'en' ? 'Upload different image' : 'Tải ảnh khác')}
+                </button>
+                <button
+                  type="button"
+                  className="btn line sm"
+                  onClick={handleGenerateAiImage}
+                  disabled={isGeneratingAiImage || isUploadingImage}
+                  style={{
+                    borderColor: '#8b5cf6',
+                    color: '#6d28d9',
+                    fontWeight: 500,
+                  }}
+                  title="Dùng AI tự động chuyển hóa câu chuyện thành tranh minh họa mỹ thuật"
+                >
+                  {isGeneratingAiImage
+                    ? (language === 'en' ? 'Generating Art...' : 'Đang vẽ tranh AI...')
+                    : (language === 'en' ? 'AI Generate Image' : 'Sinh ảnh bằng AI')}
                 </button>
                 <input
                   type="file"
@@ -438,19 +713,60 @@ export function AdminPending({
                     )}
                   </div>
                   <div className="cap">
-                    <h4>{title || (language === 'en' ? 'Artwork Title' : 'Tiêu đề tác phẩm')}</h4>
-                    <p style={{ height: 'auto' }}>{summary || (language === 'en' ? 'Story summary...' : 'Tóm tắt câu chuyện...')}</p>
+                    <h4>{(language === 'en' ? (titleEn || titleVi) : (titleVi || titleEn)) || (language === 'en' ? 'Artwork Title' : 'Tiêu đề tác phẩm')}</h4>
+                    <p style={{ height: 'auto' }}>{(language === 'en' ? (shortContentEn || shortContentVi) : (shortContentVi || shortContentEn)) || (language === 'en' ? 'Story summary...' : 'Tóm tắt câu chuyện...')}</p>
                   </div>
                 </article>
               </div>
             </div>
+          </div>
+
+          {/* Submission Metadata Footer */}
+          <div
+            style={{
+              marginTop: '22px',
+              paddingTop: '14px',
+              borderTop: '1px solid var(--line)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '10px',
+              fontSize: '13px',
+            }}
+            className="muted"
+          >
+            <div>
+              {language === 'en' ? (
+                <>
+                  Submitted at <b>{formatTime(currentItem.created_at)}</b>
+                  {currentItem.author?.username && (
+                    <> · <b>@{currentItem.author.username}</b></>
+                  )}{' '}
+                  · pen name &ldquo;<b>{currentItem.author_display_name || 'Author'}</b>&rdquo;
+                </>
+              ) : (
+                <>
+                  Gửi lúc <b>{formatTime(currentItem.created_at)}</b>
+                  {currentItem.author?.username && (
+                    <> · <b>@{currentItem.author.username}</b></>
+                  )}{' '}
+                  · bút danh &ldquo;<b>{currentItem.author_display_name || 'Tác giả'}</b>&rdquo;
+                </>
+              )}
+            </div>
+            {currentItem.id && (
+              <div style={{ fontSize: '12px' }}>
+                ID: <span style={{ fontFamily: 'monospace' }}>#{currentItem.id}</span>
+              </div>
+            )}
           </div>
         </div>
       ) : (
         <div
           className="abs box"
           style={{
-            left: '452px',
+            left: '318px',
             right: '32px',
             top: '142px',
             bottom: '26px',
@@ -466,6 +782,15 @@ export function AdminPending({
           </div>
         </div>
       )}
+
+      {/* AI Moderation Analysis & Rewrite Modal */}
+      <AiModerationModal
+        isOpen={aiModalOpen}
+        onClose={() => setAiModalOpen(false)}
+        data={aiModerationData}
+        onAccept={handleAcceptAiRewrite}
+        originalContent={contentVi || contentEn || currentItem?.content || ''}
+      />
     </>
   );
 }

@@ -99,6 +99,7 @@ export const adminRoomService = {
    * @returns {Promise<Object>} { summary: { total_approved_artworks, total_views, total_reactions }, items, pagination }
    */
   async getApprovedArtworks(roomId, {
+    status = 'APPROVED',
     q = null,
     title = null,
     author_display_name = null,
@@ -106,7 +107,7 @@ export const adminRoomService = {
     limit = 20,
     sort = 'latest',
   } = {}) {
-    const params = { page, limit, sort };
+    const params = { status, page, limit, sort };
     if (q) params.q = q;
     if (title) params.title = title;
     if (author_display_name) params.author_display_name = author_display_name;
@@ -115,10 +116,10 @@ export const adminRoomService = {
   },
 
   /**
-   * 9.2.2 Cập nhật/hiệu đính nội dung tác phẩm đang trưng bày
+   * 9.2.2 Cập nhật/hiệu đính nội dung tác phẩm đang trưng bày hoặc lưu trữ
    * @param {number} roomId
    * @param {string} artworkId
-   * @param {Object} payload { title, short_content, content, media_url, tag_category, color_code }
+   * @param {Object} payload { title, title_vi, title_en, short_content, short_content_vi, short_content_en, content, content_vi, content_en, media_url, tag_category, color_code }
    * @returns {Promise<Object>} { id, updated_at }
    */
   async editArtwork(roomId, artworkId, payload) {
@@ -142,6 +143,18 @@ export const adminRoomService = {
     return await apiClient.patch(
       `/admin/rooms/${roomId}/artworks/${artworkId}/archive`,
       { admin_note }
+    );
+  },
+
+  /**
+   * 9.2.5 Khôi phục tác phẩm từ kho lưu trữ trở lại phòng trưng bày
+   * @param {number} roomId
+   * @param {string} artworkId
+   * @returns {Promise<Object>} { id, status, updated_at }
+   */
+  async restoreArtwork(roomId, artworkId) {
+    return await apiClient.patch(
+      `/admin/rooms/${roomId}/artworks/${artworkId}/restore`
     );
   },
 

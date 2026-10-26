@@ -114,3 +114,28 @@ class AdminUpdateUserStatusData(BaseModel):
     role: str
     is_active: bool
     updated_at: datetime
+
+
+# -----------------------------------------------------------------------------
+# 12.5 Admin Presence (Online / Offline)
+# -----------------------------------------------------------------------------
+
+class AdminPresenceItem(BaseModel):
+    id: uuid.UUID
+    username: str
+    nickname: str
+    role: str
+    avatar_url: Optional[str] = None
+    color: str
+    is_online: bool
+    last_seen_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AdminPresenceData(BaseModel):
+    total_admins: int
+    total_online: int
+    total_offline: int
+    admins: List[AdminPresenceItem]
+

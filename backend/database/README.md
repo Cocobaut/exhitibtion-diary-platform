@@ -27,9 +27,14 @@ Thư mục chỉ gồm **đúng 2 file SQL** có đánh số thứ tự để Po
    - Toàn bộ 6 Indexes tối ưu (Full-text search GIN, Partial Index thông báo chưa đọc, Composite filter...).
 
 2. **[`02_seed.sql`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/backend/database/02_seed.sql)**:
-   - Khởi tạo 3 phòng triển lãm mặc định.
-   - Khởi tạo tài khoản Quản trị viên (`admin@exhibition.edu.vn` / mật khẩu `AdminPassword@2026` với bcrypt hash chuẩn).
-   - Nạp các thông điệp mẫu cho tính năng Máy nhả thông điệp.
+   - File SEED duy nhất gộp chung toàn bộ dữ liệu mẫu khởi tạo cho cả hệ thống:
+     - 5 phòng triển lãm mẫu.
+     - 6 tài khoản người dùng chuẩn (`owner_master`, `admin_exhibition`, `moderator_linh`, users).
+     - Hàng chục tác phẩm triển lãm, nhật ký, tương tác, kho thông điệp máy nhả, lịch sử audit log.
+     - Cấu hình mặc định cho hệ thống AI Copilot (`ai_provider_settings`).
+     - 29 từ ngữ vi phạm và các biến thể leet/teencode (`bad_words`).
+
+
 
 ---
 

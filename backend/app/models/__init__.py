@@ -12,6 +12,8 @@ from app.models.notification import Notification
 from app.models.password_reset_token import PasswordResetToken
 from app.models.revoked_token import RevokedToken
 from app.models.admin_audit_log import AdminAuditLog
+from app.models.ai_provider_setting import AiProviderSetting
+from app.models.bad_word import BadWord
 
 __all__ = [
     "TimestampMixin",
@@ -29,4 +31,7 @@ __all__ = [
     "PasswordResetToken",
     "RevokedToken",
     "AdminAuditLog",
+    "AiProviderSetting",
+    "BadWord",
 ]
+

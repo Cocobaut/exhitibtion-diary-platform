@@ -61,7 +61,8 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
   };
 
   return (
-    <nav className="side">
+    <>
+      <nav className="side">
       <div className="mark" onClick={() => onNavigate('home')} title="Về Sảnh chính">
         ✦
       </div>
@@ -152,8 +153,8 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
             }}
             title="Bảng Chủ sở hữu (Owner)"
           >
-            <span style={{ fontSize: '18px', display: 'block', lineHeight: 1 }}>👑</span>
-            <span style={{ color: '#B57424', fontWeight: 600 }}>Owner</span>
+            <Icon name="crown" size={22} />
+            <span>Owner</span>
           </button>
         )}
       </div>
@@ -377,12 +378,14 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
         </div>
       )}
 
+      </nav>
+
       {/* Modal Cài đặt & Hồ sơ */}
       <AccountSettingsModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
       />
-    </nav>
+    </>
   );
 }
 

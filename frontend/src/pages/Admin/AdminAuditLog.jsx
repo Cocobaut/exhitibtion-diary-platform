@@ -21,8 +21,19 @@ export function AdminAuditLog({ triggerToast }) {
   const [targetUsername, setTargetUsername] = useState('');
   const [targetEmail, setTargetEmail] = useState('');
   const [lockStatus, setLockStatus] = useState(false); // false: khóa, true: mở khóa
-  const [actionReason, setActionReason] = useState('Phát tán nội dung vi phạm tiêu chuẩn cộng đồng');
+  const [actionReason, setActionReason] = useState('');
   const [isSubmittingUserAction, setIsSubmittingUserAction] = useState(false);
+
+  // Initialize reason when modal opens or language changes
+  useEffect(() => {
+    if (!actionReason) {
+      setActionReason(
+        language === 'en'
+          ? 'Distributing content that violates community standards'
+          : 'Phát tán nội dung vi phạm tiêu chuẩn cộng đồng'
+      );
+    }
+  }, [language]);
 
   // Action display mapping
   const actionMap = {
@@ -83,7 +94,11 @@ export function AdminAuditLog({ triggerToast }) {
     try {
       if (userModalTab === 'LOCK') {
         if (!targetUserId.trim()) {
-          alert('Vui lòng nhập ID người dùng cần thay đổi trạng thái.');
+          alert(
+            language === 'en'
+              ? 'Please enter the user ID to update status.'
+              : 'Vui lòng nhập ID người dùng cần thay đổi trạng thái.'
+          );
           setIsSubmittingUserAction(false);
           return;
         }
@@ -96,14 +111,18 @@ export function AdminAuditLog({ triggerToast }) {
         if (triggerToast) {
           triggerToast(
             lockStatus
-              ? '✦ Đã mở khóa tài khoản người dùng thành công.'
-              : 'Đã khóa tài khoản người dùng vi phạm.'
+              ? (language === 'en' ? 'Successfully unlocked user account.' : 'Đã mở khóa tài khoản người dùng thành công.')
+              : (language === 'en' ? 'Locked violating user account.' : 'Đã khóa tài khoản người dùng vi phạm.')
           );
         }
       } else {
         // REQUEST_DELETE
         if (!targetUsername.trim() || !targetEmail.trim()) {
-          alert('Theo quy tắc bảo mật danh tính, bắt buộc phải nhập chính xác Username và Email của tài khoản.');
+          alert(
+            language === 'en'
+              ? 'Identity verification policy requires exact Username and Email.'
+              : 'Theo quy tắc bảo mật danh tính, bắt buộc phải nhập chính xác Username và Email của tài khoản.'
+          );
           setIsSubmittingUserAction(false);
           return;
         }
@@ -116,7 +135,11 @@ export function AdminAuditLog({ triggerToast }) {
         });
 
         if (triggerToast) {
-          triggerToast('✦ Đã gửi yêu cầu xóa tài khoản lên Chủ sở hữu (Owner) chờ phê duyệt.');
+          triggerToast(
+            language === 'en'
+              ? 'Sent account deletion request to Owner for approval.'
+              : 'Đã gửi yêu cầu xóa tài khoản lên Chủ sở hữu (Owner) chờ phê duyệt.'
+          );
         }
       }
 
@@ -128,7 +151,7 @@ export function AdminAuditLog({ triggerToast }) {
     } catch (err) {
       console.error('Error handling user action:', err);
       const msg = err?.response?.data?.message || err?.message || 'Không thể thực hiện thao tác lúc này.';
-      alert(`Lỗi: ${msg}`);
+      alert(`Error: ${msg}`);
     } finally {
       setIsSubmittingUserAction(false);
     }
@@ -147,12 +170,14 @@ export function AdminAuditLog({ triggerToast }) {
       }}
     >
       {/* Top Header & Filters */}
-      <div className="row between" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px', marginBottom: '18px' }}>
+      <div className="row between" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px', marginBottom: '18px', alignItems: 'center' }}>
         <div>
-          <div style={{ fontSize: '12px', letterSpacing: '.15em', fontWeight: 600, color: 'var(--acc)' }}>
-            NHẬT KÝ KIỂM TOÁN HỆ THỐNG
+          <div style={{ fontSize: '11px', letterSpacing: '.18em', fontWeight: 600, color: 'var(--acc)', textTransform: 'uppercase' }}>
+            {language === 'en' ? 'SYSTEM AUDIT TRAIL' : 'NHẬT KÝ KIỂM TOÁN HỆ THỐNG'}
           </div>
-          <h2 style={{ fontSize: '24px', margin: '4px 0 0' }}>Lịch sử thao tác quản trị ({totalLogs})</h2>
+          <h2 className="serif" style={{ fontSize: '24px', margin: '4px 0 0', fontWeight: 600 }}>
+            {language === 'en' ? 'Administrative Operations History' : 'Lịch sử thao tác quản trị'} ({totalLogs})
+          </h2>
         </div>
 
         <div className="row" style={{ gap: '10px' }}>
@@ -162,64 +187,80 @@ export function AdminAuditLog({ triggerToast }) {
             onClick={() => setUserModalOpen(true)}
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Icon name="bell" size={15} /> Xử lý người dùng vi phạm
+            {language === 'en' ? 'Moderate Violating User' : 'Xử lý người dùng vi phạm'}
           </button>
         </div>
       </div>
 
       {/* Filter Bar */}
       <div className="row between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-        <div className="row" style={{ gap: '10px', alignItems: 'center' }}>
-          <span className="muted" style={{ fontSize: '13px' }}>Hành động:</span>
+        <div className="row" style={{ gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span className="muted" style={{ fontSize: '13px' }}>
+            {language === 'en' ? 'Action:' : 'Hành động:'}
+          </span>
           <select
             className="inp"
             style={{ width: '220px', padding: '6px 10px', fontSize: '13px' }}
             value={filterAction}
-            onChange={(e) => setFilterAction(e.target.value)}
+            onChange={(e) => {
+              setFilterAction(e.target.value);
+              setPage(1);
+            }}
           >
-            <option value="ALL">Tất cả hành động</option>
-            <option value="APPROVE">Phê duyệt (APPROVE)</option>
-            <option value="REJECT">Từ chối (REJECT)</option>
-            <option value="ARCHIVE">Lưu trữ (ARCHIVE)</option>
-            <option value="CREATE_DIRECT">Xuất bản Studio (CREATE_DIRECT)</option>
-            <option value="APPROVE_AND_UPLOAD_MEDIA">Duyệt &amp; Tải ảnh</option>
-            <option value="REQUEST_DELETE_USER">Yêu cầu xóa tài khoản</option>
+            <option value="ALL">{language === 'en' ? 'All actions' : 'Tất cả hành động'}</option>
+            <option value="APPROVE">{language === 'en' ? 'Approve (APPROVE)' : 'Phê duyệt (APPROVE)'}</option>
+            <option value="REJECT">{language === 'en' ? 'Reject (REJECT)' : 'Từ chối (REJECT)'}</option>
+            <option value="ARCHIVE">{language === 'en' ? 'Archive (ARCHIVE)' : 'Lưu trữ (ARCHIVE)'}</option>
+            <option value="CREATE_DIRECT">{language === 'en' ? 'Studio Publish (CREATE_DIRECT)' : 'Xuất bản Studio (CREATE_DIRECT)'}</option>
+            <option value="APPROVE_AND_UPLOAD_MEDIA">{language === 'en' ? 'Approve & Upload Media' : 'Duyệt & Tải ảnh'}</option>
+            <option value="REQUEST_DELETE_USER">{language === 'en' ? 'Request Delete User' : 'Yêu cầu xóa tài khoản'}</option>
           </select>
 
-          <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>Phòng:</span>
+          <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
+            {language === 'en' ? 'Room:' : 'Phòng:'}
+          </span>
           <select
             className="inp"
-            style={{ width: '170px', padding: '6px 10px', fontSize: '13px' }}
+            style={{ width: '190px', padding: '6px 10px', fontSize: '13px' }}
             value={filterRoom}
-            onChange={(e) => setFilterRoom(e.target.value)}
+            onChange={(e) => {
+              setFilterRoom(e.target.value);
+              setPage(1);
+            }}
           >
-            <option value="ALL">Tất cả phòng</option>
-            <option value="1">Phòng 1 (Đổ vỡ)</option>
-            <option value="2">Phòng 2 (Lồng đèn)</option>
-            <option value="3">Phòng 3 (Cây thông điệp)</option>
+            <option value="ALL">{language === 'en' ? 'All rooms' : 'Tất cả phòng'}</option>
+            <option value="1">{language === 'en' ? 'Room 1 (Broken)' : 'Phòng 1 (Đổ vỡ)'}</option>
+            <option value="2">{language === 'en' ? 'Room 2 (Lanterns)' : 'Phòng 2 (Lồng đèn)'}</option>
+            <option value="3">{language === 'en' ? 'Room 3 (Message Tree)' : 'Phòng 3 (Cây thông điệp)'}</option>
           </select>
         </div>
 
-        {isLoading && <span className="muted" style={{ fontSize: '13px' }}>Đang tải nhật ký...</span>}
+        {isLoading && (
+          <span className="muted" style={{ fontSize: '13px' }}>
+            {language === 'en' ? 'Loading audit logs...' : 'Đang tải nhật ký...'}
+          </span>
+        )}
       </div>
 
       {/* Audit Log Table */}
       <table className="at">
         <thead>
           <tr>
-            <th style={{ width: '150px' }}>Thời gian</th>
-            <th style={{ width: '170px' }}>Quản trị viên</th>
-            <th style={{ width: '150px' }}>Hành động</th>
-            <th style={{ width: '120px' }}>Không gian</th>
-            <th>Tác phẩm / Đối tượng</th>
-            <th>Ghi chú &amp; Chi tiết kiểm toán</th>
+            <th style={{ width: '150px' }}>{language === 'en' ? 'Timestamp' : 'Thời gian'}</th>
+            <th style={{ width: '170px' }}>{language === 'en' ? 'Administrator' : 'Quản trị viên'}</th>
+            <th style={{ width: '150px' }}>{language === 'en' ? 'Action' : 'Hành động'}</th>
+            <th style={{ width: '140px' }}>{language === 'en' ? 'Context / Room' : 'Không gian'}</th>
+            <th>{language === 'en' ? 'Artwork / Target' : 'Tác phẩm / Đối tượng'}</th>
+            <th>{language === 'en' ? 'Audit Notes & Details' : 'Ghi chú & Chi tiết kiểm toán'}</th>
           </tr>
         </thead>
         <tbody>
           {logs.length === 0 ? (
             <tr>
               <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-                Không tìm thấy bản ghi nhật ký kiểm toán nào
+                {language === 'en'
+                  ? 'No audit records matching the filters found'
+                  : 'Không tìm thấy bản ghi nhật ký kiểm toán nào'}
               </td>
             </tr>
           ) : (
@@ -232,7 +273,7 @@ export function AdminAuditLog({ triggerToast }) {
                 log.created_by_admin?.nickname ||
                 log.created_by_admin?.username ||
                 log.admin_name ||
-                'Hệ thống';
+                (language === 'en' ? 'System' : 'Hệ thống');
 
               return (
                 <tr key={log.log_id || log.id}>
@@ -248,11 +289,15 @@ export function AdminAuditLog({ triggerToast }) {
                     </span>
                   </td>
                   <td className="muted" style={{ fontSize: '13px' }}>
-                    {log.room_code ? `Phòng ${log.room_id} (${log.room_code})` : log.room_id ? `Phòng ${log.room_id}` : 'Toàn hệ thống'}
+                    {log.room_code
+                      ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id} (${log.room_code})`
+                      : log.room_id
+                      ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id}`
+                      : (language === 'en' ? 'System-wide' : 'Toàn hệ thống')}
                   </td>
                   <td style={{ maxWidth: '240px' }}>
                     <div style={{ fontWeight: 600, fontSize: '13.5px' }}>
-                      {log.artwork_title || `Tác phẩm #${log.artwork_id || log.target_id || ''}`}
+                      {log.artwork_title || `${language === 'en' ? 'Target' : 'Tác phẩm'} #${log.artwork_id || log.target_id || ''}`}
                     </div>
                   </td>
                   <td className="muted" style={{ fontSize: '13px', lineHeight: 1.4 }}>
@@ -271,12 +316,16 @@ export function AdminAuditLog({ triggerToast }) {
           <div className="scrim" onClick={() => setUserModalOpen(false)} />
           <div className="panel" style={{ width: '600px', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
             <span className="x" onClick={() => setUserModalOpen(false)} role="button" tabIndex={0}>
-              <Icon name="x" size={22} />
+              &times;
             </span>
 
-            <h2 style={{ fontSize: '24px' }}>Xử lý tài khoản người dùng vi phạm</h2>
+            <h2 className="serif" style={{ fontSize: '24px', fontWeight: 600 }}>
+              {language === 'en' ? 'Account Enforcement & Moderation' : 'Xử lý tài khoản người dùng vi phạm'}
+            </h2>
             <div className="sub">
-              Admin có quyền khóa tài khoản vi phạm. Để xóa vĩnh viễn dữ liệu, hãy gửi phiếu yêu cầu lên Chủ sở hữu (Owner).
+              {language === 'en'
+                ? 'Admins can directly lock violating accounts. To permanently purge data, submit an authenticated deletion request to the Owner.'
+                : 'Admin có quyền khóa tài khoản vi phạm. Để xóa vĩnh viễn dữ liệu, hãy gửi phiếu yêu cầu lên Chủ sở hữu (Owner).'}
             </div>
 
             {/* Segment Switcher */}
@@ -285,30 +334,34 @@ export function AdminAuditLog({ triggerToast }) {
                 className={userModalTab === 'LOCK' ? 'on' : ''}
                 onClick={() => setUserModalTab('LOCK')}
               >
-                Khóa / Mở khóa tài khoản
+                {language === 'en' ? 'Lock / Unlock Account' : 'Khóa / Mở khóa tài khoản'}
               </span>
               <span
                 className={userModalTab === 'REQUEST_DELETE' ? 'on' : ''}
                 onClick={() => setUserModalTab('REQUEST_DELETE')}
               >
-                Gửi yêu cầu xóa lên Owner
+                {language === 'en' ? 'Request Deletion to Owner' : 'Gửi yêu cầu xóa lên Owner'}
               </span>
             </div>
 
             <form onSubmit={handleUserActionSubmit}>
               {userModalTab === 'LOCK' ? (
                 <>
-                  <div className="fieldl">ID người dùng (User UUID)</div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'User ID (User UUID)' : 'ID người dùng (User UUID)'}
+                  </div>
                   <input
                     className="inp"
                     value={targetUserId}
                     onChange={(e) => setTargetUserId(e.target.value)}
-                    placeholder="Nhập ID tài khoản cần thay đổi trạng thái..."
+                    placeholder={language === 'en' ? 'Enter UUID of target account...' : 'Nhập ID tài khoản cần thay đổi trạng thái...'}
                     required
                   />
 
-                  <div className="fieldl" style={{ marginTop: '12px' }}>Trạng thái áp dụng</div>
-                  <div className="row" style={{ gap: '10px' }}>
+                  <div className="fieldl" style={{ marginTop: '12px' }}>
+                    {language === 'en' ? 'Target Status' : 'Trạng thái áp dụng'}
+                  </div>
+                  <div className="row" style={{ gap: '14px', flexWrap: 'wrap' }}>
                     <label className="row" style={{ gap: '6px', cursor: 'pointer', fontSize: '14px' }}>
                       <input
                         type="radio"
@@ -316,7 +369,7 @@ export function AdminAuditLog({ triggerToast }) {
                         checked={lockStatus === false}
                         onChange={() => setLockStatus(false)}
                       />
-                      <span>Khóa tài khoản (Chặn truy cập)</span>
+                      <span>{language === 'en' ? 'Lock account (Block access)' : 'Khóa tài khoản (Chặn truy cập)'}</span>
                     </label>
                     <label className="row" style={{ gap: '6px', cursor: 'pointer', fontSize: '14px' }}>
                       <input
@@ -325,7 +378,7 @@ export function AdminAuditLog({ triggerToast }) {
                         checked={lockStatus === true}
                         onChange={() => setLockStatus(true)}
                       />
-                      <span>Mở khóa tài khoản</span>
+                      <span>{language === 'en' ? 'Unlock account' : 'Mở khóa tài khoản'}</span>
                     </label>
                   </div>
                 </>
@@ -343,22 +396,25 @@ export function AdminAuditLog({ triggerToast }) {
                       marginBottom: '14px',
                     }}
                   >
-                    🛡️ <b>Ràng buộc bảo mật danh tính:</b> Nhập chính xác cả Username và Email để hệ thống đối chiếu xác minh trước khi chuyển tiếp lên Owner.
+                    <b>{language === 'en' ? 'Identity Verification Policy:' : 'Ràng buộc bảo mật danh tính:'}</b>{' '}
+                    {language === 'en'
+                      ? 'Enter both exact Username and registered Email to verify credentials before forwarding request to the Owner.'
+                      : 'Nhập chính xác cả Username và Email để hệ thống đối chiếu xác minh trước khi chuyển tiếp lên Owner.'}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
-                      <div className="fieldl">Tên người dùng (Username)</div>
+                      <div className="fieldl">{language === 'en' ? 'Username' : 'Tên người dùng (Username)'}</div>
                       <input
                         className="inp"
                         value={targetUsername}
                         onChange={(e) => setTargetUsername(e.target.value)}
-                        placeholder="Ví dụ: spammer_001"
+                        placeholder="spammer_001"
                         required
                       />
                     </div>
                     <div>
-                      <div className="fieldl">Email đã đăng ký</div>
+                      <div className="fieldl">{language === 'en' ? 'Registered Email' : 'Email đã đăng ký'}</div>
                       <input
                         type="email"
                         className="inp"
@@ -370,7 +426,9 @@ export function AdminAuditLog({ triggerToast }) {
                     </div>
                   </div>
 
-                  <div className="fieldl" style={{ marginTop: '12px' }}>ID người dùng (Tùy chọn nếu có)</div>
+                  <div className="fieldl" style={{ marginTop: '12px' }}>
+                    {language === 'en' ? 'User ID (Optional)' : 'ID người dùng (Tùy chọn nếu có)'}
+                  </div>
                   <input
                     className="inp"
                     value={targetUserId}
@@ -380,13 +438,15 @@ export function AdminAuditLog({ triggerToast }) {
                 </>
               )}
 
-              <div className="fieldl" style={{ marginTop: '12px' }}>Lý do xử lý</div>
+              <div className="fieldl" style={{ marginTop: '12px' }}>
+                {language === 'en' ? 'Reason for Enforcement' : 'Lý do xử lý'}
+              </div>
               <textarea
                 className="inp area"
                 style={{ minHeight: '90px', fontSize: '14px', fontFamily: 'var(--sans)' }}
                 value={actionReason}
                 onChange={(e) => setActionReason(e.target.value)}
-                placeholder="Ghi rõ lý do và hành vi vi phạm..."
+                placeholder={language === 'en' ? 'Specify policy violations and context...' : 'Ghi rõ lý do và hành vi vi phạm...'}
                 required
               />
 
@@ -397,7 +457,7 @@ export function AdminAuditLog({ triggerToast }) {
                   onClick={() => setUserModalOpen(false)}
                   disabled={isSubmittingUserAction}
                 >
-                  Hủy
+                  {language === 'en' ? 'Cancel' : 'Hủy'}
                 </button>
                 <button
                   type="submit"
@@ -406,12 +466,12 @@ export function AdminAuditLog({ triggerToast }) {
                   disabled={isSubmittingUserAction}
                 >
                   {isSubmittingUserAction
-                    ? 'Đang xử lý...'
+                    ? (language === 'en' ? 'Processing...' : 'Đang xử lý...')
                     : userModalTab === 'LOCK'
                     ? lockStatus
-                      ? 'Xác nhận mở khóa'
-                      : 'Xác nhận khóa tài khoản'
-                    : 'Gửi yêu cầu lên Owner'}
+                      ? (language === 'en' ? 'Confirm Unlock' : 'Xác nhận mở khóa')
+                      : (language === 'en' ? 'Confirm Lock Account' : 'Xác nhận khóa tài khoản')
+                    : (language === 'en' ? 'Submit Request to Owner' : 'Gửi yêu cầu lên Owner')}
                 </button>
               </div>
             </form>

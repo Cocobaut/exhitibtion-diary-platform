@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { MOODS } from '../../data/mockData';
 import { diaryService } from '../../services/diaryService';
+import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
+  const { user } = useAuth();
   const { language } = useLanguage();
 
   const getTodayISO = () => {
@@ -19,10 +21,14 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
   const [selectedFont, setSelectedFont] = useState('Lora'); // 'Lora' | 'Hand' | 'Sans'
   const [content, setContent] = useState('');
   const [isPrivate, setIsPrivate] = useState(true);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const accountNickname = user?.nickname || user?.username || (language === 'en' ? 'Author' : 'Tác giả');
+  const displayPenName = isAnonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : accountNickname;
 
   const fileInputRef = useRef(null);
 
@@ -391,6 +397,44 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
               {language === 'en'
                 ? 'Enters moderation queue. If not approved, it stays safely in your private diary.'
                 : 'Vào hàng chờ duyệt. Nếu không được duyệt, trang vẫn ở lại nhật ký riêng của bạn.'}
+            </div>
+          </div>
+
+          <div style={{ marginTop: '16px' }}>
+            <div className="fieldl" style={{ marginTop: 0 }}>
+              <span>{language === 'en' ? 'Author / Pen Name' : 'Bút danh / Tác giả'}</span>
+              <span style={{ fontSize: '11.5px', color: 'var(--ink2)' }}>
+                {language === 'en' ? '(Account nickname)' : '(Bí danh tài khoản)'}
+              </span>
+            </div>
+            <input
+              className="inp"
+              value={displayPenName}
+              readOnly
+              disabled
+              style={{
+                background: 'rgba(0, 0, 0, 0.04)',
+                cursor: 'not-allowed',
+                opacity: 0.85,
+                color: 'var(--ink)',
+                marginBottom: '8px',
+                fontSize: '13.5px',
+              }}
+              title={language === 'en' ? 'Pen name is locked to your account nickname' : 'Bút danh cố định theo bí danh tài khoản'}
+            />
+            <div
+              className="row"
+              style={{
+                cursor: 'pointer',
+                gap: '8px',
+                userSelect: 'none',
+              }}
+              onClick={() => setIsAnonymous(!isAnonymous)}
+            >
+              <span className={`tog ${isAnonymous ? 'on' : ''}`} />
+              <span className="muted" style={{ color: 'var(--ink)', fontSize: '12.5px' }}>
+                {language === 'en' ? 'Anonymous' : 'Ẩn danh'}
+              </span>
             </div>
           </div>
 
