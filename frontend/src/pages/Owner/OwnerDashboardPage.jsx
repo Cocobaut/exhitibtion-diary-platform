@@ -1505,8 +1505,36 @@ export function OwnerDashboardPage({ onNavigate }) {
       {/* USER DETAIL MODAL */}
       {selectedUserDetail && (
         <>
-          <div className="scrim" onClick={() => setSelectedUserDetail(null)} />
-          <div className="panel" style={{ width: '540px', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
+          <div
+            className="scrim"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh',
+              background: 'rgba(0, 0, 0, 0.72)',
+              backdropFilter: 'blur(5px)',
+              WebkitBackdropFilter: 'blur(5px)',
+              zIndex: 9998,
+            }}
+            onClick={() => setSelectedUserDetail(null)}
+          />
+          <div
+            className="panel"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '540px',
+              maxWidth: '92vw',
+              boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
+              zIndex: 9999,
+            }}
+          >
             <span className="x" onClick={() => setSelectedUserDetail(null)} role="button" tabIndex={0}>
               &times;
             </span>
@@ -1589,8 +1617,36 @@ export function OwnerDashboardPage({ onNavigate }) {
       {/* HARD DELETE CONFIRMATION MODAL */}
       {deletingUser && (
         <>
-          <div className="scrim" onClick={() => setDeletingUser(null)} />
-          <div className="panel" style={{ width: '520px', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
+          <div
+            className="scrim"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh',
+              background: 'rgba(0, 0, 0, 0.72)',
+              backdropFilter: 'blur(5px)',
+              WebkitBackdropFilter: 'blur(5px)',
+              zIndex: 9998,
+            }}
+            onClick={() => setDeletingUser(null)}
+          />
+          <div
+            className="panel"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '520px',
+              maxWidth: '92vw',
+              boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
+              zIndex: 9999,
+            }}
+          >
             <span className="x" onClick={() => setDeletingUser(null)} role="button" tabIndex={0}>
               &times;
             </span>
@@ -1657,8 +1713,36 @@ export function OwnerDashboardPage({ onNavigate }) {
       {/* DELETE API KEY CONFIRMATION MODAL */}
       {deletingApiKeyService && (
         <>
-          <div className="scrim" onClick={() => !isDeletingApiKey && setDeletingApiKeyService(null)} />
-          <div className="panel" style={{ width: '520px', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
+          <div
+            className="scrim"
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100vw',
+              height: '100vh',
+              background: 'rgba(0, 0, 0, 0.72)',
+              backdropFilter: 'blur(5px)',
+              WebkitBackdropFilter: 'blur(5px)',
+              zIndex: 9998,
+            }}
+            onClick={() => !isDeletingApiKey && setDeletingApiKeyService(null)}
+          />
+          <div
+            className="panel"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '520px',
+              maxWidth: '92vw',
+              boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
+              zIndex: 9999,
+            }}
+          >
             <span
               className="x"
               onClick={() => !isDeletingApiKey && setDeletingApiKeyService(null)}
