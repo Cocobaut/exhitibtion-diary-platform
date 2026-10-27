@@ -28,13 +28,21 @@ postgres_data/
 .coverage
 htmlcov/
 
-# SQL files
-!*.sql
-
-
 uploads/
 
 # Node & Frontend
 node_modules/
 dist/
 *.log
+
+# Specifications and Collections
+frontend/specification/
+backend/specification/
+backend/postman_json/
+
+# Frontend mock data
+frontend/src/data/
+
+# Database folder content (ignored except .gitkeep)
+backend/database/*
+!backend/database/.gitkeep
