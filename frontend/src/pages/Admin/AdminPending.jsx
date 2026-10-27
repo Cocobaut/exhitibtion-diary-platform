@@ -436,7 +436,7 @@ export function AdminPending({
           style={{
             left: '318px',
             right: '32px',
-            top: '142px',
+            top: '192px',
             bottom: '26px',
             padding: '22px 26px',
             overflowY: 'auto',
@@ -768,7 +768,7 @@ export function AdminPending({
           style={{
             left: '318px',
             right: '32px',
-            top: '142px',
+            top: '192px',
             bottom: '26px',
             display: 'grid',
             placeItems: 'center',
