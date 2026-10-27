@@ -157,3 +157,57 @@ async def toggle_reaction(
         current_user=current_user,
     )
     return ok(data=jsonable_encoder(data), message=msg)
+
+
+@router.post(
+    "/artworks/{artwork_id}/save",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Lưu tác phẩm phòng 1 vào sổ tay"
+)
+async def save_artwork_to_notebook(
+    artwork_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lưu tác phẩm phòng 1 vào Sổ tay cá nhân của người dùng."""
+    try:
+        art_uuid = uuid.UUID(artwork_id)
+    except (ValueError, TypeError):
+        raise AppException(
+            status_code=404,
+            error_code="ARTWORK_NOT_FOUND",
+            message="Không tìm thấy tác phẩm"
+        )
+
+    data = await Room1Service.save_artwork_to_notebook(
+        db, artwork_id=art_uuid, current_user=current_user
+    )
+    return ok(data=jsonable_encoder(data), message="Đã lưu tác phẩm vào sổ tay")
+
+
+@router.delete(
+    "/artworks/{artwork_id}/save",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Bỏ lưu tác phẩm phòng 1 khỏi sổ tay"
+)
+async def unsave_artwork_from_notebook(
+    artwork_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Bỏ lưu tác phẩm phòng 1 khỏi Sổ tay cá nhân của người dùng."""
+    try:
+        art_uuid = uuid.UUID(artwork_id)
+    except (ValueError, TypeError):
+        raise AppException(
+            status_code=404,
+            error_code="ARTWORK_NOT_FOUND",
+            message="Không tìm thấy tác phẩm"
+        )
+
+    await Room1Service.unsave_artwork(
+        db, artwork_id=art_uuid, current_user=current_user
+    )
+    return ok(data={"is_saved": False}, message="Đã bỏ lưu khỏi sổ tay")

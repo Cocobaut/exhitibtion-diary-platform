@@ -7,12 +7,21 @@ import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { room1Service } from '../../services/room1Service';
 
-export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated }) {
+export function ArtworkDetailModal({
+  isOpen,
+  onClose,
+  artwork,
+  onReactionUpdated,
+  onSaveToNotebook,
+  notebookItems = [],
+}) {
   const { isAuthenticated } = useAuth();
   const { guardAction } = useGuestGuard();
   const { localize, language, t } = useLanguage();
   const [detail, setDetail] = useState(artwork);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [currentReaction, setCurrentReaction] = useState(null);
   const [reactionsMap, setReactionsMap] = useState({
     HEART: 0,
@@ -27,6 +36,12 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
 
     setDetail(artwork);
     setCurrentReaction(artwork.my_reaction || artwork.user_reaction || null);
+
+    const initialSaved = Boolean(
+      artwork.is_saved ||
+      (notebookItems && notebookItems.some((i) => i.artwork_id === artwork.id || i.id === artwork.id || i.id === `nb_r1_${artwork.id}`))
+    );
+    setIsSaved(initialSaved);
 
     if (artwork.reactions) {
       setReactionsMap({
@@ -44,6 +59,9 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
         if (res) {
           setDetail(res);
           setCurrentReaction(res.my_reaction || null);
+          if (res.is_saved !== undefined) {
+            setIsSaved(Boolean(res.is_saved));
+          }
           if (res.reactions) {
             setReactionsMap({
               HEART: res.reactions.HEART || 0,
@@ -86,6 +104,63 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
         console.warn('Lỗi khi cập nhật cảm xúc:', err);
       }
     }, 'bày tỏ sự đồng cảm với tác phẩm');
+  };
+
+  // Toggle lưu vào sổ tay
+  const handleSaveToggle = async () => {
+    if (saveLoading) return;
+    setSaveLoading(true);
+
+    const willSave = !isSaved;
+    const artId = detail?.id || artwork?.id;
+
+    try {
+      if (artId) {
+        if (willSave) {
+          await room1Service.saveArtworkToNotebook(artId);
+        } else {
+          await room1Service.unsaveArtworkFromNotebook(artId);
+        }
+      }
+      setIsSaved(willSave);
+
+      if (willSave && onSaveToNotebook) {
+        onSaveToNotebook({
+          id: artId ? `nb_r1_${artId}` : `nb_r1_${Date.now()}`,
+          artwork_id: artId,
+          source: 'room1',
+          sourceLabel: language === 'en' ? 'Artwork · Room 1' : 'Tác phẩm · Phòng 1',
+          badgeClass: 'b-ok',
+          icon: 'r1',
+          title: title || 'Tác phẩm Phòng 1',
+          content: story || '',
+          author: author || 'Tác giả',
+          media_url: detail?.media_url || artwork.media_url || artwork.image_url,
+          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
+        });
+      }
+    } catch (err) {
+      console.error('Error toggling notebook save for Room 1 artwork:', err);
+      // Fallback local state
+      setIsSaved(willSave);
+      if (willSave && onSaveToNotebook) {
+        onSaveToNotebook({
+          id: artId ? `nb_r1_${artId}` : `nb_r1_${Date.now()}`,
+          artwork_id: artId,
+          source: 'room1',
+          sourceLabel: language === 'en' ? 'Artwork · Room 1' : 'Tác phẩm · Phòng 1',
+          badgeClass: 'b-ok',
+          icon: 'r1',
+          title: title || 'Tác phẩm Phòng 1',
+          content: story || '',
+          author: author || 'Tác giả',
+          media_url: detail?.media_url || artwork.media_url || artwork.image_url,
+          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
+        });
+      }
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   const title = localize(detail, 'title') || localize(artwork, 'title') || artwork.t || (language === 'en' ? 'Artwork' : 'Tác phẩm');
@@ -215,18 +290,44 @@ export function ArtworkDetailModal({ isOpen, onClose, artwork, onReactionUpdated
             </div>
           )}
 
-          {/* Reactions bar */}
+          {/* Reactions bar & Save to notebook */}
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: '16px', marginTop: '20px' }}>
-            <div className="rxbar" style={{ display: 'flex', gap: '8px' }}>
-              {reactionTypes.map((type) => (
-                <ReactionButton
-                  key={type}
-                  type={type}
-                  count={reactionsMap[type] || 0}
-                  active={currentReaction === type}
-                  onClick={() => handleToggleReaction(type)}
-                />
-              ))}
+            <div className="row between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+              <div className="rxbar" style={{ display: 'flex', gap: '8px' }}>
+                {reactionTypes.map((type) => (
+                  <ReactionButton
+                    key={type}
+                    type={type}
+                    count={reactionsMap[type] || 0}
+                    active={currentReaction === type}
+                    onClick={() => handleToggleReaction(type)}
+                  />
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className={`btn ${isSaved ? 'main' : 'line'} sm`}
+                onClick={() => {
+                  guardAction(handleSaveToggle, 'lưu tác phẩm vào sổ tay');
+                }}
+                disabled={saveLoading}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  borderRadius: '999px',
+                  padding: '7px 16px',
+                  fontSize: '13px',
+                }}
+              >
+                <Icon name={isSaved ? 'check' : 'bookmark'} size={15} />
+                {saveLoading
+                  ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+                  : isSaved
+                  ? (language === 'en' ? 'Saved to notebook' : 'Đã lưu vào sổ tay')
+                  : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}
+              </button>
             </div>
             <div className="muted" style={{ marginTop: '10px', fontSize: '13px' }}>
               {reactionsMap.total > 0

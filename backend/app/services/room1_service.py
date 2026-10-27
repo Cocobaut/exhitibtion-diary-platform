@@ -12,6 +12,8 @@ from app.core.exceptions import AppException
 from app.models.artwork import Artwork
 from app.models.artwork_interaction import ArtworkInteraction
 from app.models.user import User
+from app.models.user_saved_artwork import UserSavedArtwork
+from app.schemas.notebook import serialize_utc_datetime
 from app.schemas.room1 import (
     ReactionsSummary,
     Room1CreateArtworkRequest,
@@ -185,6 +187,16 @@ class Room1Service:
 
         author_name = ArtworkQueryService.get_author_display_name(artwork)
 
+        is_saved = False
+        if current_user:
+            check_saved = await db.scalar(
+                select(UserSavedArtwork.id).where(
+                    UserSavedArtwork.user_id == current_user.id,
+                    UserSavedArtwork.artwork_id == artwork_id,
+                )
+            )
+            is_saved = bool(check_saved)
+
         return {
             "id": artwork.id,
             "room_id": artwork.room_id,
@@ -204,8 +216,70 @@ class Room1Service:
             "view_count": new_view_count,
             "reactions": summaries.get(artwork_id, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0}),
             "my_reaction": my_rx,
+            "is_saved": is_saved,
             "created_at": artwork.created_at,
         }
+
+    @staticmethod
+    async def save_artwork_to_notebook(
+        db: AsyncSession,
+        *,
+        artwork_id: uuid.UUID,
+        current_user: User,
+    ) -> Dict[str, Any]:
+        """Save a Room 1 artwork into the user's notebook."""
+        stmt = select(Artwork).where(Artwork.id == artwork_id, Artwork.room_id == ROOM_BROKEN)
+        artwork = (await db.execute(stmt)).scalar_one_or_none()
+        if not artwork:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy tác phẩm"
+            )
+
+        if artwork.visibility == "PRIVATE" and artwork.user_id != current_user.id:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy tác phẩm"
+            )
+
+        check_stmt = select(UserSavedArtwork).where(
+            UserSavedArtwork.user_id == current_user.id,
+            UserSavedArtwork.artwork_id == artwork_id,
+        )
+        saved_rec = (await db.execute(check_stmt)).scalar_one_or_none()
+        if not saved_rec:
+            saved_rec = UserSavedArtwork(
+                user_id=current_user.id,
+                artwork_id=artwork_id,
+            )
+            db.add(saved_rec)
+            await db.commit()
+            await db.refresh(saved_rec)
+
+        return {
+            "artwork_id": str(artwork.id),
+            "is_saved": True,
+            "saved_at": serialize_utc_datetime(saved_rec.saved_at),
+        }
+
+    @staticmethod
+    async def unsave_artwork(
+        db: AsyncSession,
+        *,
+        artwork_id: uuid.UUID,
+        current_user: User,
+    ) -> None:
+        """Remove a Room 1 artwork from the user's notebook."""
+        stmt = select(UserSavedArtwork).where(
+            UserSavedArtwork.user_id == current_user.id,
+            UserSavedArtwork.artwork_id == artwork_id,
+        )
+        saved_rec = (await db.execute(stmt)).scalar_one_or_none()
+        if saved_rec:
+            await db.delete(saved_rec)
+            await db.commit()
 
     @staticmethod
     async def toggle_reaction(

@@ -10,7 +10,12 @@ import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { room1Service } from '../../services/room1Service';
 
-export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
+export function Room1Page({
+  onOpenNotifications,
+  onOpenThemeModal,
+  onSaveToNotebook,
+  notebookItems = [],
+}) {
   const { isAuthenticated, isGuest } = useAuth();
   const { guardAction } = useGuestGuard();
   const { t, language } = useLanguage();
@@ -440,6 +445,8 @@ export function Room1Page({ onOpenNotifications, onOpenThemeModal }) {
         artwork={selectedArtwork}
         onClose={() => setSelectedArtwork(null)}
         onReactionUpdated={handleReactionUpdated}
+        onSaveToNotebook={onSaveToNotebook}
+        notebookItems={notebookItems}
       />
 
       <SubmitArtworkModal

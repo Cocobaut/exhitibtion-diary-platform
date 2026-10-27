@@ -232,6 +232,25 @@ export const room3Service = {
 
     return await apiClient.get('/rooms/3/search', { params });
   },
+
+  /**
+   * Lưu thông điệp phòng 3 vào sổ tay
+   * @param {string} artworkId
+   * @returns {Promise<Object>} { artwork_id, is_saved, saved_at }
+   */
+  async saveLeafToNotebook(artworkId) {
+    return await apiClient.post(`/rooms/3/artworks/${artworkId}/save`);
+  },
+
+  /**
+   * Bỏ lưu thông điệp phòng 3 khỏi sổ tay
+   * @param {string} artworkId
+   * @returns {Promise<Object>}
+   */
+  async unsaveLeafFromNotebook(artworkId) {
+    return await apiClient.delete(`/rooms/3/artworks/${artworkId}/save`);
+  },
 };
 
 export default room3Service;
+

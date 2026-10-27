@@ -11,6 +11,8 @@ from app.core.exceptions import AppException
 from app.models.artwork import Artwork
 from app.models.artwork_interaction import ArtworkInteraction
 from app.models.user import User
+from app.models.user_saved_artwork import UserSavedArtwork
+from app.schemas.notebook import serialize_utc_datetime
 from app.schemas.room3 import (
     ROOM3_CATEGORY_COLORS,
     PublicLeafCategoriesData,
@@ -196,6 +198,16 @@ class Room3Service:
         has_energy = "INSPIRED" in my_rx_map.get(ribbon_id, [])
         author_name = ArtworkQueryService.get_author_display_name(artwork)
 
+        is_saved = False
+        if current_user:
+            check_saved = await db.scalar(
+                select(UserSavedArtwork.id).where(
+                    UserSavedArtwork.user_id == current_user.id,
+                    UserSavedArtwork.artwork_id == ribbon_id,
+                )
+            )
+            is_saved = bool(check_saved)
+
         return {
             "id": artwork.id,
             "room_id": artwork.room_id,
@@ -212,8 +224,70 @@ class Room3Service:
             "reactions": rx_obj,
             "has_received_energy": has_energy,
             "view_count": new_view_count,
+            "is_saved": is_saved,
             "created_at": artwork.created_at,
         }
+
+    @staticmethod
+    async def save_ribbon_to_notebook(
+        db: AsyncSession,
+        *,
+        ribbon_id: uuid.UUID,
+        current_user: User,
+    ) -> Dict[str, Any]:
+        """Save a Room 3 leaf ribbon into the user's notebook."""
+        stmt = select(Artwork).where(Artwork.id == ribbon_id, Artwork.room_id == ROOM_COMMUNITY)
+        artwork = (await db.execute(stmt)).scalar_one_or_none()
+        if not artwork:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy thông điệp"
+            )
+
+        if artwork.visibility == "PRIVATE" and artwork.user_id != current_user.id:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy thông điệp"
+            )
+
+        check_stmt = select(UserSavedArtwork).where(
+            UserSavedArtwork.user_id == current_user.id,
+            UserSavedArtwork.artwork_id == ribbon_id,
+        )
+        saved_rec = (await db.execute(check_stmt)).scalar_one_or_none()
+        if not saved_rec:
+            saved_rec = UserSavedArtwork(
+                user_id=current_user.id,
+                artwork_id=ribbon_id,
+            )
+            db.add(saved_rec)
+            await db.commit()
+            await db.refresh(saved_rec)
+
+        return {
+            "artwork_id": str(artwork.id),
+            "is_saved": True,
+            "saved_at": serialize_utc_datetime(saved_rec.saved_at),
+        }
+
+    @staticmethod
+    async def unsave_ribbon(
+        db: AsyncSession,
+        *,
+        ribbon_id: uuid.UUID,
+        current_user: User,
+    ) -> None:
+        """Remove a Room 3 leaf ribbon from the user's notebook."""
+        stmt = select(UserSavedArtwork).where(
+            UserSavedArtwork.user_id == current_user.id,
+            UserSavedArtwork.artwork_id == ribbon_id,
+        )
+        saved_rec = (await db.execute(stmt)).scalar_one_or_none()
+        if saved_rec:
+            await db.delete(saved_rec)
+            await db.commit()
 
     @staticmethod
     async def toggle_energy(

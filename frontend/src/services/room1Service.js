@@ -93,6 +93,25 @@ export const room1Service = {
       original_language,
     });
   },
+
+  /**
+   * Lưu tác phẩm phòng 1 vào sổ tay
+   * @param {string} artworkId
+   * @returns {Promise<Object>} { artwork_id, is_saved, saved_at }
+   */
+  async saveArtworkToNotebook(artworkId) {
+    return await apiClient.post(`/rooms/1/artworks/${artworkId}/save`);
+  },
+
+  /**
+   * Bỏ lưu tác phẩm phòng 1 khỏi sổ tay
+   * @param {string} artworkId
+   * @returns {Promise<Object>}
+   */
+  async unsaveArtworkFromNotebook(artworkId) {
+    return await apiClient.delete(`/rooms/1/artworks/${artworkId}/save`);
+  },
 };
 
 export default room1Service;
+

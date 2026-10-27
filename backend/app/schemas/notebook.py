@@ -18,7 +18,7 @@ def serialize_utc_datetime(dt: Optional[datetime]) -> Optional[str]:
 
 class NotebookItem(BaseModel):
     id: str
-    source: str  # 'mailbox' | 'lantern'
+    source: str  # 'mailbox' | 'lantern' | 'room1' | 'room3'
     source_label: str
     source_id: str
     category: Optional[str] = None
@@ -28,6 +28,7 @@ class NotebookItem(BaseModel):
     content: str
     author: Optional[str] = None
     symbol: Optional[str] = None
+    media_url: Optional[str] = None
     saved_at: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
@@ -37,6 +38,9 @@ class NotebookCounts(BaseModel):
     all: int = 0
     mailbox: int = 0
     lantern: int = 0
+    room1: int = 0
+    room3: int = 0
+
 
 
 class NotebookPagination(BaseModel):

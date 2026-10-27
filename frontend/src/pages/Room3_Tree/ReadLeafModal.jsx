@@ -7,7 +7,14 @@ import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { room3Service, toFrontendCategory, CATEGORY_MAP } from '../../services/room3Service';
 
-export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) {
+export function ReadLeafModal({
+  isOpen,
+  leafData,
+  onClose,
+  onReactionUpdated,
+  onSaveToNotebook,
+  notebookItems = [],
+}) {
   const { user } = useAuth();
   const { guardAction } = useGuestGuard();
   const { localize, language } = useLanguage();
@@ -17,6 +24,8 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
   const [heartCount, setHeartCount] = useState(214);
   const [hasEnergized, setHasEnergized] = useState(false);
   const [hasHearted, setHasHearted] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isTogglingEnergy, setIsTogglingEnergy] = useState(false);
   const [isTogglingHeart, setIsTogglingHeart] = useState(false);
@@ -26,6 +35,12 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
 
     let isMounted = true;
     setLeaf(leafData);
+
+    const initialSaved = Boolean(
+      leafData?.is_saved ||
+      (notebookItems && notebookItems.some((i) => i.artwork_id === leafData.id || i.id === leafData.id || i.id === `nb_r3_${leafData.id}`))
+    );
+    setIsSaved(initialSaved);
 
     const initialEnergy =
       leafData?.reactions?.ENERGY ?? leafData?.energy_count ?? 86;
@@ -52,6 +67,9 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
             setHeartCount(hCount);
             if (data?.has_received_energy !== undefined) {
               setHasEnergized(Boolean(data.has_received_energy));
+            }
+            if (data?.is_saved !== undefined) {
+              setIsSaved(Boolean(data.is_saved));
             }
           }
         })
@@ -176,6 +194,61 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
     }, actionType === 'HEART' ? 'thả tim thông điệp' : 'truyền năng lượng');
   };
 
+  const handleSaveToggle = async () => {
+    if (saveLoading) return;
+    setSaveLoading(true);
+
+    const willSave = !isSaved;
+    const leafId = currentLeaf?.id;
+
+    try {
+      if (leafId) {
+        if (willSave) {
+          await room3Service.saveLeafToNotebook(leafId);
+        } else {
+          await room3Service.unsaveLeafFromNotebook(leafId);
+        }
+      }
+      setIsSaved(willSave);
+
+      if (willSave && onSaveToNotebook) {
+        onSaveToNotebook({
+          id: leafId ? `nb_r3_${leafId}` : `nb_r3_${Date.now()}`,
+          artwork_id: leafId,
+          source: 'room3',
+          sourceLabel: language === 'en' ? 'Wish Leaf · Room 3' : 'Chiếc lá nguyện ước · Phòng 3',
+          badgeClass: 'b-wait',
+          icon: 'r3',
+          title: localize(currentLeaf, 'title') || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên'),
+          content: localize(currentLeaf, 'content') || localize(currentLeaf, 'short_content') || '',
+          author: currentLeaf.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ'),
+          symbol: leafColor,
+          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
+        });
+      }
+    } catch (err) {
+      console.error('Error toggling notebook save for leaf:', err);
+      setIsSaved(willSave);
+      if (willSave && onSaveToNotebook) {
+        onSaveToNotebook({
+          id: leafId ? `nb_r3_${leafId}` : `nb_r3_${Date.now()}`,
+          artwork_id: leafId,
+          source: 'room3',
+          sourceLabel: language === 'en' ? 'Wish Leaf · Room 3' : 'Chiếc lá nguyện ước · Phòng 3',
+          badgeClass: 'b-wait',
+          icon: 'r3',
+          title: localize(currentLeaf, 'title') || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên'),
+          content: localize(currentLeaf, 'content') || localize(currentLeaf, 'short_content') || '',
+          author: currentLeaf.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ'),
+          symbol: leafColor,
+          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
+        });
+      }
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="scrim" onClick={onClose} />
@@ -253,10 +326,10 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
             : `treo lên cây ngày ${formatDate(currentLeaf.created_at)}`}
         </div>
 
-        {/* Interactive Reaction Buttons */}
+        {/* Interactive Reaction Buttons & Save to notebook */}
         <div
           className="row"
-          style={{ justifyContent: 'center', marginTop: '22px', gap: '12px' }}
+          style={{ justifyContent: 'center', alignItems: 'center', marginTop: '22px', gap: '10px', flexWrap: 'wrap' }}
         >
           <ReactionButton
             type="ENERGY"
@@ -273,6 +346,30 @@ export function ReadLeafModal({ isOpen, leafData, onClose, onReactionUpdated }) 
             disabled={isTogglingHeart}
             onClick={() => handleToggleAction('HEART')}
           />
+
+          <button
+            type="button"
+            className={`btn ${isSaved ? 'main' : 'line'} sm`}
+            onClick={() => {
+              guardAction(handleSaveToggle, 'lưu thông điệp vào sổ tay');
+            }}
+            disabled={saveLoading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              borderRadius: '999px',
+              padding: '7px 16px',
+              fontSize: '13px',
+            }}
+          >
+            <Icon name={isSaved ? 'check' : 'bookmark'} size={15} />
+            {saveLoading
+              ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+              : isSaved
+              ? (language === 'en' ? 'Saved to notebook' : 'Đã lưu vào sổ tay')
+              : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}
+          </button>
         </div>
 
         <div className="muted" style={{ fontSize: '13px', marginTop: '16px' }}>

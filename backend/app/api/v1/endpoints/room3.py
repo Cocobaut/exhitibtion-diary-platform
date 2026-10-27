@@ -182,3 +182,57 @@ async def toggle_energy(
         current_user=current_user,
     )
     return ok(data=jsonable_encoder(data), message=msg)
+
+
+@router.post(
+    "/artworks/{artwork_id}/save",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Lưu thông điệp phòng 3 vào sổ tay"
+)
+async def save_ribbon_to_notebook(
+    artwork_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Lưu thông điệp phòng 3 vào Sổ tay cá nhân của người dùng."""
+    try:
+        art_uuid = uuid.UUID(artwork_id)
+    except (ValueError, TypeError):
+        raise AppException(
+            status_code=404,
+            error_code="ARTWORK_NOT_FOUND",
+            message="Không tìm thấy thông điệp"
+        )
+
+    data = await Room3Service.save_ribbon_to_notebook(
+        db, ribbon_id=art_uuid, current_user=current_user
+    )
+    return ok(data=jsonable_encoder(data), message="Đã lưu thông điệp vào sổ tay")
+
+
+@router.delete(
+    "/artworks/{artwork_id}/save",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Bỏ lưu thông điệp phòng 3 khỏi sổ tay"
+)
+async def unsave_ribbon_from_notebook(
+    artwork_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Bỏ lưu thông điệp phòng 3 khỏi Sổ tay cá nhân của người dùng."""
+    try:
+        art_uuid = uuid.UUID(artwork_id)
+    except (ValueError, TypeError):
+        raise AppException(
+            status_code=404,
+            error_code="ARTWORK_NOT_FOUND",
+            message="Không tìm thấy thông điệp"
+        )
+
+    await Room3Service.unsave_ribbon(
+        db, ribbon_id=art_uuid, current_user=current_user
+    )
+    return ok(data={"is_saved": False}, message="Đã bỏ lưu khỏi sổ tay")

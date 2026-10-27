@@ -97,6 +97,10 @@ export function NotebookPage({
     serverCounts.mailbox || activeItems.filter((i) => i.source === 'mailbox').length;
   const lanternCount =
     serverCounts.lantern || activeItems.filter((i) => i.source === 'lantern').length;
+  const room1Count =
+    serverCounts.room1 || activeItems.filter((i) => i.source === 'room1').length;
+  const room3Count =
+    serverCounts.room3 || activeItems.filter((i) => i.source === 'room3').length;
   const totalCount =
     serverCounts.all || activeItems.length;
 
@@ -106,6 +110,8 @@ export function NotebookPage({
     : activeItems.filter((item) => {
         if (filter === 'mailbox' && item.source !== 'mailbox') return false;
         if (filter === 'lantern' && item.source !== 'lantern') return false;
+        if (filter === 'room1' && item.source !== 'room1') return false;
+        if (filter === 'room3' && item.source !== 'room3') return false;
 
         if (debouncedSearch) {
           const term = debouncedSearch.toLowerCase();
@@ -134,7 +140,7 @@ export function NotebookPage({
       console.warn('Backend unsave failed:', err);
     }
 
-    triggerToast('Đã gỡ mục này khỏi sổ tay');
+    triggerToast(language === 'en' ? 'Removed from notebook' : 'Đã gỡ mục này khỏi sổ tay');
   };
 
   return (
@@ -176,7 +182,7 @@ export function NotebookPage({
 
       {/* Filter Chips */}
       <div className="chips-row">
-        <div className="chips">
+        <div className="chips" style={{ flexWrap: 'wrap', gap: '8px' }}>
           <span
             className={`chip glass ${filter === 'all' ? 'on' : ''}`}
             onClick={() => setFilter('all')}
@@ -189,14 +195,28 @@ export function NotebookPage({
             onClick={() => setFilter('mailbox')}
             style={{ cursor: 'pointer' }}
           >
-            <Icon name="sparkle" size={14} /> {language === 'en' ? `From Mailbox (${mailboxCount})` : `Từ Hòm thư (${mailboxCount})`}
+            <Icon name="sparkle" size={14} /> {language === 'en' ? `From Mailbox (${mailboxCount})` : `Hòm thư (${mailboxCount})`}
+          </span>
+          <span
+            className={`chip glass ${filter === 'room1' ? 'on' : ''}`}
+            onClick={() => setFilter('room1')}
+            style={{ cursor: 'pointer' }}
+          >
+            <Icon name="r1" size={14} /> {language === 'en' ? `From Room 1 (${room1Count})` : `Phòng 1 · Đổ vỡ (${room1Count})`}
           </span>
           <span
             className={`chip glass ${filter === 'lantern' ? 'on' : ''}`}
             onClick={() => setFilter('lantern')}
             style={{ cursor: 'pointer' }}
           >
-            <Icon name="r2" size={14} /> {language === 'en' ? `From Lanterns (${lanternCount})` : `Từ Lồng đèn (${lanternCount})`}
+            <Icon name="r2" size={14} /> {language === 'en' ? `From Room 2 (${lanternCount})` : `Phòng 2 · Lồng đèn (${lanternCount})`}
+          </span>
+          <span
+            className={`chip glass ${filter === 'room3' ? 'on' : ''}`}
+            onClick={() => setFilter('room3')}
+            style={{ cursor: 'pointer' }}
+          >
+            <Icon name="r3" size={14} /> {language === 'en' ? `From Room 3 (${room3Count})` : `Phòng 3 · Cây ước (${room3Count})`}
           </span>
           {isLoading && (
             <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
@@ -294,6 +314,27 @@ export function NotebookPage({
                     }}
                   >
                     {localize(item, 'title')}
+                  </div>
+                )}
+
+                {/* Optional Artwork Media preview */}
+                {item.media_url && (
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '130px',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      marginBottom: '10px',
+                      background: '#1A1210',
+                    }}
+                  >
+                    <img
+                      src={item.media_url}
+                      alt={item.title || 'Artwork'}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      loading="lazy"
+                    />
                   </div>
                 )}
 
@@ -398,6 +439,26 @@ export function NotebookPage({
               >
                 {localize(readingItem, 'title')}
               </h2>
+            )}
+
+            {readingItem.media_url && (
+              <div
+                style={{
+                  width: '100%',
+                  maxHeight: '260px',
+                  borderRadius: '10px',
+                  overflow: 'hidden',
+                  marginBottom: '16px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                  background: '#1A1210',
+                }}
+              >
+                <img
+                  src={readingItem.media_url}
+                  alt={readingItem.title || 'Artwork'}
+                  style={{ width: '100%', height: '100%', maxHeight: '260px', objectFit: 'cover' }}
+                />
+              </div>
             )}
 
             <div

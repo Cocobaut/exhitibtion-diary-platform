@@ -109,6 +109,8 @@ function MainApp() {
             <Room1Page
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
+              onSaveToNotebook={handleSaveToNotebook}
+              notebookItems={notebookItems}
             />
           )}
 
@@ -125,6 +127,8 @@ function MainApp() {
             <Room3Page
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
+              onSaveToNotebook={handleSaveToNotebook}
+              notebookItems={notebookItems}
             />
           )}
 

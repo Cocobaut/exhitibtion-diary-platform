@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.core.constants import ROOM_HOPE
+from app.core.constants import ROOM_BROKEN, ROOM_COMMUNITY, ROOM_HOPE
 from app.core.exceptions import AppException
 from app.models.artwork import Artwork
 from app.models.message_capsule import MessageCapsule
@@ -38,12 +38,13 @@ class NotebookService:
         page: int = 1,
         limit: int = 20,
     ) -> NotebookListData:
-        """Fetch unified notebook items combining saved mailbox capsules and saved Room 2 lanterns."""
-        if source not in ("all", "mailbox", "lantern"):
+        """Fetch unified notebook items combining saved mailbox capsules and saved artworks (Room 1, 2, 3)."""
+        valid_sources = ("all", "mailbox", "lantern", "room1", "room3")
+        if source not in valid_sources:
             raise AppException(
                 status_code=400,
                 error_code="VALIDATION_ERROR",
-                message="Nguồn source không hợp lệ (hỗ trợ all, mailbox, lantern)"
+                message=f"Nguồn source không hợp lệ (hỗ trợ {', '.join(valid_sources)})"
             )
         if limit < 1 or limit > 50:
             raise AppException(
@@ -83,40 +84,65 @@ class NotebookService:
                 "content": msg,
                 "author": "một người lạ ở Phòng 3, đã được kiểm duyệt",
                 "symbol": None,
+                "media_url": None,
                 "saved_at": serialize_utc_datetime(d.drawn_at),
                 "saved_at_dt": d.drawn_at,
             })
 
-        # 2. Fetch Room 2 saved lanterns
-        lanterns_stmt = (
+        # 2. Fetch Saved Artworks across Room 1, Room 2, and Room 3
+        saved_stmt = (
             select(UserSavedArtwork)
             .options(joinedload(UserSavedArtwork.artwork).joinedload(Artwork.author))
             .where(
                 UserSavedArtwork.user_id == user_id,
             )
         )
-        saved_arts = (await db.execute(lanterns_stmt)).scalars().unique().all()
+        saved_arts = (await db.execute(saved_stmt)).scalars().unique().all()
         for sa in saved_arts:
             art = sa.artwork
-            if not art or art.room_id != ROOM_HOPE:
+            if not art:
                 continue
-            cat_display = art.tag_category or "Hy vọng"
+
             author_name = art.author_display_name or (
                 art.author.nickname if art.author and not art.is_anonymous else "Ẩn danh"
             )
+
+            if art.room_id == ROOM_BROKEN:
+                item_src = "room1"
+                src_label = "Tác phẩm · Phòng 1"
+                cat_display = art.tag_category or "Đổ vỡ"
+                badge_cls = "b-ok"
+                ic = "r1"
+                prefix_id = "nb_r1_"
+            elif art.room_id == ROOM_COMMUNITY:
+                item_src = "room3"
+                src_label = "Chiếc lá nguyện ước · Phòng 3"
+                cat_display = art.tag_category or "Cây nguyện ước"
+                badge_cls = "b-wait"
+                ic = "r3"
+                prefix_id = "nb_r3_"
+            else:  # ROOM_HOPE
+                item_src = "lantern"
+                src_label = "Lồng đèn hạ xuống · Phòng 2"
+                cat_display = art.tag_category or "Hy vọng"
+                badge_cls = "b-wait"
+                ic = "r2"
+                prefix_id = "nb_lt_"
+
             items_all.append({
-                "id": f"nb_lt_{sa.id}",
-                "source": "lantern",
-                "source_label": "Lồng đèn hạ xuống · Phòng 2",
+                "id": f"{prefix_id}{sa.id}",
+                "source": item_src,
+                "source_label": src_label,
                 "source_id": str(art.id),
                 "category": cat_display,
-                "badge_class": "b-wait",
-                "icon": "r2",
+                "badge_class": badge_cls,
+                "icon": ic,
                 "title": art.title,
                 "content": art.content or art.short_content,
                 "short_content": art.short_content,
                 "author": author_name,
                 "symbol": art.color_code or art.tag_category or "heart",
+                "media_url": art.media_url,
                 "saved_at": serialize_utc_datetime(sa.saved_at),
                 "saved_at_dt": sa.saved_at,
             })
@@ -140,14 +166,20 @@ class NotebookService:
         # 4. Compute counts
         total_mailbox = sum(1 for it in items_all if it["source"] == "mailbox")
         total_lantern = sum(1 for it in items_all if it["source"] == "lantern")
+        total_room1 = sum(1 for it in items_all if it["source"] == "room1")
+        total_room3 = sum(1 for it in items_all if it["source"] == "room3")
         total_all = len(items_all)
-        counts = NotebookCounts(all=total_all, mailbox=total_mailbox, lantern=total_lantern)
+        counts = NotebookCounts(
+            all=total_all,
+            mailbox=total_mailbox,
+            lantern=total_lantern,
+            room1=total_room1,
+            room3=total_room3,
+        )
 
         # 5. Filter by source
-        if source == "mailbox":
-            selected = [it for it in items_all if it["source"] == "mailbox"]
-        elif source == "lantern":
-            selected = [it for it in items_all if it["source"] == "lantern"]
+        if source in ("mailbox", "lantern", "room1", "room3"):
+            selected = [it for it in items_all if it["source"] == source]
         else:
             selected = items_all
 
@@ -174,6 +206,7 @@ class NotebookService:
                 content=it["content"],
                 author=it["author"],
                 symbol=it["symbol"],
+                media_url=it.get("media_url"),
                 saved_at=it["saved_at"],
             )
             for it in paged_items

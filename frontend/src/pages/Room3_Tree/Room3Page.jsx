@@ -120,7 +120,12 @@ function StarrySky() {
   );
 }
 
-export function Room3Page({ onOpenNotifications, onOpenThemeModal }) {
+export function Room3Page({
+  onOpenNotifications,
+  onOpenThemeModal,
+  onSaveToNotebook,
+  notebookItems = [],
+}) {
   const { user, isGuest } = useAuth();
   const { guardAction } = useGuestGuard();
   const { t, language, localize } = useLanguage();
@@ -512,6 +517,8 @@ export function Room3Page({ onOpenNotifications, onOpenThemeModal }) {
         leafData={modalLeaf}
         onClose={handleCloseReadModal}
         onReactionUpdated={handleReactionUpdated}
+        onSaveToNotebook={onSaveToNotebook}
+        notebookItems={notebookItems}
       />
 
       <HangLeafModal
