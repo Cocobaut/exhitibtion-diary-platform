@@ -144,19 +144,8 @@ class AiModerationService:
 
     @classmethod
     async def _call_gemini(cls, req: ModerateArtRequest, api_key: str, model_name: str) -> Optional[Dict[str, Any]]:
-        # Candidate models list: start with chosen model, fallback to rock-solid Google Gemini versions if 404/503/429
-        candidates = []
-        if model_name and model_name.strip():
-            candidates.append(model_name.strip())
-        for fallback in [
-            "gemini-2.5-flash",
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gemini-1.5-flash-latest",
-            "gemini-1.5-pro",
-        ]:
-            if fallback not in candidates:
-                candidates.append(fallback)
+        target_model = (model_name or "").strip()
+        candidates = [target_model] if target_model else []
 
         payload = {
             "system_instruction": {"parts": [{"text": SYSTEM_MODERATION_PROMPT}]},
@@ -176,6 +165,7 @@ class AiModerationService:
         }
 
         async with httpx.AsyncClient(timeout=20.0) as client:
+            # 1. First attempt: Use the model configured by Owner
             for m in candidates:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key.strip()}"
                 try:
@@ -195,13 +185,51 @@ class AiModerationService:
                                     if lines and lines[-1].strip() == "```":
                                         lines = lines[:-1]
                                     clean_text = "\n".join(lines).strip()
-                                print(f"[AI Copilot Moderation] Google Gemini LLM ({m}) responded successfully!")
+                                print(f"[AI Copilot Moderation] Google Gemini ({m}) responded successfully!")
                                 return json.loads(clean_text)
                     else:
                         err_snippet = resp.text[:250].replace("\n", " ")
-                        print(f"[AI Copilot Moderation] Model {m} returned HTTP {resp.status_code} ({err_snippet}), trying fallback candidate...")
+                        print(f"[AI Copilot Moderation] Configured model '{m}' returned HTTP {resp.status_code} ({err_snippet}), discovering available models for this key dynamically...")
                 except Exception as ex:
                     print(f"[AI Copilot Moderation] Error calling {m}: {ex}")
+
+            # 2. Dynamic discovery fallback: query provider for actual models supported by this specific API key
+            try:
+                models_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key.strip()}"
+                models_resp = await client.get(models_url)
+                if models_resp.status_code == 200:
+                    models_data = models_resp.json().get("models", [])
+                    dynamic_models = [
+                        m.get("name", "").replace("models/", "")
+                        for m in models_data
+                        if "generateContent" in m.get("supportedGenerationMethods", [])
+                        and m.get("name", "").replace("models/", "") not in candidates
+                    ]
+                    for dyn_m in dynamic_models[:5]:
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{dyn_m}:generateContent?key={api_key.strip()}"
+                        try:
+                            resp = await client.post(url, json=payload)
+                            if resp.status_code == 200:
+                                data = resp.json()
+                                candidates_list = data.get("candidates", [])
+                                if candidates_list:
+                                    parts = candidates_list[0].get("content", {}).get("parts", [])
+                                    if parts:
+                                        text = parts[0].get("text", "")
+                                        clean_text = text.strip()
+                                        if clean_text.startswith("```"):
+                                            lines = clean_text.splitlines()
+                                            if lines and lines[0].startswith("```"):
+                                                lines = lines[1:]
+                                            if lines and lines[-1].strip() == "```":
+                                                lines = lines[:-1]
+                                            clean_text = "\n".join(lines).strip()
+                                        print(f"[AI Copilot Moderation] Dynamic model '{dyn_m}' from connected key responded successfully!")
+                                        return json.loads(clean_text)
+                        except Exception as ex:
+                            print(f"[AI Copilot Moderation] Error calling dynamic model {dyn_m}: {ex}")
+            except Exception as ex:
+                print(f"[AI Copilot Moderation] Dynamic model discovery failed: {ex}")
 
         return None
 

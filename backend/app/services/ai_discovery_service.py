@@ -93,31 +93,11 @@ class AiDiscoveryService:
                         reason=m.get("description", "Hỗ trợ sinh văn bản và kiểm duyệt"),
                     ))
 
-            # Prioritize active Gemini models with high speed and JSON compliance
-            priority_order = [
-                "gemini-2.5-flash",
-                "gemini-2.0-flash",
-                "gemini-1.5-flash",
-                "gemini-1.5-flash-latest",
-                "gemini-1.5-pro",
-                "gemini-flash-latest",
-            ]
-            rec_id = None
-            for p in priority_order:
-                for item in discovered:
-                    if p in item.id:
-                        rec_id = item.id
-                        item.is_recommended = True
-                        item.badge = "Khuyên dùng số 1"
-                        item.reason = "Tốc độ cực nhanh, tuân thủ JSON Schema hoàn hảo cho kiểm duyệt."
-                        break
-                if rec_id:
-                    break
-
-
-            if not rec_id and discovered:
+            rec_id = discovered[0].id if discovered else None
+            if discovered:
                 discovered[0].is_recommended = True
-                rec_id = discovered[0].id
+                discovered[0].badge = "Khả dụng"
+                discovered[0].reason = "Mô hình khả dụng được cung cấp trực tiếp từ Provider API cho tài khoản của bạn."
 
         else:  # image_generation
             for m in raw_models:

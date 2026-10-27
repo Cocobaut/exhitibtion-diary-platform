@@ -245,7 +245,11 @@ export function OwnerDashboardPage({ onNavigate }) {
     const baseUrl = isMod ? modBaseUrl.trim() : imgBaseUrl.trim();
 
     if (!keyToTest && !(isMod ? aiSettings?.moderation?.is_key_configured : aiSettings?.image_generation?.is_key_configured)) {
-      alert('Vui lòng nhập API Key để kiểm tra và khám phá model từ Provider.');
+      triggerToast(
+        language === 'en'
+          ? '⚠️ API Key is missing. Please enter an API Key to test and discover models.'
+          : '⚠️ Chưa có API Key. Vui lòng nhập API Key để kiểm tra và khám phá model từ Provider.'
+      );
       return;
     }
 
@@ -261,21 +265,35 @@ export function OwnerDashboardPage({ onNavigate }) {
       });
 
       const data = res?.data || res;
-      if (data?.discovered_models) {
+      if (data?.discovered_models && data.discovered_models.length > 0) {
         if (isMod) {
           setModDiscoveredModels(data.discovered_models);
           if (data.recommended_model_id) setModModel(data.recommended_model_id);
-          triggerToast(`Khám phá thành công ${data.discovered_models.length} model cho Kiểm duyệt`);
+          triggerToast(
+            language === 'en'
+              ? `✦ Successfully discovered ${data.discovered_models.length} model(s) for Moderation.`
+              : `✦ Khám phá thành công ${data.discovered_models.length} model cho Kiểm duyệt!`
+          );
         } else {
           setImgDiscoveredModels(data.discovered_models);
           if (data.recommended_model_id) setImgModel(data.recommended_model_id);
-          triggerToast(`Khám phá thành công ${data.discovered_models.length} model cho Sinh ảnh`);
+          triggerToast(
+            language === 'en'
+              ? `✦ Successfully discovered ${data.discovered_models.length} model(s) for Image Generation.`
+              : `✦ Khám phá thành công ${data.discovered_models.length} model cho Sinh ảnh!`
+          );
         }
+      } else {
+        triggerToast(
+          language === 'en'
+            ? 'Key verified, but no specific models were returned by the provider.'
+            : 'Đã kết nối key thành công nhưng Provider chưa trả về danh sách model cụ thể.'
+        );
       }
     } catch (err) {
       console.error('Lỗi khi khám phá models:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể kết nối tới Provider';
-      alert(`[Khám phá Models] ${msg}`);
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Không thể kết nối tới Provider';
+      triggerToast(`[AI Copilot] ${msg}`);
     } finally {
       if (isMod) setIsDiscoveringMod(false);
       else setIsDiscoveringImg(false);
@@ -328,14 +346,18 @@ export function OwnerDashboardPage({ onNavigate }) {
       };
 
       await aiCopilotService.updateAiSettings(payload);
-      triggerToast('Đã lưu toàn bộ cấu hình AI Copilot thành công!');
+      triggerToast(
+        language === 'en'
+          ? '✦ All AI Copilot settings and API Keys saved successfully!'
+          : '✦ Đã lưu toàn bộ cấu hình và API Key của AI Copilot thành công!'
+      );
       setModApiKey('');
       setImgApiKey('');
       await loadAiSettings();
     } catch (err) {
       console.error('Lỗi khi cập nhật cấu hình AI:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể lưu cấu hình AI';
-      alert(`[Lỗi Lưu Cấu hình] ${msg}`);
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Không thể lưu cấu hình AI';
+      triggerToast(`[AI Copilot] ${msg}`);
     } finally {
       setIsSavingAiSettings(false);
     }
@@ -346,7 +368,7 @@ export function OwnerDashboardPage({ onNavigate }) {
   // -------------------------------------------------------------
   const handleConfirmRoleChange = async ({ userId, newRole, reason }) => {
     if (userId === user?.id) {
-      alert(
+      triggerToast(
         language === 'en'
           ? 'Platform owner cannot alter their own role.'
           : 'Chủ sở hữu không thể tự thay đổi vai trò của chính mình.'
@@ -368,7 +390,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     } catch (err) {
       console.error('Error updating role:', err);
       const msg = err?.response?.data?.message || err?.message || 'Không thể đổi vai trò lúc này.';
-      alert(`Error: ${msg}`);
+      triggerToast(`[Lỗi] ${msg}`);
     } finally {
       setIsUpdatingRole(false);
     }
@@ -379,7 +401,7 @@ export function OwnerDashboardPage({ onNavigate }) {
   // -------------------------------------------------------------
   const handleToggleUserStatus = async (targetUser) => {
     if (targetUser.id === user?.id) {
-      alert(
+      triggerToast(
         language === 'en'
           ? 'Platform owner cannot deactivate their own account.'
           : 'Chủ sở hữu không thể tự vô hiệu hóa tài khoản của chính mình.'
@@ -388,7 +410,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     }
 
     if (targetUser.role === 'OWNER') {
-      alert(
+      triggerToast(
         language === 'en'
           ? 'Cannot alter the status of another Owner account.'
           : 'Không thể thay đổi trạng thái của tài khoản Chủ sở hữu khác.'
@@ -431,7 +453,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     } catch (err) {
       console.error('Error toggling user status:', err);
       const msg = err?.response?.data?.message || err?.message || 'Không thể thay đổi trạng thái.';
-      alert(`Error: ${msg}`);
+      triggerToast(`[Lỗi] ${msg}`);
     }
   };
 
@@ -442,7 +464,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     if (!deletingUser) return;
 
     if (deletingUser.id === user?.id) {
-      alert(
+      triggerToast(
         language === 'en'
           ? 'Platform owner cannot delete their own account.'
           : 'Chủ sở hữu không thể tự xóa tài khoản của chính mình.'
@@ -451,7 +473,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     }
 
     if (deletingUser.role === 'OWNER') {
-      alert(
+      triggerToast(
         language === 'en'
           ? 'Cannot delete an Owner account.'
           : 'Không thể xóa tài khoản của Chủ sở hữu.'
@@ -476,7 +498,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     } catch (err) {
       console.error('Error deleting user:', err);
       const msg = err?.response?.data?.message || err?.message || 'Không thể xóa tài khoản lúc này.';
-      alert(`Error: ${msg}`);
+      triggerToast(`[Lỗi] ${msg}`);
     } finally {
       setIsDeleting(false);
     }

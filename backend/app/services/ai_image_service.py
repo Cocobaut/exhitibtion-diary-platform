@@ -128,7 +128,20 @@ class AiImageService:
     @classmethod
     async def _synthesize_gemini_svg_art(cls, prompt: str, api_key: str) -> Optional[bytes]:
         import re
-        candidates = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
+        # Dynamically discover models supported by this key
+        candidates = []
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                m_resp = await client.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key.strip()}")
+                if m_resp.status_code == 200:
+                    models_data = m_resp.json().get("models", [])
+                    candidates = [
+                        m.get("name", "").replace("models/", "")
+                        for m in models_data
+                        if "generateContent" in m.get("supportedGenerationMethods", [])
+                    ]
+        except Exception:
+            pass
         instruction = (
             f"You are a master digital fine-artist. Generate an SVG artwork illustration representing: {prompt}. "
             "Return strictly raw valid SVG code starting with <svg and ending with </svg>. "

@@ -78,14 +78,17 @@ class OwnerAiService:
             if m.base_url is not None:
                 record.moderation_base_url = m.base_url
             if m.api_key and m.api_key.strip():
-                # Validate key before saving
-                await AiDiscoveryService.discover_models(
-                    api_key=m.api_key.strip(),
-                    provider=m.provider or record.moderation_provider,
-                    task_type="moderation",
-                    base_url=m.base_url or record.moderation_base_url,
-                )
+                # Encrypt and save key directly so owner is never blocked
                 record.moderation_encrypted_api_key = encrypt_aes_256(m.api_key.strip())
+                try:
+                    await AiDiscoveryService.discover_models(
+                        api_key=m.api_key.strip(),
+                        provider=m.provider or record.moderation_provider,
+                        task_type="moderation",
+                        base_url=m.base_url or record.moderation_base_url,
+                    )
+                except Exception as ex:
+                    print(f"[OwnerAiService] Moderation key saved. Model discovery note: {ex}")
 
         # Update Image Generation
         if payload.image_generation:
@@ -98,14 +101,17 @@ class OwnerAiService:
             if img.base_url is not None:
                 record.image_base_url = img.base_url
             if img.api_key and img.api_key.strip():
-                # Validate key before saving
-                await AiDiscoveryService.discover_models(
-                    api_key=img.api_key.strip(),
-                    provider=img.provider or record.image_provider,
-                    task_type="image_generation",
-                    base_url=img.base_url or record.image_base_url,
-                )
+                # Encrypt and save key directly so owner is never blocked
                 record.image_encrypted_api_key = encrypt_aes_256(img.api_key.strip())
+                try:
+                    await AiDiscoveryService.discover_models(
+                        api_key=img.api_key.strip(),
+                        provider=img.provider or record.image_provider,
+                        task_type="image_generation",
+                        base_url=img.base_url or record.image_base_url,
+                    )
+                except Exception as ex:
+                    print(f"[OwnerAiService] Image key saved. Model discovery note: {ex}")
 
         record.updated_by_user_id = owner.id
         await db.commit()
