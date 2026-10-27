@@ -167,7 +167,7 @@ class Room1CreateArtworkRequest(BaseModel):
     original_language: str = Field("vi", pattern="^(vi|en)$", description="Ngôn ngữ bài viết gốc: vi hoặc en")
     author_display_name: Optional[str] = None
     title: str
-    short_content: str
+    short_content: Optional[str] = None
     content: str
     is_anonymous: bool = False
 
@@ -185,13 +185,17 @@ class Room1CreateArtworkRequest(BaseModel):
 
     @field_validator("short_content")
     @classmethod
-    def validate_short_content(cls, v: str) -> str:
-        clean_v = v.strip() if v else ""
-        if len(clean_v) < 10 or len(clean_v) > 300:
+    def validate_short_content(cls, v: Optional[str]) -> Optional[str]:
+        if not v:
+            return None
+        clean_v = v.strip()
+        if not clean_v:
+            return None
+        if len(clean_v) > 300:
             raise AppException(
                 status_code=400,
                 error_code="VALIDATION_ERROR",
-                message="Tiêu đề hoặc nội dung quá ngắn/để trống"
+                message="Tóm tắt không được vượt quá 300 ký tự"
             )
         return clean_v
 

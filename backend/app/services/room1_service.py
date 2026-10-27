@@ -1,4 +1,5 @@
 import math
+import re
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
@@ -506,8 +507,16 @@ class Room1Service:
 
         lang = getattr(request, "original_language", "vi") or "vi"
         clean_title = request.title.strip()
-        clean_short = request.short_content.strip()
         clean_content = request.content.strip()
+
+        if request.short_content and request.short_content.strip():
+            clean_short = request.short_content.strip()
+        else:
+            # Tự động trích xuất câu đầu tiên của content
+            sentences = re.split(r'[\.\!\?\n]+', clean_content)
+            clean_short = sentences[0].strip() if sentences and sentences[0].strip() else clean_content[:100]
+            if len(clean_short) > 200:
+                clean_short = clean_short[:197] + "..."
 
         new_artwork = Artwork(
             user_id=current_user.id,

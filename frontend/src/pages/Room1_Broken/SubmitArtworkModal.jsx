@@ -15,6 +15,18 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
   const accountNickname = user?.nickname || user?.username || (language === 'en' ? 'Author' : 'Tác giả');
   const displayPenName = isAnonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : accountNickname;
 
+  const extractFirstSentence = (text) => {
+    if (!text) return '';
+    const trimmed = text.trim();
+    // Tách theo dấu kết thúc câu (. ! ? hoặc xuống dòng \n)
+    const match = trimmed.match(/^[^.!?\n]+[.!?]?/);
+    let sentence = match ? match[0].trim() : trimmed;
+    if (sentence.length > 120) {
+      sentence = sentence.slice(0, 117) + '...';
+    }
+    return sentence;
+  };
+
   if (!isOpen) return null;
 
   const validate = () => {
@@ -25,8 +37,8 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
       errs.title = language === 'en' ? 'Title cannot exceed 150 characters' : 'Tiêu đề tối đa 150 ký tự';
     }
 
-    if (!summary.trim() || summary.trim().length < 10) {
-      errs.summary = language === 'en' ? 'Summary must be at least 10 characters' : 'Tóm tắt cần ít nhất 10 ký tự';
+    if (summary.trim() && summary.trim().length > 120) {
+      errs.summary = language === 'en' ? 'Summary cannot exceed 120 characters' : 'Tóm tắt tối đa 120 ký tự';
     }
 
     if (!story.trim() || story.trim().length < 30) {
@@ -39,10 +51,11 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
 
   const handleNext = () => {
     if (!validate()) return;
+    const finalSummary = summary.trim() || extractFirstSentence(story);
     onSubmit &&
       onSubmit({
         title: title.trim(),
-        summary: summary.trim(),
+        summary: finalSummary,
         story: story.trim(),
         isAnonymous,
         penName: displayPenName,
@@ -146,12 +159,18 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
 
           <div style={{ marginTop: '12px' }}>
             <div className="fieldl">
-              <span>{language === 'en' ? 'Summary on card *' : 'Tóm tắt hiển thị trên thẻ *'}</span>
-              <span>{summary.length} / 120</span>
+              <span>{language === 'en' ? 'Short title / Summary on card' : 'Tiêu đề ngắn / Tóm tắt trên thẻ'}</span>
+              <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>
+                {summary.length > 0
+                  ? `${summary.length} / 120`
+                  : (language === 'en' ? '(Optional · Auto-fills from story)' : '(Không bắt buộc · Tự lấy câu đầu của câu chuyện)')}
+              </span>
             </div>
             <input
               className="inp"
-              placeholder={language === 'en' ? 'A concise reflection (10 - 120 characters)...' : 'Một câu đúc kết ngắn gọn (10 - 120 ký tự)...'}
+              placeholder={language === 'en'
+                ? 'Leave empty to auto-extract first sentence of your story...'
+                : 'Để trống sẽ tự động lấy câu đầu của câu chuyện phía dưới...'}
               value={summary}
               maxLength={120}
               onChange={(e) => {
@@ -241,7 +260,11 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
               </div>
               <div className="cap">
                 <h4>{title || (language === 'en' ? 'Artwork Title' : 'Tiêu đề tác phẩm')}</h4>
-                <p>{summary || (language === 'en' ? 'Summary of your story...' : 'Tóm tắt câu chuyện của bạn...')}</p>
+                <p>
+                  {summary.trim() ||
+                    extractFirstSentence(story) ||
+                    (language === 'en' ? 'Summary of your story...' : 'Tóm tắt câu chuyện của bạn...')}
+                </p>
                 <div className="meta">
                   <span className="badge b-wait">
                     <Icon name="clock" size={13} /> {language === 'en' ? 'Being prepared' : 'Đang được chuẩn bị'}
