@@ -23,13 +23,12 @@
 - [3. Ma trận Phân quyền Người dùng (RBAC)](#3-ma-trận-phân-quyền-người-dùng-rbac)
 - [4. Các Tính năng Nổi bật](#4-các-tính-năng-nổi-bật)
 - [5. Kiến trúc & Luồng Hoạt động của AI Copilot Agent](#5-kiến-trúc--luồng-hoạt-động-của-ai-copilot-agent)
-- [6. Mô phỏng Giao diện Người dùng (UI Mockups)](#6-mô-phỏng-giao-diện-người-dùng-ui-mockups)
-- [7. Cấu trúc Dự án (Repository Structure)](#7-cấu-trúc-dự-án-repository-structure)
-- [8. Hướng dẫn Khởi chạy & Cài đặt (Getting Started)](#8-hướng-dẫn-khởi-chạy--cài-đặt-getting-started)
+- [6. Cấu trúc Dự án (Repository Structure)](#6-cấu-trúc-dự-án-repository-structure)
+- [7. Hướng dẫn Khởi chạy & Cài đặt (Getting Started)](#7-hướng-dẫn-khởi-chạy--cài-đặt-getting-started)
   - [Yêu cầu môi trường](#yêu-cầu-môi-trường)
   - [Khởi chạy Backend](#khởi-chạy-backend)
   - [Khởi chạy Frontend](#khởi-chạy-frontend)
-- [9. Biến Môi trường (Environment Variables)](#9-biến-môi-trường-environment-variables)
+- [8. Biến Môi trường (Environment Variables)](#8-biến-môi-trường-environment-variables)
 
 ---
 
@@ -163,26 +162,26 @@ Nền tảng tích hợp hệ thống **AI Copilot Agent** thông minh, đóng v
 
 ```mermaid
 flowchart TD
-    A[Người dùng gửi bài viết / Tác phẩm] --> B[Bộ lọc An toàn Căn bản (Pre-Filter)]
-    B -->|Phát hiện từ khóa cấm / Spam| C[Tự động từ chối hoặc Đánh dấu Cảnh báo]
-    B -->|Hợp lệ| D[AI Copilot Moderation Agent]
+    A["Người dùng gửi bài viết / Tác phẩm"] --> B["Bộ lọc An toàn Căn bản (Pre-Filter)"]
+    B -->|"Phát hiện từ khóa cấm / Spam"| C["Tự động từ chối hoặc Đánh dấu Cảnh báo"]
+    B -->|"Hợp lệ"| D["AI Copilot Moderation Agent"]
     
-    subgraph AI_Copilot_Pipeline [Quy trình Phân tích AI Agent]
-        D --> E[1. Đánh giá Nội dung (Safety Scoring)]
-        E --> F[2. Phân tích Cảm xúc & Chủ đề (Sentiment & Themes)]
-        F --> G[3. Đề xuất Quyết định (Approve / Flag / Reject)]
-        G --> H[4. Tạo Tranh Minh Họa Nghệ thuật (Art Painting Gen)]
-        H --> I[5. Trích xuất Câu Danh ngôn Ý nghĩa (Quote Extractor)]
-        I --> J[6. Biên dịch Song ngữ VI <-> EN]
+    subgraph AI_Copilot_Pipeline ["Quy trình Phân tích AI Agent"]
+        D --> E["1. Đánh giá Nội dung (Safety Scoring)"]
+        E --> F["2. Phân tích Cảm xúc & Chủ đề (Sentiment & Themes)"]
+        F --> G["3. Đề xuất Quyết định (Approve / Flag / Reject)"]
+        G --> H["4. Tạo Tranh Minh Họa Nghệ thuật (Art Painting Gen)"]
+        H --> I["5. Trích xuất Câu Danh ngôn Ý nghĩa (Quote Extractor)"]
+        I --> J["6. Biên dịch Song ngữ VI - EN"]
     end
     
-    AI_Copilot_Pipeline --> K{Loại tác vụ}
-    K -->|Admin Pending| L[Bảng điều khiển Giám tuyển (Admin Dashboard)]
-    K -->|Admin Studio| M[Phòng Sáng tác Tranh Minh họa]
+    AI_Copilot_Pipeline --> K{"Loại tác vụ"}
+    K -->|"Admin Pending"| L["Bảng điều khiển Giám tuyển (Admin Dashboard)"]
+    K -->|"Admin Studio"| M["Phòng Sáng tác Tranh Minh họa"]
     
-    L --> N[Admin kiểm tra kết quả AI đánh giá]
-    N -->|Duyệt tác phẩm| O[Xuất bản lên Tường Triển lãm Trực tiếp]
-    N -->|Yêu cầu chỉnh sửa| P[Gửi thông báo phản hồi vào Hòm thư User]
+    L --> N["Admin kiểm tra kết quả AI đánh giá"]
+    N -->|"Duyệt tác phẩm"| O["Xuất bản lên Tường Triển lãm Trực tiếp"]
+    N -->|"Yêu cầu chỉnh sửa"| P["Gửi thông báo phản hồi vào Hòm thư User"]
 ```
 
 ### Chi tiết các mắt xích của Agent:
@@ -193,82 +192,7 @@ flowchart TD
 
 ---
 
-## 6. Mô phỏng Giao diện Người dùng (UI Mockups)
-
-### 1. Giao diện Triển lãm Phòng 01 (Broken Exhibition Gallery)
-```text
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│  MUSEUM LOGO    [🏛️ Sảnh]  [Phòng 1]  [Phòng 2]  [Phòng 3]  [Nhật ký]     [🌐 VI] [👤 User]│
-├──────────────────────────────────────────────────────────────────────────────────┤
-│                                                                                  │
-│   PHÒNG 01 · TRIỂN LÃM ĐỔ VỠ                                                      │
-│   "Nơi những vết nứt được hàn gắn bằng ánh sáng của sự sẻ chia"                   │
-│                                                                                  │
-│   [🔍 Tìm kiếm câu chuyện...]   [Tất cả] [Học tập] [Gia đình] [Tình cảm] [+ Trưng bày]  │
-│                                                                                  │
-│   ┌────────────────────┐  ┌────────────────────┐  ┌────────────────────┐         │
-│   │ ┌────────────────┐ │  │ ┌────────────────┐ │  │ ┌────────────────┐ │         │
-│   │ │                │ │  │ │                │ │  │ │                │ │         │
-│   │ │  CANVAS ART    │ │  │ │  CANVAS ART    │ │  │ │  CANVAS ART    │ │         │
-│   │ │  ILLUSTRATION  │ │  │ │  ILLUSTRATION  │ │  │ │  ILLUSTRATION  │ │         │
-│   │ └────────────────┘ │  │ └────────────────┘ │  │ └────────────────┘ │         │
-│   │ Mùa thi năm ấy     │  │ Bức thư chưa gửi   │  │ Ngã rẽ tuổi 22     │         │
-│   │ "Ba năm nộp hồ sơ, │  │ "Mình cất kỹ lời   │  │ "Rời bỏ ngành học  │         │
-│   │ mở mail tay run..."│  │ xin lỗi vào ngăn..."│  │ để bắt đầu lại..." │         │
-│   │ 👤 Mây   🫂 42  👁️1.2k│  │ 👤 Ẩn danh 🫂 89 👁️2.5k│  │ 👤 Nam   🫂 15  👁️800 │         │
-│   └────────────────────┘  └────────────────────┘  └────────────────────┘         │
-└──────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 2. Hộp thoại Đọc Tác Phẩm & Tương Tác Cảm Xúc (Artwork Detail Modal)
-```text
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│                                                                              [X] │
-│   ┌──────────────────────────┐   PHÒNG 01 · BẢO TÀNG ĐỔ VỠ                       │
-│   │                          │                                                   │
-│   │                          │   Mùa thi đại học năm ấy                          │
-│   │     BỨC TRANH            │   ─────────────────────────────────────────────   │
-│   │     MINH HỌA             │   "Ba năm nộp học bổng, ba lần mở email bằng     │
-│   │     SƠN DẦU              │    đôi bàn tay run rẩy..."                        │
-│   │     KHỔ LỚN              │                                                   │
-│   │     (FRAME CỔ ĐIỂN)      │   Kể từ ngày ấy, tôi mới nhận ra rằng thất bại   │
-│   │                          │   không phải là dấu chấm hết, mà là một lối rẽ    │
-│   │                          │   đưa tôi đến với chính con người thật của mình...│
-│   │                          │                                                   │
-│   └──────────────────────────┘   — Bút danh: Mây · Ngày 18.10.2026               │
-│                                                                                  │
-│   ────────────────────────────────────────────────────────────────────────────   │
-│   [❤️ Thương  128]  [🫂 Ôm an ủi  240]  [🌿 Đồng cảm  95]      [📑 Lưu sổ tay]    │
-│   💬 463 người đã gửi gắm sự đồng cảm đến tác phẩm này.                          │
-└──────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### 3. Phòng 02: Bầu trời Lồng Đèn Đêm (Lantern Sky & Landed Letter)
-```text
-┌──────────────────────────────────────────────────────────────────────────────────┐
-│  🏮 BẦU TRỜI HY VỌNG                                            [+ Thả lồng đèn] │
-│                                                                                  │
-│                 🏮 (bay cao)                                                     │
-│                                         🏮 (ngôi sao)                            │
-│        🏮 (trái tim)                                                             │
-│                                                        🏮 (hạ cánh)              │
-│                                                            │                     │
-│                             ┌──────────────────────────────┴─────────────────┐   │
-│                             │ 🏮 LỒNG ĐÈN HẠ CÁNH (Giờ hẹn tương lai)    [X] │   │
-│                             │ ────────────────────────────────────────────── │   │
-│                             │ Gửi bản thân 3 năm sau:                        │   │
-│                             │ "Hy vọng khi cậu đọc được lá thư này, cậu đã   │   │
-│                             │  tìm thấy sự an yên trong tim..."              │   │
-│                             │                                                │   │
-│                             │ — Người gửi từ năm 2023                        │   │
-│                             │ [❤️ 86]  [🫂 142]  [🌿 67]     [Viết thư trả lời] │   │
-│                             └────────────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 7. Cấu trúc Dự án (Repository Structure)
+## 6. Cấu trúc Dự án (Repository Structure)
 
 ```
 Project_exhibition_diary_platform/
@@ -331,7 +255,7 @@ Project_exhibition_diary_platform/
 
 ---
 
-## 8. Hướng dẫn Khởi chạy & Cài đặt (Getting Started)
+## 7. Hướng dẫn Khởi chạy & Cài đặt (Getting Started)
 
 ### Yêu cầu môi trường
 - **Python**: `>= 3.10`
@@ -399,7 +323,7 @@ Project_exhibition_diary_platform/
 
 ---
 
-## 9. Biến Môi trường (Environment Variables)
+## 8. Biến Môi trường (Environment Variables)
 
 ### Backend (`backend/.env`)
 | Tên biến | Giá trị mẫu | Mô tả |
