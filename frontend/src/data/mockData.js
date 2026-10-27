@@ -36,10 +36,11 @@ export const IC = {
 
 // ---------- Reactions Config ----------
 export const RX = {
-  HEART: { c: "#C9485B", label: "Thương", fill: true, g: "M12 19s-6.5-4.2-6.5-9.2A3.6 3.6 0 0 1 12 7.6a3.6 3.6 0 0 1 6.5 2.2C18.5 14.8 12 19 12 19z" },
-  HUG: { c: "#D99A3A", label: "Ôm an ủi", fill: false, g: "M5 11.5c1.3 4 4 6 7 6s5.7-2 7-6 M8.5 12.5c.9 1.6 2.2 2.4 3.5 2.4s2.6-.8 3.5-2.4 M8.6 8.4h.01 M15.4 8.4h.01" },
-  SYMPATHY: { c: "#7E74B4", label: "Đồng cảm", fill: true, g: "M12 4.5c2.8 3.6 4.6 5.9 4.6 8.4a4.6 4.6 0 0 1-9.2 0c0-2.5 1.8-4.8 4.6-8.4z" },
-  ENERGY: { c: "#C79A2E", label: "Nhận năng lượng", fill: true, g: "M13 3L6 13h5l-1 8 7-10h-5z" },
+  HEART: { c: "#C9485B", label: "Thương", label_vi: "Thương", label_en: "Care", fill: true, g: "M12 19s-6.5-4.2-6.5-9.2A3.6 3.6 0 0 1 12 7.6a3.6 3.6 0 0 1 6.5 2.2C18.5 14.8 12 19 12 19z" },
+  HUG: { c: "#D99A3A", label: "Ôm an ủi", label_vi: "Ôm an ủi", label_en: "Warm Hug", fill: false, g: "M5 11.5c1.3 4 4 6 7 6s5.7-2 7-6 M8.5 12.5c.9 1.6 2.2 2.4 3.5 2.4s2.6-.8 3.5-2.4 M8.6 8.4h.01 M15.4 8.4h.01" },
+  SYMPATHY: { c: "#7E74B4", label: "Đồng cảm", label_vi: "Đồng cảm", label_en: "Empathy", fill: true, g: "M12 4.5c2.8 3.6 4.6 5.9 4.6 8.4a4.6 4.6 0 0 1-9.2 0c0-2.5 1.8-4.8 4.6-8.4z" },
+  ENERGY: { c: "#C79A2E", label: "Tiếp sức", label_vi: "Tiếp sức", label_en: "Energize", fill: true, g: "M13 3L6 13h5l-1 8 7-10h-5z" },
+  INSPIRED: { c: "#4E9A51", label: "Truyền cảm hứng", label_vi: "Truyền cảm hứng", label_en: "Inspire", fill: true, g: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" },
 };
 
 // ---------- In-App Themes ----------

@@ -133,6 +133,27 @@ export const room2Service = {
   async unsaveLanternFromNotebook(artworkId) {
     return await apiClient.delete(`/rooms/2/artworks/${artworkId}/save`);
   },
+
+  /**
+   * Xem chi tiết bức thư lồng đèn
+   * @param {string} artworkId
+   * @returns {Promise<Object>}
+   */
+  async getLanternDetail(artworkId) {
+    return await apiClient.get(`/rooms/2/artworks/${artworkId}`);
+  },
+
+  /**
+   * Thả cảm xúc trên bức thư lồng đèn (HEART, HUG, SYMPATHY)
+   * @param {string} artworkId
+   * @param {string} reactionType
+   * @returns {Promise<Object>} { artwork_id, current_reaction, reactions_summary }
+   */
+  async toggleReaction(artworkId, reactionType) {
+    return await apiClient.post(`/rooms/2/artworks/${artworkId}/reactions`, {
+      reaction_type: reactionType,
+    });
+  },
 };
 
 export default room2Service;

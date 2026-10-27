@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../../components/common/Icons';
+import { ReactionButton } from '../../components/common/Reactions';
 import { SingleLantern } from './LanternSky';
 import { room2Service } from '../../services/room2Service';
 import { useGuestGuard } from '../../context/GuestGuardContext';
@@ -18,6 +19,13 @@ export function LanternLandedModal({
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [currentReaction, setCurrentReaction] = useState(null);
+  const [reactionsMap, setReactionsMap] = useState({
+    HEART: 0,
+    HUG: 0,
+    SYMPATHY: 0,
+    total: 0,
+  });
 
   useEffect(() => {
     if (!isOpen || !letterData) return;
@@ -25,6 +33,16 @@ export function LanternLandedModal({
     let isMounted = true;
     setLetter(letterData);
     setIsSaved(Boolean(letterData.is_saved));
+    setCurrentReaction(letterData.my_reaction || letterData.user_reaction || null);
+
+    if (letterData.reactions) {
+      setReactionsMap({
+        HEART: letterData.reactions.HEART || 0,
+        HUG: letterData.reactions.HUG || 0,
+        SYMPATHY: letterData.reactions.SYMPATHY || 0,
+        total: letterData.reactions.total || 0,
+      });
+    }
 
     // If letter has an id, call openLantern API to mark opened on server & fetch full content
     if (letterData.id) {
@@ -38,11 +56,22 @@ export function LanternLandedModal({
             setLetter((prev) => ({
               ...prev,
               ...data,
-              author: data.author_display_name || prev?.author || 'Người gửi ẩn danh',
+              author: data.author_display_name || prev?.author || (language === 'en' ? 'Anonymous sender' : 'Người gửi ẩn danh'),
               content: data.content || prev?.content,
             }));
             if (data.is_saved !== undefined) {
               setIsSaved(Boolean(data.is_saved));
+            }
+            if (data.my_reaction !== undefined) {
+              setCurrentReaction(data.my_reaction);
+            }
+            if (data.reactions) {
+              setReactionsMap({
+                HEART: data.reactions.HEART || 0,
+                HUG: data.reactions.HUG || 0,
+                SYMPATHY: data.reactions.SYMPATHY || 0,
+                total: data.reactions.total || 0,
+              });
             }
           }
         })
@@ -114,14 +143,14 @@ export function LanternLandedModal({
           id: currentLetter.id ? `nb_lt_${currentLetter.id}` : `nb_lt_${Date.now()}`,
           artwork_id: currentLetter.id,
           source: 'lantern',
-          sourceLabel: 'Lồng đèn hạ xuống · Phòng 2',
+          sourceLabel: language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2',
           badgeClass: 'b-wait',
           icon: 'r2',
-          title: currentLetter.title || 'Lồng đèn gửi tương lai',
+          title: currentLetter.title || (language === 'en' ? 'Lantern letter to future' : 'Lồng đèn gửi tương lai'),
           content: currentLetter.content,
-          author: currentLetter.author_display_name || currentLetter.author || 'Người gửi ẩn danh',
+          author: currentLetter.author_display_name || currentLetter.author || (language === 'en' ? 'Anonymous sender' : 'Người gửi ẩn danh'),
           symbol: currentLetter.symbol || 'heart',
-          savedAt: 'Hôm nay',
+          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
         });
       }
     } catch (err) {
@@ -133,19 +162,46 @@ export function LanternLandedModal({
           id: currentLetter.id ? `nb_lt_${currentLetter.id}` : `nb_lt_${Date.now()}`,
           artwork_id: currentLetter.id,
           source: 'lantern',
-          sourceLabel: 'Lồng đèn hạ xuống · Phòng 2',
+          sourceLabel: language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2',
           badgeClass: 'b-wait',
           icon: 'r2',
-          title: currentLetter.title || 'Lồng đèn gửi tương lai',
+          title: currentLetter.title || (language === 'en' ? 'Lantern letter to future' : 'Lồng đèn gửi tương lai'),
           content: currentLetter.content,
-          author: currentLetter.author_display_name || currentLetter.author || 'Người gửi ẩn danh',
+          author: currentLetter.author_display_name || currentLetter.author || (language === 'en' ? 'Anonymous sender' : 'Người gửi ẩn danh'),
           symbol: currentLetter.symbol || 'heart',
-          savedAt: 'Hôm nay',
+          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
         });
       }
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  const handleToggleReaction = async (type) => {
+    guardAction(async () => {
+      try {
+        if (currentLetter?.id) {
+          const res = await room2Service.toggleReaction(currentLetter.id, type);
+          const data = res?.data || res;
+          if (data) {
+            setCurrentReaction(data.current_reaction);
+            if (data.reactions_summary) {
+              setReactionsMap(data.reactions_summary);
+            }
+          }
+        } else {
+          const next = currentReaction === type ? null : type;
+          setCurrentReaction(next);
+          setReactionsMap((prev) => ({
+            ...prev,
+            [type]: (prev[type] || 0) + (next ? 1 : -1),
+            total: (prev.total || 0) + (next ? 1 : -1),
+          }));
+        }
+      } catch (err) {
+        console.warn('Lỗi khi cập nhật cảm xúc lồng đèn:', err);
+      }
+    }, language === 'en' ? 'express empathy with this lantern letter' : 'bày tỏ sự đồng cảm với bức thư lồng đèn');
   };
 
   const formattedTarget = currentLetter.target_date
@@ -242,10 +298,34 @@ export function LanternLandedModal({
           {currentLetter.author_display_name || currentLetter.author || (language === 'en' ? 'Anonymous sender' : 'Người gửi ẩn danh')}
         </div>
 
+        {/* Reactions bar for Room 2 */}
+        <div style={{ borderTop: '1px solid var(--line)', paddingTop: '16px', marginTop: '20px' }}>
+          <div className="rxbar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {['HEART', 'HUG', 'SYMPATHY'].map((type) => (
+              <ReactionButton
+                key={type}
+                type={type}
+                count={reactionsMap[type] || 0}
+                active={currentReaction === type}
+                onClick={() => handleToggleReaction(type)}
+              />
+            ))}
+          </div>
+          <div className="muted" style={{ marginTop: '10px', fontSize: '13px' }}>
+            {reactionsMap.total > 0
+              ? (language === 'en'
+                  ? `${reactionsMap.total} people shared empathy with this letter.`
+                  : `${reactionsMap.total} người đã gửi gắm sự đồng cảm đến bức thư này.`)
+              : (language === 'en'
+                  ? 'Be the first to share comforting words with the author.'
+                  : 'Hãy là người đầu tiên gửi gắm sự an ủi đến tác giả.')}
+          </div>
+        </div>
+
         <div
           className="row between"
           style={{
-            marginTop: '20px',
+            marginTop: '18px',
             borderTop: '1px solid var(--line)',
             paddingTop: '14px',
           }}
@@ -254,7 +334,7 @@ export function LanternLandedModal({
             type="button"
             className={`btn ${isSaved ? 'main' : 'line'} sm`}
             onClick={() => {
-              guardAction(handleSaveToggle, 'lưu lồng đèn vào sổ tay');
+              guardAction(handleSaveToggle, language === 'en' ? 'save lantern letter to notebook' : 'lưu lồng đèn vào sổ tay');
             }}
             disabled={saveLoading}
           >
@@ -272,7 +352,7 @@ export function LanternLandedModal({
               guardAction(() => {
                 onClose();
                 if (onReplyFuture) onReplyFuture();
-              }, 'viết thư trả lời tương lai');
+              }, language === 'en' ? 'reply to future' : 'viết thư trả lời tương lai');
             }}
           >
             <Icon name="r2" size={16} /> {language === 'en' ? 'Reply to future' : 'Viết thư trả lời tương lai'}

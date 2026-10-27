@@ -39,7 +39,9 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
         <div className="art">
           <div>
             <Icon name="image" size={26} />
-            <div style={{ marginTop: '6px' }}>Tranh minh họa đang được vẽ</div>
+            <div style={{ marginTop: '6px' }}>
+              {language === 'en' ? 'Illustration is being painted' : 'Tranh minh họa đang được vẽ'}
+            </div>
           </div>
         </div>
         <div className="cap">
@@ -47,9 +49,13 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
           <p>{summary}</p>
           <div className="meta">
             <span className="badge b-wait">
-              <Icon name="clock" size={13} /> Đang được chuẩn bị
+              <Icon name="clock" size={13} /> {language === 'en' ? 'Being prepared' : 'Đang được chuẩn bị'}
             </span>
-            <span>{artwork.created_at ? new Date(artwork.created_at).toLocaleDateString('vi-VN') : 'gửi hôm nay'}</span>
+            <span>
+              {artwork.created_at
+                ? new Date(artwork.created_at).toLocaleDateString(language === 'en' ? 'en-US' : 'vi-VN')
+                : (language === 'en' ? 'Submitted today' : 'gửi hôm nay')}
+            </span>
           </div>
         </div>
       </article>
@@ -65,10 +71,15 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
         </div>
         <div className="cap">
           <h4>{title}</h4>
-          <p>Lý do: {artwork.rejection_reason || artwork.reason || 'câu chuyện chưa phù hợp với tiêu chuẩn bảo tàng.'}</p>
+          <p>
+            {language === 'en' ? 'Reason: ' : 'Lý do: '}
+            {artwork.rejection_reason || artwork.reason || (language === 'en' ? 'Story does not meet museum guidelines.' : 'câu chuyện chưa phù hợp với tiêu chuẩn bảo tàng.')}
+          </p>
           <div className="meta">
-            <span className="badge b-priv">Chưa được trưng bày</span>
-            <b style={{ color: 'var(--acc)', cursor: 'pointer' }}>Sửa và gửi lại →</b>
+            <span className="badge b-priv">{language === 'en' ? 'Not yet exhibited' : 'Chưa được trưng bày'}</span>
+            <b style={{ color: 'var(--acc)', cursor: 'pointer' }}>
+              {language === 'en' ? 'Edit & resubmit →' : 'Sửa và gửi lại →'}
+            </b>
           </div>
         </div>
       </article>
@@ -102,11 +113,18 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
         <div className="meta">
           <span className="by">{author}</span>
           <span className="row" style={{ gap: '12px' }}>
-            <span className="rxs">
+            <span
+              className="rxs"
+              title={language === 'en' ? `${totalReactions} reactions` : `${totalReactions} lượt cảm xúc`}
+            >
               <ReactionStack types={stackTypes.length > 0 ? stackTypes : ['HUG']} />
               <span>{totalReactions}</span>
             </span>
-            <span className="row" style={{ gap: '4px' }}>
+            <span
+              className="row"
+              style={{ gap: '4px' }}
+              title={language === 'en' ? `${viewCount} views` : `${viewCount} lượt xem`}
+            >
               <Icon name="eye" size={15} />
               {formatViews(viewCount)}
             </span>

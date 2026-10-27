@@ -103,7 +103,7 @@ export function ArtworkDetailModal({
       } catch (err) {
         console.warn('Lỗi khi cập nhật cảm xúc:', err);
       }
-    }, 'bày tỏ sự đồng cảm với tác phẩm');
+    }, language === 'en' ? 'express empathy with this artwork' : 'bày tỏ sự đồng cảm với tác phẩm');
   };
 
   // Toggle lưu vào sổ tay
@@ -309,7 +309,7 @@ export function ArtworkDetailModal({
                 type="button"
                 className={`btn ${isSaved ? 'main' : 'line'} sm`}
                 onClick={() => {
-                  guardAction(handleSaveToggle, 'lưu tác phẩm vào sổ tay');
+                  guardAction(handleSaveToggle, language === 'en' ? 'save artwork to notebook' : 'lưu tác phẩm vào sổ tay');
                 }}
                 disabled={saveLoading}
                 style={{

@@ -109,7 +109,7 @@ export function ReadLeafModal({
   const leafColor = currentLeaf.color_code || catConfig.color;
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return 'Gần đây';
+    if (!dateStr) return language === 'en' ? 'Recently' : 'Gần đây';
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
@@ -123,44 +123,62 @@ export function ReadLeafModal({
   };
 
   const handleToggleAction = async (actionType) => {
-    guardAction(async () => {
-      if (!currentLeaf?.id) {
-        // Mock toggle fallback
-        if (actionType === 'ENERGY') {
-          const next = !hasEnergized;
-          setHasEnergized(next);
-          setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-        } else {
-          const next = !hasHearted;
-          setHasHearted(next);
-          setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-        }
-        return;
-      }
-
-      const isHeart = actionType === 'HEART';
-      if (isHeart) {
-        if (isTogglingHeart) return;
-        setIsTogglingHeart(true);
-      } else {
-        if (isTogglingEnergy) return;
-        setIsTogglingEnergy(true);
-      }
-
-      try {
-        const res = await room3Service.toggleEnergy(currentLeaf.id, actionType);
-        const data = res?.data || res;
-
-        if (data?.reactions) {
-          setEnergyCount(data.reactions.ENERGY);
-          setHeartCount(data.reactions.HEART);
-          if (isHeart) {
-            setHasHearted(data.current_action === 'HEART');
+    guardAction(
+      async () => {
+        if (!currentLeaf?.id) {
+          // Mock toggle fallback
+          if (actionType === 'ENERGY') {
+            const next = !hasEnergized;
+            setHasEnergized(next);
+            setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
           } else {
-            setHasEnergized(data.current_action === 'INSPIRED');
+            const next = !hasHearted;
+            setHasHearted(next);
+            setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
           }
+          return;
+        }
+
+        const isHeart = actionType === 'HEART';
+        if (isHeart) {
+          if (isTogglingHeart) return;
+          setIsTogglingHeart(true);
         } else {
-          // Fallback toggle
+          if (isTogglingEnergy) return;
+          setIsTogglingEnergy(true);
+        }
+
+        try {
+          const res = await room3Service.toggleEnergy(currentLeaf.id, actionType);
+          const data = res?.data || res;
+
+          if (data?.reactions) {
+            setEnergyCount(data.reactions.ENERGY);
+            setHeartCount(data.reactions.HEART);
+            if (isHeart) {
+              setHasHearted(data.current_action === 'HEART');
+            } else {
+              setHasEnergized(data.current_action === 'INSPIRED');
+            }
+          } else {
+            // Fallback toggle
+            if (isHeart) {
+              const next = !hasHearted;
+              setHasHearted(next);
+              setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
+            } else {
+              const next = !hasEnergized;
+              setHasEnergized(next);
+              setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
+            }
+          }
+
+          if (onReactionUpdated) {
+            onReactionUpdated(currentLeaf.id, data?.reactions);
+          }
+        } catch (err) {
+          console.error('Error toggling reaction:', err);
+          // Fallback optimistic
           if (isHeart) {
             const next = !hasHearted;
             setHasHearted(next);
@@ -170,28 +188,15 @@ export function ReadLeafModal({
             setHasEnergized(next);
             setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
           }
+        } finally {
+          if (isHeart) setIsTogglingHeart(false);
+          else setIsTogglingEnergy(false);
         }
-
-        if (onReactionUpdated) {
-          onReactionUpdated(currentLeaf.id, data?.reactions);
-        }
-      } catch (err) {
-        console.error('Error toggling reaction:', err);
-        // Fallback optimistic
-        if (isHeart) {
-          const next = !hasHearted;
-          setHasHearted(next);
-          setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-        } else {
-          const next = !hasEnergized;
-          setHasEnergized(next);
-          setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-        }
-      } finally {
-        if (isHeart) setIsTogglingHeart(false);
-        else setIsTogglingEnergy(false);
-      }
-    }, actionType === 'HEART' ? 'thả tim thông điệp' : 'truyền năng lượng');
+      },
+      actionType === 'HEART'
+        ? (language === 'en' ? 'send a heart to this message' : 'thả tim thông điệp')
+        : (language === 'en' ? 'send energy to this message' : 'truyền năng lượng')
+    );
   };
 
   const handleSaveToggle = async () => {
@@ -351,7 +356,10 @@ export function ReadLeafModal({
             type="button"
             className={`btn ${isSaved ? 'main' : 'line'} sm`}
             onClick={() => {
-              guardAction(handleSaveToggle, 'lưu thông điệp vào sổ tay');
+              guardAction(
+                handleSaveToggle,
+                language === 'en' ? 'save message to notebook' : 'lưu thông điệp vào sổ tay'
+              );
             }}
             disabled={saveLoading}
             style={{

@@ -257,3 +257,71 @@ async def unsave_lantern_from_notebook(
     )
     return ok(message="Đã bỏ lưu bức thư khỏi sổ tay")
 
+
+@router.get(
+    "/artworks/{artwork_id}",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Xem chi tiết bức thư lồng đèn"
+)
+async def get_lantern_detail(
+    artwork_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
+):
+    """Xem chi tiết một bức thư lồng đèn trong phòng 2 kèm cảm xúc và trạng thái lưu."""
+    try:
+        art_uuid = uuid.UUID(artwork_id)
+    except (ValueError, TypeError):
+        raise AppException(
+            status_code=404,
+            error_code="ARTWORK_NOT_FOUND",
+            message="Không tìm thấy lồng đèn"
+        )
+
+    result = await Room2Service.get_lantern_detail(
+        db,
+        lantern_id=art_uuid,
+        current_user=current_user,
+    )
+    return ok(data=jsonable_encoder(result))
+
+
+@router.post(
+    "/artworks/{artwork_id}/reactions",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Thả cảm xúc trên bức thư lồng đèn"
+)
+async def toggle_lantern_reaction(
+    artwork_id: str,
+    request: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Thả hoặc gỡ cảm xúc (HEART, HUG, SYMPATHY) trên bức thư lồng đèn."""
+    try:
+        art_uuid = uuid.UUID(artwork_id)
+    except (ValueError, TypeError):
+        raise AppException(
+            status_code=404,
+            error_code="ARTWORK_NOT_FOUND",
+            message="Không tìm thấy lồng đèn"
+        )
+
+    reaction_type = request.get("reaction_type")
+    if not reaction_type:
+        raise AppException(
+            status_code=400,
+            error_code="VALIDATION_ERROR",
+            message="Thiếu reaction_type"
+        )
+
+    msg, data = await Room2Service.toggle_reaction(
+        db,
+        lantern_id=art_uuid,
+        reaction_type=reaction_type,
+        current_user=current_user,
+    )
+    return ok(data=jsonable_encoder(data), message=msg)
+

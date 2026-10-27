@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MOODS, COMMUNITY_DIARY_ENTRIES } from '../../data/mockData';
-import { ReactionStack } from '../../components/common/Reactions';
+import { ReactionStack, ReactionButton } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
 import { diaryService } from '../../services/diaryService';
 import { useAuth } from '../../context/AuthContext';
+import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 const MOOD_TRANSLATIONS = {
@@ -16,6 +17,7 @@ const MOOD_TRANSLATIONS = {
 
 export function DiaryCommunity({ searchQuery = '' }) {
   const { user } = useAuth();
+  const { guardAction } = useGuestGuard();
   const { language, localize } = useLanguage();
   const rotations = [-0.6, 0.5, -0.3, 0.4, -0.5, 0.3];
 
@@ -57,33 +59,51 @@ export function DiaryCommunity({ searchQuery = '' }) {
   }, [loadCommunityDiaries]);
 
   const handleToggleReaction = async (e, noteId, reactionType = 'HEART') => {
-    e.stopPropagation();
-    if (togglingId === noteId) return;
-    setTogglingId(noteId);
+    if (e && e.stopPropagation) e.stopPropagation();
+    guardAction(
+      async () => {
+        if (togglingId === noteId) return;
+        setTogglingId(noteId);
 
-    try {
-      const res = await diaryService.toggleCommunityReaction(noteId, reactionType);
-      const data = res?.data || res;
+        try {
+          const res = await diaryService.toggleCommunityReaction(noteId, reactionType);
+          const data = res?.data || res;
 
-      setCommunityNotes((prev) =>
-        prev.map((it) => {
-          if (it.id === noteId) {
-            const newTotal = data?.reactions?.total ?? (it.reactions?.total || 0);
-            return {
-              ...it,
-              my_reaction: data?.current_reaction,
-              reactions: data?.reactions || it.reactions,
-              reaction_count: newTotal,
-            };
-          }
-          return it;
-        })
-      );
-    } catch (err) {
-      console.error('Error toggling reaction on community diary:', err);
-    } finally {
-      setTogglingId(null);
-    }
+          setCommunityNotes((prev) =>
+            prev.map((it) => {
+              if (it.id === noteId) {
+                const newTotal = data?.reactions?.total ?? (it.reactions?.total || 0);
+                return {
+                  ...it,
+                  my_reaction: data?.current_reaction,
+                  reactions: data?.reactions || it.reactions,
+                  reaction_count: newTotal,
+                };
+              }
+              return it;
+            })
+          );
+
+          setSelectedNote((prev) => {
+            if (prev && prev.id === noteId) {
+              const newTotal = data?.reactions?.total ?? (prev.reactions?.total || 0);
+              return {
+                ...prev,
+                my_reaction: data?.current_reaction,
+                reactions: data?.reactions || prev.reactions,
+                reaction_count: newTotal,
+              };
+            }
+            return prev;
+          });
+        } catch (err) {
+          console.error('Error toggling reaction on community diary:', err);
+        } finally {
+          setTogglingId(null);
+        }
+      },
+      language === 'en' ? 'express empathy with this diary entry' : 'bày tỏ sự đồng cảm với trang nhật ký'
+    );
   };
 
   const formatDate = (dateStr) => {
@@ -225,8 +245,8 @@ export function DiaryCommunity({ searchQuery = '' }) {
 
                 <span
                   className="rxs"
-                  onClick={(e) => handleToggleReaction(e, note.id, 'HUG')}
-                  title="Nhấn để ôm an ủi hoặc thương"
+                  onClick={(e) => handleToggleReaction(e, note.id, note.my_reaction ? note.my_reaction : 'HUG')}
+                  title={language === 'en' ? 'Click to send warm hug or empathy' : 'Nhấn để ôm an ủi hoặc thương'}
                   style={{ cursor: 'pointer', padding: '4px 8px', borderRadius: '8px' }}
                 >
                   <ReactionStack
@@ -313,7 +333,7 @@ export function DiaryCommunity({ searchQuery = '' }) {
               >
                 <img
                   src={selectedNote.media_urls[0]}
-                  alt="Ảnh đính kèm"
+                  alt={language === 'en' ? 'Attached picture' : 'Ảnh đính kèm'}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
@@ -325,20 +345,34 @@ export function DiaryCommunity({ searchQuery = '' }) {
                 borderTop: '1px solid var(--line)',
                 paddingTop: '14px',
                 marginTop: '10px',
+                flexWrap: 'wrap',
+                gap: '12px',
               }}
             >
               <span className="hand" style={{ fontSize: '22px', color: '#5C341F' }}>
                 — {selectedNote.author?.nickname || selectedNote.author_name || (language === 'en' ? 'Anonymous friend' : 'Người bạn ẩn danh')}
               </span>
 
-              <button
-                type="button"
-                className={`btn ${selectedNote.my_reaction ? 'main' : 'line'} sm`}
-                onClick={(e) => handleToggleReaction(e, selectedNote.id, 'HEART')}
-              >
-                <Icon name="heart" size={16} />
-                {selectedNote.my_reaction ? 'Đã thả cảm xúc' : 'Thả cảm xúc đồng cảm'}
-              </button>
+              <div className="row" style={{ gap: '8px', flexWrap: 'wrap' }}>
+                <ReactionButton
+                  type="HEART"
+                  count={selectedNote.reactions?.HEART ?? (selectedNote.my_reaction === 'HEART' ? 1 : 0)}
+                  active={selectedNote.my_reaction === 'HEART'}
+                  onClick={(e) => handleToggleReaction(e, selectedNote.id, 'HEART')}
+                />
+                <ReactionButton
+                  type="HUG"
+                  count={selectedNote.reactions?.HUG ?? (selectedNote.my_reaction === 'HUG' ? 1 : 0)}
+                  active={selectedNote.my_reaction === 'HUG'}
+                  onClick={(e) => handleToggleReaction(e, selectedNote.id, 'HUG')}
+                />
+                <ReactionButton
+                  type="SYMPATHY"
+                  count={selectedNote.reactions?.SYMPATHY ?? (selectedNote.my_reaction === 'SYMPATHY' ? 1 : 0)}
+                  active={selectedNote.my_reaction === 'SYMPATHY'}
+                  onClick={(e) => handleToggleReaction(e, selectedNote.id, 'SYMPATHY')}
+                />
+              </div>
             </div>
           </div>
         </>

@@ -6,13 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.core.config import settings
-from app.core.constants import ROOM_HOPE
+from app.core.constants import ROOM2_REACTIONS, ROOM_HOPE
 from app.core.exceptions import AppException
 from app.models.artwork import Artwork
+from app.models.artwork_interaction import ArtworkInteraction
 from app.models.user import User
 from app.models.user_saved_artwork import UserSavedArtwork
 from app.schemas.room2 import Room2CreateLanternRequest, serialize_utc_datetime
 from app.services.artwork_query_service import ArtworkQueryService
+from app.services.notification_service import NotificationService
+from app.services.reaction_service import ReactionService
 from app.services.search_service import SearchService
 
 
@@ -710,6 +713,24 @@ class Room2Service:
         if not lantern:
             return None
 
+        # Reactions summary & user reaction
+        summaries = await ReactionService.summary(db, [lantern.id], ROOM2_REACTIONS)
+        my_rx_map = await ReactionService.my_reactions(
+            db, [lantern.id], current_user.id if current_user else None
+        )
+        my_rx_list = my_rx_map.get(lantern.id, [])
+        my_rx = my_rx_list[0] if my_rx_list else None
+
+        is_saved = False
+        if current_user:
+            check_saved = await db.scalar(
+                select(UserSavedArtwork.id).where(
+                    UserSavedArtwork.user_id == current_user.id,
+                    UserSavedArtwork.artwork_id == lantern.id,
+                )
+            )
+            is_saved = bool(check_saved)
+
         return {
             "id": str(lantern.id),
             "original_language": lantern.original_language,
@@ -729,6 +750,155 @@ class Room2Service:
             "is_opened": lantern.is_opened,
             "view_count": lantern.view_count,
             "symbol": lantern.tag_category or "heart",
+            "reactions": summaries.get(lantern.id, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0}),
+            "my_reaction": my_rx,
+            "is_saved": is_saved,
             "created_at": serialize_utc_datetime(lantern.created_at),
+        }
+
+    @staticmethod
+    async def get_lantern_detail(
+        db: AsyncSession,
+        *,
+        lantern_id: uuid.UUID,
+        current_user: Optional[User] = None,
+    ) -> Dict[str, Any]:
+        """Get lantern letter detail in Room 2."""
+        stmt = (
+            select(Artwork)
+            .options(joinedload(Artwork.author))
+            .where(
+                Artwork.id == lantern_id,
+                Artwork.room_id == ROOM_HOPE,
+            )
+        )
+        lantern = (await db.execute(stmt)).scalar_one_or_none()
+        if not lantern:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy lồng đèn"
+            )
+
+        if lantern.visibility == "PRIVATE" and (not current_user or lantern.user_id != current_user.id):
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy lồng đèn"
+            )
+
+        # Atomic view count increment
+        await ArtworkQueryService.increment_view_count(db, lantern_id)
+
+        summaries = await ReactionService.summary(db, [lantern.id], ROOM2_REACTIONS)
+        my_rx_map = await ReactionService.my_reactions(
+            db, [lantern.id], current_user.id if current_user else None
+        )
+        my_rx_list = my_rx_map.get(lantern.id, [])
+        my_rx = my_rx_list[0] if my_rx_list else None
+
+        is_saved = False
+        if current_user:
+            check_saved = await db.scalar(
+                select(UserSavedArtwork.id).where(
+                    UserSavedArtwork.user_id == current_user.id,
+                    UserSavedArtwork.artwork_id == lantern.id,
+                )
+            )
+            is_saved = bool(check_saved)
+
+        return {
+            "id": str(lantern.id),
+            "original_language": lantern.original_language,
+            "title": lantern.title,
+            "title_vi": lantern.title_vi,
+            "title_en": lantern.title_en,
+            "author_display_name": lantern.author_display_name or (lantern.author.nickname if lantern.author and not lantern.is_anonymous else "Người Lữ Khách"),
+            "short_content": lantern.short_content,
+            "short_content_vi": lantern.short_content_vi,
+            "short_content_en": lantern.short_content_en,
+            "content": lantern.content,
+            "content_vi": lantern.content_vi,
+            "content_en": lantern.content_en,
+            "media_url": lantern.media_url,
+            "visibility": lantern.visibility,
+            "target_date": serialize_utc_datetime(lantern.target_date),
+            "is_opened": lantern.is_opened,
+            "view_count": lantern.view_count,
+            "symbol": lantern.tag_category or "heart",
+            "reactions": summaries.get(lantern.id, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0}),
+            "my_reaction": my_rx,
+            "is_saved": is_saved,
+            "created_at": serialize_utc_datetime(lantern.created_at),
+        }
+
+    @staticmethod
+    async def toggle_reaction(
+        db: AsyncSession,
+        *,
+        lantern_id: uuid.UUID,
+        reaction_type: str,
+        current_user: User,
+    ) -> Tuple[str, Dict[str, Any]]:
+        """Toggle reaction on Room 2 lantern letter (HEART, HUG, SYMPATHY)."""
+        if reaction_type not in ROOM2_REACTIONS:
+            raise AppException(
+                status_code=400,
+                error_code="INVALID_REACTION_TYPE",
+                message=f"Loại cảm xúc không hợp lệ: {reaction_type}"
+            )
+
+        stmt = select(Artwork).where(Artwork.id == lantern_id, Artwork.room_id == ROOM_HOPE)
+        lantern = (await db.execute(stmt)).scalar_one_or_none()
+        if not lantern:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy lồng đèn"
+            )
+
+        rx_query = select(ArtworkInteraction).where(
+            ArtworkInteraction.artwork_id == lantern_id,
+            ArtworkInteraction.user_id == current_user.id,
+        )
+        existing_reactions = (await db.execute(rx_query)).scalars().all()
+
+        current_reaction: Optional[str] = None
+        if any(r.reaction_type == reaction_type for r in existing_reactions):
+            # Toggle off
+            for r in existing_reactions:
+                await db.delete(r)
+            message = "Đã gỡ bỏ cảm xúc"
+            current_reaction = None
+        elif existing_reactions:
+            # Switch type
+            for r in existing_reactions:
+                await db.delete(r)
+            new_rx = ArtworkInteraction(
+                artwork_id=lantern_id,
+                user_id=current_user.id,
+                reaction_type=reaction_type,
+            )
+            db.add(new_rx)
+            current_reaction = reaction_type
+            message = "Cảm ơn bạn đã gửi sự đồng cảm đến bức thư"
+        else:
+            # Add reaction
+            new_rx = ArtworkInteraction(
+                artwork_id=lantern_id,
+                user_id=current_user.id,
+                reaction_type=reaction_type,
+            )
+            db.add(new_rx)
+            current_reaction = reaction_type
+            message = "Cảm ơn bạn đã gửi sự đồng cảm đến bức thư"
+
+        await db.commit()
+
+        summaries = await ReactionService.summary(db, [lantern_id], ROOM2_REACTIONS)
+        return message, {
+            "artwork_id": str(lantern_id),
+            "current_reaction": current_reaction,
+            "reactions_summary": summaries.get(lantern_id, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0}),
         }
 
