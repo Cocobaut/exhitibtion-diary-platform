@@ -128,7 +128,7 @@ class AiImageService:
     @classmethod
     async def _synthesize_gemini_svg_art(cls, prompt: str, api_key: str) -> Optional[bytes]:
         import re
-        candidates = ["gemini-3-flash-preview", "gemini-3.6-flash", "gemini-3.5-flash"]
+        candidates = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"]
         instruction = (
             f"You are a master digital fine-artist. Generate an SVG artwork illustration representing: {prompt}. "
             "Return strictly raw valid SVG code starting with <svg and ending with </svg>. "

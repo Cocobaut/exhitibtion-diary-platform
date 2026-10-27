@@ -95,10 +95,11 @@ class AiDiscoveryService:
 
             # Prioritize active Gemini models with high speed and JSON compliance
             priority_order = [
-                "gemini-3-flash-preview",
-                "gemini-3.6-flash",
-                "gemini-3.5-flash",
                 "gemini-2.5-flash",
+                "gemini-2.0-flash",
+                "gemini-1.5-flash",
+                "gemini-1.5-flash-latest",
+                "gemini-1.5-pro",
                 "gemini-flash-latest",
             ]
             rec_id = None

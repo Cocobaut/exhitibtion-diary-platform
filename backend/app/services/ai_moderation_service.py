@@ -144,9 +144,17 @@ class AiModerationService:
 
     @classmethod
     async def _call_gemini(cls, req: ModerateArtRequest, api_key: str, model_name: str) -> Optional[Dict[str, Any]]:
-        # Candidate models list: start with chosen model, fallback to active versions if 404/503
-        candidates = [model_name]
-        for fallback in ["gemini-3-flash-preview", "gemini-3.6-flash", "gemini-3.5-flash"]:
+        # Candidate models list: start with chosen model, fallback to rock-solid Google Gemini versions if 404/503/429
+        candidates = []
+        if model_name and model_name.strip():
+            candidates.append(model_name.strip())
+        for fallback in [
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-latest",
+            "gemini-1.5-pro",
+        ]:
             if fallback not in candidates:
                 candidates.append(fallback)
 
@@ -167,7 +175,7 @@ class AiModerationService:
             },
         }
 
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=20.0) as client:
             for m in candidates:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key.strip()}"
                 try:
@@ -176,11 +184,22 @@ class AiModerationService:
                         data = resp.json()
                         candidates_list = data.get("candidates", [])
                         if candidates_list:
-                            text = candidates_list[0]["content"]["parts"][0]["text"]
-                            print(f"[AI Copilot Moderation] Real Google Gemini LLM ({m}) responded successfully!")
-                            return json.loads(text)
+                            parts = candidates_list[0].get("content", {}).get("parts", [])
+                            if parts:
+                                text = parts[0].get("text", "")
+                                clean_text = text.strip()
+                                if clean_text.startswith("```"):
+                                    lines = clean_text.splitlines()
+                                    if lines and lines[0].startswith("```"):
+                                        lines = lines[1:]
+                                    if lines and lines[-1].strip() == "```":
+                                        lines = lines[:-1]
+                                    clean_text = "\n".join(lines).strip()
+                                print(f"[AI Copilot Moderation] Google Gemini LLM ({m}) responded successfully!")
+                                return json.loads(clean_text)
                     else:
-                        print(f"[AI Copilot Moderation] Model {m} returned HTTP {resp.status_code}, trying fallback candidate...")
+                        err_snippet = resp.text[:250].replace("\n", " ")
+                        print(f"[AI Copilot Moderation] Model {m} returned HTTP {resp.status_code} ({err_snippet}), trying fallback candidate...")
                 except Exception as ex:
                     print(f"[AI Copilot Moderation] Error calling {m}: {ex}")
 
