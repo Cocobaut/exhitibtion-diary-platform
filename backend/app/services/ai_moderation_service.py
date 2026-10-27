@@ -203,6 +203,8 @@ class AiModerationService:
                         m.get("name", "").replace("models/", "")
                         for m in models_data
                         if "generateContent" in m.get("supportedGenerationMethods", [])
+                        and not m.get("name", "").replace("models/", "").lower().startswith("gemma")
+                        and not "embedding" in m.get("name", "").lower()
                         and m.get("name", "").replace("models/", "") not in candidates
                     ]
                     for dyn_m in dynamic_models[:5]:
@@ -224,8 +226,9 @@ class AiModerationService:
                                             if lines and lines[-1].strip() == "```":
                                                 lines = lines[:-1]
                                             clean_text = "\n".join(lines).strip()
-                                        print(f"[AI Copilot Moderation] Dynamic model '{dyn_m}' from connected key responded successfully!")
-                                        return json.loads(clean_text)
+                                        if clean_text and clean_text.startswith("{"):
+                                            print(f"[AI Copilot Moderation] Dynamic model '{dyn_m}' from connected key responded successfully!")
+                                            return json.loads(clean_text)
                         except Exception as ex:
                             print(f"[AI Copilot Moderation] Error calling dynamic model {dyn_m}: {ex}")
             except Exception as ex:

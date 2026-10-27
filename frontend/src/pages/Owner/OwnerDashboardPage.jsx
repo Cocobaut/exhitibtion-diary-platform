@@ -81,6 +81,10 @@ export function OwnerDashboardPage({ onNavigate }) {
   const [isMasterAiEnabled, setIsMasterAiEnabled] = useState(true);
   const [isTogglingMasterAi, setIsTogglingMasterAi] = useState(false);
 
+  // API Key deletion confirmation modal state
+  const [deletingApiKeyService, setDeletingApiKeyService] = useState(null); // 'moderation' | 'image_generation'
+  const [isDeletingApiKey, setIsDeletingApiKey] = useState(false);
+
   const triggerToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -300,27 +304,33 @@ export function OwnerDashboardPage({ onNavigate }) {
     }
   };
 
-  const handleDeleteModerationKey = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa API Key của dịch vụ kiểm duyệt nội dung?')) return;
+  const handleConfirmDeleteApiKey = async () => {
+    if (!deletingApiKeyService) return;
+    setIsDeletingApiKey(true);
     try {
-      await aiCopilotService.deleteModerationKey();
-      triggerToast('Đã xóa API Key dịch vụ kiểm duyệt.');
-      loadAiSettings();
+      if (deletingApiKeyService === 'moderation') {
+        await aiCopilotService.deleteModerationKey();
+        triggerToast(
+          language === 'en'
+            ? '✦ Content Moderation API Key removed successfully.'
+            : '✦ Đã xóa thành công API Key của dịch vụ kiểm duyệt nội dung.'
+        );
+      } else {
+        await aiCopilotService.deleteImageGenKey();
+        triggerToast(
+          language === 'en'
+            ? '✦ Image Generation API Key removed successfully.'
+            : '✦ Đã xóa thành công API Key của dịch vụ sinh tranh vẽ.'
+        );
+      }
+      setDeletingApiKeyService(null);
+      await loadAiSettings();
     } catch (err) {
-      console.error('Lỗi khi xóa key kiểm duyệt:', err);
-      triggerToast('Không thể xóa API Key kiểm duyệt.');
-    }
-  };
-
-  const handleDeleteImageGenKey = async () => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa API Key của dịch vụ sinh tranh vẽ?')) return;
-    try {
-      await aiCopilotService.deleteImageGenKey();
-      triggerToast('Đã xóa API Key dịch vụ sinh tranh vẽ.');
-      loadAiSettings();
-    } catch (err) {
-      console.error('Lỗi khi xóa key sinh ảnh:', err);
-      triggerToast('Không thể xóa API Key sinh ảnh.');
+      console.error('Lỗi khi xóa API Key:', err);
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Không thể xóa API Key.';
+      triggerToast(`[AI Copilot] ${msg}`);
+    } finally {
+      setIsDeletingApiKey(false);
     }
   };
 
@@ -1224,7 +1234,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                     <button
                       type="button"
                       className="btn danger sm"
-                      onClick={handleDeleteModerationKey}
+                      onClick={() => setDeletingApiKeyService('moderation')}
                       style={{ padding: '4px 10px', fontSize: '12px' }}
                       title="Xóa API Key kiểm duyệt này khỏi cơ sở dữ liệu"
                     >
@@ -1361,7 +1371,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                     <button
                       type="button"
                       className="btn danger sm"
-                      onClick={handleDeleteImageGenKey}
+                      onClick={() => setDeletingApiKeyService('image_generation')}
                       style={{ padding: '4px 10px', fontSize: '12px' }}
                       title="Xóa API Key sinh ảnh này khỏi cơ sở dữ liệu"
                     >
@@ -1638,6 +1648,82 @@ export function OwnerDashboardPage({ onNavigate }) {
                 {isDeleting
                   ? (language === 'en' ? 'Deleting...' : 'Đang xóa...')
                   : (language === 'en' ? 'Confirm Permanent Deletion' : 'Xác nhận xóa vĩnh viễn')}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* DELETE API KEY CONFIRMATION MODAL */}
+      {deletingApiKeyService && (
+        <>
+          <div className="scrim" onClick={() => !isDeletingApiKey && setDeletingApiKeyService(null)} />
+          <div className="panel" style={{ width: '520px', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
+            <span
+              className="x"
+              onClick={() => !isDeletingApiKey && setDeletingApiKeyService(null)}
+              role="button"
+              tabIndex={0}
+            >
+              &times;
+            </span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h2 className="serif" style={{ fontSize: '22px', margin: 0, color: '#C42B1C', fontWeight: 600 }}>
+                {language === 'en' ? 'Confirm API Key Removal' : 'Xác nhận xóa khóa API'}
+              </h2>
+            </div>
+
+            <div className="sub" style={{ marginTop: '14px', lineHeight: 1.6, fontSize: '14px' }}>
+              {language === 'en' ? (
+                <>
+                  Are you sure you want to remove the API Key for{' '}
+                  <b>{deletingApiKeyService === 'moderation' ? 'Content Moderation' : 'Art Image Generation'}</b> from the database?
+                </>
+              ) : (
+                <>
+                  Bạn có chắc chắn muốn xóa API Key của dịch vụ{' '}
+                  <b>{deletingApiKeyService === 'moderation' ? 'Kiểm duyệt nội dung' : 'Sinh tranh minh họa nghệ thuật'}</b> khỏi cơ sở dữ liệu?
+                </>
+              )}
+            </div>
+
+            <div
+              style={{
+                marginTop: '16px',
+                padding: '12px 14px',
+                background: 'rgba(196, 43, 28, 0.08)',
+                borderRadius: '8px',
+                border: '1px solid rgba(196, 43, 28, 0.25)',
+                fontSize: '13px',
+                color: '#8A180E',
+                lineHeight: 1.5,
+              }}
+            >
+              {language === 'en'
+                ? 'This AI feature will be temporarily disabled until a new valid API key is saved. Other platform operations remain unaffected.'
+                : 'Dịch vụ AI tương ứng sẽ tạm thời dừng hoạt động cho đến khi có API Key mới được thiết lập. Các hoạt động trưng bày và quản trị khác vẫn diễn ra bình thường.'}
+            </div>
+
+            <div className="row" style={{ justifyContent: 'flex-end', marginTop: '24px', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn ghost"
+                onClick={() => setDeletingApiKeyService(null)}
+                disabled={isDeletingApiKey}
+              >
+                {language === 'en' ? 'Cancel' : 'Hủy bỏ'}
+              </button>
+              <button
+                type="button"
+                className="btn main"
+                style={{ background: '#8E2A22' }}
+                onClick={handleConfirmDeleteApiKey}
+                disabled={isDeletingApiKey}
+              >
+                {isDeletingApiKey
+                  ? (language === 'en' ? 'Removing...' : 'Đang xóa...')
+                  : (language === 'en' ? 'Confirm Key Removal' : 'Xác nhận xóa Key')}
               </button>
             </div>
           </div>
