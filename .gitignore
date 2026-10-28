@@ -39,6 +39,7 @@ dist/
 frontend/specification/
 backend/specification/
 backend/postman_json/
+backend/tests/
 
 # Frontend mock data
 frontend/src/data/

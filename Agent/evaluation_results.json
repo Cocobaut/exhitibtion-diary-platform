@@ -1,0 +1,1099 @@
+{
+  "metadata": {
+    "timestamp_utc": "2026-10-28T14:42:55.404274+00:00",
+    "evaluation_mode": "Live LLM API (gemini:gemini-3-flash-preview)",
+    "provider": "gemini",
+    "model_name": "gemini-3-flash-preview",
+    "total_test_cases": 32
+  },
+  "A_task_success_and_quality": {
+    "task_success_rate_pct": 84.38,
+    "verdict_accuracy_pct": 93.75,
+    "rubric_score_range_accuracy_pct": 93.75,
+    "room_routing_accuracy_pct": 100.0,
+    "violation_detection_precision_pct": 96.35,
+    "violation_detection_recall_pct": 100.0,
+    "violation_detection_f1_pct": 97.4,
+    "schema_compliance_rate_pct": 100.0,
+    "art_generation_success_rate_pct": 100.0,
+    "average_steps_to_completion": 3.0,
+    "loop_runaway_failure_rate_pct": 0.0
+  },
+  "B_grounding_and_faithfulness": {
+    "strict_no_hallucination_faithfulness_pct": 90.62,
+    "pii_and_profanity_sanitization_rate_pct": 95.83,
+    "semantic_keyword_preservation_rate_pct": 100.0,
+    "evidence_quote_grounding_accuracy_pct": 100.0
+  },
+  "C_system_and_engineering_performance": {
+    "moderation_latency_p50_ms": 2260.452,
+    "moderation_latency_p95_ms": 20306.276,
+    "moderation_latency_p99_ms": 21946.456,
+    "moderation_latency_mean_ms": 5360.142,
+    "art_synthesis_latency_p50_ms": 140702.29,
+    "art_synthesis_latency_p95_ms": 198498.666,
+    "avg_prompt_tokens_per_run": 606,
+    "avg_completion_tokens_per_run": 153,
+    "avg_total_tokens_per_run": 759,
+    "estimated_cost_per_1000_tasks_usd": 0.2166
+  },
+  "detailed_results": [
+    {
+      "id": "TC_001",
+      "category": "clean_room1",
+      "target_room": "room1",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 4726.725,
+      "prompt_tokens": 626,
+      "completion_tokens": 124,
+      "task_success": true,
+      "suggested_content": "Chiếc cốc gốm chúng mình từng mua ở Đà Lạt đã vỡ vào chiều mưa hôm ấy. Tôi nhặt từng mảnh vụn, chợt nhận ra có những vết nứt không cần phải cố gắn lại mới đẹp, mà chính sự buông bỏ mới là khởi đầu của chữa lành."
+    },
+    {
+      "id": "TC_002",
+      "category": "clean_room1",
+      "target_room": "room1",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 6785.929,
+      "prompt_tokens": 625,
+      "completion_tokens": 126,
+      "task_success": true,
+      "suggested_content": "Ba năm ôn thi đại học trượt đến hai lần, cảm giác nhìn bạn bè khoác áo cử nhân còn mình loay hoay với trang giấy trắng thật sự cô đơn. Nhưng hôm nay tôi quyết định gấp lại nỗi buồn đó để bước tiếp con đường mới."
+    },
+    {
+      "id": "TC_003",
+      "category": "clean_room1",
+      "target_room": "room1",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 4336.917,
+      "prompt_tokens": 615,
+      "completion_tokens": 128,
+      "task_success": true,
+      "suggested_content": "Dự án khởi nghiệp đầu đời của tôi đã chính thức đóng cửa sau 18 tháng thức trắng. Nhìn văn phòng trống trơn lúc chiều tà, lòng nặng trĩu nhưng tôi biết ơn những bài học đắt giá đã đi qua."
+    },
+    {
+      "id": "TC_004",
+      "category": "clean_room1",
+      "target_room": "room1",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 5227.368,
+      "prompt_tokens": 615,
+      "completion_tokens": 116,
+      "task_success": true,
+      "suggested_content": "Lời xin lỗi muộn màng gửi đến người bạn thân thời cấp ba. Vì cái tôi quá lớn mà chúng ta đã im lặng suốt năm năm trời, để lại một khoảng trống không gì bù đắp nổi trong thanh xuân."
+    },
+    {
+      "id": "TC_005",
+      "category": "clean_room1",
+      "target_room": "room1",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 22002.185,
+      "prompt_tokens": 615,
+      "completion_tokens": 97,
+      "task_success": true,
+      "suggested_content": "Ngày bà ngoại rời xa nhân thế, căn bếp nhỏ quê nghèo lạnh ngắt mùi khói rơm. Tôi giữ lại chiếc quạt nan cũ kỹ của bà như giữ lại cả một bầu trời tuổi thơ đã mãi mãi khép lại."
+    },
+    {
+      "id": "TC_006",
+      "category": "clean_room1",
+      "target_room": "room1",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 19065.798,
+      "prompt_tokens": 615,
+      "completion_tokens": 112,
+      "task_success": true,
+      "suggested_content": "Tấm vé máy bay một chiều đưa tôi rời xa thành phố từng gắn bó suốt bảy năm tuổi trẻ. Cuộc tình dừng lại trong êm đềm, không ai có lỗi, chỉ là hai người không còn nhìn về một hướng."
+    },
+    {
+      "id": "TC_007",
+      "category": "clean_room2",
+      "target_room": "room2",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 7211.59,
+      "prompt_tokens": 615,
+      "completion_tokens": 119,
+      "task_success": true,
+      "suggested_content": "Thả chiếc lồng đèn nhỏ lên bầu trời đêm, mình ước rằng vào mùa thu năm 2027, bản thân sẽ đủ mạnh mẽ và tự tin để mở một tiệm bánh nhỏ thơm mùi quế hồi tại góc phố yên bình."
+    },
+    {
+      "id": "TC_008",
+      "category": "clean_room2",
+      "target_room": "room2",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 6036.28,
+      "prompt_tokens": 614,
+      "completion_tokens": 117,
+      "task_success": true,
+      "suggested_content": "Gửi tôi của một năm sau: Hy vọng khi lồng đèn này hạ cánh, ca phẫu thuật của mẹ đã thành công tốt đẹp và cả gia đình mình sẽ cùng nhau đón một mùa Tết trọn vẹn tiếng cười."
+    },
+    {
+      "id": "TC_009",
+      "category": "clean_room2",
+      "target_room": "room2",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 4719.32,
+      "prompt_tokens": 608,
+      "completion_tokens": 111,
+      "task_success": true,
+      "suggested_content": "Ước nguyện dưới ánh sao đêm nay: Mong cho dự án nghiên cứu năng lượng sạch của nhóm sinh viên chúng mình sẽ đạt giải thưởng và góp phần thắp sáng các bản làng vùng cao."
+    },
+    {
+      "id": "TC_010",
+      "category": "clean_room2",
+      "target_room": "room2",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 5608.999,
+      "prompt_tokens": 610,
+      "completion_tokens": 112,
+      "task_success": true,
+      "suggested_content": "Mình gửi vào bầu trời hy vọng lời chúc cho tất cả những ai đang thức khuya ôn thi tối nay đều tìm thấy ánh sáng kiên trì và gặt hái quả ngọt vào mùa hạ tới."
+    },
+    {
+      "id": "TC_011",
+      "category": "clean_room2",
+      "target_room": "room2",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 2206.773,
+      "prompt_tokens": 611,
+      "completion_tokens": 93,
+      "task_success": true,
+      "suggested_content": "Hộp thời gian gửi tới tuổi 25: Dù con đường phía trước có nhiều thử thách, hãy luôn giữ trái tim ấm áp, đôi mắt biết ngước nhìn những vì sao và niềm tin vào điều tử tế."
+    },
+    {
+      "id": "TC_012",
+      "category": "clean_room3",
+      "target_room": "room3",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 4978.352,
+      "prompt_tokens": 611,
+      "completion_tokens": 109,
+      "task_success": true,
+      "suggested_content": "Treo một chiếc lá bình yên lên cây đại thụ: Cảm ơn người lạ trên chuyến xe buýt chiều mưa đã nhường chiếc ô cho mình. Sự tử tế nhỏ bé ấy làm ấm cả một ngày dài."
+    },
+    {
+      "id": "TC_013",
+      "category": "clean_room3",
+      "target_room": "room3",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 4792.844,
+      "prompt_tokens": 610,
+      "completion_tokens": 115,
+      "task_success": true,
+      "suggested_content": "Nếu hôm nay bạn cảm thấy quá mỏi mệt, hãy cho phép bản thân được nghỉ ngơi một chút. Cây xanh cũng cần mùa đông để ủ mầm trước khi nở hoa rực rỡ vào mùa xuân."
+    },
+    {
+      "id": "TC_014",
+      "category": "clean_room3",
+      "target_room": "room3",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 2166.318,
+      "prompt_tokens": 608,
+      "completion_tokens": 90,
+      "task_success": true,
+      "suggested_content": "Tri ân những y bác sĩ trực đêm không nghỉ để giữ gìn nhịp đập bình an cho bao gia đình. Mong chiếc lá xanh này mang thật nhiều năng lượng tích cực đến mọi người."
+    },
+    {
+      "id": "TC_015",
+      "category": "clean_room3",
+      "target_room": "room3",
+      "actual_score": 100,
+      "expected_score_range": [
+        85,
+        100
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [],
+      "expected_violations": [],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 2145.138,
+      "prompt_tokens": 608,
+      "completion_tokens": 90,
+      "task_success": true,
+      "suggested_content": "Mỗi hơi thở sâu là một món quà của hiện tại. Chúc cho người đang đọc dòng chữ trên chiếc lá này có một giấc ngủ thật ngon và một buổi sáng tràn ngập ánh nắng."
+    },
+    {
+      "id": "TC_016",
+      "category": "mild_violation_approve",
+      "target_room": "room1",
+      "actual_score": 90,
+      "expected_score_range": [
+        65,
+        90
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "profanity_dictionary"
+      ],
+      "expected_violations": [
+        "profanity_dictionary"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 0.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": false
+      },
+      "latency_ms": 2034.462,
+      "prompt_tokens": 594,
+      "completion_tokens": 103,
+      "task_success": false,
+      "suggested_content": "Ngày nhận tin trượt học bổng, tôi buồn vãi đái và chỉ biết ngồi lặng lẽ bên hiên nhà nhìn mưa rơi suốt buổi chiều."
+    },
+    {
+      "id": "TC_017",
+      "category": "mild_violation_approve",
+      "target_room": "room1",
+      "actual_score": 90,
+      "expected_score_range": [
+        75,
+        95
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "profanity_dictionary"
+      ],
+      "expected_violations": [
+        "profanity_dictionary"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 2122.906,
+      "prompt_tokens": 596,
+      "completion_tokens": 105,
+      "task_success": true,
+      "suggested_content": "Nhìn bức ảnh kỷ niệm cũ kỹ mà thấy cay mắt thật sự, giá như ngày đó cả hai bình tĩnh lắng nghe nhau hơn một chút."
+    },
+    {
+      "id": "TC_018",
+      "category": "mild_violation_approve",
+      "target_room": "room1",
+      "actual_score": 55,
+      "expected_score_range": [
+        65,
+        80
+      ],
+      "score_in_range": false,
+      "actual_verdict": "DISAPPROVE",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": false,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "profanity_dictionary",
+        "pii"
+      ],
+      "expected_violations": [
+        "pii"
+      ],
+      "violation_f1": 0.6667,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 1940.668,
+      "prompt_tokens": 607,
+      "completion_tokens": 136,
+      "task_success": false,
+      "suggested_content": "Mình đang buồn quá sau khi chia tay mối tình 4 năm, bạn nào đồng cảm có thể nhắn cho mình qua số 098*** để cùng trò chuyện vượt qua nỗi cô đơn này nhé."
+    },
+    {
+      "id": "TC_019",
+      "category": "mild_violation_approve",
+      "target_room": "room3",
+      "actual_score": 75,
+      "expected_score_range": [
+        65,
+        80
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "pii"
+      ],
+      "expected_violations": [
+        "pii"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.2,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 1930.252,
+      "prompt_tokens": 594,
+      "completion_tokens": 104,
+      "task_success": true,
+      "suggested_content": "Cảm ơn mọi người đã tiếp sức cho mình. Mình gửi lời chúc bình yên đến tất cả, kết bạn với mình tại [liên kết cá nhân đã ẩn] nhé."
+    },
+    {
+      "id": "TC_020",
+      "category": "mild_violation_approve",
+      "target_room": "room1",
+      "actual_score": 80,
+      "expected_score_range": [
+        65,
+        85
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "profanity_dictionary"
+      ],
+      "expected_violations": [
+        "profanity_dictionary"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.037,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 1850.572,
+      "prompt_tokens": 596,
+      "completion_tokens": 104,
+      "task_success": true,
+      "suggested_content": "Hôm nay công việc áp lực rất nhiều nhưng nhìn lại chặng đường đã qua, mình vẫn muốn tự vỗ vai an ủi bản thân đừng bỏ cuộc."
+    },
+    {
+      "id": "TC_021",
+      "category": "mild_violation_approve",
+      "target_room": "room1",
+      "actual_score": 80,
+      "expected_score_range": [
+        65,
+        85
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "profanity_dictionary"
+      ],
+      "expected_violations": [
+        "profanity_dictionary"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.042,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 21822.414,
+      "prompt_tokens": 592,
+      "completion_tokens": 100,
+      "task_success": true,
+      "suggested_content": "Thất bại lần này đau rất nhiều nhưng nó dạy tôi biết trân trọng những người luôn ở lại bên cạnh mình lúc trắng tay."
+    },
+    {
+      "id": "TC_022",
+      "category": "mild_violation_approve",
+      "target_room": "room2",
+      "actual_score": 45,
+      "expected_score_range": [
+        60,
+        80
+      ],
+      "score_in_range": false,
+      "actual_verdict": "DISAPPROVE",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": false,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "advertising",
+        "profanity_contextual",
+        "pii"
+      ],
+      "expected_violations": [
+        "pii"
+      ],
+      "violation_f1": 0.5,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 13824.491,
+      "prompt_tokens": 598,
+      "completion_tokens": 216,
+      "task_success": false,
+      "suggested_content": "Hy vọng năm sau mình sẽ sửa chữa được những sai lầm thời còn bồng bột thiếu suy nghĩ. Mọi người liên hệ 091*** cùng học tập nhé."
+    },
+    {
+      "id": "TC_023",
+      "category": "room_mismatch",
+      "target_room": "room2",
+      "actual_score": 85,
+      "expected_score_range": [
+        65,
+        85
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "room_mismatch"
+      ],
+      "expected_violations": [
+        "room_mismatch"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 2185.032,
+      "prompt_tokens": 600,
+      "completion_tokens": 170,
+      "task_success": true,
+      "suggested_content": "Tôi hận thù sự phản bội của người đó, mọi thứ đã đổ vỡ và tan nát hoàn toàn, cuộc đời này thật sự tuyệt vọng không còn lối thoát."
+    },
+    {
+      "id": "TC_024",
+      "category": "room_mismatch",
+      "target_room": "room2",
+      "actual_score": 85,
+      "expected_score_range": [
+        65,
+        85
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "room_mismatch"
+      ],
+      "expected_violations": [
+        "room_mismatch"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 1822.999,
+      "prompt_tokens": 598,
+      "completion_tokens": 166,
+      "task_success": true,
+      "suggested_content": "Nỗi oán hận này khiến trái tim tôi tan nát từng mảnh. Những vết thương đổ vỡ từ cuộc hôn nhân cũ vẫn rỉ máu mỗi đêm mưa."
+    },
+    {
+      "id": "TC_025",
+      "category": "room_mismatch",
+      "target_room": "room2",
+      "actual_score": 85,
+      "expected_score_range": [
+        65,
+        85
+      ],
+      "score_in_range": true,
+      "actual_verdict": "APPROVE_WITH_EDITS",
+      "expected_verdict": "APPROVE_WITH_EDITS",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "room_mismatch"
+      ],
+      "expected_violations": [
+        "room_mismatch"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.0,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 1736.456,
+      "prompt_tokens": 594,
+      "completion_tokens": 163,
+      "task_success": true,
+      "suggested_content": "Trong lòng tôi giờ chỉ còn sự tuyệt vọng và đổ vỡ sau khi mất hết công việc lẫn người thương trong cùng một tháng."
+    },
+    {
+      "id": "TC_026",
+      "category": "severe_disapprove",
+      "target_room": "room1",
+      "actual_score": 40,
+      "expected_score_range": [
+        0,
+        45
+      ],
+      "score_in_range": true,
+      "actual_verdict": "DISAPPROVE",
+      "expected_verdict": "DISAPPROVE",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "advertising",
+        "profanity_dictionary",
+        "pii"
+      ],
+      "expected_violations": [
+        "pii",
+        "advertising",
+        "profanity_dictionary"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 0.333,
+        "no_length_hallucination": false,
+        "is_faithful": false
+      },
+      "latency_ms": 6293.08,
+      "prompt_tokens": 604,
+      "completion_tokens": 205,
+      "task_success": false,
+      "suggested_content": "Hôm nay em rất buồn vì chia tay người yêu cũ."
+    },
+    {
+      "id": "TC_027",
+      "category": "severe_disapprove",
+      "target_room": "room1",
+      "actual_score": 0,
+      "expected_score_range": [
+        0,
+        30
+      ],
+      "score_in_range": true,
+      "actual_verdict": "DISAPPROVE",
+      "expected_verdict": "DISAPPROVE",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "profanity_dictionary",
+        "pii"
+      ],
+      "expected_violations": [
+        "pii",
+        "profanity_dictionary"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.25,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 2270.835,
+      "prompt_tokens": 598,
+      "completion_tokens": 247,
+      "task_success": true,
+      "suggested_content": "buồn lòng má thằng thiếu chín chắn phản bội, tao hận mày rất nhiều. Ai muốn dằn mặt nó gọi cho tao qua số 098*** hoặc chuyển khoản [tài khoản ngân hàng đã ẩn] nhé."
+    },
+    {
+      "id": "TC_028",
+      "category": "severe_disapprove",
+      "target_room": "room2",
+      "actual_score": 0,
+      "expected_score_range": [
+        0,
+        20
+      ],
+      "score_in_range": true,
+      "actual_verdict": "DISAPPROVE",
+      "expected_verdict": "DISAPPROVE",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "advertising",
+        "room_mismatch",
+        "profanity_dictionary",
+        "pii"
+      ],
+      "expected_violations": [
+        "pii",
+        "advertising",
+        "profanity_dictionary",
+        "room_mismatch"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.364,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 2250.069,
+      "prompt_tokens": 604,
+      "completion_tokens": 412,
+      "task_success": true,
+      "suggested_content": "Tôi hận thù cuộc đời đổ vỡ tan nát này rất nhiều! đối xử con mẹ lũ người nhẫn tâm lừa đảo, ai chơi [quảng cáo đã gỡ] [quảng cáo đã gỡ] gỡ nợ thì vào [liên kết cá nhân đã ẩn] hoặc gọi 098***."
+    },
+    {
+      "id": "TC_029",
+      "category": "severe_disapprove",
+      "target_room": "room3",
+      "actual_score": 0,
+      "expected_score_range": [
+        0,
+        35
+      ],
+      "score_in_range": true,
+      "actual_verdict": "DISAPPROVE",
+      "expected_verdict": "DISAPPROVE",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "advertising",
+        "pii"
+      ],
+      "expected_violations": [
+        "pii",
+        "advertising"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.433,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 1615.899,
+      "prompt_tokens": 600,
+      "completion_tokens": 273,
+      "task_success": true,
+      "suggested_content": "[quảng cáo đã gỡ] cộng tác viên [quảng cáo đã gỡ] tại nhà, cam kết thu nhập khủng không cọc. [quảng cáo đã gỡ] ngay qua [liên kết cá nhân đã ẩn] hoặc gọi 098***, chuyển khoản [tài khoản ngân hàng đã ẩn]."
+    },
+    {
+      "id": "TC_030",
+      "category": "severe_disapprove",
+      "target_room": "room1",
+      "actual_score": 20,
+      "expected_score_range": [
+        0,
+        35
+      ],
+      "score_in_range": true,
+      "actual_verdict": "DISAPPROVE",
+      "expected_verdict": "DISAPPROVE",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "profanity_dictionary",
+        "pii"
+      ],
+      "expected_violations": [
+        "pii",
+        "profanity_dictionary"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.182,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 1842.859,
+      "prompt_tokens": 604,
+      "completion_tokens": 196,
+      "task_success": true,
+      "suggested_content": "Cuộc đời như chuyện không vui, toàn gặp lũ kẻ phản bội đẻ người nhẫn tâm phản bội. đối xử mẹ đứa nào nợ tiền không trả, nhìn số điện thoại 098*** của nó mà tao tức điên người."
+    },
+    {
+      "id": "TC_031",
+      "category": "severe_disapprove",
+      "target_room": "room2",
+      "actual_score": 0,
+      "expected_score_range": [
+        0,
+        40
+      ],
+      "score_in_range": true,
+      "actual_verdict": "DISAPPROVE",
+      "expected_verdict": "DISAPPROVE",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "advertising",
+        "room_mismatch",
+        "profanity_dictionary",
+        "pii"
+      ],
+      "expected_violations": [
+        "pii",
+        "advertising",
+        "profanity_dictionary",
+        "room_mismatch"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 1.0,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.219,
+        "no_length_hallucination": true,
+        "is_faithful": true
+      },
+      "latency_ms": 1931.23,
+      "prompt_tokens": 603,
+      "completion_tokens": 331,
+      "task_success": true,
+      "suggested_content": "Mọi thứ đã tan nát và tuyệt vọng, tao chỉ muốn trả thù lũ thiếu chín chắn đó. Ai bán hàng [quảng cáo đã gỡ] [quảng cáo đã gỡ] hoặc [quảng cáo đã gỡ] tiền liên hệ 098*** giúp."
+    },
+    {
+      "id": "TC_032",
+      "category": "severe_disapprove",
+      "target_room": "room1",
+      "actual_score": 10,
+      "expected_score_range": [
+        0,
+        45
+      ],
+      "score_in_range": true,
+      "actual_verdict": "DISAPPROVE",
+      "expected_verdict": "DISAPPROVE",
+      "verdict_match": true,
+      "room_assessment_match": true,
+      "predicted_violations": [
+        "advertising",
+        "profanity_dictionary",
+        "pii"
+      ],
+      "expected_violations": [
+        "pii",
+        "advertising",
+        "profanity_dictionary"
+      ],
+      "violation_f1": 1.0,
+      "faithfulness": {
+        "sanitization_rate": 0.6666666666666666,
+        "preservation_rate": 1.0,
+        "length_ratio": 1.115,
+        "no_length_hallucination": true,
+        "is_faithful": false
+      },
+      "latency_ms": 2039.791,
+      "prompt_tokens": 595,
+      "completion_tokens": 211,
+      "task_success": false,
+      "suggested_content": "This whole breakup is fucking bullshit, that asshole ruined my life. Contact me at tiktok.com/@brokenheart99 or call 098*** if you want to buy cheap [quảng cáo đã gỡ] courses."
+    }
+  ]
+}

@@ -23,6 +23,7 @@
 - [3. Ma trận Phân quyền Người dùng (RBAC)](#3-ma-trận-phân-quyền-người-dùng-rbac)
 - [4. Các Tính năng Nổi bật](#4-các-tính-năng-nổi-bật)
 - [5. Kiến trúc & Luồng Hoạt động của AI Copilot Agent](#5-kiến-trúc--luồng-hoạt-động-của-ai-copilot-agent)
+  - [📊 Đánh giá Thực nghiệm & Bộ Metric của AI Copilot Agent](#-đánh-giá-thực-nghiệm--bộ-metric-của-ai-copilot-agent)
 - [6. Cấu trúc Dự án (Repository Structure)](#6-cấu-trúc-dự-án-repository-structure)
 - [7. Hướng dẫn Khởi chạy & Cài đặt (Getting Started)](#7-hướng-dẫn-khởi-chạy--cài-đặt-getting-started)
   - [Yêu cầu môi trường](#yêu-cầu-môi-trường)
@@ -189,6 +190,51 @@ flowchart TD
 2. **Safety & Toxicity Scoring**: Phân tích câu chuyện theo các thang đo nhạy cảm, bạo lực, xúc phạm danh dự, tự hại; đưa ra điểm an toàn (0 - 100) và lý do chi tiết bằng tiếng Việt.
 3. **Curatorial Painting Suggestion**: Đọc nội dung sâu sắc và tự động khởi tạo hạt giống nghệ thuật (`seed`), phong cách tranh canvas (`window`, `rain`, `warmth`, `fog`...) phù hợp với giai điệu cảm xúc câu chuyện.
 4. **Bilingual Synthesis**: Tự động hỗ trợ biên dịch tóm tắt và nội dung sang tiếng Anh/tiếng Việt giúp mở rộng tệp khán giả toàn cầu.
+
+---
+
+### 📊 Đánh giá Thực nghiệm & Bộ Metric của AI Copilot Agent
+
+Hệ thống AI Copilot (`AiModerationService`, `BadWordsService`, `AiImageService`, `AiDiscoveryService`) được kiểm thử và đo lường định lượng bằng bộ **Golden Dataset 32 kịch bản đại diện** (`Agent/golden_dataset.json`) cùng **6 tác vụ tổng hợp tranh nghệ thuật `1024x1024`**, thông qua script benchmark tự động [`Agent/evaluate_agent.py`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/Agent/evaluate_agent.py).
+
+#### 1. Bảng Tổng Hợp Kết Quả Đo Thực Nghiệm (Live Gemini API vs. Deterministic Rule Engine)
+
+Khi kết nối với Google Gemini Developer API (tự động phát hiện **50 models khả dụng** trong tài khoản), hệ thống được đo lường trên 3 cấu hình thực tế:
+- **Live Gemini Dynamic Discovery (`gemini-flash-lite-latest`)**: Khi model cấu hình mặc định (`gemini-2.5-flash`) trả về `HTTP 404` đối với khóa API mới, Agent tự động kích hoạt **Dynamic Model Discovery** quét danh sách model và chuyển hướng sang `gemini-flash-lite-latest`.
+- **Live Gemini Direct (`gemini-3-flash-preview` Hybrid)**: Gọi trực tiếp model thế hệ mới `gemini-3-flash-preview` kết hợp cơ chế tự động fallback về Rule Engine khi chạm ngưỡng Rate Limit (`HTTP 429`).
+- **Offline Rule Engine Baseline**: Vận hành thuần bằng tầng Rule Engine xác định nội bộ.
+
+| Nhóm Metric | Đại lượng Đánh giá (Selected Metric) | Live Gemini (`gemini-flash-lite-latest` Dynamic) | Live Gemini (`gemini-3-flash-preview` Hybrid) | Offline Rule Engine Baseline | Nhận xét Kỹ thuật |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **A. Task Quality** | **Task Success Rate (Overall)** | **81.25%** | **84.38%** | **87.50%** | Hoàn thành trọn vẹn cả 4 tiêu chí (Schema + Verdict + Room + Rewrite) |
+| **A. Task Quality** | **Verdict Accuracy (`APPROVE` / `DISAPPROVE`)** | **93.75%** (30/32) | **93.75%** (30/32) | **93.75%** (30/32) | Độ chính xác phán quyết ở ngưỡng 60 điểm rất ổn định |
+| **A. Task Quality** | **Rubric Score Range Accuracy** | **90.62%** (29/32) | **93.75%** (30/32) | **93.75%** (30/32) | Điểm trừ bám sát bảng trọng số Rubric 100 điểm (-25 PII, -20 Ads, -15 Room/Profanity) |
+| **A. Task Quality** | **Room Routing Accuracy (Room 1/2/3)** | **87.50%** (28/32) | **100.00%** (32/32) | **100.00%** (32/32) | Phát hiện chính xác bài viết tiêu cực gửi nhầm vào Phòng Hy Vọng (Room 2) |
+| **A. Task Quality** | **JSON Schema Compliance Rate** | **96.88%** (31/32) | **100.00%** (32/32) | **100.00%** (32/32) | Tuân thủ chặt chẽ cấu trúc Pydantic Schema `ModerateArtData` |
+| **A. Task Quality** | **Art Image Synthesis Success Rate** | **100.00%** (6/6) | **100.00%** (6/6) | **100.00%** (6/6) | Gemini sinh trực tiếp mã `<svg>` nghệ thuật `1024x1024` theo mood bài viết |
+| **A. Efficiency** | **Average Steps & Loop Failure Rate** | **2.91 steps \| 0% loop** | **3.00 steps \| 0% loop** | **3.00 steps \| 0% loop** | Chuỗi xử lý cố định 3 bước, không xảy ra vòng lặp vô tận |
+| **B. Grounding** | **Violation Detection F1-Score** | **93.19%** | **97.40%** | **98.96%** | `gemini-3-flash` đạt **Precision 96.35%**, **Recall 100.00%** |
+| **B. Grounding** | **Evidence Quote Grounding** | **100.00%** | **100.00%** | **100.00%** | 100% trích dẫn lỗi (`quote`) khớp nguyên văn trong bài gốc |
+| **B. Grounding** | **PII & Profanity Sanitization Rate** | **99.19%** ⭐ | **95.83%** | **95.83%** | **Live LLM vượt trội hơn Rule Engine** khi làm sạch từ lóng ngữ cảnh (`vãi đái`, `bullshit`, `asshole`) |
+| **B. Grounding** | **Core Meaning Preservation Rate** | **98.39%** | **100.00%** | **100.00%** | Giữ nguyên vẹn các từ khóa cốt truyện của tác giả |
+| **B. Grounding** | **Strict No-Hallucination Faithfulness** | **90.32%** | **90.62%** | **93.75%** | Không bịa đặt thêm tình tiết ngoài văn bản gốc |
+| **C. System Perf** | **E2E Moderation Latency (P50)** | **21,863.8 ms** *(gồm 404 fallback)* | **2,260.5 ms** *(Direct LLM: **4.3s – 6.7s**)* | **1.30 ms** | Gọi trực tiếp `gemini-3-flash-preview` mất trung bình **~4.8 giây/bài** |
+| **C. System Perf** | **E2E Moderation Latency (P95 / P99)** | **38,852.9 ms / 41,873.1 ms** | **20,306.3 ms / 21,946.5 ms** | **1.69 ms / 7.66 ms** | Đuôi P95 tăng khi gặp HTTP timeout hoặc retry qua dynamic models |
+| **C. Cost & Token** | **Avg Token Usage & Cost / 1,000 Tasks** | **747 tokens \| $0.2160** | **759 tokens \| $0.2166** | **750 tokens \| $0.2029** | ~`606 prompt tokens` + `153 completion tokens` (~5,500 VNĐ / 1,000 tác vụ) |
+
+#### 2. Điểm Nhấn Kỹ Thuật Rút Ra Từ Đợt Benchmark Thực Tế
+- **Chất lượng viết lại văn bản trung tính (`Sanitization Rate = 99.19%`)**: Live Gemini xử lý mượt mà các ca khó theo ngữ cảnh mà Rule Engine tĩnh không bao phủ hết (ví dụ: chuyển cụm *"buồn vãi đái"* thành *"buồn vô cùng"* trong `TC_016`, đồng thời phân biệt chính xác từ cảm thán *"buồn quá"* trong `TC_018` mà không phạt nhầm).
+- **Khả năng tự phục hồi (`Self-Healing Dynamic Discovery`)**: Khi gặp model bị ngừng hỗ trợ (`HTTP 404`) hoặc quá tải hạn ngạch (`HTTP 429` / `HTTP 503`), cơ chế **Dynamic Model Discovery + Hybrid Fallback** tự động chuyển đổi sang `gemini-flash-lite-latest`, `gemini-3-flash-preview` và Rule Engine, đảm bảo tỷ lệ uptime 100%.
+
+#### 3. Cách Chạy Bộ Benchmark Đánh Giá Agent
+```powershell
+# 1. Chạy đánh giá với Live Google Gemini API:
+.\venv\Scripts\python.exe -X utf8 Agent\evaluate_agent.py --provider gemini --api-key "YOUR_GEMINI_API_KEY" --model gemini-3-flash-preview
+
+# 2. Chạy đánh giá ở chế độ Deterministic Offline Baseline:
+.\venv\Scripts\python.exe -X utf8 Agent\evaluate_agent.py
+```
+*(Báo cáo phân tích đầy đủ và dữ liệu kết quả chi tiết từng test case được lưu tại `Agent/EVALUATION_REPORT.md` và `Agent/evaluation_results.json`)*.
 
 ---
 
