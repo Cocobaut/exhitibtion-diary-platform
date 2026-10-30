@@ -1,5 +1,11 @@
 # Bảo Tàng Gọi Tên Cảm Xúc (The Name of Feeling Museum)
 
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/Frontend-React_18_%2B_Vite-61DAFB?style=flat-square&logo=react)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_16-336791?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
+[![Google Gemini](https://img.shields.io/badge/AI_Copilot-Google_Gemini-8E75C4?style=flat-square&logo=google)](https://deepmind.google/technologies/gemini/)
+[![Bilingual](https://img.shields.io/badge/Language-VI_%7C_EN-FFB74D?style=flat-square)](#-hỗ-trợ-song-ngữ-toàn-diện)
+
 Nền tảng web cho phép mọi người chia sẻ những lần vấp ngã, gửi thư cho chính mình trong tương lai, để lại lời động viên cho người lạ và viết nhật ký cảm xúc trong một không gian an toàn, có kiểm duyệt.
 
 Dự án được thực hiện trong khuôn khổ Community Project của học phần **Business Communication**, Trường Đại học Bách Khoa – ĐHQG TP.HCM (HCMUT).
