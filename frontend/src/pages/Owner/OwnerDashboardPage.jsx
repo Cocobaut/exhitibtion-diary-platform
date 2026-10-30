@@ -778,16 +778,16 @@ export function OwnerDashboardPage({ onNavigate }) {
           </div>
 
           {/* Users Table */}
-          <div style={{ overflowX: 'auto', width: '100%' }}>
+          <div style={{ width: '100%' }}>
             <table className="at" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th style={{ minWidth: '200px' }}>{language === 'en' ? 'User' : 'Người dùng'}</th>
-                  <th style={{ minWidth: '180px' }}>{language === 'en' ? 'Email' : 'Email'}</th>
-                  <th style={{ minWidth: '100px' }}>{language === 'en' ? 'Role' : 'Vai trò'}</th>
-                  <th style={{ minWidth: '120px' }}>{language === 'en' ? 'Status' : 'Trạng thái'}</th>
-                  <th style={{ minWidth: '110px' }}>{language === 'en' ? 'Created At' : 'Ngày tạo'}</th>
-                  <th style={{ textAlign: 'right', minWidth: '180px' }}>{language === 'en' ? 'Owner Actions' : 'Thao tác Chủ sở hữu'}</th>
+                  <th>{language === 'en' ? 'User' : 'Người dùng'}</th>
+                  <th>Email</th>
+                  <th>{language === 'en' ? 'Role' : 'Vai trò'}</th>
+                  <th>{language === 'en' ? 'Status' : 'Trạng thái'}</th>
+                  <th>{language === 'en' ? 'Joined' : 'Ngày tạo'}</th>
+                  <th style={{ textAlign: 'right' }}>{language === 'en' ? 'Actions' : 'Thao tác'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -835,7 +835,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                             </div>
                           </div>
                         </td>
-                        <td className="muted" style={{ fontSize: '13px' }}>{u.email}</td>
+                        <td className="muted" style={{ fontSize: '13px', overflowWrap: 'anywhere' }}>{u.email}</td>
                         <td>
                           <span
                             className={`badge ${
@@ -848,7 +848,11 @@ export function OwnerDashboardPage({ onNavigate }) {
                               color: roleStr === 'OWNER' ? '#fff' : undefined,
                             }}
                           >
-                            {roleStr}
+                            {roleStr === 'OWNER'
+                              ? (language === 'en' ? 'Owner' : 'Chủ sở hữu')
+                              : roleStr === 'ADMIN'
+                                ? (language === 'en' ? 'Admin' : 'Quản trị viên')
+                                : (language === 'en' ? 'User' : 'Người dùng')}
                           </span>
                         </td>
                         <td>
@@ -862,9 +866,9 @@ export function OwnerDashboardPage({ onNavigate }) {
                             </span>
                           )}
                         </td>
-                        <td className="muted" style={{ fontSize: '12.5px' }}>{formatDate(u.created_at)}</td>
+                        <td className="muted" style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>{formatDate(u.created_at)}</td>
                         <td style={{ textAlign: 'right' }}>
-                          <div className="row" style={{ gap: '6px', justifyContent: 'flex-end' }}>
+                          <div className="row" style={{ gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                             {/* Xem chi tiết */}
                             <button
                               type="button"
@@ -971,11 +975,6 @@ export function OwnerDashboardPage({ onNavigate }) {
                   ? 'Account Deletion Requests Queue from Admins'
                   : 'Hàng đợi yêu cầu xóa tài khoản từ Quản trị viên'}
               </h3>
-              <small className="muted">
-                {language === 'en'
-                  ? 'Admins cannot directly delete user accounts; they must submit an authenticated deletion request to the Owner.'
-                  : 'Quản trị viên không xóa trực tiếp được tài khoản, mà phải gửi yêu cầu có xác minh danh tính lên Chủ sở hữu.'}
-              </small>
             </div>
             {isLoadingRequests && (
               <span className="muted" style={{ fontSize: '13px' }}>
@@ -1072,14 +1071,14 @@ export function OwnerDashboardPage({ onNavigate }) {
             )}
           </div>
 
-          <div style={{ overflowX: 'auto', width: '100%' }}>
+          <div style={{ width: '100%' }}>
             <table className="at" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '150px' }}>{language === 'en' ? 'Time' : 'Thời gian'}</th>
-                  <th style={{ width: '170px' }}>{language === 'en' ? 'Performer' : 'Người thực hiện'}</th>
-                  <th style={{ width: '140px' }}>{language === 'en' ? 'Action' : 'Hành động'}</th>
-                  <th style={{ width: '120px' }}>{language === 'en' ? 'Room' : 'Phòng'}</th>
+                  <th>{language === 'en' ? 'Time' : 'Thời gian'}</th>
+                  <th>{language === 'en' ? 'By' : 'Người thực hiện'}</th>
+                  <th>{language === 'en' ? 'Action' : 'Hành động'}</th>
+                  <th>{language === 'en' ? 'Room' : 'Phòng'}</th>
                   <th>{language === 'en' ? 'Artwork / Target' : 'Tác phẩm / Đối tượng'}</th>
                   <th>{language === 'en' ? 'Audit Details' : 'Chi tiết'}</th>
                 </tr>
@@ -1547,29 +1546,13 @@ export function OwnerDashboardPage({ onNavigate }) {
             <div className="sub" style={{ marginTop: '12px', lineHeight: 1.6 }}>
               {language === 'en' ? (
                 <>
-                  This action is <b>IRREVERSIBLE</b>. All artworks, diary entries, interactions, and profile data belonging to account <b>@{deletingUser.username}</b> ({deletingUser.id}) will be permanently wiped from the database.
+                  This action is <b>IRREVERSIBLE</b>. All artworks, diary entries, interactions, and profile data belonging to account <b>@{deletingUser.username}</b> will be permanently wiped from the database.
                 </>
               ) : (
                 <>
-                  Hành động này là <b>KHÔNG THỂ KHÔI PHỤC</b>. Toàn bộ tác phẩm, trang nhật ký, lượt tương tác và thông tin của tài khoản <b>@{deletingUser.username}</b> ({deletingUser.id}) sẽ bị dọn dẹp sạch sẽ khỏi cơ sở dữ liệu.
+                  Hành động này là <b>KHÔNG THỂ KHÔI PHỤC</b>. Toàn bộ tác phẩm, trang nhật ký, lượt tương tác và thông tin của tài khoản <b>@{deletingUser.username}</b> sẽ bị xóa vĩnh viễn.
                 </>
               )}
-            </div>
-
-            <div
-              style={{
-                marginTop: '16px',
-                padding: '12px 14px',
-                background: 'rgba(196, 43, 28, 0.08)',
-                borderRadius: '8px',
-                border: '1px solid rgba(196, 43, 28, 0.25)',
-                fontSize: '13.5px',
-                color: '#8A180E',
-              }}
-            >
-              {language === 'en'
-                ? 'Only the Platform Owner has the authority to permanently delete user accounts.'
-                : 'Chỉ Chủ sở hữu mới xóa vĩnh viễn được tài khoản.'}
             </div>
 
             <div className="row" style={{ justifyContent: 'flex-end', marginTop: '24px', gap: '10px' }}>
