@@ -1,10 +1,14 @@
 # Bảo Tàng Gọi Tên Cảm Xúc (The Name of Feeling Museum)
 
+[![Live Website](https://img.shields.io/badge/Live_Website-nameoffeeling.store-D4B06A?style=flat-square&logo=googlechrome&logoColor=white)](https://nameoffeeling.store/)
+[![Microsoft Azure](https://img.shields.io/badge/Cloud-Microsoft_Azure-0078D4?style=flat-square&logo=microsoftazure&logoColor=white)](#12-triển-khai-lên-internet-bằng-microsoft-azure)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/Frontend-React_18_%2B_Vite-61DAFB?style=flat-square&logo=react)](https://react.dev/)
 [![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL_16-336791?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
 [![Google Gemini](https://img.shields.io/badge/AI_Copilot-Google_Gemini-8E75C4?style=flat-square&logo=google)](https://deepmind.google/technologies/gemini/)
-[![Bilingual](https://img.shields.io/badge/Language-VI_%7C_EN-FFB74D?style=flat-square)](#-hỗ-trợ-song-ngữ-toàn-diện)
+[![Bilingual](https://img.shields.io/badge/Language-VI_%7C_EN-FFB74D?style=flat-square)](#4-ngôn-ngữ-của-nội-dung-người-dùng)
+
+🌐 **Website chính thức:** [The Name of Feeling Museum](https://nameoffeeling.store/)
 
 Nền tảng web cho phép mọi người chia sẻ những lần vấp ngã, gửi thư cho chính mình trong tương lai, để lại lời động viên cho người lạ và viết nhật ký cảm xúc trong một không gian an toàn, có kiểm duyệt.
 
@@ -25,7 +29,7 @@ Dự án được thực hiện trong khuôn khổ Community Project của học
 9. [Chạy dự án trên máy cá nhân](#9-chạy-dự-án-trên-máy-cá-nhân)
 10. [Kiểm thử](#10-kiểm-thử)
 11. [Biến môi trường](#11-biến-môi-trường)
-12. [Triển khai production](#12-triển-khai-production)
+12. [Triển khai lên Internet bằng Microsoft Azure](#12-triển-khai-lên-internet-bằng-microsoft-azure)
 
 ---
 
@@ -172,7 +176,7 @@ flowchart LR
 | Cơ sở dữ liệu | PostgreSQL 16 |
 | Xác thực | JWT (PyJWT), bcrypt |
 | AI | Google Gemini hoặc API tương thích OpenAI, gọi qua httpx |
-| Hạ tầng | Docker Compose; Caddy cho HTTPS ở production |
+| Hạ tầng | Microsoft Azure, Docker Compose, Caddy (HTTPS tự động) |
 
 ---
 
@@ -310,12 +314,38 @@ API key của nhà cung cấp AI không đặt trong biến môi trường. Owne
 
 ---
 
-## 12. Triển khai production
+## 12. Triển khai lên Internet bằng Microsoft Azure
 
-Hướng dẫn từng bước triển khai lên máy ảo Azure for Students nằm trong [DEPLOY.md](DEPLOY.md). Tài liệu gồm tạo máy ảo, trỏ tên miền, cấu hình HTTPS, tạo tài khoản Owner, sao lưu tự động, khôi phục dữ liệu và cập nhật phiên bản.
+Toàn bộ hệ thống (**Frontend**, **Backend**, và **Database**) đã được triển khai và vận hành trực tuyến trên nền tảng đám mây **Microsoft Azure**:
+
+- 🌐 **Website chính thức:** [The Name of Feeling Museum](https://nameoffeeling.store/)
+
+### Kiến trúc triển khai trên Microsoft Azure
+
+```mermaid
+flowchart LR
+    User["Người dùng Internet<br/>https://nameoffeeling.store"] -->|"HTTPS (443)"| AzureCloud["Microsoft Azure Cloud (Southeast Asia)"]
+    subgraph AzureCloud["Hạ tầng Microsoft Azure"]
+        Caddy["Caddy Reverse Proxy<br/>(Tự động cấp SSL/TLS)"] --> FE["Frontend (Nginx + React 18 SPA)"]
+        FE -->|"/api/v1, /static"| BE["Backend (FastAPI / Python 3.12)"]
+        BE --> DB[("Database (PostgreSQL 16)<br/>Azure Standard SSD")]
+        BE --> Media[("Persistent Volume<br/>(Uploads & Media)")]
+    end
+```
+
+| Tầng hệ thống | Dịch vụ trên Microsoft Azure | Vai trò vận hành |
+| :--- | :--- | :--- |
+| **Hạ tầng Đám mây & Mạng** | **Microsoft Azure Virtual Machine** (`Ubuntu Server 24.04 LTS`, Region *Southeast Asia*) + **Azure Static Public IP** & **Network Security Group (NSG)** | Máy chủ đám mây lưu trữ toàn bộ cụm dịch vụ; chỉ mở cổng `80/443` ra Internet với chứng chỉ HTTPS tự động (Caddy) và cô lập hoàn toàn mạng nội bộ |
+| **Frontend** | **React 18 + Vite (Nginx Container)** trên Azure | Phục vụ giao diện [The Name of Feeling Museum](https://nameoffeeling.store/) tốc độ cao (nén gzip, cache tài nguyên tĩnh) và điều phối request `/api`, `/static` vào mạng nội bộ |
+| **Backend** | **FastAPI + Uvicorn (Python 3.12 Container)** trên Azure | Xử lý toàn bộ REST API, xác thực JWT, kiểm duyệt & sinh ảnh bằng AI Copilot, dịch thuật song ngữ và gửi email SMTP |
+| **Database & Lưu trữ** | **PostgreSQL 16 + Azure Standard SSD Managed Disk** | Lưu trữ bền vững toàn bộ cơ sở dữ liệu người dùng, tác phẩm, nhật ký, thông báo và khóa AI mã hóa trên ổ đĩa SSD của Microsoft Azure kèm cơ chế sao lưu định kỳ |
+
+### Lệnh khởi chạy Production trên Microsoft Azure
+
+Hướng dẫn chi tiết từng bước (khởi tạo máy ảo trên Microsoft Azure, trỏ tên miền `nameoffeeling.store`, cấu hình HTTPS, tạo tài khoản Owner, sao lưu tự động và cập nhật phiên bản) nằm trong [DEPLOY.md](DEPLOY.md).
 
 ```bash
-cp .env.production.example .env     # điền đầy đủ
+cp .env.production.example .env     # điền DOMAIN=nameoffeeling.store và các biến bảo mật
 docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml exec backend python -m scripts.create_owner
 ```
