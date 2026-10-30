@@ -164,10 +164,10 @@ class AiModerationService:
             },
         }
 
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=20.0, headers={"x-goog-api-key": api_key.strip()}) as client:
             # 1. First attempt: Use the model configured by Owner
             for m in candidates:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key.strip()}"
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent"
                 try:
                     resp = await client.post(url, json=payload)
                     if resp.status_code == 200:
@@ -195,7 +195,7 @@ class AiModerationService:
 
             # 2. Dynamic discovery fallback: query provider for actual models supported by this specific API key
             try:
-                models_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key.strip()}"
+                models_url = f"https://generativelanguage.googleapis.com/v1beta/models"
                 models_resp = await client.get(models_url)
                 if models_resp.status_code == 200:
                     models_data = models_resp.json().get("models", [])
@@ -208,7 +208,7 @@ class AiModerationService:
                         and m.get("name", "").replace("models/", "") not in candidates
                     ]
                     for dyn_m in dynamic_models[:5]:
-                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{dyn_m}:generateContent?key={api_key.strip()}"
+                        url = f"https://generativelanguage.googleapis.com/v1beta/models/{dyn_m}:generateContent"
                         try:
                             resp = await client.post(url, json=payload)
                             if resp.status_code == 200:

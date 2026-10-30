@@ -65,8 +65,8 @@ class AiDiscoveryService:
 
     @classmethod
     async def _discover_gemini_models(cls, api_key: str, task_type: str) -> DiscoverModelsData:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key.strip()}"
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models"
+        async with httpx.AsyncClient(timeout=10.0, headers={"x-goog-api-key": api_key.strip()}) as client:
             resp = await client.get(url)
 
         if resp.status_code != 200:

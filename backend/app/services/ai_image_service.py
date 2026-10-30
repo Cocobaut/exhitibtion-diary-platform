@@ -104,13 +104,13 @@ class AiImageService:
     @classmethod
     async def _generate_gemini_imagen(cls, prompt: str, api_key: str, model_name: str) -> Optional[bytes]:
         # 1. Try Google Imagen predict endpoint
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name or 'imagen-3.0-generate-002'}:predict?key={api_key.strip()}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name or 'imagen-3.0-generate-002'}:predict"
         payload = {
             "instances": [{"prompt": prompt}],
             "parameters": {"sampleCount": 1, "aspectRatio": "1:1"},
         }
         try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
+            async with httpx.AsyncClient(timeout=20.0, headers={"x-goog-api-key": api_key.strip()}) as client:
                 resp = await client.post(url, json=payload)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -131,8 +131,8 @@ class AiImageService:
         # Dynamically discover models supported by this key
         candidates = []
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                m_resp = await client.get(f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key.strip()}")
+            async with httpx.AsyncClient(timeout=10.0, headers={"x-goog-api-key": api_key.strip()}) as client:
+                m_resp = await client.get(f"https://generativelanguage.googleapis.com/v1beta/models")
                 if m_resp.status_code == 200:
                     models_data = m_resp.json().get("models", [])
                     candidates = [
@@ -148,9 +148,9 @@ class AiImageService:
             "Use viewBox='0 0 1024 1024', linearGradient / radialGradient, harmonious rich colors, and delicate artistic shapes. "
             "Do NOT include any markdown code blocks, backticks, or text outside the <svg> tags."
         )
-        async with httpx.AsyncClient(timeout=25.0) as client:
+        async with httpx.AsyncClient(timeout=25.0, headers={"x-goog-api-key": api_key.strip()}) as client:
             for m in candidates:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent?key={api_key.strip()}"
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent"
                 payload = {"contents": [{"parts": [{"text": instruction}]}]}
                 try:
                     resp = await client.post(url, json=payload)

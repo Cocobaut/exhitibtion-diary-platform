@@ -2,9 +2,14 @@ import React, { useState } from 'react';
 import { Modal } from '../../components/common/Modal';
 import { authService } from '../../services/authService';
 
-export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
+/**
+ * Quên mật khẩu, 2 bước:
+ * - Không có resetToken: nhập email để nhận link đặt lại.
+ * - Có resetToken (mở từ link trong email): nhập mật khẩu mới.
+ */
+export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogin, resetToken }) {
+  const isResetStep = Boolean(resetToken);
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     new_password: '',
     confirm_password: '',
@@ -28,15 +33,15 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
 
   const validateForm = () => {
     const errors = {};
-    if (!formData.username.trim()) {
-      errors.username = 'Vui lòng nhập tên đăng nhập';
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email.trim()) {
-      errors.email = 'Vui lòng nhập email đăng ký';
-    } else if (!emailRegex.test(formData.email.trim())) {
-      errors.email = 'Email không hợp lệ';
+    if (!isResetStep) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!formData.email.trim()) {
+        errors.email = 'Vui lòng nhập email đăng ký';
+      } else if (!emailRegex.test(formData.email.trim())) {
+        errors.email = 'Email không hợp lệ';
+      }
+      setFieldErrors(errors);
+      return Object.keys(errors).length === 0;
     }
 
     if (!formData.new_password) {
@@ -49,7 +54,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
       const hasDigit = /[0-9]/.test(formData.new_password);
       const hasSpecial = /[^A-Za-z0-9]/.test(formData.new_password);
       if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
-        errors.new_password = 'Cần đủ chữ hoa, chữ thường, chữ số và ký tự đặc biệt';
+        errors.new_password = 'Cần có chữ hoa, chữ thường, số và ký tự đặc biệt (như @ # $)';
       }
     }
 
@@ -70,29 +75,32 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
     setSuccessMsg('');
 
     try {
-      const payload = {
-        username: formData.username.trim(),
-        email: formData.email.trim(),
-        new_password: formData.new_password,
-      };
+      if (!isResetStep) {
+        const res = await authService.forgotPassword({ email: formData.email.trim() });
+        setIsLoading(false);
+        setSuccessMsg(res?.message || 'Nếu email này đã đăng ký, bạn sẽ nhận được link đặt lại mật khẩu trong vài phút.');
+        return;
+      }
 
-      const res = await authService.changePassword(payload);
+      const res = await authService.resetPassword({ token: resetToken, new_password: formData.new_password });
       setIsLoading(false);
       setSuccessMsg(res?.message || 'Đổi mật khẩu thành công. Mời bạn đăng nhập bằng mật khẩu mới.');
 
       setTimeout(() => {
-        onSuccess && onSuccess({ username: formData.username.trim() });
+        onSuccess && onSuccess();
       }, 1500);
     } catch (err) {
       setIsLoading(false);
-      if (err.errorCode === 'INVALID_CREDENTIALS') {
-        setErrorMsg('Tài khoản hoặc email không chính xác');
+      if (err.errorCode === 'INVALID_RESET_TOKEN') {
+        setErrorMsg('Link đã hết hạn hoặc đã được dùng. Hãy yêu cầu link mới nhé.');
+      } else if (err.errorCode === 'TOO_MANY_ATTEMPTS') {
+        setErrorMsg('Bạn đã yêu cầu quá nhiều lần. Hãy thử lại sau ít phút.');
       } else if (err.errorCode === 'ACCOUNT_LOCKED') {
-        setErrorMsg('Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên');
+        setErrorMsg('Tài khoản đang bị khoá. Hãy liên hệ ban quản trị.');
       } else if (err.errorCode === 'WEAK_PASSWORD') {
-        setErrorMsg('Mật khẩu mới cần tối thiểu 8 ký tự gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt');
+        setErrorMsg('Mật khẩu cần ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt');
       } else {
-        setErrorMsg(err.message || 'Đã có lỗi xảy ra khi khôi phục mật khẩu.');
+        setErrorMsg(err.message || 'Có lỗi xảy ra, bạn thử lại nhé.');
       }
     }
   };
@@ -101,10 +109,10 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
     <Modal isOpen={isOpen} onClose={onClose} style={{ width: '460px', maxWidth: '95vw' }}>
       <div style={{ textAlign: 'center', marginBottom: '18px' }}>
         <h2 className="serif" style={{ fontSize: '28px', color: 'var(--ink)' }}>
-          Khôi phục mật khẩu
+          Đặt lại mật khẩu
         </h2>
         <div className="hand" style={{ fontSize: '18px', color: 'var(--ink2)', marginTop: '4px' }}>
-          xác nhận thông tin để đặt lại mật khẩu mới
+          {isResetStep ? 'chọn một mật khẩu mới' : 'nhập email bạn đã dùng để đăng ký'}
         </div>
       </div>
 
@@ -143,23 +151,8 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
       )}
 
       <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
-        <div>
-          <div className="fieldl">
-            <span>Tên đăng nhập *</span>
-            {fieldErrors.username && (
-              <span style={{ color: 'var(--acc)', fontSize: '12px' }}>{fieldErrors.username}</span>
-            )}
-          </div>
-          <input
-            className="inp"
-            placeholder="ví dụ: linh_ng"
-            value={formData.username}
-            onChange={(e) => handleChange('username', e.target.value)}
-            disabled={isLoading || Boolean(successMsg)}
-            autoFocus
-          />
-        </div>
-
+        {!isResetStep && (
+          <>
         <div>
           <div className="fieldl">
             <span>Email đã đăng ký *</span>
@@ -174,9 +167,15 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
             value={formData.email}
             onChange={(e) => handleChange('email', e.target.value)}
             disabled={isLoading || Boolean(successMsg)}
+            autoFocus
           />
         </div>
 
+          </>
+        )}
+
+        {isResetStep && (
+          <>
         <div>
           <div className="fieldl">
             <span>Mật khẩu mới *</span>
@@ -190,10 +189,11 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
           <input
             type={showPassword ? 'text' : 'password'}
             className="inp"
-            placeholder="Tối thiểu 8 ký tự (Hoa, Thường, Số, Ký tự đặc biệt)"
+            placeholder="Ít nhất 8 ký tự, ví dụ: Linh@2026"
             value={formData.new_password}
             onChange={(e) => handleChange('new_password', e.target.value)}
             disabled={isLoading || Boolean(successMsg)}
+            autoFocus
           />
           {fieldErrors.new_password && (
             <div style={{ color: 'var(--acc)', fontSize: '12px', marginTop: '4px' }}>
@@ -219,6 +219,9 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
           />
         </div>
 
+          </>
+        )}
+
         <div style={{ marginTop: '22px' }}>
           <button
             type="submit"
@@ -226,7 +229,9 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
             style={{ width: '100%', padding: '12px' }}
             disabled={isLoading || Boolean(successMsg)}
           >
-            {isLoading ? 'Đang cập nhật mật khẩu...' : 'Đặt lại mật khẩu'}
+            {isLoading
+              ? (isResetStep ? 'Đang lưu...' : 'Đang gửi...')
+              : (isResetStep ? 'Lưu mật khẩu mới' : 'Gửi link đặt lại')}
           </button>
         </div>
       </form>

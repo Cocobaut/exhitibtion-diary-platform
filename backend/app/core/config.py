@@ -1,6 +1,10 @@
-from typing import List, Union
-from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+import json
+from typing import Annotated, List, Union
+from pydantic import field_validator, model_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+
+DEV_SECRET_KEY = "super-secret-development-key-change-in-production-exhibition-diary-2026"
 
 
 class Settings(BaseSettings):
@@ -9,7 +13,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = [
+    BACKEND_CORS_ORIGINS: Annotated[List[str], NoDecode] = [
         "http://localhost:3000",
         "http://localhost:5173",
         "http://localhost:8000",
@@ -18,14 +22,17 @@ class Settings(BaseSettings):
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
-        if isinstance(v, str) and not v.startswith("["):
+        # Chấp nhận cả dạng JSON '["a","b"]' lẫn dạng 'a,b'
+        if isinstance(v, str):
+            if v.strip().startswith("["):
+                return json.loads(v)
             return [i.strip() for i in v.split(",") if i.strip()]
-        elif isinstance(v, (list, str)):
+        if isinstance(v, list):
             return v
         return []
 
     # Security & JWT
-    SECRET_KEY: str = "super-secret-development-key-change-in-production-exhibition-diary-2026"
+    SECRET_KEY: str = DEV_SECRET_KEY
     ALGORITHM: str = "HS256"
     JWT_EXPIRE_SECONDS: int = 86400  # 24 hours as specified in API spec
     PASSWORD_RESET_EXPIRE_MINUTES: int = 15
@@ -35,7 +42,8 @@ class Settings(BaseSettings):
     DB_ECHO: bool = False
 
     # Frontend URLs
-    FRONTEND_RESET_URL: str = "http://localhost:3000/reset-password"
+    # Link trong email đặt lại mật khẩu: <FRONTEND_RESET_URL>?reset_token=...
+    FRONTEND_RESET_URL: str = "http://localhost:3000/"
 
     # File Upload & Storage
     STORAGE_BACKEND: str = "local"  # "local" or "s3"
@@ -62,6 +70,13 @@ class Settings(BaseSettings):
         case_sensitive=True,
         extra="ignore"
     )
+
+    @model_validator(mode="after")
+    def require_real_secret_outside_debug(self) -> "Settings":
+        # SECRET_KEY ký JWT và mã hóa API key AI: không được dùng key mặc định khi DEBUG=False
+        if not self.DEBUG and self.SECRET_KEY == DEV_SECRET_KEY:
+            raise ValueError("SECRET_KEY mặc định chỉ dùng cho môi trường dev; hãy đặt SECRET_KEY riêng khi DEBUG=False")
+        return self
 
 
 settings = Settings()

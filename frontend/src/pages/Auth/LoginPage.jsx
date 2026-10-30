@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Logo } from '../../components/common/Logo';
 import { LobbyScene } from '../Lobby/LobbyScene';
 import { Icon } from '../../components/common/Icons';
@@ -21,6 +21,19 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
   // Modals
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isForgotOpen, setIsForgotOpen] = useState(false);
+  const [resetToken, setResetToken] = useState('');
+
+  // Mở thẳng bước đặt mật khẩu mới khi vào từ link trong email (?reset_token=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('reset_token');
+    if (!token) return;
+    setResetToken(token);
+    setIsForgotOpen(true);
+    params.delete('reset_token');
+    const query = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (query ? `?${query}` : ''));
+  }, []);
 
   const handleGuestEntry = () => {
     if (enterGuestMode) {
@@ -72,14 +85,14 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
         setErrorMsg(
           language === 'en'
             ? 'Your account has been locked. Please contact an administrator.'
-            : 'Tài khoản của bạn đang bị khóa. Vui lòng liên hệ quản trị viên.'
+            : 'Tài khoản đang bị khoá. Hãy liên hệ ban quản trị.'
         );
       } else {
         setErrorMsg(
           err.message ||
             (language === 'en'
               ? 'An error occurred. Please try again.'
-              : 'Đã có lỗi xảy ra. Vui lòng thử lại.')
+              : 'Có lỗi xảy ra, bạn thử lại nhé.')
         );
       }
     }
@@ -93,13 +106,13 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
     setInfoMsg(
       language === 'en'
         ? 'Account created successfully! Please enter your password to enter the museum.'
-        : 'Tài khoản tạo thành công. Mời bạn nhập mật khẩu để bước vào bảo tàng.'
+        : 'Tạo tài khoản xong rồi! Nhập mật khẩu để vào nhé.'
     );
   };
 
-  const handleForgotSuccess = ({ username }) => {
+  const handleForgotSuccess = () => {
     setIsForgotOpen(false);
-    setAccount(username);
+    setResetToken('');
     setPassword('');
     setErrorMsg('');
     setInfoMsg(
@@ -377,7 +390,7 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
             >
               <span>
                 {isLoading
-                  ? (language === 'en' ? 'Opening museum doors...' : 'Đang mở cánh cửa bảo tàng...')
+                  ? (language === 'en' ? 'Signing in...' : 'Đang vào...')
                   : (language === 'en' ? 'Enter the museum' : 'Bước vào bảo tàng')}
               </span>
               {!isLoading && <span>→</span>}
@@ -401,7 +414,7 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
               background: 'transparent',
             }}
           >
-            {language === 'en' ? '✦ Wander as Guest' : 'Dạo bước tham quan (Khách vãng lai)'}
+            {language === 'en' ? '✦ Wander as Guest' : 'Xem thử, không cần đăng nhập'}
           </button>
         </div>
 
@@ -415,7 +428,7 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
               setIsRegisterOpen(true);
             }}
           >
-            {language === 'en' ? 'Sign up' : 'Đăng ký thành viên'}
+            {language === 'en' ? 'Sign up' : 'Đăng ký'}
           </b>
         </div>
       </div>
@@ -431,9 +444,10 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
       {/* Modal Quên / Khôi phục mật khẩu */}
       <ForgotPasswordModal
         isOpen={isForgotOpen}
-        onClose={() => setIsForgotOpen(false)}
+        resetToken={resetToken}
+        onClose={() => { setIsForgotOpen(false); setResetToken(''); }}
         onSuccess={handleForgotSuccess}
-        onSwitchToLogin={() => setIsForgotOpen(false)}
+        onSwitchToLogin={() => { setIsForgotOpen(false); setResetToken(''); }}
       />
     </div>
   );

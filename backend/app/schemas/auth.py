@@ -50,12 +50,8 @@ class LoginRequest(BaseModel):
         return v.strip()
 
 
-class ChangePasswordRequest(BaseModel):
-    username: str = Field(..., min_length=1, max_length=50)
+class ForgotPasswordRequest(BaseModel):
     email: EmailStr = Field(..., max_length=255)
-    new_password: str = Field(..., min_length=1, max_length=128)
-
-    model_config = ConfigDict(extra="ignore")
 
     @field_validator("email", mode="before")
     @classmethod
@@ -64,10 +60,10 @@ class ChangePasswordRequest(BaseModel):
             return v.strip().lower()
         return v
 
-    @field_validator("username")
-    @classmethod
-    def normalize_username(cls, v: str) -> str:
-        return v.strip()
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=20, max_length=200)
+    new_password: str = Field(..., min_length=1, max_length=128)
 
     @field_validator("new_password")
     @classmethod

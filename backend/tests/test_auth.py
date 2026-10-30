@@ -19,8 +19,16 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_db
 from app.core.security import hash_password, verify_password
+from app.core.rate_limit import (
+    login_account_limiter,
+    login_ip_limiter,
+    reset_email_limiter,
+    reset_ip_limiter,
+)
 from app.main import app
+from app.models.password_reset_token import PasswordResetToken
 from app.models.revoked_token import RevokedToken
+import app.services.auth_service as auth_service_module
 from app.models.user import User, UserRole
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -43,9 +51,13 @@ TestingSessionLocal = async_sessionmaker(
 @asynccontextmanager
 async def setup_test_context():
     """Sets up SQLite tables, seeds default test users, and yields (client, session)."""
+    for limiter in (login_account_limiter, login_ip_limiter, reset_email_limiter, reset_ip_limiter):
+        limiter.clear()
+
     async with test_engine.begin() as conn:
         await conn.run_sync(User.__table__.create)
         await conn.run_sync(RevokedToken.__table__.create)
+        await conn.run_sync(PasswordResetToken.__table__.create)
 
     async with TestingSessionLocal() as session:
         # Seed users
@@ -88,6 +100,7 @@ async def setup_test_context():
         app.dependency_overrides.clear()
 
     async with test_engine.begin() as conn:
+        await conn.run_sync(PasswordResetToken.__table__.drop)
         await conn.run_sync(RevokedToken.__table__.drop)
         await conn.run_sync(User.__table__.drop)
 
@@ -308,98 +321,115 @@ def test_08_login_locked_user():
     asyncio.run(run())
 
 
-def test_09_change_password_invalid_info():
-    """Test 9: Change-password với username hoặc email không tồn tại / không khớp → 400 INVALID_CREDENTIALS."""
+def _capture_reset_emails(monkeypatch):
+    """Thay hàm gửi email bằng danh sách để lấy token trong test."""
+    sent = []
+
+    async def fake_send_email(to, subject, body):
+        sent.append({"to": to, "body": body})
+
+    monkeypatch.setattr(auth_service_module, "send_email", fake_send_email)
+    return sent
+
+
+def _token_from(body: str) -> str:
+    return body.split("reset_token=", 1)[1].split()[0]
+
+
+def test_09_forgot_password_does_not_reveal_accounts(monkeypatch):
+    """Test 9: Email không tồn tại và email có thật nhận cùng một phản hồi; chỉ email thật nhận thư."""
+    sent = _capture_reset_emails(monkeypatch)
+
     async def run():
         async with setup_test_context() as (client, session):
-            # Username không khớp
-            res1 = await client.post("/api/v1/auth/change-password", json={
-                "username": "wrong_username",
-                "email": "hoanghon@example.com",
-                "new_password": "NewStrongPassword123@"
-            })
-            assert res1.status_code == 400
-            err1 = res1.json()
-            assert err1["error_code"] == "INVALID_CREDENTIALS"
-            assert err1["message"] == "Tài khoản hoặc email không chính xác"
+            res_unknown = await client.post("/api/v1/auth/forgot-password", json={"email": "nobody@example.com"})
+            res_known = await client.post("/api/v1/auth/forgot-password", json={"email": "HoangHon@example.com"})
+            assert res_unknown.status_code == res_known.status_code == 200
+            assert res_unknown.json()["message"] == res_known.json()["message"]
+            assert [m["to"] for m in sent] == ["hoanghon@example.com"]
 
-            # Email không khớp
-            res2 = await client.post("/api/v1/auth/change-password", json={
-                "username": "hoanghon_01",
-                "email": "wrong_mail@example.com",
-                "new_password": "NewStrongPassword123@"
+            # Không còn cách đổi mật khẩu chỉ bằng username + email
+            legacy = await client.post("/api/v1/auth/change-password", json={
+                "username": "hoanghon_01", "email": "hoanghon@example.com", "new_password": "Hacked123@x",
             })
-            assert res2.status_code == 400
-            err2 = res2.json()
-            assert err2["error_code"] == "INVALID_CREDENTIALS"
-            assert err2["message"] == "Tài khoản hoặc email không chính xác"
+            assert legacy.status_code == 404
 
     asyncio.run(run())
 
 
-def test_10_change_password_weak_password():
-    """Test 10: Change-password với mật khẩu mới quá yếu → 400 WEAK_PASSWORD."""
+def test_10_reset_password_weak_and_invalid_token(monkeypatch):
+    """Test 10: Token sai → 400 INVALID_RESET_TOKEN; mật khẩu yếu → 400 WEAK_PASSWORD."""
+    sent = _capture_reset_emails(monkeypatch)
+
     async def run():
         async with setup_test_context() as (client, session):
-            res = await client.post("/api/v1/auth/change-password", json={
-                "username": "hoanghon_01",
-                "email": "hoanghon@example.com",
-                "new_password": "short"
+            bad = await client.post("/api/v1/auth/reset-password", json={
+                "token": "x" * 43, "new_password": "BrandNewPassword2026@",
             })
-            assert res.status_code == 400
-            err = res.json()
-            assert err["error_code"] == "WEAK_PASSWORD"
-            assert "Mật khẩu quá yếu" in err["message"]
+            assert bad.status_code == 400
+            assert bad.json()["error_code"] == "INVALID_RESET_TOKEN"
+
+            await client.post("/api/v1/auth/forgot-password", json={"email": "hoanghon@example.com"})
+            weak = await client.post("/api/v1/auth/reset-password", json={
+                "token": _token_from(sent[0]["body"]), "new_password": "short",
+            })
+            assert weak.status_code == 400
+            assert weak.json()["error_code"] == "WEAK_PASSWORD"
 
     asyncio.run(run())
 
 
-def test_11_change_password_success_and_relogin():
-    """Test 11: Change-password thành công → 200; sau đó đăng nhập bằng mật khẩu mới thành công, mật khẩu cũ thất bại."""
+def test_11_reset_password_success_once_and_relogin(monkeypatch):
+    """Test 11: Link hợp lệ đổi được mật khẩu đúng một lần; đăng nhập bằng mật khẩu mới thành công."""
+    sent = _capture_reset_emails(monkeypatch)
+
     async def run():
         async with setup_test_context() as (client, session):
-            # Đổi mật khẩu
-            res_change = await client.post("/api/v1/auth/change-password", json={
-                "username": "hoanghon_01",
-                "email": "hoanghon@example.com",
-                "new_password": "BrandNewPassword2026@"
-            })
-            assert res_change.status_code == 200
-            data_change = res_change.json()
-            assert data_change["success"] is True
-            assert data_change["message"] == "Đổi mật khẩu thành công. Vui lòng đăng nhập lại với mật khẩu mới."
+            await client.post("/api/v1/auth/forgot-password", json={"email": "hoanghon@example.com"})
+            token = _token_from(sent[0]["body"])
 
-            # Mật khẩu cũ thất bại 401
+            res = await client.post("/api/v1/auth/reset-password", json={
+                "token": token, "new_password": "BrandNewPassword2026@",
+            })
+            assert res.status_code == 200, res.text
+
+            reuse = await client.post("/api/v1/auth/reset-password", json={
+                "token": token, "new_password": "AnotherPassword2026@",
+            })
+            assert reuse.status_code == 400
+            assert reuse.json()["error_code"] == "INVALID_RESET_TOKEN"
+
             res_old = await client.post("/api/v1/auth/login", json={
-                "account": "hoanghon_01",
-                "password": "StrongPassword123@"
+                "account": "hoanghon_01", "password": "StrongPassword123@",
             })
             assert res_old.status_code == 401
-
-            # Mật khẩu mới thành công 200
             res_new = await client.post("/api/v1/auth/login", json={
-                "account": "hoanghon_01",
-                "password": "BrandNewPassword2026@"
+                "account": "hoanghon_01", "password": "BrandNewPassword2026@",
             })
             assert res_new.status_code == 200
-            assert res_new.json()["success"] is True
 
     asyncio.run(run())
 
 
-def test_12_change_password_locked_user():
-    """Test 12: Change-password với user bị khoá (is_active = FALSE) → 403 ACCOUNT_LOCKED."""
+def test_12_login_rate_limited_and_locked_user_gets_no_email(monkeypatch):
+    """Test 12: Sai mật khẩu 5 lần → lần sau 429; tài khoản bị khoá không nhận email đặt lại."""
+    sent = _capture_reset_emails(monkeypatch)
+
     async def run():
         async with setup_test_context() as (client, session):
-            res = await client.post("/api/v1/auth/change-password", json={
-                "username": "locked_user",
-                "email": "locked@example.com",
-                "new_password": "NewLockedPassword123@"
+            for _ in range(5):
+                res = await client.post("/api/v1/auth/login", json={
+                    "account": "hoanghon_01", "password": "WrongPassword123@",
+                })
+                assert res.status_code == 401
+            blocked = await client.post("/api/v1/auth/login", json={
+                "account": "hoanghon_01", "password": "StrongPassword123@",
             })
-            assert res.status_code == 403
-            err = res.json()
-            assert err["error_code"] == "ACCOUNT_LOCKED"
-            assert err["message"] == "Tài khoản của bạn đang bị khóa"
+            assert blocked.status_code == 429
+            assert blocked.json()["error_code"] == "TOO_MANY_ATTEMPTS"
+
+            await client.post("/api/v1/auth/forgot-password", json={"email": "locked@example.com"})
+            assert sent == []
 
     asyncio.run(run())
 

@@ -32,16 +32,19 @@ export const authService = {
   },
 
   /**
-   * 1.3 Đổi / Khôi phục mật khẩu trực tiếp
-   * @param {Object} data { username, email, new_password }
-   * @returns {Promise<Object>} { success, message }
+   * 1.3 Gửi email chứa link đặt lại mật khẩu
+   * @param {Object} data { email }
    */
-  async changePassword({ username, email, new_password }) {
-    return await apiClient.post('/auth/change-password', {
-      username: username?.trim(),
-      email: email?.trim(),
-      new_password,
-    });
+  async forgotPassword({ email }) {
+    return await apiClient.post('/auth/forgot-password', { email: email?.trim() });
+  },
+
+  /**
+   * 1.4 Đặt mật khẩu mới bằng token trong link email
+   * @param {Object} data { token, new_password }
+   */
+  async resetPassword({ token, new_password }) {
+    return await apiClient.post('/auth/reset-password', { token, new_password });
   },
 
   /**

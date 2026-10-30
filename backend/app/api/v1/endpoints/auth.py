@@ -1,12 +1,19 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
 from app.core.config import settings
+from app.core.exceptions import AppException
+from app.core.rate_limit import (
+    login_account_limiter,
+    login_ip_limiter,
+    reset_email_limiter,
+    reset_ip_limiter,
+)
 from app.models.user import User
 from app.schemas.auth import (
-    ChangePasswordRequest,
+    ForgotPasswordRequest,
     LoginRequest,
     LoginResponse,
     LoginResponseData,
@@ -14,11 +21,17 @@ from app.schemas.auth import (
     RegisterRequest,
     RegisterResponse,
     RegisterResponseData,
+    ResetPasswordRequest,
     UserAuthProfile,
 )
 from app.services.auth_service import AuthService
 
 router = APIRouter()
+
+
+def _client_ip(request: Request) -> str:
+    # uvicorn --proxy-headers đã thay client bằng IP thật từ X-Forwarded-For của nginx
+    return request.client.host if request.client else "unknown"
 
 
 @router.post(
@@ -50,12 +63,28 @@ async def register(
 )
 async def login(
     req: LoginRequest,
+    request: Request,
     db: AsyncSession = Depends(deps.get_db),
 ) -> LoginResponse:
     """1.2 Đăng nhập bằng tài khoản (username hoặc email) và mật khẩu.
     Trả về access token JWT (thời hạn 24h = 86400s) và thông tin cơ bản người dùng trong khóa `body`.
     """
-    user, access_token, message = await AuthService.login(db, req=req)
+    ip = _client_ip(request)
+    account_key = f"{ip}|{req.account.lower()}"
+    if login_ip_limiter.is_blocked(ip) or login_account_limiter.is_blocked(account_key):
+        raise AppException(
+            status_code=429,
+            error_code="TOO_MANY_ATTEMPTS",
+            message="Bạn đã thử sai quá nhiều lần. Hãy đợi 15 phút rồi thử lại."
+        )
+    try:
+        user, access_token, message = await AuthService.login(db, req=req)
+    except AppException as exc:
+        if exc.error_code == "INVALID_CREDENTIALS":
+            login_ip_limiter.hit(ip)
+            login_account_limiter.hit(account_key)
+        raise
+    login_account_limiter.reset(account_key)
     return LoginResponse(
         success=True,
         message=message,
@@ -69,35 +98,49 @@ async def login(
 
 
 @router.post(
-    "/change-password",
+    "/forgot-password",
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
-    summary="Đổi / Khôi phục mật khẩu trực tiếp"
+    summary="Gửi email chứa link đặt lại mật khẩu"
 )
-async def change_password(
-    req: ChangePasswordRequest,
+async def forgot_password(
+    req: ForgotPasswordRequest,
+    request: Request,
     db: AsyncSession = Depends(deps.get_db),
 ) -> MessageResponse:
-    """1.3 Đổi / Khôi phục mật khẩu trực tiếp bằng cách xác thực cặp username và email."""
-    await AuthService.change_password(db, req=req)
+    """1.3 Gửi link đặt lại mật khẩu. Phản hồi giống nhau dù email có tồn tại hay không."""
+    ip = _client_ip(request)
+    if reset_ip_limiter.is_blocked(ip) or reset_email_limiter.is_blocked(req.email):
+        raise AppException(
+            status_code=429,
+            error_code="TOO_MANY_ATTEMPTS",
+            message="Bạn đã yêu cầu quá nhiều lần. Hãy thử lại sau ít phút."
+        )
+    reset_ip_limiter.hit(ip)
+    reset_email_limiter.hit(req.email)
+    await AuthService.request_password_reset(db, req.email)
     return MessageResponse(
         success=True,
-        message="Đổi mật khẩu thành công. Vui lòng đăng nhập lại với mật khẩu mới."
+        message="Nếu email này đã đăng ký, bạn sẽ nhận được link đặt lại mật khẩu trong vài phút."
     )
 
 
 @router.post(
-    "/forgot-password",
+    "/reset-password",
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
-    include_in_schema=False
+    summary="Đặt mật khẩu mới bằng link trong email"
 )
-async def forgot_password_alias(
-    req: ChangePasswordRequest,
+async def reset_password(
+    req: ResetPasswordRequest,
     db: AsyncSession = Depends(deps.get_db),
 ) -> MessageResponse:
-    """Alias cho /change-password để tương thích ngược."""
-    return await change_password(req=req, db=db)
+    """1.4 Đặt mật khẩu mới bằng token một lần dùng."""
+    await AuthService.reset_password(db, req=req)
+    return MessageResponse(
+        success=True,
+        message="Đổi mật khẩu thành công. Vui lòng đăng nhập lại với mật khẩu mới."
+    )
 
 
 @router.post(

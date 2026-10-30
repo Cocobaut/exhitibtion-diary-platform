@@ -1,5 +1,6 @@
 from app.schemas.auth import (
-    ChangePasswordRequest,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
     LoginRequest,
     LoginResponse,
     LoginResponseData,
@@ -53,7 +54,8 @@ from app.schemas.notification import (
 __all__ = [
     "RegisterRequest",
     "LoginRequest",
-    "ChangePasswordRequest",
+    "ForgotPasswordRequest",
+    "ResetPasswordRequest",
     "UserAuthProfile",
     "RegisterResponseData",
     "RegisterResponse",

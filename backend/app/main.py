@@ -47,9 +47,10 @@ app = FastAPI(
         "Được xây dựng theo đặc tả kỹ thuật API_Specification.pdf & Database_Specification.pdf."
     ),
     version="1.0.0",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    # Trang tài liệu API chỉ mở ở môi trường dev
+    openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.DEBUG else None,
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
     lifespan=lifespan,
 )
 
@@ -83,7 +84,7 @@ async def root():
     return {
         "status": "healthy",
         "project": settings.PROJECT_NAME,
-        "docs_url": "/docs",
+        "docs_url": "/docs" if settings.DEBUG else None,
         "api_v1": settings.API_V1_STR,
     }
 
