@@ -5,6 +5,7 @@ from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.core.language import detect_language
 from app.core.config import settings
 from app.core.constants import ROOM2_REACTIONS, ROOM_HOPE
 from app.core.exceptions import AppException
@@ -384,10 +385,10 @@ class Room2Service:
             status_val = "APPROVED"
             msg = "Lồng đèn hy vọng đã được thả bay lên bầu trời riêng của bạn!"
 
-        lang = getattr(request, "original_language", "vi") or "vi"
         clean_title = request.title.strip()
         clean_short = request.short_content.strip()
         clean_content = request.content.strip()
+        lang = detect_language(clean_title, clean_content, fallback=getattr(request, "original_language", "vi") or "vi")
 
         new_lantern = Artwork(
             user_id=current_user.id,

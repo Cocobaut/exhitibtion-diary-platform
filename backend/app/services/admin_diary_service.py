@@ -126,25 +126,20 @@ class AdminDiaryService:
 
         # Validation & update bilingual content if payload provided
         if payload:
-            has_vi = bool(payload.title_vi or payload.content_vi)
-            has_en = bool(payload.title_en or payload.content_en)
-            if (has_vi and not has_en) or (has_en and not has_vi):
-                raise AppException(
-                    status_code=400,
-                    error_code="INCOMPLETE_BILINGUAL_CONTENT",
-                    message="Vui lòng hoàn thiện đầy đủ cả bản tiếng Việt và tiếng Anh trước khi phê duyệt"
-                )
-
+            # Bản dịch là tuỳ chọn; cột gốc (title/content) luôn theo ngôn ngữ gốc của tác giả
+            orig = diary.original_language or "vi"
             if payload.title_vi is not None:
                 diary.title_vi = payload.title_vi
-                diary.title = payload.title_vi
             if payload.title_en is not None:
                 diary.title_en = payload.title_en
             if payload.content_vi is not None:
                 diary.content_vi = payload.content_vi
-                diary.content = payload.content_vi
             if payload.content_en is not None:
                 diary.content_en = payload.content_en
+            if getattr(payload, f"title_{orig}") is not None:
+                diary.title = getattr(payload, f"title_{orig}")
+            if getattr(payload, f"content_{orig}") is not None:
+                diary.content = getattr(payload, f"content_{orig}")
 
         diary.is_approved = True
         diary.updated_at = now

@@ -229,15 +229,6 @@ class AdminRoomService:
 
         now = datetime.now(timezone.utc)
 
-        # Validation: If partial bilingual fields provided, ensure completeness
-        has_vi = bool(payload.title_vi or payload.content_vi or payload.short_content_vi)
-        has_en = bool(payload.title_en or payload.content_en or payload.short_content_en)
-        if (has_vi and not has_en) or (has_en and not has_vi):
-            raise AppException(
-                status_code=400,
-                error_code="INCOMPLETE_BILINGUAL_CONTENT",
-                message="Vui lòng hoàn thiện đầy đủ cả bản tiếng Việt và tiếng Anh trước khi phê duyệt"
-            )
 
         # Update bilingual fields if provided
         if payload.title_vi is not None:
@@ -256,18 +247,18 @@ class AdminRoomService:
         # Update default fields if provided
         if payload.title is not None:
             artwork.title = payload.title
-        elif payload.title_vi is not None:
-            artwork.title = payload.title_vi
+        elif getattr(payload, f"title_{artwork.original_language or 'vi'}") is not None:
+            artwork.title = getattr(payload, f"title_{artwork.original_language or 'vi'}")
         if payload.author_display_name is not None:
             artwork.author_display_name = payload.author_display_name
         if payload.short_content is not None:
             artwork.short_content = payload.short_content
-        elif payload.short_content_vi is not None:
-            artwork.short_content = payload.short_content_vi
+        elif getattr(payload, f"short_content_{artwork.original_language or 'vi'}") is not None:
+            artwork.short_content = getattr(payload, f"short_content_{artwork.original_language or 'vi'}")
         if payload.content is not None:
             artwork.content = payload.content
-        elif payload.content_vi is not None:
-            artwork.content = payload.content_vi
+        elif getattr(payload, f"content_{artwork.original_language or 'vi'}") is not None:
+            artwork.content = getattr(payload, f"content_{artwork.original_language or 'vi'}")
         if payload.media_url is not None:
             artwork.media_url = payload.media_url
         if payload.tag_category is not None:
@@ -557,16 +548,16 @@ class AdminRoomService:
 
         if payload.title is not None:
             artwork.title = payload.title
-        elif payload.title_vi is not None:
-            artwork.title = payload.title_vi
+        elif getattr(payload, f"title_{artwork.original_language or 'vi'}") is not None:
+            artwork.title = getattr(payload, f"title_{artwork.original_language or 'vi'}")
         if payload.short_content is not None:
             artwork.short_content = payload.short_content
-        elif payload.short_content_vi is not None:
-            artwork.short_content = payload.short_content_vi
+        elif getattr(payload, f"short_content_{artwork.original_language or 'vi'}") is not None:
+            artwork.short_content = getattr(payload, f"short_content_{artwork.original_language or 'vi'}")
         if payload.content is not None:
             artwork.content = payload.content
-        elif payload.content_vi is not None:
-            artwork.content = payload.content_vi
+        elif getattr(payload, f"content_{artwork.original_language or 'vi'}") is not None:
+            artwork.content = getattr(payload, f"content_{artwork.original_language or 'vi'}")
         if payload.media_url is not None:
             artwork.media_url = payload.media_url
         if payload.tag_category is not None:

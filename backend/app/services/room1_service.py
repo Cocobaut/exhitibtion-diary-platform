@@ -7,6 +7,7 @@ from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.core.language import detect_language
 from app.core.config import settings
 from app.core.constants import ROOM1_REACTIONS, ROOM_BROKEN
 from app.core.exceptions import AppException
@@ -505,9 +506,9 @@ class Room1Service:
                 message="Bạn gửi bài quá nhanh, vui lòng thử lại sau ít phút"
             )
 
-        lang = getattr(request, "original_language", "vi") or "vi"
         clean_title = request.title.strip()
         clean_content = request.content.strip()
+        lang = detect_language(clean_title, clean_content, fallback=getattr(request, "original_language", "vi") or "vi")
 
         if request.short_content and request.short_content.strip():
             clean_short = request.short_content.strip()

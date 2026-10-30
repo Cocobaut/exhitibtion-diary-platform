@@ -7,6 +7,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.core.language import detect_language
 from app.core.exceptions import AppException
 from app.models.diary import Diary
 from app.models.diary_interaction import DiaryInteraction
@@ -146,12 +147,9 @@ class DiaryService:
             msg = "Lưu nhật ký riêng tư thành công"
 
         entry_d = request.entry_date or date.today()
-        orig_lang = (request.original_language or "vi").strip().lower()
-        if orig_lang not in ("vi", "en"):
-            orig_lang = "vi"
-
         title_val = request.title.strip() if request.title else None
         content_val = request.content.strip()
+        orig_lang = detect_language(title_val, content_val, fallback=(request.original_language or "vi").strip().lower())
 
         title_vi = title_val if orig_lang == "vi" else None
         title_en = title_val if orig_lang == "en" else None
@@ -216,6 +214,14 @@ class DiaryService:
             diary.mood = request.mood.strip().lower() if request.mood else None
         if request.content is not None:
             diary.content = request.content.strip()
+        if request.title is not None or request.content is not None:
+            # Nội dung đã đổi: cột gốc theo bản mới, bản dịch cũ không còn đúng nên bỏ đi
+            lang = detect_language(diary.title, diary.content, fallback=diary.original_language or "vi")
+            diary.original_language = lang
+            diary.title_vi = diary.title if lang == "vi" else None
+            diary.title_en = diary.title if lang == "en" else None
+            diary.content_vi = diary.content if lang == "vi" else None
+            diary.content_en = diary.content if lang == "en" else None
         if request.media_urls is not None:
             diary.media_urls = request.media_urls
         if request.is_encrypted is not None:

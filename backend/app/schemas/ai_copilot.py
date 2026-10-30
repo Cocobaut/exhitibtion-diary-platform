@@ -129,3 +129,23 @@ class AiSettingsData(BaseModel):
     is_ai_enabled: bool
     moderation: ServiceSettingInfo
     image_generation: ServiceSettingInfo
+
+
+# ==============================================================================
+# TRANSLATION SCHEMAS
+# ==============================================================================
+
+class TranslateContentRequest(BaseModel):
+    source_lang: Literal["vi", "en"] = Field(description="Ngôn ngữ gốc của tác giả")
+    target_lang: Literal["vi", "en"] = Field(description="Ngôn ngữ cần dịch sang")
+    title: Optional[str] = Field(default=None, max_length=300)
+    short_content: Optional[str] = Field(default=None, max_length=600)
+    content: Optional[str] = Field(default=None, max_length=10000)
+
+
+class TranslateContentData(BaseModel):
+    target_lang: Literal["vi", "en"]
+    title: Optional[str] = None
+    short_content: Optional[str] = None
+    content: Optional[str] = None
+    model_used: Optional[str] = None

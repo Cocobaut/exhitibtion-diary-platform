@@ -5,6 +5,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
+from app.core.language import detect_language
 from app.core.config import settings
 from app.core.constants import ROOM3_COLOR_LEGEND, ROOM_COMMUNITY
 from app.core.exceptions import AppException
@@ -422,10 +423,10 @@ class Room3Service:
             status_val = "PENDING"
             msg = "Dải thông điệp của bạn đang được chuẩn bị để treo lên cây, chúng mình sẽ thông báo qua hộp tin nhắn ngay khi hoàn tất!"
 
-        lang = getattr(request, "original_language", "vi") or "vi"
         clean_title = request.title.strip()
         clean_short = request.short_content.strip()
         clean_content = request.content.strip()
+        lang = detect_language(clean_title, clean_content, fallback=getattr(request, "original_language", "vi") or "vi")
 
         new_ribbon = Artwork(
             user_id=current_user.id,
