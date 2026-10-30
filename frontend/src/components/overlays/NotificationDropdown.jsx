@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../common/Icons';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { notificationService } from '../../services/notificationService';
 
 export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
   const { isAuthenticated } = useAuth();
+  const { language } = useLanguage();
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -17,14 +19,19 @@ export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
 
     try {
       const res = await notificationService.getNotifications({ page: 1, limit: 20 });
-      const items = res?.items || (Array.isArray(res) ? res : []);
+      const data = res?.data || res;
+      const items = data?.items || (Array.isArray(data) ? data : []);
       setNotifications(items);
     } catch (err) {
-      setErrorMsg('Không thể tải thông báo. Vui lòng thử lại.');
+      setErrorMsg(
+        language === 'en'
+          ? 'Could not load notifications. Please try again.'
+          : 'Không thể tải thông báo. Vui lòng thử lại.'
+      );
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, language]);
 
   useEffect(() => {
     if (isOpen) {
@@ -34,23 +41,31 @@ export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
 
   if (!isOpen) return null;
 
-  // Đánh dấu 1 thông báo là đã đọc
-  const handleItemClick = async (item) => {
-    if (!item.is_read) {
-      try {
-        await notificationService.markAsRead(item.id);
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n))
-        );
-        window.dispatchEvent(new CustomEvent('notifications:updated'));
-      } catch (err) {
-        console.warn('Lỗi khi đánh dấu thông báo đã đọc:', err);
+  // Đánh dấu 1 thông báo là đã đọc và điều hướng tới nội dung chi tiết
+  const handleItemClick = async (item, e) => {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+
+    let resolvedTargetUrl = item.target_url || '';
+
+    try {
+      const readRes = await notificationService.markAsRead(item.id);
+      const readData = readRes?.data || readRes;
+      if (readData?.target_url) {
+        resolvedTargetUrl = readData.target_url;
       }
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n))
+      );
+      window.dispatchEvent(new CustomEvent('notifications:updated'));
+    } catch (err) {
+      console.warn('Lỗi khi đánh dấu thông báo đã đọc:', err);
     }
 
     if (onActionClick) {
-      const ctaText = getActionCta(item);
-      onActionClick(ctaText, item);
+      const ctaText = getActionCta(item, resolvedTargetUrl);
+      onActionClick(ctaText, { ...item, target_url: resolvedTargetUrl });
     }
     onClose && onClose();
   };
@@ -66,34 +81,43 @@ export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
     }
   };
 
-  const getActionCta = (item) => {
-    const type = item.type || '';
-    if (type.includes('LANTERN') || type === 'LANTERN_LANDED') {
-      return 'Xem thư lồng đèn';
+  const getActionCta = (item, customUrl) => {
+    const type = (item.type || '').toUpperCase();
+    const url = (customUrl || item.target_url || '').toLowerCase();
+
+    if (url.includes('/rooms/1') || type.includes('ARTWORK')) {
+      return language === 'en' ? 'View in Room 1' : 'Xem ở Phòng 1';
     }
-    if (type.includes('ARTWORK') || type === 'ARTWORK_APPROVED' || type === 'ARTWORK_REJECTED') {
-      return 'Xem ở Phòng 1';
+    if (url.includes('/rooms/2') || type.includes('LANTERN')) {
+      return language === 'en' ? 'View Lantern' : 'Xem thư lồng đèn';
     }
-    if (type.includes('DIARY') || type === 'INTERACTION' || type === 'COMMENT') {
-      return 'Xem nhật ký';
+    if (url.includes('/rooms/3') || type.includes('LEAF') || type.includes('RIBBON')) {
+      return language === 'en' ? 'View on Wish Tree' : 'Xem trên cây';
     }
-    return 'Xem chi tiết';
+    if (url.includes('/diaries') || type.includes('DIARY')) {
+      return language === 'en' ? 'View Diary' : 'Xem nhật ký';
+    }
+    if (url.includes('/owner')) {
+      return language === 'en' ? 'Manage Accounts' : 'Quản lý tài khoản';
+    }
+    return language === 'en' ? 'View details' : 'Xem chi tiết';
   };
 
-  const getBadgeAndIcon = (type) => {
-    switch (type) {
-      case 'ARTWORK_APPROVED':
-        return { badge: 'b-ok', icon: 'sparkle' };
-      case 'ARTWORK_REJECTED':
-        return { badge: 'b-priv', icon: 'shield' };
-      case 'LANTERN_LANDED':
-        return { badge: 'b-wait', icon: 'bookmark' };
-      case 'INTERACTION':
-      case 'COMMENT':
-        return { badge: 'b-ok', icon: 'sparkle' };
-      default:
-        return { badge: 'b-wait', icon: 'bell' };
+  const getBadgeAndIcon = (item) => {
+    const type = (item.type || '').toUpperCase();
+    const url = (item.target_url || '').toLowerCase();
+    const title = (item.title || '').toLowerCase();
+
+    if (title.includes('từ chối') || title.includes('gỡ') || type === 'ARTWORK_REJECTED') {
+      return { badge: 'b-priv', icon: 'shield' };
     }
+    if (url.includes('/rooms/2') || type === 'LANTERN_LANDED') {
+      return { badge: 'b-wait', icon: 'bookmark' };
+    }
+    if (type === 'INTERACTION' || type === 'COMMENT' || type === 'ARTWORK_APPROVED' || url.includes('/artworks/')) {
+      return { badge: 'b-ok', icon: 'sparkle' };
+    }
+    return { badge: 'b-wait', icon: 'bell' };
   };
 
   const formatTime = (dateStr) => {
@@ -202,14 +226,15 @@ export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
             </div>
           ) : (
             notifications.map((item) => {
-              const { badge, icon } = getBadgeAndIcon(item.type);
+              const { badge, icon } = getBadgeAndIcon(item);
               const cta = getActionCta(item);
+              const bodyText = item.body || item.message || '';
 
               return (
                 <div
                   key={item.id}
                   className="row"
-                  onClick={() => handleItemClick(item)}
+                  onClick={(e) => handleItemClick(item, e)}
                   style={{
                     alignItems: 'flex-start',
                     gap: '12px',
@@ -255,7 +280,7 @@ export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
                         color: !item.is_read ? 'var(--ink)' : 'var(--ink2)',
                       }}
                     >
-                      {item.message}
+                      {bodyText}
                     </div>
 
                     <div
@@ -264,17 +289,25 @@ export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
                     >
                       <span>{formatTime(item.created_at)}</span>
                       {cta && (
-                        <span
+                        <button
+                          type="button"
+                          onClick={(e) => handleItemClick(item, e)}
                           style={{
+                            background: 'transparent',
+                            border: 'none',
+                            padding: '2px 4px',
+                            cursor: 'pointer',
                             color: 'var(--acc)',
                             fontWeight: 600,
-                            display: 'flex',
+                            fontSize: '12px',
+                            fontFamily: 'inherit',
+                            display: 'inline-flex',
                             alignItems: 'center',
                             gap: '4px',
                           }}
                         >
                           {cta} →
-                        </span>
+                        </button>
                       )}
                     </div>
                   </div>

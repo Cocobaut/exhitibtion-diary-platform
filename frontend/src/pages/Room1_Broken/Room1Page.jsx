@@ -15,6 +15,8 @@ export function Room1Page({
   onOpenThemeModal,
   onSaveToNotebook,
   notebookItems = [],
+  initialArtworkId = null,
+  onClearInitialArtwork,
 }) {
   const { isAuthenticated, isGuest } = useAuth();
   const { guardAction } = useGuestGuard();
@@ -40,6 +42,32 @@ export function Room1Page({
   const searchDebounceRef = useRef(null);
   const sentinelRef = useRef(null);
   const observerRef = useRef(null);
+
+  // Mở chi tiết tác phẩm khi chuyển hướng từ thông báo
+  useEffect(() => {
+    if (!initialArtworkId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await room1Service.getArtworkDetail(initialArtworkId, language);
+        const detail = res?.data || res;
+        if (!cancelled && detail) {
+          setSelectedArtwork(detail);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setSelectedArtwork({ id: initialArtworkId });
+        }
+      } finally {
+        if (!cancelled && onClearInitialArtwork) {
+          onClearInitialArtwork();
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialArtworkId, language, onClearInitialArtwork]);
 
   // Tải danh sách tác phẩm từ backend (trang đầu tiên)
   const fetchArtworks = useCallback(async (currentFilter = filter, currentSearch = search) => {

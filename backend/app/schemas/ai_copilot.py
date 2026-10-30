@@ -23,7 +23,7 @@ class RoomAssessment(BaseModel):
 
 class ModerateArtRequest(BaseModel):
     art_id: str = Field(description="ID bài viết đang chờ duyệt")
-    target_room: Literal["room1", "room2", "room3"] = Field(description="Mã phòng mục tiêu")
+    target_room: Literal["room1", "room2", "room3", "diaries"] = Field(description="Mã phòng mục tiêu")
     content: str = Field(description="Nội dung bài viết cần kiểm duyệt")
     author_id: Optional[str] = Field(default=None, description="ID tác giả")
 

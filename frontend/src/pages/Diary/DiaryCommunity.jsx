@@ -15,7 +15,11 @@ const MOOD_TRANSLATIONS = {
   'Mệt mỏi': 'Weary',
 };
 
-export function DiaryCommunity({ searchQuery = '' }) {
+export function DiaryCommunity({
+  searchQuery = '',
+  initialDiaryId = null,
+  onClearInitialDiary,
+}) {
   const { user } = useAuth();
   const { guardAction } = useGuestGuard();
   const { language, localize } = useLanguage();
@@ -57,6 +61,30 @@ export function DiaryCommunity({ searchQuery = '' }) {
   useEffect(() => {
     loadCommunityDiaries();
   }, [loadCommunityDiaries]);
+
+  // Mở chi tiết bài nhật ký cộng đồng khi chuyển hướng từ thông báo
+  useEffect(() => {
+    if (!initialDiaryId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await diaryService.getCommunityDiaryDetail(initialDiaryId);
+        const detail = res?.data || res;
+        if (!cancelled && detail) {
+          setSelectedNote(detail);
+        }
+      } catch (err) {
+        console.warn('Could not fetch community diary detail:', err);
+      } finally {
+        if (!cancelled && onClearInitialDiary) {
+          onClearInitialDiary();
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialDiaryId, onClearInitialDiary]);
 
   const handleToggleReaction = async (e, noteId, reactionType = 'HEART') => {
     if (e && e.stopPropagation) e.stopPropagation();

@@ -25,6 +25,7 @@ function MainApp() {
   const { theme, setTheme } = useTheme();
   const { user, isAdmin, isGuest, login } = useAuth();
   const [currentRoute, setCurrentRoute] = useState('login'); // Ban đầu bắt buộc vào trang đăng nhập thay vì trang chính
+  const [notificationTarget, setNotificationTarget] = useState(null);
   const [isMailboxOpen, setIsMailboxOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
@@ -111,6 +112,8 @@ function MainApp() {
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
               onSaveToNotebook={handleSaveToNotebook}
               notebookItems={notebookItems}
+              initialArtworkId={notificationTarget?.room === 'r1' ? notificationTarget.id : null}
+              onClearInitialArtwork={() => setNotificationTarget(null)}
             />
           )}
 
@@ -120,6 +123,8 @@ function MainApp() {
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
               onSaveToNotebook={handleSaveToNotebook}
+              initialLanternId={notificationTarget?.room === 'r2' ? notificationTarget.id : null}
+              onClearInitialLantern={() => setNotificationTarget(null)}
             />
           )}
 
@@ -129,6 +134,8 @@ function MainApp() {
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
               onSaveToNotebook={handleSaveToNotebook}
               notebookItems={notebookItems}
+              initialLeafId={notificationTarget?.room === 'r3' ? notificationTarget.id : null}
+              onClearInitialLeaf={() => setNotificationTarget(null)}
             />
           )}
 
@@ -136,6 +143,8 @@ function MainApp() {
             <DiaryPage
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
+              initialDiaryTarget={notificationTarget?.room === 'diary' ? notificationTarget : null}
+              onClearInitialDiary={() => setNotificationTarget(null)}
             />
           )}
 
@@ -189,11 +198,70 @@ function MainApp() {
           <NotificationDropdown
             isOpen={isNotificationsOpen}
             onClose={() => setIsNotificationsOpen(false)}
-            onActionClick={(cta) => {
-              if (cta.includes('Phòng 1') || cta.includes('tác phẩm')) setCurrentRoute('r1');
-              else if (cta.includes('thư') || cta.includes('Lồng đèn')) setCurrentRoute('r2');
-              else if (cta.includes('cây')) setCurrentRoute('r3');
-              else if (cta.includes('nhật ký') || cta.includes('Nhật ký')) setCurrentRoute('diary');
+            onActionClick={(cta, item) => {
+              const url = (item?.target_url || '').trim();
+
+              // 1. Parse target_url from backend if available
+              if (url) {
+                const r1Match = url.match(/^\/rooms\/1(?:\/artworks\/([^/?#]+))?/i);
+                if (r1Match) {
+                  setNotificationTarget(r1Match[1] ? { room: 'r1', id: r1Match[1] } : null);
+                  setCurrentRoute('r1');
+                  return;
+                }
+
+                const r2Match = url.match(/^\/rooms\/2(?:\/artworks\/([^/?#]+))?/i);
+                if (r2Match) {
+                  setNotificationTarget(r2Match[1] ? { room: 'r2', id: r2Match[1] } : null);
+                  setCurrentRoute('r2');
+                  return;
+                }
+
+                const r3Match = url.match(/^\/rooms\/3(?:\/artworks\/([^/?#]+))?/i);
+                if (r3Match) {
+                  setNotificationTarget(r3Match[1] ? { room: 'r3', id: r3Match[1] } : null);
+                  setCurrentRoute('r3');
+                  return;
+                }
+
+                const diaryCommMatch = url.match(/^\/diaries\/community\/([^/?#]+)/i);
+                if (diaryCommMatch) {
+                  setNotificationTarget({ room: 'diary', tab: 'community', id: diaryCommMatch[1] });
+                  setCurrentRoute('diary');
+                  return;
+                }
+
+                const diaryMeMatch = url.match(/^\/diaries(?:\/me\/([^/?#]+))?/i);
+                if (diaryMeMatch) {
+                  setNotificationTarget({ room: 'diary', tab: 'personal', id: diaryMeMatch[1] || null });
+                  setCurrentRoute('diary');
+                  return;
+                }
+
+                if (url.startsWith('/owner')) {
+                  setCurrentRoute('owner');
+                  return;
+                }
+
+                if (url.startsWith('/admin')) {
+                  setCurrentRoute('admin');
+                  return;
+                }
+              }
+
+              // 2. Fallback to CTA text matching
+              const text = (cta || '').toLowerCase();
+              if (text.includes('phòng 1') || text.includes('room 1') || text.includes('tác phẩm')) {
+                setCurrentRoute('r1');
+              } else if (text.includes('thư') || text.includes('lồng đèn') || text.includes('lantern')) {
+                setCurrentRoute('r2');
+              } else if (text.includes('cây') || text.includes('tree')) {
+                setCurrentRoute('r3');
+              } else if (text.includes('nhật ký') || text.includes('diary')) {
+                setCurrentRoute('diary');
+              } else if (text.includes('quản lý') || text.includes('manage')) {
+                setCurrentRoute('owner');
+              }
             }}
           />
 

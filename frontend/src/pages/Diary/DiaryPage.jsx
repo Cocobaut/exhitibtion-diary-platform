@@ -1,11 +1,16 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { DiaryPersonal } from './DiaryPersonal';
 import { DiaryCommunity } from './DiaryCommunity';
 import { WriteDiaryModal } from './WriteDiaryModal';
 import { useLanguage } from '../../context/LanguageContext';
 
-export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
+export function DiaryPage({
+  onOpenNotifications,
+  onOpenThemeModal,
+  initialDiaryTarget = null,
+  onClearInitialDiary,
+}) {
   const { language, setLanguage, t } = useLanguage();
   const [activeTab, setActiveTab] = useState(0); // 0: Bản thân, 1: Cộng đồng
   const [search, setSearch] = useState('');
@@ -16,6 +21,21 @@ export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
   const [toastMessage, setToastMessage] = useState('');
 
   const searchTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!initialDiaryTarget) return;
+    if (initialDiaryTarget.tab === 'community') {
+      setActiveTab(1);
+      if (!initialDiaryTarget.id && onClearInitialDiary) {
+        onClearInitialDiary();
+      }
+    } else {
+      setActiveTab(0);
+      if (onClearInitialDiary) {
+        onClearInitialDiary();
+      }
+    }
+  }, [initialDiaryTarget, onClearInitialDiary]);
 
   const handleSearchChange = (val) => {
     setSearch(val);
@@ -177,7 +197,11 @@ export function DiaryPage({ onOpenNotifications, onOpenThemeModal }) {
           refreshTrigger={refreshTrigger}
         />
       ) : (
-        <DiaryCommunity searchQuery={debouncedSearch} />
+        <DiaryCommunity
+          searchQuery={debouncedSearch}
+          initialDiaryId={initialDiaryTarget?.tab === 'community' ? initialDiaryTarget.id : null}
+          onClearInitialDiary={onClearInitialDiary}
+        />
       )}
 
       {/* Write / Edit Diary Modal */}

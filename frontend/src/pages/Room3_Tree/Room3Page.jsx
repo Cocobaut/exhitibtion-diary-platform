@@ -125,6 +125,8 @@ export function Room3Page({
   onOpenThemeModal,
   onSaveToNotebook,
   notebookItems = [],
+  initialLeafId = null,
+  onClearInitialLeaf,
 }) {
   const { user, isGuest } = useAuth();
   const { guardAction } = useGuestGuard();
@@ -238,6 +240,32 @@ export function Room3Page({
     if (leaf) setModalLeaf(leaf);
     setShowReadModal(true);
   };
+
+  // Mở chi tiết chiếc lá khi chuyển hướng từ thông báo
+  useEffect(() => {
+    if (!initialLeafId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await room3Service.getLeafDetail(initialLeafId);
+        const detail = res?.data || res;
+        if (!cancelled && detail) {
+          handleOpenReadModal(detail);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          handleOpenReadModal({ id: initialLeafId });
+        }
+      } finally {
+        if (!cancelled && onClearInitialLeaf) {
+          onClearInitialLeaf();
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialLeafId, onClearInitialLeaf]);
 
   const handleCloseReadModal = () => {
     setShowReadModal(false);

@@ -1323,7 +1323,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                   />
                 )}
                 {modDiscoveredModels.length > 0 && (
-                  <small className="muted" style={{ display: 'block', marginTop: '6px' }}>
+                  <small className="muted" style={{ display: 'block', marginTop: '6px', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.5 }}>
                     {modDiscoveredModels.find((m) => m.id === modModel)?.reason || 'Chọn model tối ưu theo khuyến nghị của hệ thống.'}
                   </small>
                 )}
@@ -1460,7 +1460,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                   />
                 )}
                 {imgDiscoveredModels.length > 0 && (
-                  <small className="muted" style={{ display: 'block', marginTop: '6px' }}>
+                  <small className="muted" style={{ display: 'block', marginTop: '6px', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.5 }}>
                     {imgDiscoveredModels.find((m) => m.id === imgModel)?.reason || 'Chọn engine sinh ảnh theo nhu cầu triển lãm.'}
                   </small>
                 )}

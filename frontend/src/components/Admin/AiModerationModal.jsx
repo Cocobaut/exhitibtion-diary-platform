@@ -19,16 +19,31 @@ export function AiModerationModal({ isOpen, onClose, data, onAccept }) {
   return (
     <>
       {/* Background overlay scrim */}
-      <div className="scrim" onClick={onClose} style={{ zIndex: 1000 }} />
+      <div
+        className="scrim"
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1000,
+        }}
+      />
 
       {/* Modal Dialog Panel */}
       <div
         className="panel"
         style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
           width: '680px',
           maxWidth: '92vw',
-          maxHeight: '90vh',
-          overflowY: 'auto',
+          maxHeight: '88vh',
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box',
+          overflow: 'hidden',
           zIndex: 1001,
           boxShadow: '0 25px 70px rgba(0,0,0,0.6)',
           borderRadius: '16px',
@@ -40,8 +55,8 @@ export function AiModerationModal({ isOpen, onClose, data, onAccept }) {
           &times;
         </span>
 
-        {/* Modal Title */}
-        <div style={{ marginBottom: '16px' }}>
+        {/* Modal Title (Pinned Header) */}
+        <div style={{ marginBottom: '14px', flexShrink: 0, paddingRight: '28px' }}>
           <div style={{ fontSize: '11px', letterSpacing: '.2em', fontWeight: 600, color: 'var(--acc)', textTransform: 'uppercase', marginBottom: '4px' }}>
             {language === 'en' ? 'AI COPILOT MODERATION' : 'KIỂM DUYỆT BẰNG AI COPILOT'}
           </div>
@@ -50,170 +65,236 @@ export function AiModerationModal({ isOpen, onClose, data, onAccept }) {
           </h2>
         </div>
 
-        {/* Score & Recommendation Banner */}
+        {/* Scrollable Modal Body */}
         <div
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'var(--wall, #2a2e42)',
-            border: '1px solid var(--line, #3b4259)',
-            borderRadius: '12px',
-            padding: '16px 20px',
-            marginBottom: '16px',
+            flex: 1,
+            minHeight: 0,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            paddingRight: '4px',
           }}
         >
-          <div>
-            <div style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 600 }}>
-              {language === 'en' ? 'Rubric Score' : 'Điểm đánh giá Rubric'}
-            </div>
-            <div style={{ fontSize: '32px', fontWeight: 800, color: score >= 60 ? '#10b981' : '#f59e0b', marginTop: '2px' }}>
-              {score} <span style={{ fontSize: '15px', color: 'var(--muted)', fontWeight: 400 }}>/ 100</span>
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 600, marginBottom: '4px' }}>
-              {language === 'en' ? 'AI Recommendation' : 'Khuyến nghị của AI'}
-            </div>
-            <span
-              className="badge"
-              style={{
-                fontSize: '13px',
-                padding: '6px 14px',
-                borderRadius: '20px',
-                fontWeight: 700,
-                background: isApproved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                color: isApproved ? '#10b981' : '#ef4444',
-                border: `1px solid ${isApproved ? '#10b981' : '#ef4444'}`,
-              }}
-            >
-              {isApproved
-                ? (language === 'en' ? '✓ APPROVE WITH EDITS' : '✓ PHÙ HỢP CẦN SỬA')
-                : (language === 'en' ? '✕ DISAPPROVE' : '✕ TỪ CHỐI BÀI VIẾT')}
-            </span>
-          </div>
-        </div>
-
-        {/* Room Assessment */}
-        {room_assessment && (
+          {/* Score & Recommendation Banner */}
           <div
             style={{
-              fontSize: '13.5px',
-              padding: '12px 16px',
-              borderRadius: '10px',
-              background: 'rgba(99, 102, 241, 0.1)',
-              border: '1px solid rgba(99, 102, 241, 0.3)',
-              color: 'var(--ink)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              background: 'var(--wall, #2a2e42)',
+              border: '1px solid var(--line, #3b4259)',
+              borderRadius: '12px',
+              padding: '16px 20px',
               marginBottom: '16px',
-              lineHeight: 1.5,
+              boxSizing: 'border-box',
             }}
           >
-            <span style={{ fontWeight: 700, color: '#818cf8' }}>
-              {language === 'en' ? 'Room Assessment' : 'Đánh giá phòng'} ({room_assessment.current_room}):{' '}
-            </span>
-            <span>{room_assessment.reason}</span>
-            {room_assessment.suggested_room && room_assessment.suggested_room !== room_assessment.current_room && (
-              <div style={{ marginTop: '4px', fontWeight: 600, color: '#f59e0b' }}>
-                {language === 'en' ? 'Suggested Room:' : 'Gợi ý chuyển sang:'} {room_assessment.suggested_room}
+            <div>
+              <div style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 600 }}>
+                {language === 'en' ? 'Rubric Score' : 'Điểm đánh giá Rubric'}
+              </div>
+              <div style={{ fontSize: '32px', fontWeight: 800, color: score >= 60 ? '#10b981' : '#f59e0b', marginTop: '2px' }}>
+                {score} <span style={{ fontSize: '15px', color: 'var(--muted)', fontWeight: 400 }}>/ 100</span>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '12px', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 600, marginBottom: '4px' }}>
+                {language === 'en' ? 'AI Recommendation' : 'Khuyến nghị của AI'}
+              </div>
+              <span
+                className="badge"
+                style={{
+                  fontSize: '13px',
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontWeight: 700,
+                  background: isApproved ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                  color: isApproved ? '#10b981' : '#ef4444',
+                  border: `1px solid ${isApproved ? '#10b981' : '#ef4444'}`,
+                }}
+              >
+                {isApproved
+                  ? (language === 'en' ? '✓ APPROVE WITH EDITS' : '✓ PHÙ HỢP CẦN SỬA')
+                  : (language === 'en' ? '✕ DISAPPROVE' : '✕ TỪ CHỐI BÀI VIẾT')}
+              </span>
+            </div>
+          </div>
+
+          {/* Room Assessment */}
+          {room_assessment && (
+            <div
+              style={{
+                fontSize: '13.5px',
+                padding: '12px 16px',
+                borderRadius: '10px',
+                background: 'rgba(99, 102, 241, 0.1)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                color: 'var(--ink)',
+                marginBottom: '16px',
+                lineHeight: 1.5,
+                boxSizing: 'border-box',
+                maxHeight: '110px',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
+              }}
+            >
+              <span style={{ fontWeight: 700, color: '#818cf8' }}>
+                {language === 'en' ? 'Room Assessment' : 'Đánh giá phòng'} ({room_assessment.current_room}):{' '}
+              </span>
+              <span style={{ whiteSpace: 'pre-wrap' }}>{room_assessment.reason}</span>
+              {room_assessment.suggested_room && room_assessment.suggested_room !== room_assessment.current_room && (
+                <div style={{ marginTop: '4px', fontWeight: 600, color: '#f59e0b' }}>
+                  {language === 'en' ? 'Suggested Room:' : 'Gợi ý chuyển sang:'} {room_assessment.suggested_room}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Violations List */}
+          <div style={{ marginBottom: '18px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '8px' }}>
+              {language === 'en'
+                ? `Detected Policy Violations (${violations.length})`
+                : `Các lỗi vi phạm phát hiện (${violations.length})`}
+            </div>
+
+            {violations.length === 0 ? (
+              <div style={{ fontSize: '13.5px', color: '#10b981', fontStyle: 'italic', padding: '8px 0' }}>
+                ✓ {language === 'en' ? 'No policy violations detected. Content is clean.' : 'Không phát hiện vi phạm chính sách.'}
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  maxHeight: '220px',
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                  paddingRight: '4px',
+                }}
+              >
+                {violations.map((v, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '12px',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.25)',
+                      fontSize: '13.5px',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <span
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        color: '#ef4444',
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontWeight: 800,
+                        fontSize: '12px',
+                        flexShrink: 0,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      -{v.deducted_points}đ
+                    </span>
+                    <div
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        overflowWrap: 'anywhere',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          color: 'var(--ink)',
+                          lineHeight: 1.45,
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'anywhere',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        &ldquo;{v.quote}&rdquo;{' '}
+                        {v.line_number && (
+                          <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 400 }}>
+                            ({language === 'en' ? `Line ${v.line_number}` : `Dòng ${v.line_number}`})
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '12.5px',
+                          color: 'var(--muted)',
+                          marginTop: '4px',
+                          lineHeight: 1.5,
+                          whiteSpace: 'pre-wrap',
+                          overflowWrap: 'anywhere',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {v.reason}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        )}
 
-        {/* Violations List */}
-        <div style={{ marginBottom: '18px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '8px' }}>
-            {language === 'en'
-              ? `Detected Policy Violations (${violations.length})`
-              : `Các lỗi vi phạm phát hiện (${violations.length})`}
-          </div>
-
-          {violations.length === 0 ? (
-            <div style={{ fontSize: '13.5px', color: '#10b981', fontStyle: 'italic', padding: '8px 0' }}>
-              ✓ {language === 'en' ? 'No policy violations detected. Content is clean.' : 'Không phát hiện vi phạm chính sách.'}
+          {/* Suggested Neutral Content */}
+          <div style={{ marginBottom: '8px' }}>
+            <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '8px' }}>
+              {language === 'en'
+                ? 'AI Neutralized Rewrite (Strict No-Hallucination)'
+                : 'Đề xuất nội dung đã làm sạch (Strict No-Hallucination)'}
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {violations.map((v, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '12px',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: 'rgba(239, 68, 68, 0.08)',
-                    border: '1px solid rgba(239, 68, 68, 0.25)',
-                    fontSize: '13.5px',
-                  }}
-                >
-                  <span
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.2)',
-                      color: '#ef4444',
-                      padding: '2px 8px',
-                      borderRadius: '6px',
-                      fontWeight: 800,
-                      fontSize: '12px',
-                      flexShrink: 0,
-                    }}
-                  >
-                    -{v.deducted_points}đ
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, color: 'var(--ink)' }}>
-                      &ldquo;{v.quote}&rdquo;{' '}
-                      {v.line_number && (
-                        <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 400 }}>
-                          ({language === 'en' ? `Line ${v.line_number}` : `Dòng ${v.line_number}`})
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: '12.5px', color: 'var(--muted)', marginTop: '2px' }}>
-                      {v.reason}
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <div
+              style={{
+                padding: '14px 16px',
+                borderRadius: '10px',
+                background: 'var(--paper, #1a1d2e)',
+                border: '1px solid var(--line, #3b4259)',
+                fontSize: '14px',
+                lineHeight: 1.6,
+                color: 'var(--ink)',
+                maxHeight: '140px',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                whiteSpace: 'pre-wrap',
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
+                boxSizing: 'border-box',
+              }}
+            >
+              {suggested_content || (language === 'en' ? 'No suggested changes.' : 'Không có đề xuất thay đổi.')}
             </div>
-          )}
-        </div>
-
-        {/* Suggested Neutral Content */}
-        <div style={{ marginBottom: '22px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '8px' }}>
-            {language === 'en'
-              ? 'AI Neutralized Rewrite (Strict No-Hallucination)'
-              : 'Đề xuất nội dung đã làm sạch (Strict No-Hallucination)'}
-          </div>
-          <div
-            style={{
-              padding: '14px 16px',
-              borderRadius: '10px',
-              background: 'var(--paper, #1a1d2e)',
-              border: '1px solid var(--line, #3b4259)',
-              fontSize: '14px',
-              lineHeight: 1.6,
-              color: 'var(--ink)',
-              maxHeight: '140px',
-              overflowY: 'auto',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {suggested_content || (language === 'en' ? 'No suggested changes.' : 'Không có đề xuất thay đổi.')}
           </div>
         </div>
 
-        {/* Action Buttons: Accept / Decline */}
+        {/* Action Buttons: Accept / Decline (Pinned Footer) */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'flex-end',
+            flexWrap: 'wrap',
             gap: '12px',
             borderTop: '1px solid var(--line, #3b4259)',
             paddingTop: '16px',
+            marginTop: '12px',
+            flexShrink: 0,
           }}
         >
           <button

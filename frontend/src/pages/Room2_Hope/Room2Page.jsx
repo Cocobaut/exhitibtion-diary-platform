@@ -15,6 +15,8 @@ export function Room2Page({
   onOpenThemeModal,
   onNavigate,
   onSaveToNotebook,
+  initialLanternId = null,
+  onClearInitialLantern,
 }) {
   const { user, isGuest } = useAuth();
   const { guardAction } = useGuestGuard();
@@ -202,6 +204,32 @@ export function Room2Page({
     setSelectedLetter(letter || MOCK_LANTERN_LETTERS[0]);
     setShowLandedModal(true);
   };
+
+  // Mở chi tiết bức thư lồng đèn khi chuyển hướng từ thông báo
+  useEffect(() => {
+    if (!initialLanternId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await room2Service.getLanternDetail(initialLanternId);
+        const detail = res?.data || res;
+        if (!cancelled && detail) {
+          handleOpenLantern(detail);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          handleOpenLantern({ id: initialLanternId });
+        }
+      } finally {
+        if (!cancelled && onClearInitialLantern) {
+          onClearInitialLantern();
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialLanternId, onClearInitialLantern]);
 
   const handlePullDownRandom = async () => {
     try {
