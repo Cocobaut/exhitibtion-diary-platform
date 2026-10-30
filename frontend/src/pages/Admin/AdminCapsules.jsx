@@ -30,6 +30,8 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Categories mapping
+  const L = (vi, en) => (language === 'en' ? en : vi);
+
   const categoryMap = {
     COURAGE: { label: language === 'en' ? 'Courage' : 'Can đảm', badgeClass: 'b-wait', color: '#B57424' },
     HEALING: { label: language === 'en' ? 'Healing' : 'Chữa lành', badgeClass: 'b-ok', color: '#2D7D46' },
@@ -98,8 +100,8 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
       if (triggerToast) {
         triggerToast(
           newStatus
-            ? `✦ Đã bật thông điệp #${capsule.id}. Thông điệp sẽ có thể được rút ở Sảnh chính.`
-            : `Đã tắt thông điệp #${capsule.id}. Máy nhả sẽ tạm thời không bốc trúng thông điệp này.`
+            ? L(`✦ Đã bật thông điệp #${capsule.id}. Người dùng có thể rút được thông điệp này.`, `✦ Message #${capsule.id} is on. Visitors can now draw it.`)
+            : L(`Đã tắt thông điệp #${capsule.id}. Người dùng sẽ không rút được thông điệp này.`, `Message #${capsule.id} is off. Visitors will not draw it.`)
         );
       }
       // Refresh summary counts
@@ -113,7 +115,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
       setCapsules((prev) =>
         prev.map((c) => (c.id === capsule.id ? { ...c, is_approved: !newStatus } : c))
       );
-      alert('Không thể cập nhật trạng thái thông điệp lúc này.');
+      alert(L('Không thể cập nhật trạng thái thông điệp lúc này.', 'Could not update this message right now.'));
     }
   };
 
@@ -122,7 +124,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
   // -------------------------------------------------------------
   const handleAddCapsule = async () => {
     if (!newContentVi.trim()) {
-      alert('Vui lòng nhập nội dung thông điệp.');
+      alert(L('Vui lòng nhập nội dung thông điệp.', 'Please enter the message.'));
       return;
     }
 
@@ -147,14 +149,14 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
       setShowEnglishField(false);
 
       if (triggerToast) {
-        triggerToast('✦ Thông điệp mới đã được lưu vào kho hòm thư thành công!');
+        triggerToast(L('✦ Đã lưu thông điệp mới vào kho.', '✦ New message saved.'));
       }
 
       loadData();
     } catch (err) {
       console.error('Error adding capsule:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể lưu thông điệp.';
-      alert(`Lỗi: ${msg}`);
+      const msg = err?.response?.data?.message || err?.message || L('Không thể lưu thông điệp.', 'Could not save the message.');
+      alert(msg);
     } finally {
       setIsCreating(false);
     }
@@ -166,11 +168,14 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
   const handleDeleteCapsule = async (capsule) => {
     if (capsule.draw_count > 0) {
       const proceed = window.confirm(
-        `Thông điệp này đã có ${capsule.draw_count} lượt người dùng rút trúng. Bạn có chắc chắn muốn xóa không? (Gợi ý: bạn nên dùng tính năng Tắt thay vì xóa).`
+        L(
+          `Thông điệp này đã được rút ${capsule.draw_count} lần. Bạn vẫn muốn xóa? Bạn cũng có thể chỉ tắt nó đi.`,
+          `This message has been drawn ${capsule.draw_count} times. Delete it anyway? You can also just turn it off.`
+        )
       );
       if (!proceed) return;
     } else {
-      if (!window.confirm(`Bạn có chắc muốn xóa thông điệp #${capsule.id} khỏi kho dữ liệu?`)) {
+      if (!window.confirm(L(`Xóa thông điệp #${capsule.id}?`, `Delete message #${capsule.id}?`))) {
         return;
       }
     }
@@ -181,14 +186,14 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
       setTotalCount((prev) => Math.max(0, prev - 1));
 
       if (triggerToast) {
-        triggerToast(`Đã xóa vĩnh viễn thông điệp #${capsule.id} khỏi kho dữ liệu.`);
+        triggerToast(L(`Đã xóa thông điệp #${capsule.id}.`, `Message #${capsule.id} deleted.`));
       }
 
       loadData();
     } catch (err) {
       console.error('Error deleting capsule:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể xóa thông điệp.';
-      alert(`Lỗi xóa: ${msg}`);
+      const msg = err?.response?.data?.message || err?.message || L('Không thể xóa thông điệp.', 'Could not delete the message.');
+      alert(msg);
     }
   };
 
@@ -231,15 +236,15 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
       );
 
       if (triggerToast) {
-        triggerToast(`✦ Đã cập nhật thành công thông điệp #${editingCapsule.id}.`);
+        triggerToast(L(`✦ Đã cập nhật thông điệp #${editingCapsule.id}.`, `✦ Message #${editingCapsule.id} updated.`));
       }
 
       setEditingCapsule(null);
       loadData();
     } catch (err) {
       console.error('Error updating capsule:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể cập nhật thông điệp.';
-      alert(`Lỗi cập nhật: ${msg}`);
+      const msg = err?.response?.data?.message || err?.message || L('Không thể cập nhật thông điệp.', 'Could not update the message.');
+      alert(msg);
     } finally {
       setIsUpdating(false);
     }
@@ -261,7 +266,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
         }}
       >
         <span className="muted" style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '.05em' }}>
-          TỔNG SỐ: {totalCount} THÔNG ĐIỆP
+          {L(`TỔNG SỐ: ${totalCount} THÔNG ĐIỆP`, `TOTAL: ${totalCount} MESSAGES`)}
         </span>
 
         {categoriesSummary.map((cat) => {
@@ -311,33 +316,33 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
         {/* Table Filter Controls */}
         <div className="row between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
           <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
-            <span className="muted" style={{ fontSize: '13px' }}>Chủ đề:</span>
+            <span className="muted" style={{ fontSize: '13px' }}>{L('Chủ đề:', 'Topic:')}</span>
             <select
               className="inp"
               style={{ width: '150px', padding: '6px 10px', fontSize: '13px' }}
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
             >
-              <option value="ALL">Tất cả chủ đề</option>
-              <option value="COURAGE">Can đảm</option>
-              <option value="HEALING">Chữa lành</option>
-              <option value="PERSPECTIVE">Góc nhìn</option>
+              <option value="ALL">{L('Tất cả chủ đề', 'All topics')}</option>
+              <option value="COURAGE">{categoryMap.COURAGE.label}</option>
+              <option value="HEALING">{categoryMap.HEALING.label}</option>
+              <option value="PERSPECTIVE">{categoryMap.PERSPECTIVE.label}</option>
             </select>
 
-            <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>Trạng thái:</span>
+            <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>{L('Trạng thái:', 'Status:')}</span>
             <select
               className="inp"
               style={{ width: '140px', padding: '6px 10px', fontSize: '13px' }}
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
             >
-              <option value="ALL">Tất cả</option>
-              <option value="ACTIVE">Đang bật (Active)</option>
-              <option value="INACTIVE">Đang tắt (Tạm dừng)</option>
+              <option value="ALL">{L('Tất cả', 'All')}</option>
+              <option value="ACTIVE">{L('Đang bật', 'On')}</option>
+              <option value="INACTIVE">{L('Đang tắt', 'Off')}</option>
             </select>
           </div>
 
-          {isLoading && <span className="muted" style={{ fontSize: '12.5px' }}>Đang tải dữ liệu...</span>}
+          {isLoading && <span className="muted" style={{ fontSize: '12.5px' }}>{L('Đang tải...', 'Loading...')}</span>}
         </div>
 
         {/* Table of Capsules */}
@@ -345,19 +350,19 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
           <thead>
             <tr>
               <th style={{ width: '45px' }}>#</th>
-              <th>Nội dung thông điệp</th>
-              <th style={{ width: '110px' }}>Chủ đề</th>
-              <th style={{ width: '130px' }}>Nguồn tạo</th>
-              <th style={{ width: '85px', textAlign: 'center' }}>Lượt rút</th>
+              <th>{L('Nội dung thông điệp', 'Message')}</th>
+              <th style={{ width: '110px' }}>{L('Chủ đề', 'Topic')}</th>
+              <th style={{ width: '130px' }}>{L('Người tạo', 'Created by')}</th>
+              <th style={{ width: '85px', textAlign: 'center' }}>{L('Lượt rút', 'Draws')}</th>
               <th style={{ width: '65px', textAlign: 'center' }}>Bật/Tắt</th>
-              <th style={{ width: '85px', textAlign: 'right' }}>Thao tác</th>
+              <th style={{ width: '85px', textAlign: 'right' }}>{L('Thao tác', 'Actions')}</th>
             </tr>
           </thead>
           <tbody>
             {capsules.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-                  Không tìm thấy thông điệp nào phù hợp với bộ lọc
+                  {L('Không có thông điệp nào phù hợp', 'No matching messages')}
                 </td>
               </tr>
             ) : (
@@ -367,20 +372,28 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
                   badgeClass: 'b-priv',
                 };
                 const authorDisplay =
-                  c.author?.nickname || (c.author_role === 'ADMIN' ? 'Ban Quản trị' : 'Hệ thống');
+                  c.author?.nickname || (c.author_role === 'ADMIN' ? L('Ban Quản trị', 'Admin team') : L('Hệ thống', 'System'));
 
                 return (
                   <tr key={c.id}>
                     <td className="muted" style={{ fontSize: '12px' }}>{c.id}</td>
                     <td style={{ maxWidth: '340px' }}>
-                      <div style={{ lineHeight: 1.5, fontSize: '14px' }}>
-                        {c.message_vi || c.message}
-                      </div>
-                      {c.message_en && c.message_en !== (c.message_vi || c.message) && (
-                        <small className="muted" style={{ display: 'block', marginTop: '3px', fontStyle: 'italic' }}>
-                          EN: {c.message_en}
-                        </small>
-                      )}
+                      {(() => {
+                        const vi = c.message_vi || c.message;
+                        const en = c.message_en && c.message_en !== vi ? c.message_en : null;
+                        const main = language === 'en' && en ? en : vi;
+                        const other = language === 'en' ? (en ? vi : null) : en;
+                        return (
+                          <>
+                            <div style={{ lineHeight: 1.5, fontSize: '14px' }}>{main}</div>
+                            {other && (
+                              <small className="muted" style={{ display: 'block', marginTop: '3px', fontStyle: 'italic' }}>
+                                {language === 'en' ? 'VI' : 'EN'}: {other}
+                              </small>
+                            )}
+                          </>
+                        );
+                      })()}
                     </td>
                     <td>
                       <span className={`badge ${catMeta.badgeClass}`}>
@@ -398,7 +411,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
                     <td style={{ textAlign: 'center' }}>
                       <span
                         className={`tog ${c.is_approved ? 'on' : ''}`}
-                        title={c.is_approved ? 'Đang bật (Nhấp để tắt)' : 'Đang tắt (Nhấp để bật)'}
+                        title={c.is_approved ? L('Đang bật, nhấn để tắt', 'On, click to turn off') : L('Đang tắt, nhấn để bật', 'Off, click to turn on')}
                         onClick={() => handleToggleActive(c)}
                         style={{ cursor: 'pointer' }}
                       />
@@ -408,7 +421,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
                         <button
                           type="button"
                           className="iconbtn"
-                          title="Chỉnh sửa câu chữ"
+                          title={L('Chỉnh sửa', 'Edit')}
                           onClick={() => handleOpenEdit(c)}
                           style={{ width: '28px', height: '28px', border: '1px solid var(--line)', background: 'var(--paper)' }}
                         >
@@ -417,7 +430,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
                         <button
                           type="button"
                           className="iconbtn danger"
-                          title="Xóa thông điệp"
+                          title={L('Xóa thông điệp', 'Delete message')}
                           onClick={() => handleDeleteCapsule(c)}
                           style={{ width: '28px', height: '28px', border: '1px solid var(--line)', background: 'var(--paper)' }}
                         >
@@ -444,15 +457,15 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
         }}
       >
         <b className="serif" style={{ fontSize: '22px', display: 'block', marginBottom: '12px' }}>
-          Thêm thông điệp
+          {L('Thêm thông điệp', 'Add a message')}
         </b>
 
-        <div className="fieldl">Chủ đề hòm thư</div>
+        <div className="fieldl">{L('Chủ đề', 'Topic')}</div>
         <div className="row" style={{ gap: '6px', marginBottom: '14px' }}>
           {[
-            { id: 'COURAGE', name: 'Can đảm' },
-            { id: 'HEALING', name: 'Chữa lành' },
-            { id: 'PERSPECTIVE', name: 'Góc nhìn' },
+            { id: 'COURAGE', name: categoryMap.COURAGE.label },
+            { id: 'HEALING', name: categoryMap.HEALING.label },
+            { id: 'PERSPECTIVE', name: categoryMap.PERSPECTIVE.label },
           ].map((t) => (
             <span
               key={t.id}
@@ -465,13 +478,13 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
           ))}
         </div>
 
-        <div className="fieldl">Nội dung thông điệp (Tiếng Việt)</div>
+        <div className="fieldl">{L('Nội dung tiếng Việt', 'Vietnamese message')}</div>
         <textarea
           className="inp area"
           style={{ minHeight: '110px', fontSize: '14px', lineHeight: 1.5, fontFamily: 'var(--sans)' }}
           value={newContentVi}
           onChange={(e) => setNewContentVi(e.target.value)}
-          placeholder="Nhập thông điệp ý nghĩa gửi tới người ghé thăm..."
+          placeholder={L('Một lời nhắn gửi người ghé thăm...', 'A kind word for visitors...')}
         />
 
         <div style={{ marginTop: '10px', marginBottom: '14px' }}>
@@ -484,19 +497,19 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
               checked={showEnglishField}
               onChange={(e) => setShowEnglishField(e.target.checked)}
             />
-            <span>Thêm bản dịch tiếng Anh (English)</span>
+            <span>{L('Thêm bản dịch tiếng Anh', 'Add an English translation')}</span>
           </label>
         </div>
 
         {showEnglishField && (
           <div style={{ marginBottom: '14px' }}>
-            <div className="fieldl">English Message</div>
+            <div className="fieldl">{L('Nội dung tiếng Anh', 'English message')}</div>
             <textarea
               className="inp area"
               style={{ minHeight: '80px', fontSize: '13.5px', fontFamily: 'var(--sans)' }}
               value={newContentEn}
               onChange={(e) => setNewContentEn(e.target.value)}
-              placeholder="English translation..."
+              placeholder={L('Bản dịch tiếng Anh...', 'English translation...')}
             />
           </div>
         )}
@@ -507,7 +520,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
             style={{ gap: '8px', cursor: 'pointer', fontSize: '13.5px' }}
             onClick={() => setActiveImmediately(!activeImmediately)}
           >
-            <span className={`tog ${activeImmediately ? 'on' : ''}`} /> Bật ngay
+            <span className={`tog ${activeImmediately ? 'on' : ''}`} /> {L('Bật ngay', 'Turn on now')}
           </span>
           <button
             type="button"
@@ -515,7 +528,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
             onClick={handleAddCapsule}
             disabled={isCreating || !newContentVi.trim()}
           >
-            {isCreating ? 'Đang lưu...' : 'Lưu vào kho'}
+            {isCreating ? L('Đang lưu...', 'Saving...') : L('Lưu vào kho', 'Save')}
           </button>
         </div>
       </div>
@@ -529,17 +542,17 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
               <Icon name="x" size={22} />
             </span>
 
-            <h2 style={{ fontSize: '24px' }}>Chỉnh sửa thông điệp #{editingCapsule.id}</h2>
+            <h2 style={{ fontSize: '24px' }}>{L('Chỉnh sửa thông điệp', 'Edit message')} #{editingCapsule.id}</h2>
             <div className="sub">
-              Cập nhật lại câu từ cho trau chuốt hơn trước khi đưa tới người rút hòm thư.
+              {L('Chỉnh lại câu chữ trước khi đến tay người rút thư.', 'Polish the wording before visitors draw it.')}
             </div>
 
-            <div className="fieldl">Chủ đề</div>
+            <div className="fieldl">{L('Chủ đề', 'Topic')}</div>
             <div className="row" style={{ gap: '6px', marginBottom: '14px' }}>
               {[
-                { id: 'COURAGE', name: 'Can đảm' },
-                { id: 'HEALING', name: 'Chữa lành' },
-                { id: 'PERSPECTIVE', name: 'Góc nhìn' },
+                { id: 'COURAGE', name: categoryMap.COURAGE.label },
+                { id: 'HEALING', name: categoryMap.HEALING.label },
+                { id: 'PERSPECTIVE', name: categoryMap.PERSPECTIVE.label },
               ].map((t) => (
                 <span
                   key={t.id}
@@ -552,7 +565,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
               ))}
             </div>
 
-            <div className="fieldl">Nội dung Tiếng Việt</div>
+            <div className="fieldl">{L('Nội dung tiếng Việt', 'Vietnamese message')}</div>
             <textarea
               className="inp area"
               style={{ minHeight: '100px', fontSize: '14px', fontFamily: 'var(--sans)' }}
@@ -560,7 +573,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
               onChange={(e) => setEditContentVi(e.target.value)}
             />
 
-            <div className="fieldl" style={{ marginTop: '12px' }}>Nội dung Tiếng Anh (English)</div>
+            <div className="fieldl" style={{ marginTop: '12px' }}>{L('Nội dung tiếng Anh', 'English message')}</div>
             <textarea
               className="inp area"
               style={{ minHeight: '80px', fontSize: '13.5px', fontFamily: 'var(--sans)' }}
@@ -575,7 +588,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
                 onClick={() => setEditingCapsule(null)}
                 disabled={isUpdating}
               >
-                Hủy
+                {L('Hủy', 'Cancel')}
               </button>
               <button
                 type="button"
@@ -583,7 +596,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
                 onClick={handleSaveEdit}
                 disabled={isUpdating || !editContentVi.trim()}
               >
-                {isUpdating ? 'Đang lưu...' : 'Lưu thay đổi'}
+                {isUpdating ? L('Đang lưu...', 'Saving...') : L('Lưu thay đổi', 'Save changes')}
               </button>
             </div>
           </div>

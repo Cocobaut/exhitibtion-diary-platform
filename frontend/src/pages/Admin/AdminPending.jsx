@@ -468,7 +468,7 @@ export function AdminPending({
                   fontWeight: 600,
                   background: isAnalyzingAi ? 'rgba(245, 158, 11, 0.08)' : 'transparent',
                 }}
-                title="Phân tích kiểm duyệt và gợi ý tinh chỉnh văn phong bằng AI Copilot"
+                title={language === 'en' ? 'Ask AI to review and suggest wording' : 'Nhờ AI xem bài và gợi ý cách viết'}
               >
                 {isAnalyzingAi
                   ? (language === 'en' ? 'AI Analyzing...' : 'AI đang phân tích...')
@@ -629,7 +629,7 @@ export function AdminPending({
                     className="inp"
                     value={quote}
                     onChange={(e) => setQuote(e.target.value)}
-                    placeholder="“Một lời trích dẫn lắng đọng...”"
+                    placeholder={language === 'en' ? '“A reflective quote...”' : '“Một câu nói lắng đọng...”'}
                   />
                 </div>
               )}
@@ -638,9 +638,9 @@ export function AdminPending({
             {/* Painting & Wall preview */}
             <div>
               <div className="fieldl">
-                Tranh minh họa{' '}
+                {language === 'en' ? 'Illustration' : 'Tranh minh họa'}{' '}
                 {roomId === 1 && (
-                  <span style={{ color: 'var(--acc)' }}>Bắt buộc ở Phòng 1</span>
+                  <span style={{ color: 'var(--acc)' }}>{language === 'en' ? 'Required in Room 1' : 'Bắt buộc ở Phòng 1'}</span>
                 )}
               </div>
 
@@ -659,7 +659,7 @@ export function AdminPending({
                 {mediaUrl ? (
                   <img
                     src={mediaUrl}
-                    alt="Tranh minh họa"
+                    alt={language === 'en' ? 'Illustration' : 'Tranh minh họa'}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
@@ -689,7 +689,7 @@ export function AdminPending({
                     color: '#6d28d9',
                     fontWeight: 500,
                   }}
-                  title="Dùng AI tự động chuyển hóa câu chuyện thành tranh minh họa mỹ thuật"
+                  title={language === 'en' ? 'Let AI draw an illustration from the story' : 'Nhờ AI vẽ tranh từ câu chuyện'}
                 >
                   {isGeneratingAiImage
                     ? (language === 'en' ? 'Generating Art...' : 'Đang vẽ tranh AI...')

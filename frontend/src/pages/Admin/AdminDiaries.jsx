@@ -8,6 +8,7 @@ import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminDiaries({ onCountChange, triggerToast }) {
   const { t, language, localize } = useLanguage();
+  const L = (vi, en) => (language === 'en' ? en : vi);
   const [segment, setSegment] = useState(0); // 0: Chờ phê duyệt, 1: Đang công khai
 
   // -------------------------------------------------------------
@@ -56,6 +57,18 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
     'Nội dung quá ngắn',
     'Không phù hợp không gian cộng đồng',
   ];
+
+  // Lý do gửi tới tác giả giữ tiếng Việt, chỉ đổi nhãn hiển thị khi giao diện là tiếng Anh
+  const REASON_EN = {
+    'Chứa thông tin liên lạc cá nhân': 'Contains personal contact details',
+    'Ngôn từ chưa phù hợp': 'Inappropriate language',
+    'Nội dung quá ngắn': 'Too short',
+    'Không phù hợp không gian cộng đồng': 'Not suitable for the community space',
+    'Nhận được nhiều báo cáo phản cảm từ người đọc': 'Reported as offensive by many readers',
+    'Chứa nội dung vi phạm tiêu chuẩn cộng đồng': 'Breaks community guidelines',
+    'Tác giả yêu cầu thu hồi về riêng tư': 'The author asked to make it private',
+    'Có thông tin cá nhân cần bảo mật': 'Contains private information',
+  };
 
   const quickRevokeReasons = [
     'Nhận được nhiều báo cáo phản cảm từ người đọc',
@@ -172,7 +185,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
         err?.response?.data?.detail ||
         err?.response?.data?.message ||
         err?.message ||
-        'Không thể gọi dịch vụ AI Copilot. Vui lòng kiểm tra cấu hình Owner AI.';
+        L('Chưa gọi được trợ lý AI. Hãy nhờ Chủ sở hữu kiểm tra phần cấu hình AI.', 'AI is not available. Ask the owner to check the AI settings.');
       if (triggerToast) {
         triggerToast(`[AI Copilot] ${errMsg}`);
       } else {
@@ -222,7 +235,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
       await adminDiaryService.approveDiary(currentItem.id, payload);
 
       if (triggerToast) {
-        triggerToast('✦ Trang nhật ký đã được phê duyệt công khai lên Tab Cộng đồng!');
+        triggerToast(L('✦ Đã duyệt, trang nhật ký đang hiện ở mục Cộng đồng.', '✦ Approved. The entry is now in Community.'));
       }
 
       // Optimistic update
@@ -234,8 +247,8 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
       }
     } catch (err) {
       console.error('Error approving diary:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể phê duyệt trang nhật ký lúc này.';
-      alert(`Lỗi phê duyệt: ${msg}`);
+      const msg = err?.response?.data?.message || err?.message || L('Không thể duyệt trang nhật ký lúc này.', 'Could not approve this entry right now.');
+      alert(msg);
     } finally {
       setIsApproving(false);
     }
@@ -255,7 +268,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
       await adminDiaryService.rejectDiary(currentItem.id, { reason: finalReason });
 
       if (triggerToast) {
-        triggerToast('Đã từ chối chia sẻ công khai. Bài viết chuyển về trạng thái riêng tư của người dùng.');
+        triggerToast(L('Đã từ chối. Bài viết trở về chế độ riêng tư của tác giả.', 'Declined. The entry is private to its author again.'));
       }
 
       setRejectModalOpen(false);
@@ -268,8 +281,8 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
       }
     } catch (err) {
       console.error('Error rejecting diary:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể từ chối duyệt nhật ký.';
-      alert(`Lỗi: ${msg}`);
+      const msg = err?.response?.data?.message || err?.message || L('Không thể từ chối trang nhật ký này.', 'Could not decline this entry.');
+      alert(msg);
     } finally {
       setIsRejecting(false);
     }
@@ -287,7 +300,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
       });
 
       if (triggerToast) {
-        triggerToast('✦ Đã thu hồi bài viết khỏi Tab Cộng đồng và chuyển về riêng tư thành công.');
+        triggerToast(L('✦ Đã thu hồi, bài viết trở về chế độ riêng tư.', '✦ Withdrawn. The entry is private again.'));
       }
 
       setRevokeModalOpen(false);
@@ -295,8 +308,8 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
       loadApprovedDiaries();
     } catch (err) {
       console.error('Error revoking diary:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể thu hồi bài viết lúc này.';
-      alert(`Lỗi thu hồi: ${msg}`);
+      const msg = err?.response?.data?.message || err?.message || L('Không thể thu hồi bài viết lúc này.', 'Could not withdraw this entry right now.');
+      alert(msg);
     } finally {
       setIsRevoking(false);
     }
@@ -390,7 +403,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                     >
                       <div className="row between" style={{ marginBottom: '6px' }}>
                         <span style={{ fontWeight: 600, fontSize: '14px' }}>
-                          {item.title || 'Không có tiêu đề'}
+                          {item.title || L('Không có tiêu đề', 'Untitled')}
                         </span>
                         {item.mood && (
                           <span className="badge" style={{ fontSize: '11px' }}>
@@ -417,7 +430,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
 
                       <div className="row between" style={{ fontSize: '12px', color: 'var(--muted)' }}>
                         <span>
-                          {item.author?.nickname || 'Tác giả'} (@{item.author?.username})
+                          {item.author?.nickname || L('Tác giả', 'Author')} (@{item.author?.username})
                         </span>
                         <span>{formatDate(item.entry_date || item.created_at)}</span>
                       </div>
@@ -466,7 +479,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                       fontWeight: 600,
                       background: isAnalyzingAi ? 'rgba(245, 158, 11, 0.08)' : 'transparent',
                     }}
-                    title="Phân tích kiểm duyệt và đề xuất văn phong bằng AI Copilot"
+                    title={L('Nhờ AI xem bài và gợi ý cách viết', 'Ask AI to review and suggest wording')}
                   >
                     {isAnalyzingAi
                       ? (language === 'en' ? 'AI Analyzing...' : 'AI đang phân tích...')
@@ -478,7 +491,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                     onClick={() => setRejectModalOpen(true)}
                     disabled={isApproving}
                   >
-                    <Icon name="x" size={16} /> Từ chối
+                    <Icon name="x" size={16} /> {L('Từ chối', 'Decline')}
                   </button>
                   <button
                     type="button"
@@ -487,7 +500,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                     disabled={isApproving}
                   >
                     <Icon name="check" size={16} />{' '}
-                    {isApproving ? 'Đang duyệt...' : 'Duyệt công khai'}
+                    {isApproving ? L('Đang duyệt...', 'Approving...') : L('Duyệt công khai', 'Approve')}
                   </button>
                 </div>
               </div>
@@ -495,13 +508,13 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
               {/* Photos Gallery if attached */}
               {currentItem.media_urls && currentItem.media_urls.length > 0 && (
                 <div style={{ marginBottom: '22px' }}>
-                  <div className="fieldl">Hình ảnh đính kèm ({currentItem.media_urls.length})</div>
+                  <div className="fieldl">{L('Hình ảnh đính kèm', 'Attached images')}</div>
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {currentItem.media_urls.map((url, i) => (
                       <img
                         key={i}
                         src={url}
-                        alt="Ảnh đính kèm"
+                        alt={L('Ảnh đính kèm', 'Attached image')}
                         style={{
                           width: '140px',
                           height: '110px',
@@ -631,7 +644,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                 fontSize: '15px',
               }}
             >
-              <div>Chọn một trang nhật ký từ hàng đợi để bắt đầu kiểm duyệt</div>
+              <div>{L('Chọn một trang nhật ký trong danh sách để bắt đầu duyệt', 'Pick an entry from the list to start reviewing')}</div>
             </div>
           )}
         </>
@@ -656,40 +669,40 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
               <Icon name="search" size={17} />
               <input
                 type="text"
-                placeholder="Tìm nhật ký công khai theo tiêu đề, tác giả..."
+                placeholder={L('Tìm theo tiêu đề hoặc tác giả...', 'Search by title or author...')}
                 value={approvedSearch}
                 onChange={(e) => setApprovedSearch(e.target.value)}
               />
             </div>
-            {isLoadingApproved && <span className="muted" style={{ fontSize: '13px' }}>Đang tải...</span>}
+            {isLoadingApproved && <span className="muted" style={{ fontSize: '13px' }}>{L('Đang tải...', 'Loading...')}</span>}
           </div>
 
           <table className="at">
             <thead>
               <tr>
-                <th>Tiêu đề trang nhật ký</th>
-                <th>Tác giả</th>
-                <th>Ngày ghi</th>
-                <th>Lượt tương tác</th>
-                <th>Ngày công khai</th>
-                <th style={{ textAlign: 'right' }}>Hành động</th>
+                <th>{L('Tiêu đề', 'Title')}</th>
+                <th>{L('Tác giả', 'Author')}</th>
+                <th>{L('Ngày ghi', 'Entry date')}</th>
+                <th>{L('Lượt tương tác', 'Reactions')}</th>
+                <th>{L('Ngày công khai', 'Published')}</th>
+                <th style={{ textAlign: 'right' }}>{L('Thao tác', 'Actions')}</th>
               </tr>
             </thead>
             <tbody>
               {approvedItems.length === 0 ? (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
-                    Không tìm thấy bài nhật ký nào đang hiển thị trên Tab Cộng đồng
+                    {L('Chưa có trang nhật ký nào đang công khai', 'No public entries yet')}
                   </td>
                 </tr>
               ) : (
                 approvedItems.map((it) => (
                   <tr key={it.id}>
                     <td>
-                      <b style={{ fontSize: '14.5px' }}>{it.title || 'Không có tiêu đề'}</b>
+                      <b style={{ fontSize: '14.5px' }}>{it.title || L('Không có tiêu đề', 'Untitled')}</b>
                     </td>
                     <td>
-                      <span>{it.author?.nickname || 'Tác giả'}</span>{' '}
+                      <span>{it.author?.nickname || L('Tác giả', 'Author')}</span>{' '}
                       <small className="muted">(@{it.author?.username})</small>
                     </td>
                     <td>{formatDate(it.entry_date)}</td>
@@ -708,7 +721,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                           setRevokeModalOpen(true);
                         }}
                       >
-                        Thu hồi về riêng tư
+                        {L('Thu hồi về riêng tư', 'Make private')}
                       </button>
                     </td>
                   </tr>
@@ -728,13 +741,15 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
               <Icon name="x" size={22} />
             </span>
 
-            <h2 style={{ fontSize: '24px' }}>Từ chối duyệt công khai</h2>
+            <h2 style={{ fontSize: '24px' }}>{L('Từ chối duyệt công khai', 'Decline this entry')}</h2>
             <div className="sub">
-              Trang nhật ký &ldquo;{currentItem?.title || 'Không có tiêu đề'}&rdquo; sẽ được chuyển về chế độ
-              <b> RIÊNG TƯ</b> trong sổ cá nhân của người dùng, không bị xoá.
+              {L(
+                `Trang nhật ký “${currentItem?.title || 'Không có tiêu đề'}” sẽ trở về chế độ riêng tư trong sổ của tác giả, không bị xoá.`,
+                `“${currentItem?.title || 'Untitled'}” goes back to the author's private diary. Nothing is deleted.`
+              )}
             </div>
 
-            <div className="fieldl">Lý do nhanh</div>
+            <div className="fieldl">{L('Lý do', 'Reason')}</div>
             <div className="row" style={{ gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
               {quickRejectReasons.map((r) => (
                 <span
@@ -743,18 +758,18 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                   onClick={() => setRejectReason(r)}
                   style={{ cursor: 'pointer' }}
                 >
-                  {r}
+                  {L(r, REASON_EN[r] || r)}
                 </span>
               ))}
             </div>
 
-            <div className="fieldl">Lời nhắn cụ thể gửi tác giả (tùy chọn)</div>
+            <div className="fieldl">{L('Lời nhắn gửi tác giả (không bắt buộc)', 'Note to the author (optional)')}</div>
             <textarea
               className="inp area"
               style={{ minHeight: '100px', fontSize: '14px', fontFamily: 'var(--sans)' }}
               value={customRejectNote}
               onChange={(e) => setCustomRejectNote(e.target.value)}
-              placeholder="Nhập lý do hướng dẫn để tác giả chỉnh sửa..."
+              placeholder={L('Gợi ý để tác giả chỉnh sửa...', 'Tips for the author to revise...')}
             />
 
             <div className="row" style={{ justifyContent: 'flex-end', marginTop: '20px', gap: '10px' }}>
@@ -764,7 +779,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                 onClick={() => setRejectModalOpen(false)}
                 disabled={isRejecting}
               >
-                Hủy
+                {L('Hủy', 'Cancel')}
               </button>
               <button
                 type="button"
@@ -773,7 +788,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                 onClick={handleConfirmReject}
                 disabled={isRejecting}
               >
-                {isRejecting ? 'Đang từ chối...' : 'Xác nhận từ chối'}
+                {isRejecting ? L('Đang từ chối...', 'Declining...') : L('Xác nhận từ chối', 'Decline')}
               </button>
             </div>
           </div>
@@ -789,12 +804,12 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
               <Icon name="x" size={22} />
             </span>
 
-            <h2 style={{ fontSize: '24px' }}>Thu hồi bài viết về riêng tư</h2>
+            <h2 style={{ fontSize: '24px' }}>{L('Thu hồi về riêng tư', 'Make this entry private')}</h2>
             <div className="sub">
-              Bài viết &ldquo;{revokingItem?.title}&rdquo; sẽ lập tức biến mất khỏi Tab Cộng đồng và chuyển về trạng thái cá nhân của tác giả.
+              {L(`“${revokingItem?.title}” sẽ rời khỏi mục Cộng đồng và trở về chế độ riêng tư của tác giả.`, `“${revokingItem?.title}” leaves Community and becomes private to its author.`)}
             </div>
 
-            <div className="fieldl">Lý do thu hồi nhanh</div>
+            <div className="fieldl">{L('Lý do', 'Reason')}</div>
             <div className="row" style={{ gap: '6px', flexWrap: 'wrap', marginBottom: '14px' }}>
               {quickRevokeReasons.map((r) => (
                 <span
@@ -803,12 +818,12 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                   onClick={() => setRevokeReason(r)}
                   style={{ cursor: 'pointer' }}
                 >
-                  {r}
+                  {L(r, REASON_EN[r] || r)}
                 </span>
               ))}
             </div>
 
-            <div className="fieldl">Chi tiết lý do gửi tác giả</div>
+            <div className="fieldl">{L('Lời nhắn gửi tác giả', 'Note to the author')}</div>
             <textarea
               className="inp area"
               style={{ minHeight: '90px', fontSize: '14px', fontFamily: 'var(--sans)' }}
@@ -823,7 +838,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                 onClick={() => setRevokeModalOpen(false)}
                 disabled={isRevoking}
               >
-                Hủy
+                {L('Hủy', 'Cancel')}
               </button>
               <button
                 type="button"
@@ -832,7 +847,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                 onClick={handleConfirmRevoke}
                 disabled={isRevoking || !revokeReason.trim()}
               >
-                {isRevoking ? 'Đang thu hồi...' : 'Xác nhận thu hồi'}
+                {isRevoking ? L('Đang thu hồi...', 'Withdrawing...') : L('Xác nhận thu hồi', 'Make private')}
               </button>
             </div>
           </div>

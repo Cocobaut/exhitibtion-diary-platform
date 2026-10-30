@@ -107,22 +107,22 @@ export function AdminPage({ onOpenNotifications }) {
         rejection_reason_tag: selectedReason,
       });
 
-      triggerToast('Đã từ chối tác phẩm và gửi lời nhắn phản hồi tới chuông của tác giả.');
+      triggerToast(language === 'en' ? 'Declined. The author was notified with your note.' : 'Đã từ chối và gửi lời nhắn tới tác giả.');
       setShowRejectModal(false);
       setSelectedRejectArtwork(null);
       setRefreshTrigger((prev) => prev + 1);
     } catch (err) {
       console.error('Error rejecting artwork:', err);
       const apiMsg =
-        err?.response?.data?.message || err?.message || 'Không thể từ chối tác phẩm lúc này.';
-      alert(`Lỗi: ${apiMsg}`);
+        err?.response?.data?.message || err?.message || (language === 'en' ? 'Could not decline this artwork right now.' : 'Không thể từ chối tác phẩm lúc này.');
+      alert(apiMsg);
     } finally {
       setIsRejecting(false);
     }
   };
 
   const handleApproveSuccess = () => {
-    triggerToast('✦ Tác phẩm đã được phê duyệt và đưa lên triển lãm thành công!');
+    triggerToast(language === 'en' ? '✦ Approved. The artwork is now on display.' : '✦ Đã duyệt, tác phẩm đang được trưng bày.');
     setRefreshTrigger((prev) => prev + 1);
   };
 
@@ -296,7 +296,7 @@ export function AdminPage({ onOpenNotifications }) {
             fontSize: '15px',
           }}
         >
-          <div>Khu vực quản trị phân hệ {tabs[activeTab]?.name || 'này'} đang hoàn thiện.</div>
+          <div>{language === 'en' ? 'This section is not ready yet.' : 'Mục này đang được hoàn thiện.'}</div>
         </div>
       )}
 

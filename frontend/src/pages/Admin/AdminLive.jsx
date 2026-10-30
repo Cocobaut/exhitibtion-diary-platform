@@ -167,8 +167,8 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
       loadArtworks();
     } catch (err) {
       console.error('Error editing artwork:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Không thể lưu cập nhật tác phẩm.';
-      alert(`Lỗi: ${msg}`);
+      const msg = err?.response?.data?.message || err?.message || (language === 'en' ? 'Could not save the changes.' : 'Không thể lưu thay đổi.');
+      alert(msg);
     } finally {
       setIsSavingEdit(false);
     }
@@ -196,7 +196,7 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
       if (onRefreshCounts) onRefreshCounts();
     } catch (err) {
       console.error('Error archiving artwork:', err);
-      alert('Không thể lưu trữ tác phẩm này. Vui lòng thử lại.');
+      alert(language === 'en' ? 'Could not archive this artwork. Please try again.' : 'Không thể lưu trữ tác phẩm này. Vui lòng thử lại.');
     } finally {
       setIsArchiving(false);
     }
@@ -222,7 +222,7 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
       if (onRefreshCounts) onRefreshCounts();
     } catch (err) {
       console.error('Error restoring artwork:', err);
-      alert('Không thể khôi phục tác phẩm lúc này. Vui lòng thử lại.');
+      alert(language === 'en' ? 'Could not restore this artwork. Please try again.' : 'Không thể khôi phục tác phẩm lúc này. Vui lòng thử lại.');
     } finally {
       setIsRestoring(false);
     }
