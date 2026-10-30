@@ -88,8 +88,8 @@ export function AdminStudio({ triggerToast, onPublished }) {
     if (!finalTitleVi) {
       setErrorMsg(
         language === 'en'
-          ? 'Please enter artwork title (Vietnamese or English).'
-          : 'Vui lòng nhập tiêu đề tác phẩm (Tiếng Việt hoặc Tiếng Anh).'
+          ? 'Please enter a title.'
+          : 'Vui lòng nhập tiêu đề.'
       );
       return;
     }
@@ -97,8 +97,8 @@ export function AdminStudio({ triggerToast, onPublished }) {
     if (!finalContentVi) {
       setErrorMsg(
         language === 'en'
-          ? 'Please enter artwork content (Vietnamese or English).'
-          : 'Vui lòng nhập nội dung tác phẩm (Tiếng Việt hoặc Tiếng Anh).'
+          ? 'Please enter the content.'
+          : 'Vui lòng nhập nội dung.'
       );
       return;
     }
@@ -192,19 +192,15 @@ export function AdminStudio({ triggerToast, onPublished }) {
         top: '142px',
         bottom: '26px',
         overflowY: 'auto',
+        overflowX: 'hidden',
       }}
     >
       <form
         onSubmit={handlePublish}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 340px',
-          gap: '20px',
-          alignItems: 'start',
-        }}
+        style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', alignItems: 'flex-start' }}
       >
         {/* Cột trái: nội dung bài song ngữ VI / EN */}
-        <div className="box" style={{ padding: '22px 26px' }}>
+        <div className="box" style={{ padding: '22px 26px', flex: '1 1 520px', minWidth: 0 }}>
           <p className="muted" style={{ margin: '0 0 18px', fontSize: '13.5px' }}>
             {language === 'en'
               ? 'Posts published here go straight to the exhibition, without the review step.'
@@ -228,7 +224,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
           )}
 
           {/* Chọn phòng & Bút danh */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '16px', alignItems: 'end', marginBottom: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', alignItems: 'end', marginBottom: '16px' }}>
             <div>
               <div className="fieldl">{language === 'en' ? 'Room' : 'Phòng'}</div>
               <div className="row" style={{ gap: '8px', flexWrap: 'wrap' }}>
@@ -278,11 +274,11 @@ export function AdminStudio({ triggerToast, onPublished }) {
             onError={(msg) => (triggerToast ? triggerToast(`[AI] ${msg}`) : setErrorMsg(`[AI] ${msg}`))}
           />
 
-          {/* 1. Title VI & Title EN (title_vi / title_en) */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+          {/* Tiêu đề */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '14px' }}>
             <div>
               <div className="fieldl">
-                {language === 'en' ? 'Title (Vietnamese - title_vi)' : 'Tiêu đề Tiếng Việt (title_vi)'}
+                {language === 'en' ? 'Vietnamese title' : 'Tiêu đề tiếng Việt'}
               </div>
               <input
                 className="inp"
@@ -294,7 +290,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
             </div>
             <div>
               <div className="fieldl">
-                {language === 'en' ? 'Title (English - title_en)' : 'Tiêu đề Tiếng Anh (title_en)'}
+                {language === 'en' ? 'English title' : 'Tiêu đề tiếng Anh'}
               </div>
               <input
                 className="inp"
@@ -306,45 +302,41 @@ export function AdminStudio({ triggerToast, onPublished }) {
             </div>
           </div>
 
-          {/* 2. Short Content VI & Short Content EN (short_content_vi / short_content_en) */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+          {/* Tóm tắt */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '14px' }}>
             <div>
               <div className="fieldl">
-                {language === 'en'
-                  ? 'Short Summary (Vietnamese - short_content_vi)'
-                  : 'Tóm tắt ngắn Tiếng Việt (short_content_vi)'}{' '}
+                {language === 'en' ? 'Vietnamese summary' : 'Tóm tắt tiếng Việt'}{' '}
                 <span>{summaryVi.length}/140</span>
               </div>
               <input
                 className="inp"
                 value={summaryVi}
                 onChange={(e) => setSummaryVi(e.target.value)}
-                placeholder={language === 'en' ? 'Short summary in Vietnamese...' : 'Hiện trên thẻ ở phòng triển lãm (TV)...'}
+                placeholder={language === 'en' ? 'Short summary in Vietnamese...' : 'Hiện trên thẻ ở phòng triển lãm...'}
                 maxLength={140}
               />
             </div>
             <div>
               <div className="fieldl">
-                {language === 'en'
-                  ? 'Short Summary (English - short_content_en)'
-                  : 'Tóm tắt ngắn Tiếng Anh (short_content_en)'}{' '}
+                {language === 'en' ? 'English summary' : 'Tóm tắt tiếng Anh'}{' '}
                 <span>{summaryEn.length}/140</span>
               </div>
               <input
                 className="inp"
                 value={summaryEn}
                 onChange={(e) => setSummaryEn(e.target.value)}
-                placeholder={language === 'en' ? 'Shown on the card in the exhibition...' : 'Tóm tắt ngắn hiển thị trên thẻ (EN)...'}
+                placeholder={language === 'en' ? 'Shown on the card in the exhibition...' : 'Tóm tắt bằng tiếng Anh...'}
                 maxLength={140}
               />
             </div>
           </div>
 
-          {/* 3. Full Content VI & Full Content EN (content_vi / content_en) */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+          {/* Nội dung */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '14px' }}>
             <div>
               <div className="fieldl">
-                {language === 'en' ? 'Content (Vietnamese - content_vi)' : 'Nội dung Tiếng Việt (content_vi)'}
+                {language === 'en' ? 'Vietnamese content' : 'Nội dung tiếng Việt'}
               </div>
               <textarea
                 className="inp area"
@@ -356,7 +348,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
             </div>
             <div>
               <div className="fieldl">
-                {language === 'en' ? 'Content (English - content_en)' : 'Nội dung Tiếng Anh (content_en)'}
+                {language === 'en' ? 'English content' : 'Nội dung tiếng Anh'}
               </div>
               <textarea
                 className="inp area"
@@ -381,7 +373,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
           )}
 
           {roomId === 2 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginTop: '14px' }}>
               <div>
                 <div className="fieldl">{language === 'en' ? 'Landing date (optional)' : 'Ngày hạ xuống (không bắt buộc)'}</div>
                 <input
@@ -429,7 +421,7 @@ export function AdminStudio({ triggerToast, onPublished }) {
         </div>
 
         {/* Cột phải: tranh, xem trước và nút xuất bản luôn trong tầm mắt */}
-        <div className="box" style={{ padding: '20px', position: 'sticky', top: 0 }}>
+        <div className="box" style={{ padding: '20px', position: 'sticky', top: 0, flex: '0 1 320px', minWidth: '260px' }}>
           <div className="fieldl">
             {language === 'en' ? 'Preview' : 'Xem trước'}
             {roomId === 1 && <span style={{ color: 'var(--acc)' }}>{language === 'en' ? 'Image required' : 'Cần có tranh'}</span>}
