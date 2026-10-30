@@ -104,7 +104,7 @@ export function LanternLandedModal({
       'Lúc viết thư này mình đang ngồi ở thư viện, vừa trượt kỳ thi IELTS lần hai. Nếu cậu đọc được những dòng này, mong là cậu đã thôi so mình với người khác. Dù kết quả ra sao, mình vẫn tự hào vì tụi mình đã không bỏ cuộc.',
     content_en:
       'Writing this while sitting in the library after failing my IELTS exam for the second time. If you are reading this, I hope you have stopped comparing yourself with others. Whatever the outcome, I am still proud that we never gave up.',
-    author: language === 'en' ? 'Linh, Oct 24, 2023' : 'Linh, 24.10.2023',
+    author: language === 'en' ? 'A wanderer' : 'Lãng Khách',
     statusNote: language === 'en' ? 'Arrival time reached · 09:00, Oct 25, 2026' : 'Đã tới giờ hẹn · 09:00, 25.10.2026',
     symbol: 'heart',
   };

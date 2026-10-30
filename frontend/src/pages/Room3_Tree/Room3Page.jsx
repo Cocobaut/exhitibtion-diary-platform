@@ -509,19 +509,6 @@ export function Room3Page({
           boxShadow: '0 -8px 24px rgba(0,0,0,0.35)',
         }}
       >
-        <div
-          style={{
-            textAlign: 'center',
-            fontSize: '13.5px',
-            color: 'var(--onw2)',
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}
-        >
-          {language === 'en'
-            ? `${totalLeaves.toLocaleString('en-US')} encouraging words on tree · hover a leaf to preview, click to read`
-            : `${totalLeaves.toLocaleString('vi-VN')} lời động viên trên cây · nhấn vào một chiếc lá để đọc`}
-        </div>
       </div>
 
       {/* Modals */}

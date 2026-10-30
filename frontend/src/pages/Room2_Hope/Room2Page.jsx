@@ -91,7 +91,7 @@ export function Room2Page({
         if (data?.total_lanterns !== undefined) {
           setStats({
             total_lanterns: data.total_lanterns,
-            total_opened: data.total_opened ?? 128,
+            total_opened: data.total_opened ?? 0,
           });
         }
 
@@ -391,41 +391,6 @@ export function Room2Page({
         >
           {t('r2_btn_release')}
         </button>
-      </div>
-
-      {/* Interactive "Kéo xuống để đọc" Tag */}
-      {!showLandedModal && (
-        <div
-          className="abs"
-          style={{ left: '300px', top: '470px', zIndex: 7 }}
-          onClick={handlePullDownRandom}
-        >
-          <span
-            className="glass"
-            style={{
-              padding: '6px 16px',
-              borderRadius: '999px',
-              fontFamily: 'var(--hand)',
-              fontSize: '18px',
-              cursor: 'pointer',
-              userSelect: 'none',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            <span style={{ color: 'var(--gold)' }}>✦</span> {language === 'en' ? 'tap a lantern to read ↓' : 'nhấn vào lồng đèn để đọc ↓'}
-          </span>
-        </div>
-      )}
-
-      {/* Footer Counter */}
-      <div className="counter">
-        {language === 'en'
-          ? `${stats.total_lanterns.toLocaleString('en-US')} lanterns drifting · ${stats.total_opened.toLocaleString('en-US')} lanterns landed this year`
-          : `${stats.total_lanterns.toLocaleString('vi-VN')} lồng đèn đang bay · ${stats.total_opened.toLocaleString('vi-VN')} lồng đèn đã hạ xuống năm nay`}
       </div>
 
       {/* Modals */}

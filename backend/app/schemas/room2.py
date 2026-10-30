@@ -63,6 +63,7 @@ class Room2LanternListItem(BaseModel):
 class Room2LanternListResponse(BaseModel):
     items: List[Room2LanternListItem]
     total_lanterns: int
+    total_opened: int = 0
 
 
 class Room2LanternDetail(BaseModel):

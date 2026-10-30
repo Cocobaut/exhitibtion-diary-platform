@@ -119,6 +119,8 @@ class Room2Service:
         # Count total
         count_stmt = select(func.count(Artwork.id)).where(*conditions)
         total_lanterns = (await db.scalar(count_stmt)) or 0
+        opened_stmt = select(func.count(Artwork.id)).where(*conditions, Artwork.is_opened.is_(True))
+        total_opened = (await db.scalar(opened_stmt)) or 0
 
         # Query items
         stmt = (
@@ -174,6 +176,7 @@ class Room2Service:
         return {
             "items": items,
             "total_lanterns": total_lanterns,
+            "total_opened": total_opened,
             "freshly_landed": freshly_landed,
         }
 

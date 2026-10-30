@@ -500,14 +500,6 @@ export function NotebookPage({
         </>
       )}
 
-      {/* Counter */}
-      <div className="counter">
-        <i>
-          {language === 'en'
-            ? 'A notebook preserving comforting words to support you on your journey.'
-            : 'Những lời nhắn bạn muốn giữ lại.'}
-        </i>
-      </div>
     </div>
   );
 }

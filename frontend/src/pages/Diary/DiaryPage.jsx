@@ -125,7 +125,7 @@ export function DiaryPage({
             className="btn main"
             onClick={() => handleOpenWrite(null)}
           >
-            <Icon name="edit" size={16} /> {language === 'en' ? '✦ New Entry' : '✦ Viết nhật ký mới'}
+            {language === 'en' ? '✦ New Entry' : '✦ Viết nhật ký mới'}
           </button>
 
           <button
