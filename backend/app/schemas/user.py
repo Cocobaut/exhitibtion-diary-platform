@@ -78,8 +78,8 @@ class UserProfilePatch(BaseModel):
         stripped = v.strip()
         if not stripped:
             return None
-        if not (stripped.startswith("http://") or stripped.startswith("https://")):
-            raise ValueError("avatar_url phải là URL hợp lệ (http:// hoặc https://)")
+        if not stripped.startswith(("http://", "https://", "/static/")):
+            raise ValueError("avatar_url phải là URL hợp lệ (http://, https:// hoặc /static/)")
         if len(stripped) > 2048:
             raise ValueError("avatar_url không được vượt quá 2048 ký tự")
         return stripped

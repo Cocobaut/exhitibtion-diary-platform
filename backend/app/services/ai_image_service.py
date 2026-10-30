@@ -51,7 +51,7 @@ class AiImageService:
             # Fallback aesthetic SVG art if offline
             cls._create_fallback_art_file(file_path, visual_prompt)
 
-        image_url = f"/uploads/artworks/ai_generated/{filename}"
+        image_url = f"/static/artworks/ai_generated/{filename}"
 
         return GenerateArtImageData(
             art_id=req.art_id,

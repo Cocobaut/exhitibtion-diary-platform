@@ -127,8 +127,8 @@ class StorageService:
                     final_filepath.unlink()
                 temp_filepath.rename(final_filepath)
 
-            public_base = settings.PUBLIC_BASE_URL.rstrip("/")
-            return f"{public_base}/static/{folder}/{final_filename}"
+            # Lưu đường dẫn tương đối để ảnh không hỏng khi đổi tên miền
+            return f"/static/{folder}/{final_filename}"
 
         except Exception:
             if temp_filepath.exists():
@@ -144,10 +144,11 @@ class StorageService:
     def delete(file_url: str) -> bool:
         """Optional delete local file given public URL."""
         try:
-            public_base = settings.PUBLIC_BASE_URL.rstrip("/")
-            prefix = f"{public_base}/static/"
-            if file_url.startswith(prefix):
-                rel_path = file_url[len(prefix):]
+            # Nhận cả "/static/..." lẫn link tuyệt đối cũ "https://<domain>/static/..."
+            marker = "/static/"
+            idx = file_url.find(marker)
+            if idx != -1 and (idx == 0 or file_url.startswith(("http://", "https://"))):
+                rel_path = file_url[idx + len(marker):]
                 target_path = Path(settings.UPLOAD_DIR) / rel_path
                 if target_path.exists():
                     target_path.unlink()

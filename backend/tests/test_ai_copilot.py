@@ -341,7 +341,7 @@ def test_visual_prompt_extraction_and_image_generation_flow():
     def mock_generate_image(prompt: str, art_id: str) -> Dict[str, Any]:
         return {
             "art_id": art_id,
-            "image_url": f"/uploads/artworks/ai_generated/{art_id}_preview.webp",
+            "image_url": f"/static/artworks/ai_generated/{art_id}_preview.webp",
             "visual_prompt": prompt,
             "width": 1024,
             "height": 1024,
@@ -636,7 +636,7 @@ async def test_fastapi_e2e_ai_endpoints():
         assert img_res.status_code == 200, f"Expected 200, got {img_res.status_code}: {img_res.text}"
         img_data = img_res.json()["data"]
         assert img_data["art_id"] == "art-001"
-        assert "/uploads/artworks/ai_generated/" in img_data["image_url"]
+        assert "/static/artworks/ai_generated/" in img_data["image_url"]
 
         # F. Test dedicated deactivate endpoint: /owner/ai-settings/deactivate
         deact_res = await client.post("/api/v1/owner/ai-settings/deactivate")
