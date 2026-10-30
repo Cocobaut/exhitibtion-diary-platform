@@ -7,6 +7,7 @@ import { notificationService } from '../../services/notificationService';
 
 export function TopNav({
   roomNo,
+  tagLabel,
   roomName,
   greeting,
   searchPlaceholder,
@@ -63,7 +64,7 @@ export function TopNav({
     <div className="top">
       {roomNo ? (
         <div className="room-tag">
-          <small>{language === 'en' ? `Room ${roomNo}` : `Phòng ${roomNo}`}</small>
+          <small>{tagLabel || (language === 'en' ? `Room ${roomNo}` : `Phòng ${roomNo}`)}</small>
           <b>{roomName}</b>
         </div>
       ) : greeting ? (

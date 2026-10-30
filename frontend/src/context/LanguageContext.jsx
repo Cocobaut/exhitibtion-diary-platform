@@ -43,14 +43,14 @@ export const DICTIONARY = {
     lobby_quote: 'Bạn hơn cả thành tích của mình.',
     lobby_room01_badge: 'PHÒNG 01',
     lobby_room01_title: 'Triển lãm Đổ vỡ',
-    lobby_room01_count: '1.284 tác phẩm',
+    lobby_room01_count: 'Kể về một lần vấp ngã',
     lobby_room02_badge: 'PHÒNG 02',
     lobby_room02_title: 'Bầu trời Lồng đèn',
-    lobby_room02_count: '3.402 lồng đèn đang bay',
+    lobby_room02_count: 'Viết thư gửi tương lai',
     lobby_room03_badge: 'PHÒNG 03',
     lobby_room03_title: 'Cây Thông điệp',
-    lobby_room03_count: '862 lời động viên',
-    lobby_mailbox_badge: '✦ hòm thư · rút một thông điệp',
+    lobby_room03_count: 'Gửi một lời động viên',
+    lobby_mailbox_badge: 'hòm thư · nhận một lời nhắn',
     lobby_diary_badge: 'nhật ký của bạn',
     lobby_quick_r1: 'Phòng 01',
     lobby_quick_mailbox: 'Hòm thư',
@@ -75,15 +75,15 @@ export const DICTIONARY = {
     rx_sympathy: 'Đồng cảm',
     rx_energy: 'Tiếp sức',
     rx_inspired: 'Truyền cảm hứng',
-    rx_people_reacted: 'người đã gửi gắm sự đồng cảm',
-    rx_be_first: 'Hãy là người đầu tiên gửi gắm sự an ủi đến tác giả.',
+    rx_people_reacted: 'người đã gửi cảm xúc',
+    rx_be_first: 'Hãy là người đầu tiên gửi lời an ủi.',
     rx_reacted: 'Đã thả cảm xúc',
-    rx_send_reaction: 'Thả cảm xúc đồng cảm',
+    rx_send_reaction: 'Gửi cảm xúc',
     r1_story_title: 'Câu chuyện phía sau sự đổ vỡ',
-    r1_express_sympathy: 'Bày tỏ sự đồng cảm cùng tác giả',
+    r1_express_sympathy: 'Gửi cảm xúc đến tác giả',
     r1_empty: 'Chưa có tác phẩm nào phù hợp với bộ lọc.',
-    r1_loading_more: '✦ Đang thắp sáng thêm tác phẩm...',
-    r1_all_loaded: '✦ Bạn đã chiêm ngưỡng toàn bộ tác phẩm trong phòng ✦',
+    r1_loading_more: '✦ Đang tải thêm...',
+    r1_all_loaded: '✦ Bạn đã xem hết tác phẩm trong phòng ✦',
 
     // Room 2
     r2_tag: 'Phòng 02',
@@ -97,7 +97,7 @@ export const DICTIONARY = {
     r2_pull_down: 'Kéo xuống để đọc thư',
     r2_save_notebook: 'Lưu vào sổ tay',
     r2_saved_notebook: 'Đã lưu vào sổ tay',
-    r2_reply_future: 'Viết thư trả lời tương lai',
+    r2_reply_future: 'Viết thư cho tương lai',
     r2_landed_on: 'Hạ xuống:',
 
     // Room 3
@@ -126,7 +126,7 @@ export const DICTIONARY = {
     // Diary & Notebook
     diary_title: 'Nhật ký Cảm xúc',
     diary_write_new: '✦ Viết trang nhật ký mới',
-    notebook_title: 'Bộ sưu tập & Sổ tay',
+    notebook_title: 'Sổ tay',
     notebook_empty: 'Sổ tay của bạn đang trống.',
 
     // Admin
@@ -201,14 +201,14 @@ export const DICTIONARY = {
     lobby_quote: 'You are more than your achievements.',
     lobby_room01_badge: 'ROOM 01',
     lobby_room01_title: 'Broken Pieces Exhibition',
-    lobby_room01_count: '1,284 artworks',
+    lobby_room01_count: 'Share a time you stumbled',
     lobby_room02_badge: 'ROOM 02',
     lobby_room02_title: 'Lantern Sky',
-    lobby_room02_count: '3,402 lanterns flying',
+    lobby_room02_count: 'Write to your future self',
     lobby_room03_badge: 'ROOM 03',
     lobby_room03_title: 'Message Tree',
-    lobby_room03_count: '862 messages of encouragement',
-    lobby_mailbox_badge: '✦ mailbox · draw a message',
+    lobby_room03_count: 'Leave a kind word',
+    lobby_mailbox_badge: 'mailbox · draw a message',
     lobby_diary_badge: 'your personal diary',
     lobby_quick_r1: 'Room 01',
     lobby_quick_mailbox: 'Mailbox',
@@ -323,8 +323,8 @@ export const DICTIONARY = {
 };
 
 /**
- * Helper trích xuất nội dung đa ngôn ngữ cho đối tượng (art, diary, lantern, leaf, mailbox, capsule)
- * Theo yêu cầu người dùng:
+ * Helper trích xuất nội dung đa ngôn ngữ cho nội dung do ban quản trị soạn (hòm thư, capsule).
+ * Nội dung người dùng tự viết dùng getOriginalText để luôn giữ nguyên lời gốc.
  * - Nếu tiếng Anh (en): tải cột _en tương ứng (ví dụ: title_en, content_en, short_content_en, message_en).
  * - Nếu tiếng Việt (vi): tải cột _vi tương ứng (ví dụ: title_vi, content_vi, short_content_vi, message_vi).
  * - Tự động fallback linh hoạt nếu một trong 2 cột để trống.
@@ -355,6 +355,31 @@ export function getLocalizedText(item, field, currentLang = 'vi') {
   }
 
   return '';
+}
+
+const hasText = (v) => typeof v === 'string' && v.trim().length > 0;
+
+/**
+ * Lời gốc của tác giả. Cột không hậu tố (title, content...) luôn lưu bản gốc,
+ * hai cột _vi/_en chỉ dùng làm dự phòng cho dữ liệu cũ.
+ */
+export function getOriginalText(item, field) {
+  if (!item) return '';
+  if (typeof item === 'string') return item;
+  if (hasText(item[field])) return item[field];
+  if (hasText(item[`${field}_vi`])) return item[`${field}_vi`];
+  if (hasText(item[`${field}_en`])) return item[`${field}_en`];
+  return '';
+}
+
+/**
+ * Bản dịch sang ngôn ngữ giao diện, nếu admin đã thêm và khác với bản gốc; ngược lại trả ''.
+ */
+export function getTranslatedText(item, field, currentLang = 'vi') {
+  if (!item || typeof item === 'string') return '';
+  const translated = item[`${field}_${currentLang === 'en' ? 'en' : 'vi'}`];
+  if (!hasText(translated)) return '';
+  return translated.trim() === getOriginalText(item, field).trim() ? '' : translated;
 }
 
 export function LanguageProvider({ children }) {
@@ -400,6 +425,8 @@ export function LanguageProvider({ children }) {
     [language]
   );
 
+  const original = useCallback((item, field) => getOriginalText(item, field), []);
+
   return (
     <LanguageContext.Provider
       value={{
@@ -408,6 +435,7 @@ export function LanguageProvider({ children }) {
         isEnglish: language === 'en',
         t,
         localize,
+        original,
       }}
     >
       {children}
@@ -424,3 +452,31 @@ export function useLanguage() {
 }
 
 export default LanguageContext;
+
+/**
+ * Bật/tắt xem bản dịch cho một nội dung người dùng.
+ * Chỉ có bản dịch khi admin đã dịch sang đúng ngôn ngữ giao diện đang chọn.
+ */
+export function useTranslationToggle(item, fields) {
+  const { language } = useLanguage();
+  const [showTranslation, setShowTranslation] = useState(false);
+  const itemId = item?.id;
+
+  useEffect(() => {
+    setShowTranslation(false);
+  }, [itemId]);
+
+  const hasTranslation = fields.some((f) => getTranslatedText(item, f, language));
+
+  const text = (field) => {
+    const translated = showTranslation ? getTranslatedText(item, field, language) : '';
+    return translated || getOriginalText(item, field);
+  };
+
+  return {
+    hasTranslation,
+    showTranslation: hasTranslation && showTranslation,
+    toggleTranslation: () => setShowTranslation((v) => !v),
+    text,
+  };
+}

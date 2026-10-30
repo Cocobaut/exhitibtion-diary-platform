@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ADMINS } from '../../data/mockData';
 import { Icon } from '../../components/common/Icons';
 import { AdminPending } from './AdminPending';
 import { AdminLive } from './AdminLive';
@@ -253,7 +252,7 @@ export function AdminPage({ onOpenNotifications }) {
             )}
 
             <div className="avs">
-              {(adminPresence.admins.length > 0 ? adminPresence.admins : ADMINS).map((adm, i) => {
+              {adminPresence.admins.map((adm, i) => {
                 const isOnline = adm.is_online ?? adm.online;
                 const displayName = adm.nickname || adm.name || adm.username || 'Admin';
                 const avatar = adm.avatar_url;

@@ -105,7 +105,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
       setErrorMessage(
         language === 'en'
           ? 'Diary entry content cannot be empty.'
-          : 'Nội dung trang nhật ký không được để trống.'
+          : 'Bạn chưa viết gì cả.'
       );
       return;
     }
@@ -159,7 +159,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
         err?.message ||
         (language === 'en'
           ? 'Could not save diary entry. Please try again.'
-          : 'Không thể lưu trang nhật ký. Vui lòng kiểm tra lại.');
+          : 'Chưa lưu được, bạn thử lại nhé.');
       setErrorMessage(apiMsg);
     } finally {
       setIsSubmitting(false);
@@ -225,7 +225,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
               />
             </div>
             <div>
-              <div className="fieldl">{language === 'en' ? 'Entry Title' : 'Tiêu đề trang'}</div>
+              <div className="fieldl">{language === 'en' ? 'Title' : 'Tiêu đề'}</div>
               <input
                 className="inp"
                 placeholder={language === 'en' ? 'e.g. A peaceful afternoon...' : 'Ví dụ: Một chiều bình yên...'}
@@ -273,7 +273,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
             placeholder={
               language === 'en'
                 ? 'Write about what happened today or share your thoughts...'
-                : 'Kể lại những gì diễn ra trong ngày hoặc những suy nghĩ của bạn...'
+                : 'Hôm nay của bạn thế nào?'
             }
             style={{
               minHeight: '180px',
@@ -291,7 +291,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
           />
 
           <div className="fieldl">
-            {language === 'en' ? 'Attached Photos' : 'Ảnh đính kèm'} ({previewUrls.length}/5)
+            {language === 'en' ? 'Photos' : 'Ảnh'} ({previewUrls.length}/5)
           </div>
           <div className="row" style={{ gap: '10px', flexWrap: 'wrap' }}>
             {previewUrls.map((url, idx) => (
@@ -381,7 +381,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
             <div className="muted" style={{ fontSize: '12px' }}>
               {language === 'en'
                 ? 'Saved instantly, completely private.'
-                : 'Lưu ngay, riêng tư tuyệt đối.'}
+                : 'Không ai khác đọc được.'}
             </div>
           </div>
 
@@ -391,20 +391,20 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
             onClick={() => setIsPrivate(false)}
           >
             <b>
-              <Icon name="globe" size={17} /> {language === 'en' ? 'Share with Community' : 'Chia sẻ lên Cộng đồng'}
+              <Icon name="globe" size={17} /> {language === 'en' ? 'Share with community' : 'Chia sẻ với mọi người'}
             </b>
             <div className="muted" style={{ fontSize: '12px' }}>
               {language === 'en'
                 ? 'Enters moderation queue. If not approved, it stays safely in your private diary.'
-                : 'Vào hàng chờ duyệt. Nếu không được duyệt, trang vẫn ở lại nhật ký riêng của bạn.'}
+                : 'Hiện lên sau khi được duyệt. Trang vẫn luôn nằm trong nhật ký của bạn.'}
             </div>
           </div>
 
           <div style={{ marginTop: '16px' }}>
             <div className="fieldl" style={{ marginTop: 0 }}>
-              <span>{language === 'en' ? 'Author / Pen Name' : 'Bút danh / Tác giả'}</span>
+              <span>{language === 'en' ? 'Shown as' : 'Tên hiển thị'}</span>
               <span style={{ fontSize: '11.5px', color: 'var(--ink2)' }}>
-                {language === 'en' ? '(Account nickname)' : '(Bí danh tài khoản)'}
+                {language === 'en' ? '(from your profile)' : '(lấy từ hồ sơ)'}
               </span>
             </div>
             <input
@@ -420,7 +420,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
                 marginBottom: '8px',
                 fontSize: '13.5px',
               }}
-              title={language === 'en' ? 'Pen name is locked to your account nickname' : 'Bút danh cố định theo bí danh tài khoản'}
+              title={language === 'en' ? 'Change it in your profile' : 'Đổi tên này trong phần Hồ sơ'}
             />
             <div
               className="row"
@@ -464,8 +464,8 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
               {isSubmitting
                 ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
                 : editData
-                ? (language === 'en' ? 'Update Entry' : 'Cập nhật trang')
-                : (language === 'en' ? 'Save This Entry' : 'Lưu trang này')}
+                ? (language === 'en' ? 'Save changes' : 'Lưu thay đổi')
+                : (language === 'en' ? 'Save' : 'Lưu')}
             </button>
           </div>
         </div>

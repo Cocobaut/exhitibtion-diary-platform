@@ -282,7 +282,7 @@ export function Room1Page({
       fetchArtworks(filter, search);
     } catch (err) {
       setIsSubmitting(false);
-      setSubmitError(err.message || 'Không thể gửi tác phẩm. Vui lòng thử lại.');
+      setSubmitError(err.message || 'Chưa gửi được, bạn thử lại nhé.');
     }
   };
 
@@ -355,7 +355,7 @@ export function Room1Page({
               fontStyle: 'italic',
             }}
           >
-            {language === 'en' ? 'Lighting up the exhibition room...' : 'Đang thắp sáng phòng triển lãm...'}
+            {language === 'en' ? 'Loading...' : 'Đang tải...'}
           </div>
         ) : errorMsg ? (
           <div
@@ -384,10 +384,10 @@ export function Room1Page({
               {filter === 'mine'
                 ? (language === 'en'
                     ? 'Please log in to view the artworks you have submitted to Room 1.'
-                    : 'Vui lòng đăng nhập để xem các tác phẩm bạn đã gửi gắm tại Phòng 1.')
+                    : 'Đăng nhập để xem tác phẩm bạn đã gửi.')
                 : (language === 'en'
                     ? 'Please log in to view the artworks you have reacted to.'
-                    : 'Vui lòng đăng nhập để xem các tác phẩm bạn đã thả cảm xúc.')}
+                    : 'Đăng nhập để xem tác phẩm bạn đã gửi cảm xúc.')}
             </div>
           </div>
         ) : artworks.length === 0 ? (
@@ -405,7 +405,7 @@ export function Room1Page({
             <div>
               {language === 'en'
                 ? 'Try changing filters or search terms.'
-                : 'Hãy thử đổi bộ lọc hoặc từ khóa tìm kiếm nhé.'}
+                : 'Thử đổi bộ lọc hoặc từ khoá khác nhé.'}
             </div>
           </div>
         ) : (

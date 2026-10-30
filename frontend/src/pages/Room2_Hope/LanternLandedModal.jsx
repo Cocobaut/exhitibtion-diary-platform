@@ -4,7 +4,8 @@ import { ReactionButton } from '../../components/common/Reactions';
 import { SingleLantern } from './LanternSky';
 import { room2Service } from '../../services/room2Service';
 import { useGuestGuard } from '../../context/GuestGuardContext';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
+import { TranslationToggle } from '../../components/common/TranslationToggle';
 
 export function LanternLandedModal({
   isOpen,
@@ -14,8 +15,9 @@ export function LanternLandedModal({
   letterData,
 }) {
   const { guardAction } = useGuestGuard();
-  const { localize, language } = useLanguage();
+  const { original, language } = useLanguage();
   const [letter, setLetter] = useState(letterData || null);
+  const tr = useTranslationToggle(letter, ['title', 'content']);
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -265,12 +267,12 @@ export function LanternLandedModal({
             fontWeight: 700,
           }}
         >
-          {localize(currentLetter, 'title')}
+          {letter ? tr.text('title') : original(currentLetter, 'title')}
         </div>
 
         {isLoading ? (
           <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)' }}>
-            {language === 'en' ? 'Unfolding lantern letter...' : 'Đang mở bức thư lồng đèn...'}
+            {language === 'en' ? 'Opening...' : 'Đang mở thư...'}
           </div>
         ) : (
           <div
@@ -282,9 +284,15 @@ export function LanternLandedModal({
               color: '#3A2016',
             }}
           >
-            {localize(currentLetter, 'content')}
+            {letter ? tr.text('content') : original(currentLetter, 'content')}
           </div>
         )}
+        <TranslationToggle
+          hasTranslation={tr.hasTranslation}
+          showTranslation={tr.showTranslation}
+          onToggle={tr.toggleTranslation}
+          style={{ marginTop: '8px' }}
+        />
 
         <div
           className="hand"
@@ -315,10 +323,10 @@ export function LanternLandedModal({
             {reactionsMap.total > 0
               ? (language === 'en'
                   ? `${reactionsMap.total} people shared empathy with this letter.`
-                  : `${reactionsMap.total} người đã gửi gắm sự đồng cảm đến bức thư này.`)
+                  : `${reactionsMap.total} người đã gửi cảm xúc.`)
               : (language === 'en'
                   ? 'Be the first to share comforting words with the author.'
-                  : 'Hãy là người đầu tiên gửi gắm sự an ủi đến tác giả.')}
+                  : 'Hãy là người đầu tiên gửi lời an ủi.')}
           </div>
         </div>
 
@@ -355,7 +363,7 @@ export function LanternLandedModal({
               }, language === 'en' ? 'reply to future' : 'viết thư trả lời tương lai');
             }}
           >
-            <Icon name="r2" size={16} /> {language === 'en' ? 'Reply to future' : 'Viết thư trả lời tương lai'}
+            <Icon name="r2" size={16} /> {language === 'en' ? 'Write to the future' : 'Viết thư cho tương lai'}
           </button>
         </div>
       </div>

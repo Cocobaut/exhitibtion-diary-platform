@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MOODS, COMMUNITY_DIARY_ENTRIES } from '../../data/mockData';
+import { MOODS } from '../../data/mockData';
 import { ReactionStack, ReactionButton } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
 import { diaryService } from '../../services/diaryService';
 import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
+import { TranslationToggle } from '../../components/common/TranslationToggle';
 
 const MOOD_TRANSLATIONS = {
   'Bình yên': 'Peaceful',
@@ -22,12 +23,13 @@ export function DiaryCommunity({
 }) {
   const { user } = useAuth();
   const { guardAction } = useGuestGuard();
-  const { language, localize } = useLanguage();
+  const { language, original } = useLanguage();
   const rotations = [-0.6, 0.5, -0.3, 0.4, -0.5, 0.3];
 
   const [communityNotes, setCommunityNotes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedNote, setSelectedNote] = useState(null);
+  const tr = useTranslationToggle(selectedNote, ['title', 'content']);
   const [togglingId, setTogglingId] = useState(null);
 
   const getMoodLabel = (m) => (language === 'en' ? (MOOD_TRANSLATIONS[m] || m) : m);
@@ -42,17 +44,15 @@ export function DiaryCommunity({
           limit: 30,
         });
         const data = res?.data || res;
-        const items = data?.items || [];
-        setCommunityNotes(items.length > 0 ? items : COMMUNITY_DIARY_ENTRIES);
+        setCommunityNotes(data?.items || []);
       } else {
         const res = await diaryService.getCommunityDiaries({ limit: 30 });
         const data = res?.data || res;
-        const items = data?.items || [];
-        setCommunityNotes(items.length > 0 ? items : COMMUNITY_DIARY_ENTRIES);
+        setCommunityNotes(data?.items || []);
       }
     } catch (err) {
-      console.warn('Error loading community diaries from API, using fallback:', err);
-      setCommunityNotes(COMMUNITY_DIARY_ENTRIES);
+      console.warn('Error loading community diaries from API:', err);
+      setCommunityNotes([]);
     } finally {
       setIsLoading(false);
     }
@@ -151,7 +151,7 @@ export function DiaryCommunity({
         <div className="muted" style={{ color: 'var(--onw2)', fontSize: '14px' }}>
           {language === 'en'
             ? 'Curated diary pages shared by community members.'
-            : 'Những trang nhật ký các thành viên chọn chia sẻ và đã qua kiểm duyệt.'}
+            : 'Những trang nhật ký mọi người chọn chia sẻ.'}
           {isLoading && (
             <span style={{ marginLeft: '10px' }}>
               {language === 'en' ? 'Loading...' : 'Đang tải...'}
@@ -185,7 +185,7 @@ export function DiaryCommunity({
           >
             {language === 'en'
               ? 'No matching community diary entries found.'
-              : 'Chưa có bài nhật ký cộng đồng nào phù hợp.'}
+              : 'Chưa có trang nào ở đây.'}
           </div>
         )}
 
@@ -240,7 +240,7 @@ export function DiaryCommunity({
                   textOverflow: 'ellipsis',
                 }}
               >
-                {localize(note, 'title') || (language === 'en' ? 'Community diary page' : 'Trang nhật ký')}
+                {original(note, 'title') || (language === 'en' ? 'Community diary page' : 'Trang nhật ký')}
               </b>
 
               <div
@@ -256,7 +256,7 @@ export function DiaryCommunity({
                   WebkitBoxOrient: 'vertical',
                 }}
               >
-                {localize(note, 'snippet') || localize(note, 'content')}
+                {original(note, 'snippet') || original(note, 'content')}
               </div>
 
               <div
@@ -332,7 +332,7 @@ export function DiaryCommunity({
             </div>
 
             <h2 style={{ fontSize: '28px', margin: '10px 0 14px' }}>
-              {localize(selectedNote, 'title') || (language === 'en' ? 'Community diary entry' : 'Trang nhật ký cộng đồng')}
+              {tr.text('title') || (language === 'en' ? 'Community diary entry' : 'Trang nhật ký cộng đồng')}
             </h2>
 
             <div
@@ -345,8 +345,14 @@ export function DiaryCommunity({
                 margin: '14px 0 20px',
               }}
             >
-              {localize(selectedNote, 'content') || localize(selectedNote, 'snippet')}
+              {tr.text('content') || original(selectedNote, 'snippet')}
             </div>
+            <TranslationToggle
+              hasTranslation={tr.hasTranslation}
+              showTranslation={tr.showTranslation}
+              onToggle={tr.toggleTranslation}
+              style={{ margin: '-8px 0 18px' }}
+            />
 
             {selectedNote.media_urls && selectedNote.media_urls.length > 0 && (
               <div

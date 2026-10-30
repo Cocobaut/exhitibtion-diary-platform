@@ -4,6 +4,7 @@ import { Icon } from '../../components/common/Icons';
 import { adminRoomService } from '../../services/adminRoomService';
 import { aiCopilotService } from '../../services/aiCopilotService';
 import { AiModerationModal } from '../../components/Admin/AiModerationModal';
+import { AiTranslateButton } from '../../components/Admin/AiTranslateButton';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -15,7 +16,7 @@ export function AdminPending({
   triggerToast,
 }) {
   const { user } = useAuth();
-  const { t, language, localize } = useLanguage();
+  const { t, language, original } = useLanguage();
 
   const [pendingItems, setPendingItems] = useState([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -277,9 +278,11 @@ export function AdminPending({
 
     setIsApproving(true);
     try {
-      const activeTitle = titleVi.trim() || titleEn.trim() || currentItem.title;
-      const activeShort = shortContentVi.trim() || shortContentEn.trim() || currentItem.short_content;
-      const activeContent = contentVi.trim() || contentEn.trim() || currentItem.content;
+      // Cột gốc luôn theo ngôn ngữ tác giả viết, bản kia chỉ là bản dịch
+      const origEn = currentItem.original_language === 'en';
+      const activeTitle = (origEn ? titleEn : titleVi).trim() || currentItem.title;
+      const activeShort = (origEn ? shortContentEn : shortContentVi).trim() || currentItem.short_content;
+      const activeContent = (origEn ? contentEn : contentVi).trim() || currentItem.content;
 
       const payload = {
         title: activeTitle,
@@ -409,9 +412,9 @@ export function AdminPending({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                 }}
-                title={localize(item, 'title') || item.title}
+                title={original(item, 'title') || item.title}
               >
-                {localize(item, 'title') || item.title}
+                {original(item, 'title') || item.title}
               </b>
               <div
                 className="muted"
@@ -503,6 +506,24 @@ export function AdminPending({
           >
             {/* Editor fields */}
             <div>
+              <AiTranslateButton
+                originalLanguage={currentItem.original_language}
+                source={currentItem.original_language === 'en'
+                  ? { title: titleEn, short_content: shortContentEn, content: contentEn }
+                  : { title: titleVi, short_content: shortContentVi, content: contentVi }}
+                onTranslated={(d, target) => {
+                  if (target === 'en') {
+                    if (d.title) setTitleEn(d.title);
+                    if (d.short_content) setShortContentEn(d.short_content);
+                    if (d.content) setContentEn(d.content);
+                  } else {
+                    if (d.title) setTitleVi(d.title);
+                    if (d.short_content) setShortContentVi(d.short_content);
+                    if (d.content) setContentVi(d.content);
+                  }
+                }}
+                onError={(msg) => (triggerToast ? triggerToast(`[AI] ${msg}`) : setErrorMessage(`[AI] ${msg}`))}
+              />
               {/* Bilingual Title Fields */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>

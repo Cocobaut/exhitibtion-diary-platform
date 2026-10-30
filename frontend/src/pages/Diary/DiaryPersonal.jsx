@@ -8,7 +8,7 @@ import { useLanguage } from '../../context/LanguageContext';
 
 export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigger = 0 }) {
   const { user } = useAuth();
-  const { language, localize } = useLanguage();
+  const { language, original } = useLanguage();
 
   const [entries, setEntries] = useState([]);
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -89,7 +89,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
       loadEntries();
     } catch (err) {
       console.error('Error deleting diary:', err);
-      alert('Không thể xoá trang nhật ký này. Vui lòng thử lại.');
+      alert('Chưa xoá được, bạn thử lại nhé.');
     } finally {
       setIsDeleting(false);
     }
@@ -167,7 +167,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
             {language === 'en' ? (
               <>No diary entries yet. Click <b>"✦ New Entry"</b> to capture today’s moment.</>
             ) : (
-              <>Chưa có trang nhật ký nào. Hãy bấm <b>"Viết nhật ký mới"</b> để lưu lại khoảnh khắc hôm nay.</>
+              <>Chưa có trang nào. Bấm <b>"Viết nhật ký mới"</b> để bắt đầu.</>
             )}
           </div>
         )}
@@ -222,7 +222,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
                       </span>
                     ) : !entry.is_approved ? (
                       <span className="badge b-wait" style={{ fontSize: '11px' }}>
-                        {language === 'en' ? 'Pending approval' : 'Chờ duyệt công khai'}
+                        {language === 'en' ? 'Pending approval' : 'Đang chờ duyệt'}
                       </span>
                     ) : (
                       <span className="row" style={{ gap: '4px', color: '#4E7A4A' }}>
@@ -241,7 +241,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
                     textOverflow: 'ellipsis',
                   }}
                 >
-                  {localize(entry, 'title') || (language === 'en' ? 'Untitled' : 'Không tiêu đề')}
+                  {original(entry, 'title') || (language === 'en' ? 'Untitled' : 'Không tiêu đề')}
                 </b>
                 <div
                   style={{
@@ -253,7 +253,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
                     marginTop: '2px',
                   }}
                 >
-                  {localize(entry, 'snippet') || localize(entry, 'content') || (language === 'en' ? 'Private diary entry...' : 'Trang nhật ký riêng tư...')}
+                  {original(entry, 'snippet') || original(entry, 'content') || (language === 'en' ? 'Private diary entry...' : 'Trang nhật ký riêng tư...')}
                 </div>
               </div>
             </div>
@@ -343,7 +343,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
           </div>
 
           <h2 style={{ fontSize: '34px', margin: '12px 0 14px' }}>
-            {localize(currentDisplay, 'title') || (language === 'en' ? 'Untitled' : 'Không tiêu đề')}
+            {original(currentDisplay, 'title') || (language === 'en' ? 'Untitled' : 'Không tiêu đề')}
           </h2>
 
           <div
@@ -363,8 +363,8 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
               }}
             >
               {isLoadingDetail
-                ? (language === 'en' ? 'Opening diary page...' : 'Đang mở trang nhật ký...')
-                : (localize(currentDisplay, 'content') || localize(currentDisplay, 'snippet'))}
+                ? (language === 'en' ? 'Loading...' : 'Đang tải...')
+                : (original(currentDisplay, 'content') || original(currentDisplay, 'snippet'))}
             </div>
 
             {currentDisplay.media_urls && currentDisplay.media_urls.length > 0 && (
@@ -431,7 +431,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
             <Icon name="trash" size={32} />
             <h3 style={{ margin: '12px 0 6px' }}>Xoá trang nhật ký này?</h3>
             <div className="muted" style={{ fontSize: '14px', marginBottom: '20px' }}>
-              Hành động này không thể hoàn tác. Trang nhật ký sẽ bị xoá vĩnh viễn khỏi cuốn sổ của bạn.
+              Trang này sẽ bị xoá vĩnh viễn.
             </div>
             <div className="row" style={{ justifyContent: 'center', gap: '10px' }}>
               <button

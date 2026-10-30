@@ -63,7 +63,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
         setDrawnData(res);
       } catch (err) {
         if (err.errorCode === 'CAPSULE_POOL_EMPTY' || err.status === 404) {
-          setErrorMsg(language === 'en' ? 'Capsules for this topic are currently being prepared.' : 'Kho thông điệp chủ đề này hiện đang được chuẩn bị thêm.');
+          setErrorMsg(language === 'en' ? 'No messages in this topic yet.' : 'Chủ đề này chưa có lời nhắn nào.');
         } else {
           setErrorMsg(err.message || (language === 'en' ? 'Unable to draw a message right now.' : 'Không thể rút thông điệp lúc này.'));
         }
@@ -243,7 +243,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
               fontStyle: 'italic',
             }}
           >
-            {language === 'en' ? 'Drawing a message from mailbox...' : 'Đang rút thông điệp từ hòm thư...'}
+            {language === 'en' ? 'Opening...' : 'Đang mở...'}
           </div>
         ) : errorMsg ? (
           <div
@@ -301,7 +301,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
             onClick={() => handleDraw(activeTopicKey)}
             disabled={isLoading}
           >
-            <Icon name="refresh" size={16} /> {language === 'en' ? 'Draw new message' : 'Rút thông điệp mới'}
+            <Icon name="refresh" size={16} /> {language === 'en' ? 'Another one' : 'Lời nhắn khác'}
           </button>
 
           <span className="row" style={{ gap: '14px' }}>

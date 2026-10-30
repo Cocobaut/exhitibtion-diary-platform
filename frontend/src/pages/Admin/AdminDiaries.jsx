@@ -3,6 +3,7 @@ import { Icon } from '../../components/common/Icons';
 import { adminDiaryService } from '../../services/adminDiaryService';
 import { aiCopilotService } from '../../services/aiCopilotService';
 import { AiModerationModal } from '../../components/Admin/AiModerationModal';
+import { AiTranslateButton } from '../../components/Admin/AiTranslateButton';
 import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminDiaries({ onCountChange, triggerToast }) {
@@ -209,11 +210,12 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
     try {
       let payload = null;
       if (titleVi.trim() || titleEn.trim() || contentVi.trim() || contentEn.trim()) {
+        const origEn = currentItem.original_language === 'en';
         payload = {
-          title_vi: titleVi.trim() || currentItem.title || undefined,
-          title_en: titleEn.trim() || undefined,
-          content_vi: contentVi.trim() || currentItem.content || undefined,
-          content_en: contentEn.trim() || undefined,
+          title_vi: titleVi.trim() || (!origEn ? currentItem.title : undefined) || undefined,
+          title_en: titleEn.trim() || (origEn ? currentItem.title : undefined) || undefined,
+          content_vi: contentVi.trim() || (!origEn ? currentItem.content : undefined) || undefined,
+          content_en: contentEn.trim() || (origEn ? currentItem.content : undefined) || undefined,
         };
       }
 
@@ -513,6 +515,22 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                 </div>
               )}
 
+              <AiTranslateButton
+                originalLanguage={currentItem.original_language}
+                source={currentItem.original_language === 'en'
+                  ? { title: titleEn, content: contentEn }
+                  : { title: titleVi, content: contentVi }}
+                onTranslated={(d, target) => {
+                  if (target === 'en') {
+                    if (d.title) setTitleEn(d.title);
+                    if (d.content) setContentEn(d.content);
+                  } else {
+                    if (d.title) setTitleVi(d.title);
+                    if (d.content) setContentVi(d.content);
+                  }
+                }}
+                onError={(msg) => triggerToast && triggerToast(`[AI] ${msg}`)}
+              />
               {/* Bilingual Title & Content Editor */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div>

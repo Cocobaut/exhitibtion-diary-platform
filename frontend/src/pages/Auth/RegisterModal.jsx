@@ -31,7 +31,7 @@ export function RegisterModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
     if (!formData.username.trim()) {
       errors.username = 'Vui lòng nhập tên đăng nhập';
     } else if (!usernameRegex.test(formData.username.trim())) {
-      errors.username = 'Tên đăng nhập từ 3-50 ký tự, chỉ gồm chữ, số và dấu gạch dưới (_)';
+      errors.username = 'Dùng 3–50 ký tự: chữ, số hoặc dấu _';
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -55,7 +55,7 @@ export function RegisterModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
       const hasDigit = /[0-9]/.test(formData.password);
       const hasSpecial = /[^A-Za-z0-9]/.test(formData.password);
       if (!hasUpper || !hasLower || !hasDigit || !hasSpecial) {
-        errors.password = 'Cần đủ chữ hoa, chữ thường, chữ số và ký tự đặc biệt (@, #, $...)';
+        errors.password = 'Cần có chữ hoa, chữ thường, số và ký tự đặc biệt (như @ # $)';
       }
     }
 
@@ -92,13 +92,13 @@ export function RegisterModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
     } catch (err) {
       setIsLoading(false);
       if (err.errorCode === 'WEAK_PASSWORD') {
-        setErrorMsg('Mật khẩu cần tối thiểu 8 ký tự gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt');
+        setErrorMsg('Mật khẩu cần ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt');
       } else if (err.errorCode === 'USERNAME_TAKEN') {
-        setErrorMsg('Tên đăng nhập đã tồn tại trên hệ thống');
+        setErrorMsg('Tên đăng nhập này đã có người dùng');
       } else if (err.errorCode === 'EMAIL_TAKEN') {
-        setErrorMsg('Email đã tồn tại trên hệ thống');
+        setErrorMsg('Email này đã được đăng ký');
       } else {
-        setErrorMsg(err.message || 'Không thể tạo tài khoản. Vui lòng thử lại.');
+        setErrorMsg(err.message || 'Chưa tạo được tài khoản, bạn thử lại nhé.');
       }
     }
   };
@@ -110,7 +110,7 @@ export function RegisterModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
           Đăng ký tài khoản
         </h2>
         <div className="hand" style={{ fontSize: '18px', color: 'var(--ink2)', marginTop: '4px' }}>
-          tạo một chốn dừng chân của riêng bạn
+          chỉ mất một phút thôi
         </div>
       </div>
 
@@ -141,7 +141,7 @@ export function RegisterModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
           </div>
           <input
             className="inp"
-            placeholder="ví dụ: linh_ng (tối thiểu 3 ký tự)"
+            placeholder="ví dụ: linh_ng"
             value={formData.username}
             onChange={(e) => handleChange('username', e.target.value)}
             disabled={isLoading}
@@ -168,7 +168,7 @@ export function RegisterModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
 
         <div>
           <div className="fieldl">
-            <span>Biệt danh hiển thị (tuỳ chọn)</span>
+            <span>Tên hiển thị (không bắt buộc)</span>
             {fieldErrors.nickname && (
               <span style={{ color: 'var(--acc)', fontSize: '12px' }}>{fieldErrors.nickname}</span>
             )}
@@ -195,7 +195,7 @@ export function RegisterModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
           <input
             type={showPassword ? 'text' : 'password'}
             className="inp"
-            placeholder="Ít nhất 8 ký tự, gồm Hoa, Thường, Số & Ký tự đặc biệt"
+            placeholder="Ít nhất 8 ký tự, ví dụ: Linh@2026"
             value={formData.password}
             onChange={(e) => handleChange('password', e.target.value)}
             disabled={isLoading}
@@ -231,13 +231,13 @@ export function RegisterModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
             style={{ width: '100%', padding: '12px' }}
             disabled={isLoading}
           >
-            {isLoading ? 'Đang khởi tạo tài khoản...' : 'Tạo tài khoản'}
+            {isLoading ? 'Đang tạo...' : 'Tạo tài khoản'}
           </button>
         </div>
       </form>
 
       <div className="muted" style={{ marginTop: '16px', textAlign: 'center', fontSize: '14px' }}>
-        Đã có tài khoản bảo tàng?{' '}
+        Đã có tài khoản?{' '}
         <b
           style={{ color: 'var(--acc)', cursor: 'pointer' }}
           onClick={() => {

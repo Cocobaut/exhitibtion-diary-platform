@@ -2,11 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Painting } from '../../components/common/Painting';
 import { ReactionStack } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
+import { AiTranslateButton } from '../../components/Admin/AiTranslateButton';
 import { adminRoomService } from '../../services/adminRoomService';
 import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, triggerToast }) {
-  const { t, language, localize } = useLanguage();
+  const { t, language, original } = useLanguage();
   const isArchive = statusSegment === 2;
 
   const [artworks, setArtworks] = useState([]);
@@ -139,14 +140,16 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
     if (!editingItem) return;
     setIsSavingEdit(true);
     try {
+      // Cột gốc (title/short_content/content) luôn theo ngôn ngữ tác giả viết, bản kia chỉ là bản dịch
+      const origEn = editingItem.original_language === 'en';
       const payload = {
-        title: editTitleVi.trim() || editTitleEn.trim() || editingItem.title,
+        title: (origEn ? editTitleEn : editTitleVi).trim() || editingItem.title,
         title_vi: editTitleVi.trim() || null,
         title_en: editTitleEn.trim() || null,
-        short_content: editShortContentVi.trim() || editShortContentEn.trim() || editingItem.short_content || '',
+        short_content: (origEn ? editShortContentEn : editShortContentVi).trim() || editingItem.short_content || '',
         short_content_vi: editShortContentVi.trim() || null,
         short_content_en: editShortContentEn.trim() || null,
-        content: editContentVi.trim() || editContentEn.trim() || editingItem.content || '',
+        content: (origEn ? editContentEn : editContentVi).trim() || editingItem.content || '',
         content_vi: editContentVi.trim() || null,
         content_en: editContentEn.trim() || null,
         media_url: editMediaUrl.trim() || null,
@@ -373,7 +376,7 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
                   </div>
                 </td>
                 <td>
-                  <b>{localize(w, 'title') || w.title}</b>
+                  <b>{original(w, 'title') || w.title}</b>
                   <div className="muted" style={{ fontSize: '12.5px' }}>
                     {isArchive
                       ? (language === 'en' ? 'archived' : 'lưu trữ')
@@ -467,6 +470,24 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
                 : `Cập nhật tiêu đề song ngữ, tóm tắt ngắn, nội dung chi tiết và ảnh minh họa cho Phòng ${roomId}. Bút danh tác giả được bảo vệ cố định.`}
             </div>
 
+            <AiTranslateButton
+              originalLanguage={editingItem.original_language}
+              source={editingItem.original_language === 'en'
+                ? { title: editTitleEn, short_content: editShortContentEn, content: editContentEn }
+                : { title: editTitleVi, short_content: editShortContentVi, content: editContentVi }}
+              onTranslated={(d, target) => {
+                if (target === 'en') {
+                  if (d.title) setEditTitleEn(d.title);
+                  if (d.short_content) setEditShortContentEn(d.short_content);
+                  if (d.content) setEditContentEn(d.content);
+                } else {
+                  if (d.title) setEditTitleVi(d.title);
+                  if (d.short_content) setEditShortContentVi(d.short_content);
+                  if (d.content) setEditContentVi(d.content);
+                }
+              }}
+              onError={(msg) => triggerToast && triggerToast(`[AI] ${msg}`)}
+            />
             {/* Bilingual Titles */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '14px' }}>
               <div>

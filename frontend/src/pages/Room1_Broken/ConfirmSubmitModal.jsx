@@ -25,12 +25,12 @@ export function ConfirmSubmitModal({ isOpen, onClose, onConfirm, isSubmitting = 
           <Icon name="r1" size={30} />
         </div>
         <h2 className="serif" style={{ fontSize: '28px', color: 'var(--ink)' }}>
-          {language === 'en' ? 'Are you sure you want to submit your artwork?' : 'Bạn có chắc chắn muốn tạo tác phẩm?'}
+          {language === 'en' ? 'Are you sure you want to submit your artwork?' : 'Gửi tác phẩm nhé?'}
         </h2>
         <div className="muted" style={{ fontSize: '15px', margin: '8px 0 20px', lineHeight: 1.5 }}>
           {language === 'en'
             ? 'Please review your story carefully. Once submitted, it will enter the curation and illustration queue.'
-            : 'Vui lòng kiểm tra kỹ nội dung đã viết. Tác phẩm sau khi gửi sẽ được đưa vào hàng đợi kiểm duyệt và minh họa.'}
+            : 'Sau khi gửi, chúng mình sẽ đọc và vẽ tranh cho câu chuyện của bạn.'}
         </div>
 
         {errorMsg && (
@@ -57,7 +57,7 @@ export function ConfirmSubmitModal({ isOpen, onClose, onConfirm, isSubmitting = 
           <button type="button" className="btn main" onClick={onConfirm} disabled={isSubmitting}>
             {isSubmitting
               ? (language === 'en' ? 'Submitting artwork...' : 'Đang gửi tác phẩm...')
-              : (language === 'en' ? 'Confirm' : 'Chắc chắn')}
+              : (language === 'en' ? 'Send' : 'Gửi đi')}
           </button>
         </div>
       </div>

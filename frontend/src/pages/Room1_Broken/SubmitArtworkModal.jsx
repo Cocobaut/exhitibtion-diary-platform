@@ -42,7 +42,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
     }
 
     if (!story.trim() || story.trim().length < 30) {
-      errs.story = language === 'en' ? 'Story must be at least 30 characters so readers can connect' : 'Câu chuyện cần ít nhất 30 ký tự để người đọc thấu hiểu';
+      errs.story = language === 'en' ? 'Story must be at least 30 characters so readers can connect' : 'Viết thêm một chút nhé, ít nhất 30 ký tự';
     }
 
     setErrors(errs);
@@ -90,7 +90,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
           <div className="sub" style={{ fontSize: '14.5px', color: 'var(--ink2)', marginBottom: '18px' }}>
             {language === 'en'
               ? 'Recount a setback or failure. Our team will review, illustrate artwork, and hang it on the gallery wall for you.'
-              : 'Kể lại một lần vấp ngã. Đội ngũ sẽ đọc, vẽ tranh minh họa và treo tác phẩm lên tường cho bạn.'}
+              : 'Kể về một lần vấp ngã. Chúng mình sẽ vẽ tranh minh họa và treo lên tường giúp bạn.'}
           </div>
 
           <div>
@@ -121,9 +121,9 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
           >
             <div>
               <div className="fieldl">
-                <span>{language === 'en' ? 'Pen name for this artwork' : 'Bút danh cho tác phẩm này'}</span>
+                <span>{language === 'en' ? 'Shown as' : 'Tên hiển thị'}</span>
                 <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>
-                  {language === 'en' ? '(Account nickname)' : '(Bí danh tài khoản)'}
+                  {language === 'en' ? '(from your profile)' : '(lấy từ hồ sơ)'}
                 </span>
               </div>
               <input
@@ -137,7 +137,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
                   opacity: 0.85,
                   color: 'var(--ink)',
                 }}
-                title={language === 'en' ? 'Pen name is locked to your account nickname' : 'Bút danh cố định theo bí danh tài khoản'}
+                title={language === 'en' ? 'Change it in your profile' : 'Đổi tên này trong phần Hồ sơ'}
               />
             </div>
             <div
@@ -159,18 +159,18 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
 
           <div style={{ marginTop: '12px' }}>
             <div className="fieldl">
-              <span>{language === 'en' ? 'Short title / Summary on card' : 'Tiêu đề ngắn / Tóm tắt trên thẻ'}</span>
+              <span>{language === 'en' ? 'Short summary' : 'Tóm tắt ngắn'}</span>
               <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>
                 {summary.length > 0
                   ? `${summary.length} / 120`
-                  : (language === 'en' ? '(Optional · Auto-fills from story)' : '(Không bắt buộc · Tự lấy câu đầu của câu chuyện)')}
+                  : (language === 'en' ? '(Optional)' : '(Không bắt buộc)')}
               </span>
             </div>
             <input
               className="inp"
               placeholder={language === 'en'
                 ? 'Leave empty to auto-extract first sentence of your story...'
-                : 'Để trống sẽ tự động lấy câu đầu của câu chuyện phía dưới...'}
+                : 'Để trống thì mình sẽ lấy câu đầu tiên của câu chuyện'}
               value={summary}
               maxLength={120}
               onChange={(e) => {
@@ -187,7 +187,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
 
           <div style={{ marginTop: '12px' }}>
             <div className="fieldl">
-              <span>{language === 'en' ? 'Full story *' : 'Câu chuyện đầy đủ *'}</span>
+              <span>{language === 'en' ? 'Your story *' : 'Câu chuyện của bạn *'}</span>
               <span>{story.length} {language === 'en' ? 'characters' : 'ký tự'}</span>
             </div>
             <textarea
@@ -195,7 +195,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
               style={{ minHeight: '160px', fontFamily: 'var(--book)' }}
               placeholder={language === 'en'
                 ? 'Detail what you went through, how you felt at that moment, and how you kept moving forward...'
-                : 'Kể lại chi tiết những gì bạn đã trải qua, cảm xúc lúc đó và cách bạn bước tiếp...'}
+                : 'Chuyện gì đã xảy ra? Lúc đó bạn cảm thấy thế nào?'}
               value={story}
               onChange={(e) => {
                 setStory(e.target.value);
@@ -230,7 +230,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
               <Icon name="shield" size={15} />
               {language === 'en'
                 ? 'All artworks are reviewed by our curatorial team to remove identifying details before exhibition.'
-                : 'Mọi tác phẩm đều được đội ngũ đọc và bỏ chi tiết nhận dạng trước khi trưng bày.'}
+                : 'Chúng mình sẽ đọc và ẩn thông tin cá nhân trước khi trưng bày.'}
             </span>
             <span className="row" style={{ gap: '10px' }}>
               <button type="button" className="btn line" onClick={onClose}>
@@ -246,7 +246,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
         {/* Right Preview Card */}
         <div style={{ paddingTop: '24px' }}>
           <div className="muted" style={{ marginBottom: '10px', fontSize: '13.5px' }}>
-            {language === 'en' ? 'Your card will look like this:' : 'Thẻ của bạn sẽ trông như thế này:'}
+            {language === 'en' ? 'Preview' : 'Xem trước'}
           </div>
           <div style={{ '--paper': '#F3EADD' }}>
             <article className="work pending">
@@ -254,7 +254,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
                 <div>
                   <Icon name="image" size={26} />
                   <div style={{ marginTop: '6px' }}>
-                    {language === 'en' ? 'Illustration being painted' : 'Tranh minh họa đang được vẽ'}
+                    {language === 'en' ? 'Illustration coming soon' : 'Tranh đang được vẽ'}
                   </div>
                 </div>
               </div>
@@ -277,7 +277,7 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
           <div className="muted" style={{ fontSize: '12.5px', marginTop: '14px', lineHeight: 1.5 }}>
             {language === 'en'
               ? 'Artwork illustrated by museum curators or artists inspired by your touching story.'
-              : 'Tranh minh họa do admin hoặc nghệ sĩ bảo tàng sáng tác dựa trên câu chuyện xúc động của bạn.'}
+              : 'Tranh sẽ được vẽ riêng cho câu chuyện của bạn.'}
           </div>
         </div>
       </div>

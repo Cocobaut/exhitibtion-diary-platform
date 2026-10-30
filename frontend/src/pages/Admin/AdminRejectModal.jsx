@@ -9,7 +9,7 @@ export function AdminRejectModal({
   onConfirmReject,
   isSubmitting = false,
 }) {
-  const { t, language, localize } = useLanguage();
+  const { t, language, original } = useLanguage();
 
   const quickReasons = language === 'en'
     ? [
@@ -38,7 +38,7 @@ export function AdminRejectModal({
 
   useEffect(() => {
     if (isOpen) {
-      const artTitle = localize(artwork, 'title') || artwork?.title;
+      const artTitle = original(artwork, 'title') || artwork?.title;
       if (artTitle) {
         setAdminNote(
           language === 'en'
@@ -47,13 +47,13 @@ export function AdminRejectModal({
         );
       }
     }
-  }, [isOpen, artwork, language, localize]);
+  }, [isOpen, artwork, language, original]);
 
   if (!isOpen) return null;
 
   const authorName =
     artwork?.author_display_name || artwork?.author?.username || (language === 'en' ? 'Author' : 'Tác giả');
-  const artworkDisplayTitle = localize(artwork, 'title') || artwork?.title || (language === 'en' ? 'Pending Artwork' : 'Tác phẩm chờ duyệt');
+  const artworkDisplayTitle = original(artwork, 'title') || artwork?.title || (language === 'en' ? 'Pending Artwork' : 'Tác phẩm chờ duyệt');
 
   return (
     <>

@@ -115,7 +115,7 @@ export function GuestPromptModal({
             lineHeight: 1.35,
           }}
         >
-          Bạn đang dạo bước với tư cách Khách vãng lai
+          Bạn đang xem với tư cách khách
         </h3>
 
         {/* Mô tả chi tiết lý do chặn */}
@@ -127,7 +127,7 @@ export function GuestPromptModal({
             marginBottom: '22px',
           }}
         >
-          Để <strong style={{ color: 'var(--ink)' }}>{featureName}</strong>, lưu giữ kỷ niệm và kết nối trọn vẹn cùng bảo tàng, mời bạn đăng nhập hoặc tạo một góc nhỏ của riêng mình.
+          Đăng nhập để <strong style={{ color: 'var(--ink)' }}>{featureName}</strong>. Chưa có tài khoản? Tạo mới chỉ mất một phút.
         </p>
 
         {/* Cụm nút thao tác */}
@@ -170,7 +170,7 @@ export function GuestPromptModal({
             }}
             onClick={onClose}
           >
-            Tiếp tục dạo bước
+            Để sau
           </button>
         </div>
       </div>

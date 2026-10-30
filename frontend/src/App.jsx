@@ -19,7 +19,6 @@ import { AdminPage } from './pages/Admin/AdminPage';
 import { OwnerDashboardPage } from './pages/Owner/OwnerDashboardPage';
 import { LoginPage } from './pages/Auth/LoginPage';
 import { ProfilePage } from './pages/Profile/ProfilePage';
-import { INITIAL_NOTEBOOK_ITEMS } from './data/mockData';
 
 function MainApp() {
   const { theme, setTheme } = useTheme();
@@ -37,15 +36,31 @@ function MainApp() {
     }
   }, [isGuest, currentRoute]);
 
-  // Notebook items state with localStorage sync
-  const [notebookItems, setNotebookItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem('museum_notebook');
-      return saved ? JSON.parse(saved) : INITIAL_NOTEBOOK_ITEMS;
-    } catch {
-      return INITIAL_NOTEBOOK_ITEMS;
+  // Sổ tay lưu cục bộ theo từng tài khoản; tài khoản mới bắt đầu với sổ tay trống
+  const notebookKey = user?.id ? `museum_notebook_${user.id}` : null;
+  const [notebookItems, setNotebookItems] = useState([]);
+
+  React.useEffect(() => {
+    if (!notebookKey) {
+      setNotebookItems([]);
+      return;
     }
-  });
+    try {
+      const saved = localStorage.getItem(notebookKey);
+      setNotebookItems(saved ? JSON.parse(saved) : []);
+    } catch {
+      setNotebookItems([]);
+    }
+  }, [notebookKey]);
+
+  const persistNotebook = (items) => {
+    if (!notebookKey) return;
+    try {
+      localStorage.setItem(notebookKey, JSON.stringify(items));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleSaveToNotebook = (newItem) => {
     setNotebookItems((prev) => {
@@ -54,11 +69,7 @@ function MainApp() {
         return prev;
       }
       const updated = [newItem, ...prev];
-      try {
-        localStorage.setItem('museum_notebook', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
+      persistNotebook(updated);
       return updated;
     });
   };
@@ -66,11 +77,7 @@ function MainApp() {
   const handleRemoveFromNotebook = (id) => {
     setNotebookItems((prev) => {
       const updated = prev.filter((item) => item.id !== id);
-      try {
-        localStorage.setItem('museum_notebook', JSON.stringify(updated));
-      } catch (err) {
-        console.error(err);
-      }
+      persistNotebook(updated);
       return updated;
     });
   };

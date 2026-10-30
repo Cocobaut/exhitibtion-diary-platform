@@ -35,18 +35,8 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
     if (isOpen) {
       setErrorMessage('');
       setIsSubmitting(false);
-      if (!title) {
-        setTitle(language === 'en' ? 'To myself in 2030' : 'Gửi mình của năm 2030');
-      }
-      if (!message) {
-        setMessage(
-          language === 'en'
-            ? 'Today I failed my third interview round. I am writing this letter so you remember that once things were tough, and I kept going.'
-            : 'Hôm nay mình vừa trượt vòng phỏng vấn thứ ba. Mình viết lá thư này để cậu nhớ rằng đã có lúc mọi thứ thật khó, và mình vẫn đi tiếp.'
-        );
-      }
     }
-  }, [isOpen, language]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -114,7 +104,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
       setErrorMessage(
         language === 'en'
           ? 'Letter content must be at least 10 characters.'
-          : 'Nội dung thư phải tối thiểu 10 ký tự.'
+          : 'Thư cần ít nhất 10 ký tự.'
       );
       return;
     }
@@ -122,7 +112,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
       setErrorMessage(
         language === 'en'
           ? 'Descent time must be in the future (at least 1 hour from now).'
-          : 'Thời điểm hạ xuống phải là thời gian trong tương lai (tối thiểu sau thời điểm hiện tại 1 giờ).'
+          : 'Hãy chọn thời điểm ít nhất 1 giờ nữa.'
       );
       return;
     }
@@ -157,7 +147,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
         err?.message ||
         (language === 'en'
           ? 'Could not release lantern right now. Please check your information.'
-          : 'Không thể thả lồng đèn lúc này. Vui lòng kiểm tra lại thông tin.');
+          : 'Chưa thả được lồng đèn, bạn thử lại nhé.');
       setErrorMessage(apiMsg);
     } finally {
       setIsSubmitting(false);
@@ -197,11 +187,11 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
 
         {/* Left Side: Content & Privacy */}
         <div>
-          <h2>{language === 'en' ? 'Release Future Lantern' : 'Thả lồng đèn tương lai'}</h2>
+          <h2>{language === 'en' ? 'Release a lantern' : 'Thả lồng đèn'}</h2>
           <div className="sub">
             {language === 'en'
               ? 'Write to your future self, choose the moment your lantern descends.'
-              : 'Viết cho chính mình, hẹn ngày giờ lồng đèn hạ xuống.'}
+              : 'Viết thư cho chính mình. Thư sẽ mở vào ngày bạn chọn.'}
           </div>
 
           {errorMessage && (
@@ -229,13 +219,13 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             maxLength={150}
           />
 
-          <div className="fieldl">{language === 'en' ? 'Words to the future' : 'Lời gửi tương lai'}</div>
+          <div className="fieldl">{language === 'en' ? 'Your letter' : 'Lá thư'}</div>
           <textarea
             className="inp area focus"
             style={{ minHeight: '180px' }}
             placeholder={language === 'en'
               ? 'Thoughts, promises, or things you want to share with your future self...'
-              : 'Tâm sự, lời hứa hoặc những điều bạn muốn nhắn nhủ...'}
+              : 'Bạn muốn nhắn gì cho mình của sau này?'}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
@@ -243,9 +233,9 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '6px' }}>
             <div>
               <div className="fieldl">
-                <span>{language === 'en' ? 'Pen name' : 'Bút danh'}</span>
+                <span>{language === 'en' ? 'Shown as' : 'Tên hiển thị'}</span>
                 <span style={{ fontSize: '12px', color: 'var(--ink2)' }}>
-                  {language === 'en' ? '(Account nickname)' : '(Bí danh tài khoản)'}
+                  {language === 'en' ? '(from your profile)' : '(lấy từ hồ sơ)'}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -261,7 +251,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
                     color: 'var(--ink)',
                     flex: 1,
                   }}
-                  title={language === 'en' ? 'Pen name is locked to your account nickname' : 'Bút danh cố định theo bí danh tài khoản'}
+                  title={language === 'en' ? 'Change it in your profile' : 'Đổi tên này trong phần Hồ sơ'}
                 />
                 <div
                   className="row"
@@ -283,7 +273,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             </div>
 
             <div>
-              <div className="fieldl">{language === 'en' ? 'Symbol on lantern' : 'Biểu tượng trên đèn'}</div>
+              <div className="fieldl">{language === 'en' ? 'Symbol' : 'Biểu tượng'}</div>
               <div className="row" style={{ height: '46px', gap: '6px' }}>
                 {SYM_KEYS.map((k) => {
                   const sym = SYM[k]().map(([a, b]) => [a * 10, b * 10]);
@@ -321,7 +311,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             </div>
           </div>
 
-          <div className="fieldl">{language === 'en' ? 'Who can see this lantern?' : 'Ai được thấy lồng đèn này?'}</div>
+          <div className="fieldl">{language === 'en' ? 'Who can see it?' : 'Ai được xem?'}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div
               className={`opt ${isPrivate ? 'on' : ''}`}
@@ -334,7 +324,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
               <div className="muted" style={{ fontSize: '12px', marginTop: '2px' }}>
                 {language === 'en'
                   ? 'Only you see it. Floats immediately without moderation.'
-                  : 'Chỉ bạn thấy. Không cần duyệt, bay lên ngay.'}
+                  : 'Chỉ bạn xem được. Bay lên ngay.'}
               </div>
             </div>
             <div
@@ -348,7 +338,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
               <div className="muted" style={{ fontSize: '12px', marginTop: '2px' }}>
                 {language === 'en'
                   ? 'Moderated by admin then released into the shared sky.'
-                  : 'Admin duyệt rồi thả lên bầu trời chung.'}
+                  : 'Mọi người cùng xem, sau khi được duyệt.'}
               </div>
             </div>
           </div>
@@ -357,7 +347,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
         {/* Right Side: Calendar & Target Date */}
         <div style={{ paddingTop: '28px', display: 'flex', flexDirection: 'column' }}>
           <div className="fieldl" style={{ marginTop: 0 }}>
-            {language === 'en' ? 'Descent Moment' : 'Thời điểm hạ xuống'}
+            {language === 'en' ? 'Open on' : 'Ngày mở thư'}
           </div>
 
           {/* Quick preset chips */}
@@ -384,7 +374,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             }}
           >
             <div style={{ fontSize: '13px', color: 'var(--muted)', marginBottom: '8px' }}>
-              {language === 'en' ? 'Select exact date and time:' : 'Chọn ngày và giờ chính xác:'}
+              {language === 'en' ? 'Or pick a date:' : 'Hoặc chọn ngày cụ thể:'}
             </div>
             <input
               type="datetime-local"
@@ -417,7 +407,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
             >
               <Icon name="clock" size={16} />
               <span>
-                {language === 'en' ? 'Descends at:' : 'Hạ xuống:'} <b>{formatDisplayDate(targetDateObj)}</b>
+                {language === 'en' ? 'Opens on:' : 'Mở thư:'} <b>{formatDisplayDate(targetDateObj)}</b>
               </span>
             </div>
           </div>
@@ -425,7 +415,7 @@ export function ReleaseLanternModal({ isOpen, onClose, onRelease }) {
           <div className="muted" style={{ fontSize: '13px', marginTop: '16px', lineHeight: 1.6 }}>
             {language === 'en'
               ? `At ${formatDisplayDate(targetDateObj)}, the lantern will descend and you will receive a notification in your mailbox.`
-              : `Đúng ${formatDisplayDate(targetDateObj)}, lồng đèn sẽ hạ xuống và bạn sẽ nhận thông báo trong hộp thư.`}
+              : `Bạn sẽ nhận thông báo khi đến ngày.`}
           </div>
 
           <div

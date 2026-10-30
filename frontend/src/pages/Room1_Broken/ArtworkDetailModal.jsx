@@ -4,7 +4,8 @@ import { ReactionButton } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
 import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
+import { TranslationToggle } from '../../components/common/TranslationToggle';
 import { room1Service } from '../../services/room1Service';
 
 export function ArtworkDetailModal({
@@ -17,8 +18,9 @@ export function ArtworkDetailModal({
 }) {
   const { isAuthenticated } = useAuth();
   const { guardAction } = useGuestGuard();
-  const { localize, language, t } = useLanguage();
+  const { original, language, t } = useLanguage();
   const [detail, setDetail] = useState(artwork);
+  const tr = useTranslationToggle(detail || artwork, ['title', 'short_content', 'content']);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -163,9 +165,9 @@ export function ArtworkDetailModal({
     }
   };
 
-  const title = localize(detail, 'title') || localize(artwork, 'title') || artwork.t || (language === 'en' ? 'Artwork' : 'Tác phẩm');
+  const title = tr.text('title') || original(artwork, 'title') || artwork.t || (language === 'en' ? 'Artwork' : 'Tác phẩm');
   const author = detail?.author_display_name || artwork.author_display_name || artwork.a || (artwork.is_anonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : (language === 'en' ? 'Author' : 'Tác giả'));
-  const story = localize(detail, 'content') || localize(detail, 'short_content') || localize(artwork, 'content') || localize(artwork, 'short_content') || artwork.story || artwork.s || '';
+  const story = tr.text('content') || tr.text('short_content') || original(artwork, 'content') || original(artwork, 'short_content') || artwork.story || artwork.s || '';
   const viewCount = detail?.view_count !== undefined ? detail.view_count : (artwork.view_count || artwork.v || 0);
 
   const reactionTypes = ['HEART', 'HUG', 'SYMPATHY'];
@@ -273,10 +275,16 @@ export function ArtworkDetailModal({
               color: 'var(--ink)',
             }}
           >
-            {isLoading ? (language === 'en' ? 'Opening artwork...' : 'Đang mở tác phẩm...') : story}
+            {isLoading ? (language === 'en' ? 'Loading...' : 'Đang tải...') : story}
           </div>
+          <TranslationToggle
+            hasTranslation={tr.hasTranslation}
+            showTranslation={tr.showTranslation}
+            onToggle={tr.toggleTranslation}
+            style={{ marginTop: '10px' }}
+          />
 
-          {(localize(detail, 'quote') || detail?.quote) && (
+          {original(detail, 'quote') && (
             <div
               style={{
                 fontFamily: 'var(--serif)',
@@ -286,7 +294,7 @@ export function ArtworkDetailModal({
                 margin: '16px 0 20px',
               }}
             >
-              {localize(detail, 'quote') || detail?.quote}
+              {original(detail, 'quote')}
             </div>
           )}
 
@@ -333,10 +341,10 @@ export function ArtworkDetailModal({
               {reactionsMap.total > 0
                 ? (language === 'en'
                     ? `${reactionsMap.total} people shared empathy with this artwork.`
-                    : `${reactionsMap.total} người đã gửi gắm sự đồng cảm đến tác phẩm này.`)
+                    : `${reactionsMap.total} người đã gửi cảm xúc.`)
                 : (language === 'en'
                     ? 'Be the first to share comforting words with the author.'
-                    : 'Hãy là người đầu tiên gửi gắm sự an ủi đến tác giả.')}
+                    : 'Hãy là người đầu tiên gửi lời an ủi.')}
             </div>
           </div>
         </div>

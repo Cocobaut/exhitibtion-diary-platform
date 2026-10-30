@@ -207,11 +207,11 @@ export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
           {!isAuthenticated ? (
             <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--ink2)' }}>
               <div style={{ fontSize: '28px', marginBottom: '8px' }}>✦</div>
-              <div>Vui lòng đăng nhập để nhận thông báo từ bảo tàng.</div>
+              <div>Đăng nhập để nhận thông báo.</div>
             </div>
           ) : isLoading ? (
             <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--ink2)' }}>
-              Đang tải danh sách thông báo...
+              Đang tải...
             </div>
           ) : errorMsg ? (
             <div style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--acc)' }}>
@@ -222,7 +222,7 @@ export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
               <div className="hand" style={{ fontSize: '22px', marginBottom: '4px' }}>
                 mọi thứ đang thật yên ả
               </div>
-              <div style={{ fontSize: '13.5px' }}>Chưa có thông báo nào mới dành cho bạn.</div>
+              <div style={{ fontSize: '13.5px' }}>Chưa có thông báo mới.</div>
             </div>
           ) : (
             notifications.map((item) => {

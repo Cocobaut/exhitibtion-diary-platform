@@ -4,7 +4,8 @@ import { ReactionButton } from '../../components/common/Reactions';
 import { leafPath } from './WishTree';
 import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
+import { TranslationToggle } from '../../components/common/TranslationToggle';
 import { room3Service, toFrontendCategory, CATEGORY_MAP } from '../../services/room3Service';
 
 export function ReadLeafModal({
@@ -17,9 +18,10 @@ export function ReadLeafModal({
 }) {
   const { user } = useAuth();
   const { guardAction } = useGuestGuard();
-  const { localize, language } = useLanguage();
+  const { original, language } = useLanguage();
 
   const [leaf, setLeaf] = useState(leafData || null);
+  const tr = useTranslationToggle(leaf, ['title', 'content', 'short_content']);
   const [energyCount, setEnergyCount] = useState(86);
   const [heartCount, setHeartCount] = useState(214);
   const [hasEnergized, setHasEnergized] = useState(false);
@@ -224,8 +226,8 @@ export function ReadLeafModal({
           sourceLabel: language === 'en' ? 'Wish Leaf · Room 3' : 'Chiếc lá nguyện ước · Phòng 3',
           badgeClass: 'b-wait',
           icon: 'r3',
-          title: localize(currentLeaf, 'title') || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên'),
-          content: localize(currentLeaf, 'content') || localize(currentLeaf, 'short_content') || '',
+          title: original(currentLeaf, 'title') || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên'),
+          content: original(currentLeaf, 'content') || original(currentLeaf, 'short_content') || '',
           author: currentLeaf.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ'),
           symbol: leafColor,
           savedAt: language === 'en' ? 'Today' : 'Hôm nay',
@@ -242,8 +244,8 @@ export function ReadLeafModal({
           sourceLabel: language === 'en' ? 'Wish Leaf · Room 3' : 'Chiếc lá nguyện ước · Phòng 3',
           badgeClass: 'b-wait',
           icon: 'r3',
-          title: localize(currentLeaf, 'title') || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên'),
-          content: localize(currentLeaf, 'content') || localize(currentLeaf, 'short_content') || '',
+          title: original(currentLeaf, 'title') || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên'),
+          content: original(currentLeaf, 'content') || original(currentLeaf, 'short_content') || '',
           author: currentLeaf.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ'),
           symbol: leafColor,
           savedAt: language === 'en' ? 'Today' : 'Hôm nay',
@@ -302,7 +304,7 @@ export function ReadLeafModal({
         </div>
 
         <h2 style={{ marginTop: '6px', fontSize: '24px' }}>
-          {localize(currentLeaf, 'title') || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên')}
+          {(leaf ? tr.text('title') : original(currentLeaf, 'title')) || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên')}
         </h2>
 
         {isLoading ? (
@@ -320,9 +322,17 @@ export function ReadLeafModal({
               whiteSpace: 'pre-wrap',
             }}
           >
-            {localize(currentLeaf, 'content') || localize(currentLeaf, 'short_content')}
+            {leaf
+              ? tr.text('content') || tr.text('short_content')
+              : original(currentLeaf, 'content') || original(currentLeaf, 'short_content')}
           </div>
         )}
+        <TranslationToggle
+          hasTranslation={tr.hasTranslation}
+          showTranslation={tr.showTranslation}
+          onToggle={tr.toggleTranslation}
+          style={{ marginBottom: '8px' }}
+        />
 
         <div className="muted" style={{ fontSize: '13px' }}>
           {currentLeaf.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ')} ·{' '}
@@ -383,7 +393,7 @@ export function ReadLeafModal({
         <div className="muted" style={{ fontSize: '13px', marginTop: '16px' }}>
           {language === 'en'
             ? 'This message is also preserved in the lobby mailbox.'
-            : 'Lời nhắn này cũng có trong hòm thư ở sảnh chính.'}
+            : 'Lời nhắn này cũng có trong hòm thư ở Sảnh.'}
         </div>
       </div>
     </>

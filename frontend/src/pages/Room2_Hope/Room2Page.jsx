@@ -33,7 +33,7 @@ export function Room2Page({
 
   const [lanterns, setLanterns] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [stats, setStats] = useState({ total_lanterns: 3402, total_opened: 128 });
+  const [stats, setStats] = useState({ total_lanterns: 0, total_opened: 0 });
 
   const [personalLantern, setPersonalLantern] = useState(null);
   const [remainingSeconds, setRemainingSeconds] = useState(null);
@@ -100,7 +100,7 @@ export function Room2Page({
           triggerToast(
             language === 'en'
               ? '✦ A future lantern of yours has reached its time and landed gently on the dunes! ✦'
-              : '✦ Một lồng đèn gửi gắm tương lai của bạn đã tới hạn và hạ cánh êm đềm! ✦'
+              : '✦ Một lồng đèn của bạn vừa hạ xuống! ✦'
           );
           checkReadyToFall();
         }
@@ -256,8 +256,8 @@ export function Room2Page({
   const handleLanternReleased = (newLantern) => {
     triggerToast(
       newLantern?.visibility === 'PUBLIC'
-        ? '✦ Lồng đèn đã gửi tới hàng chờ duyệt. Admin sẽ sớm thả lên bầu trời đêm!'
-        : '✦ Lồng đèn riêng tư của bạn đã vút bay lên bầu trời đêm!'
+        ? '✦ Đã gửi! Lồng đèn sẽ bay lên sau khi được duyệt.'
+        : '✦ Lồng đèn của bạn đã bay lên!'
     );
     loadLanterns();
     loadPersonalLantern();
@@ -336,9 +336,9 @@ export function Room2Page({
         >
           <span style={{ fontSize: '20px', color: 'var(--gold)' }}>✦</span>
           <div>
-            <b>{language === 'en' ? 'Your lantern has landed!' : 'Lồng đèn của bạn đã tới hẹn hạ xuống!'}</b>
+            <b>{language === 'en' ? 'Your lantern has landed!' : 'Lồng đèn của bạn đã hạ xuống!'}</b>
             <div style={{ fontSize: '12.5px', color: '#EAD2BE' }}>
-              &ldquo;{readyLanterns[0].title}&rdquo; {language === 'en' ? 'is waiting for you. Click here to read.' : 'đang đợi bạn mở đọc. Nhấn vào đây để xem thư.'}
+              &ldquo;{readyLanterns[0].title}&rdquo; {language === 'en' ? 'is waiting for you.' : 'đang chờ bạn mở.'}
             </div>
           </div>
           <button
@@ -416,7 +416,7 @@ export function Room2Page({
               transition: 'all 0.2s ease',
             }}
           >
-            <span style={{ color: 'var(--gold)' }}>✦</span> {language === 'en' ? 'tap or pull lantern down to read ↓' : 'nhấn hoặc kéo lồng đèn xuống để đọc ↓'}
+            <span style={{ color: 'var(--gold)' }}>✦</span> {language === 'en' ? 'tap a lantern to read ↓' : 'nhấn vào lồng đèn để đọc ↓'}
           </span>
         </div>
       )}

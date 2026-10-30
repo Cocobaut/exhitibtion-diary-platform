@@ -28,12 +28,12 @@ export function ArtworkPreparedModal({ isOpen, onClose, onViewMyArtworks }) {
         </svg>
 
         <h2 style={{ fontSize: '28px' }}>
-          {language === 'en' ? 'Your artwork is being prepared' : 'Tác phẩm của bạn đang được chuẩn bị'}
+          {language === 'en' ? 'Got it!' : 'Đã nhận được rồi!'}
         </h2>
         <div className="muted" style={{ fontSize: '15.5px', margin: '8px 0 22px' }}>
           {language === 'en'
             ? 'We will notify you in your mailbox once your artwork is illustrated and exhibited.'
-            : 'Chúng mình sẽ thông báo trong hộp tin nhắn cho bạn sau khi tác phẩm hoàn thành.'}
+            : 'Khi tranh vẽ xong, bạn sẽ nhận được thông báo.'}
         </div>
 
         <div className="row" style={{ justifyContent: 'center', gap: '12px' }}>

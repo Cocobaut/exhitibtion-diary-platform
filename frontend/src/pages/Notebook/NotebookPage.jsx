@@ -5,6 +5,13 @@ import { notebookService } from '../../services/notebookService';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
+// Hiển thị ngày lưu dạng 28/10/2026 thay vì chuỗi ISO thô
+function formatSavedAt(value, language) {
+  const d = value ? new Date(value) : null;
+  if (!d || Number.isNaN(d.getTime())) return language === 'en' ? 'Recently' : 'Gần đây';
+  return d.toLocaleDateString(language === 'en' ? 'en-GB' : 'vi-VN');
+}
+
 export function NotebookPage({
   notebookItems = [],
   onRemoveItem,
@@ -12,13 +19,16 @@ export function NotebookPage({
   onOpenThemeModal,
 }) {
   const { user } = useAuth();
-  const { language, localize, t } = useLanguage();
+  const { language, localize, original, t } = useLanguage();
+  // Hòm thư là lời nhắn ban quản trị soạn sẵn hai thứ tiếng; còn lại là lời gốc của người viết
+  const itemText = (it, field) => (it?.source === 'mailbox' ? localize(it, field) : original(it, field));
 
   const [filter, setFilter] = useState('all'); // 'all', 'mailbox', 'lantern'
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [serverItems, setServerItems] = useState([]);
-  const [serverCounts, setServerCounts] = useState({ all: 0, mailbox: 0, lantern: 0 });
+  // true khi API sổ tay trả lời thành công (kể cả danh sách rỗng)
+  const [serverLoaded, setServerLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [readingItem, setReadingItem] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
@@ -68,15 +78,13 @@ export function NotebookPage({
             author: it.author || (language === 'en' ? 'Stranger' : 'Người lạ'),
             category: it.category,
             symbol: it.symbol || 'heart',
-            savedAt: it.saved_at || (language === 'en' ? 'Recently' : 'Gần đây'),
+            savedAt: formatSavedAt(it.saved_at, language),
             source_id: it.source_id,
             artwork_id: it.artwork_id,
             draw_id: it.draw_id,
           }));
           setServerItems(mapped);
-        }
-        if (data.pagination?.counts) {
-          setServerCounts(data.pagination.counts);
+          setServerLoaded(true);
         }
       }
     } catch (err) {
@@ -90,22 +98,12 @@ export function NotebookPage({
     loadNotebook();
   }, [loadNotebook]);
 
-  // Merge items: use serverItems if available, otherwise fallback to local notebookItems
-  const activeItems = user && serverItems.length > 0 ? serverItems : notebookItems;
-
-  const mailboxCount =
-    serverCounts.mailbox || activeItems.filter((i) => i.source === 'mailbox').length;
-  const lanternCount =
-    serverCounts.lantern || activeItems.filter((i) => i.source === 'lantern').length;
-  const room1Count =
-    serverCounts.room1 || activeItems.filter((i) => i.source === 'room1').length;
-  const room3Count =
-    serverCounts.room3 || activeItems.filter((i) => i.source === 'room3').length;
-  const totalCount =
-    serverCounts.all || activeItems.length;
+  // Ưu tiên dữ liệu server; chỉ dùng bản lưu cục bộ khi không gọi được API
+  const useServer = Boolean(user && serverLoaded);
+  const activeItems = useServer ? serverItems : notebookItems;
 
   // Filter client-side if using local items
-  const displayItems = (user && serverItems.length > 0)
+  const displayItems = useServer
     ? serverItems
     : activeItems.filter((item) => {
         if (filter === 'mailbox' && item.source !== 'mailbox') return false;
@@ -148,8 +146,9 @@ export function NotebookPage({
       {/* Top Header */}
       <TopNav
         roomNo="NOTEBOOK"
+        tagLabel={language === 'en' ? 'Saved for you' : 'Lưu cho riêng bạn'}
         roomName={t('nav_notebook')}
-        searchPlaceholder={language === 'en' ? 'Search saved messages, letters…' : 'Tìm kiếm thông điệp, thư đã lưu…'}
+        searchPlaceholder={language === 'en' ? 'Search your notebook…' : 'Tìm trong sổ tay…'}
         searchValue={search}
         onSearchChange={handleSearchChange}
         onOpenNotifications={onOpenNotifications}
@@ -188,35 +187,35 @@ export function NotebookPage({
             onClick={() => setFilter('all')}
             style={{ cursor: 'pointer' }}
           >
-            {language === 'en' ? `All (${totalCount})` : `Tất cả (${totalCount})`}
+            {language === 'en' ? 'All' : 'Tất cả'}
           </span>
           <span
             className={`chip glass ${filter === 'mailbox' ? 'on' : ''}`}
             onClick={() => setFilter('mailbox')}
             style={{ cursor: 'pointer' }}
           >
-            <Icon name="sparkle" size={14} /> {language === 'en' ? `From Mailbox (${mailboxCount})` : `Hòm thư (${mailboxCount})`}
+            <Icon name="sparkle" size={14} /> {language === 'en' ? 'Mailbox' : 'Hòm thư'}
           </span>
           <span
             className={`chip glass ${filter === 'room1' ? 'on' : ''}`}
             onClick={() => setFilter('room1')}
             style={{ cursor: 'pointer' }}
           >
-            <Icon name="r1" size={14} /> {language === 'en' ? `From Room 1 (${room1Count})` : `Phòng 1 · Đổ vỡ (${room1Count})`}
+            <Icon name="r1" size={14} /> {language === 'en' ? 'Room 1' : 'Phòng 1'}
           </span>
           <span
             className={`chip glass ${filter === 'lantern' ? 'on' : ''}`}
             onClick={() => setFilter('lantern')}
             style={{ cursor: 'pointer' }}
           >
-            <Icon name="r2" size={14} /> {language === 'en' ? `From Room 2 (${lanternCount})` : `Phòng 2 · Lồng đèn (${lanternCount})`}
+            <Icon name="r2" size={14} /> {language === 'en' ? 'Room 2' : 'Phòng 2'}
           </span>
           <span
             className={`chip glass ${filter === 'room3' ? 'on' : ''}`}
             onClick={() => setFilter('room3')}
             style={{ cursor: 'pointer' }}
           >
-            <Icon name="r3" size={14} /> {language === 'en' ? `From Room 3 (${room3Count})` : `Phòng 3 · Cây ước (${room3Count})`}
+            <Icon name="r3" size={14} /> {language === 'en' ? 'Room 3' : 'Phòng 3'}
           </span>
           {isLoading && (
             <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
@@ -248,12 +247,12 @@ export function NotebookPage({
           >
             <div style={{ fontSize: '40px', color: 'var(--gold)', marginBottom: '12px' }}>✦</div>
             <h3 style={{ fontFamily: 'var(--serif)', fontSize: '24px', color: 'var(--onw)' }}>
-              {language === 'en' ? 'Your notebook is currently empty' : 'Sổ tay hiện đang trống'}
+              {language === 'en' ? 'Your notebook is empty' : 'Sổ tay còn trống'}
             </h3>
             <p className="book" style={{ maxWidth: '480px', margin: '0 auto', fontSize: '15px' }}>
               {language === 'en'
-                ? 'You can draw comforting messages from the lobby Mailbox or open landed lantern letters in Room 2 and click "Save to notebook" to preserve them here.'
-                : 'Bạn có thể rút thông điệp ở Hòm thư sảnh chính hoặc mở những bức thư Lồng đèn hạ xuống ở Phòng 2 và bấm "Lưu vào sổ tay" để lưu giữ tại đây.'}
+                ? 'When you find a message you like, tap "Save to notebook" to keep it here.'
+                : 'Gặp lời nhắn nào bạn thích, bấm "Lưu vào sổ tay" để giữ lại ở đây.'}
             </p>
           </div>
         ) : (
@@ -313,7 +312,7 @@ export function NotebookPage({
                       marginBottom: '8px',
                     }}
                   >
-                    {localize(item, 'title')}
+                    {itemText(item, 'title')}
                   </div>
                 )}
 
@@ -353,7 +352,7 @@ export function NotebookPage({
                     WebkitBoxOrient: 'vertical',
                   }}
                 >
-                  {localize(item, 'content')}
+                  {itemText(item, 'content')}
                 </div>
 
                 {/* Author & Footer Actions */}
@@ -437,7 +436,7 @@ export function NotebookPage({
                   margin: '4px 0 14px',
                 }}
               >
-                {localize(readingItem, 'title')}
+                {itemText(readingItem, 'title')}
               </h2>
             )}
 
@@ -471,7 +470,7 @@ export function NotebookPage({
                 margin: '14px 0 20px',
               }}
             >
-              {localize(readingItem, 'content')}
+              {itemText(readingItem, 'content')}
             </div>
 
             <div
@@ -506,7 +505,7 @@ export function NotebookPage({
         <i>
           {language === 'en'
             ? 'A notebook preserving comforting words to support you on your journey.'
-            : 'Sổ tay lưu lại những dòng chữ nâng đỡ bạn trên từng chặng đường.'}
+            : 'Những lời nhắn bạn muốn giữ lại.'}
         </i>
       </div>
     </div>

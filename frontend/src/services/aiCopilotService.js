@@ -29,6 +29,20 @@ export const aiCopilotService = {
     });
   },
 
+  /**
+   * Dịch nháp nội dung người dùng sang ngôn ngữ còn lại để admin xem lại trước khi duyệt
+   * @param {Object} data - { source_lang, target_lang, title, short_content, content }
+   */
+  translateContent: async ({ source_lang, target_lang, title, short_content, content }) => {
+    return await apiClient.post("/admin/ai/translate", {
+      source_lang,
+      target_lang,
+      title: title || null,
+      short_content: short_content || null,
+      content: content || null,
+    });
+  },
+
   // ==========================================
   // 2. DÀNH RIÊNG CHO OWNER: QUẢN TRỊ CẤU HÌNH AI
   // ==========================================

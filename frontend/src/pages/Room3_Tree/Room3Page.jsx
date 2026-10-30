@@ -130,7 +130,7 @@ export function Room3Page({
 }) {
   const { user, isGuest } = useAuth();
   const { guardAction } = useGuestGuard();
-  const { t, language, localize } = useLanguage();
+  const { t, language, original } = useLanguage();
 
   const [filterCategory, setFilterCategory] = useState(null); // null = all, 'KL'|'CL'|'BO'|'GN'
   const [filterMine, setFilterMine] = useState(false);
@@ -138,8 +138,7 @@ export function Room3Page({
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
   const [leaves, setLeaves] = useState([]);
-  const [totalLeaves, setTotalLeaves] = useState(862);
-  const [categoryCounts, setCategoryCounts] = useState({});
+  const [totalLeaves, setTotalLeaves] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   const [hoveredLeaf, setHoveredLeaf] = useState(null);
@@ -174,14 +173,6 @@ export function Room3Page({
       if (data) {
         if (typeof data.total_leaves === 'number') {
           setTotalLeaves(data.total_leaves);
-        }
-        if (Array.isArray(data.categories)) {
-          const counts = {};
-          data.categories.forEach((c) => {
-            const frontKey = toFrontendCategory(c.category);
-            counts[frontKey] = c.total_count ?? 0;
-          });
-          setCategoryCounts(counts);
         }
       }
     } catch (err) {
@@ -282,7 +273,7 @@ export function Room3Page({
 
   const handleLeafHanged = (newLeaf) => {
     triggerToast(
-      '✦ Thông điệp đã gửi duyệt. Bạn sẽ nhận thông báo khi lá được treo lên cây!'
+      '✦ Đã gửi! Bạn sẽ nhận thông báo khi lá được treo lên cây.'
     );
     loadCategoriesMeta();
     loadLeaves();
@@ -338,7 +329,6 @@ export function Room3Page({
             {Object.keys(CATEGORY_MAP).map((k) => {
               const item = CATEGORY_MAP[k];
               const isSelected = filterCategory === k && !filterMine;
-              const count = categoryCounts[k];
               const categoryName = language === 'en'
                 ? (k === 'KL' ? 'Encouragement' : k === 'CL' ? 'Healing' : k === 'BO' ? 'Gratitude' : 'Perspective')
                 : item.name;
@@ -355,11 +345,6 @@ export function Room3Page({
                 >
                   <i className="dot" style={{ background: item.color }} />
                   {categoryName}
-                  {count !== undefined && count > 0 && (
-                    <span style={{ opacity: 0.7, fontSize: '11.5px', marginLeft: '3px' }}>
-                      ({count})
-                    </span>
-                  )}
                 </span>
               );
             })}
@@ -498,7 +483,7 @@ export function Room3Page({
               textOverflow: 'ellipsis',
             }}
           >
-            {localize(hoveredLeaf, 'title') || (language === 'en' ? 'To you who are trying' : 'Gửi bạn đang cố gắng')}
+            {original(hoveredLeaf, 'title') || (language === 'en' ? 'To you who are trying' : 'Gửi bạn đang cố gắng')}
           </b>
           <div className="muted" style={{ fontSize: '12.5px' }}>
             {hoveredLeaf.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ')} · {language === 'en' ? 'click to read' : 'nhấn để đọc'}
@@ -535,7 +520,7 @@ export function Room3Page({
         >
           {language === 'en'
             ? `${totalLeaves.toLocaleString('en-US')} encouraging words on tree · hover a leaf to preview, click to read`
-            : `${totalLeaves.toLocaleString('vi-VN')} lời động viên đang treo trên cây · rê chuột vào một chiếc lá để xem, nhấn để đọc`}
+            : `${totalLeaves.toLocaleString('vi-VN')} lời động viên trên cây · nhấn vào một chiếc lá để đọc`}
         </div>
       </div>
 

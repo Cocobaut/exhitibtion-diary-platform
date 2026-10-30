@@ -60,8 +60,8 @@ export function DiaryPage({
   const handleSaveDiary = (savedData) => {
     triggerToast(
       savedData?.is_public
-        ? (language === 'en' ? '✦ Diary page saved and queued for public approval!' : '✦ Trang nhật ký đã lưu và gửi vào hàng đợi duyệt công khai!')
-        : (language === 'en' ? '✦ Diary page safely saved to your notebook.' : '✦ Trang nhật ký đã được lưu an toàn vào cuốn sổ của bạn.')
+        ? (language === 'en' ? '✦ Saved! It will appear in Community once approved.' : '✦ Đã lưu! Trang sẽ hiện ở Cộng đồng sau khi được duyệt.')
+        : (language === 'en' ? '✦ Saved.' : '✦ Đã lưu.')
     );
     setRefreshTrigger((prev) => prev + 1);
   };
