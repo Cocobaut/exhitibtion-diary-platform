@@ -227,11 +227,11 @@ export function OwnerDashboardPage({ onNavigate }) {
       if (enable) {
         await aiCopilotService.activateAiService('all');
         setIsMasterAiEnabled(true);
-        triggerToast('Đã kích hoạt toàn bộ hệ thống AI Copilot');
+        triggerToast(language === 'en' ? 'AI services enabled' : 'Đã bật trợ lý AI');
       } else {
         await aiCopilotService.deactivateAiService('all');
         setIsMasterAiEnabled(false);
-        triggerToast('Đã tạm ngưng toàn bộ hệ thống AI Copilot');
+        triggerToast(language === 'en' ? 'AI services paused' : 'Đã tạm dừng trợ lý AI');
       }
       await loadAiSettings();
     } catch (err) {
@@ -252,7 +252,7 @@ export function OwnerDashboardPage({ onNavigate }) {
       triggerToast(
         language === 'en'
           ? '⚠️ API Key is missing. Please enter an API Key to test and discover models.'
-          : '⚠️ Chưa có API Key. Vui lòng nhập API Key để kiểm tra và khám phá model từ Provider.'
+          : 'Chưa có khóa API. Hãy nhập khóa API để kiểm tra và tìm mô hình.'
       );
       return;
     }
@@ -276,7 +276,7 @@ export function OwnerDashboardPage({ onNavigate }) {
           triggerToast(
             language === 'en'
               ? `✦ Successfully discovered ${data.discovered_models.length} model(s) for Moderation.`
-              : `✦ Khám phá thành công ${data.discovered_models.length} model cho Kiểm duyệt!`
+              : `✦ Tìm thấy ${data.discovered_models.length} mô hình cho kiểm duyệt.`
           );
         } else {
           setImgDiscoveredModels(data.discovered_models);
@@ -284,20 +284,20 @@ export function OwnerDashboardPage({ onNavigate }) {
           triggerToast(
             language === 'en'
               ? `✦ Successfully discovered ${data.discovered_models.length} model(s) for Image Generation.`
-              : `✦ Khám phá thành công ${data.discovered_models.length} model cho Sinh ảnh!`
+              : `✦ Tìm thấy ${data.discovered_models.length} mô hình cho sinh ảnh.`
           );
         }
       } else {
         triggerToast(
           language === 'en'
             ? 'Key verified, but no specific models were returned by the provider.'
-            : 'Đã kết nối key thành công nhưng Provider chưa trả về danh sách model cụ thể.'
+            : 'Khóa API hợp lệ nhưng nhà cung cấp chưa trả về danh sách mô hình.'
         );
       }
     } catch (err) {
       console.error('Lỗi khi khám phá models:', err);
-      const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Không thể kết nối tới Provider';
-      triggerToast(`[AI Copilot] ${msg}`);
+      const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Không kết nối được tới nhà cung cấp';
+      triggerToast(msg);
     } finally {
       if (isMod) setIsDiscoveringMod(false);
       else setIsDiscoveringImg(false);
@@ -313,14 +313,14 @@ export function OwnerDashboardPage({ onNavigate }) {
         triggerToast(
           language === 'en'
             ? '✦ Content Moderation API Key removed successfully.'
-            : '✦ Đã xóa thành công API Key của dịch vụ kiểm duyệt nội dung.'
+            : '✦ Đã xóa khóa API của dịch vụ kiểm duyệt.'
         );
       } else {
         await aiCopilotService.deleteImageGenKey();
         triggerToast(
           language === 'en'
             ? '✦ Image Generation API Key removed successfully.'
-            : '✦ Đã xóa thành công API Key của dịch vụ sinh tranh vẽ.'
+            : '✦ Đã xóa khóa API của dịch vụ sinh ảnh.'
         );
       }
       setDeletingApiKeyService(null);
@@ -328,7 +328,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     } catch (err) {
       console.error('Lỗi khi xóa API Key:', err);
       const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Không thể xóa API Key.';
-      triggerToast(`[AI Copilot] ${msg}`);
+      triggerToast(msg);
     } finally {
       setIsDeletingApiKey(false);
     }
@@ -359,7 +359,7 @@ export function OwnerDashboardPage({ onNavigate }) {
       triggerToast(
         language === 'en'
           ? '✦ All AI Copilot settings and API Keys saved successfully!'
-          : '✦ Đã lưu toàn bộ cấu hình và API Key của AI Copilot thành công!'
+          : '✦ Đã lưu cấu hình AI.'
       );
       setModApiKey('');
       setImgApiKey('');
@@ -367,7 +367,7 @@ export function OwnerDashboardPage({ onNavigate }) {
     } catch (err) {
       console.error('Lỗi khi cập nhật cấu hình AI:', err);
       const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Không thể lưu cấu hình AI';
-      triggerToast(`[AI Copilot] ${msg}`);
+      triggerToast(msg);
     } finally {
       setIsSavingAiSettings(false);
     }
@@ -548,12 +548,12 @@ export function OwnerDashboardPage({ onNavigate }) {
       <div className="stage admin" style={{ display: 'grid', placeItems: 'center' }}>
         <div className="box" style={{ padding: '36px', textAlign: 'center', maxWidth: '480px' }}>
           <h2 className="serif" style={{ fontSize: '24px', margin: '0 0 10px', fontWeight: 600 }}>
-            {language === 'en' ? 'Owner Access Required' : 'Yêu cầu quyền Chủ sở hữu (Owner)'}
+            {language === 'en' ? 'Owner Access Required' : 'Cần quyền Chủ sở hữu'}
           </h2>
           <p className="muted" style={{ lineHeight: 1.6, fontSize: '14.5px' }}>
             {language === 'en'
               ? 'This area is strictly restricted to accounts with the supreme OWNER role on the platform.'
-              : 'Khu vực này được bảo vệ nghiêm ngặt và chỉ dành riêng cho tài khoản có vai trò OWNER tối cao của nền tảng.'}
+              : 'Khu vực này chỉ dành cho tài khoản Chủ sở hữu.'}
           </p>
           <div style={{ marginTop: '20px' }}>
             <button
@@ -625,31 +625,14 @@ export function OwnerDashboardPage({ onNavigate }) {
               }}
             >
               <Icon name="crown" size={15} />
-              <span>{language === 'en' ? 'PLATFORM OWNER · ACCESS CONTROL' : 'QUẢN TRỊ TỐI CAO · BẢNG ĐIỀU HÀNH'}</span>
+              <span>{language === 'en' ? 'OWNER' : 'CHỦ SỞ HỮU'}</span>
             </div>
             <h1 className="serif" style={{ margin: '6px 0 0', fontSize: '28px', fontWeight: 600 }}>
-              {language === 'en'
-                ? 'System Operations & Access Control'
-                : 'Bảng Điều Hành & Phân Quyền Toàn Hệ Thống'}
+              {language === 'en' ? 'Museum management' : 'Quản lý bảo tàng'}
             </h1>
           </div>
 
           <div className="row" style={{ gap: '14px', alignItems: 'center' }}>
-            <span
-              className="badge b-priv"
-              style={{
-                fontSize: '13px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 12px',
-                borderRadius: '8px',
-              }}
-            >
-              <Icon name="crown" size={14} />
-              {language === 'en' ? 'Owner' : 'Chủ sở hữu'}: {user?.nickname || user?.username}
-            </span>
-
             {/* Language Switcher */}
             <div className="lang glass" style={{ cursor: 'pointer', userSelect: 'none' }}>
               <b
@@ -679,40 +662,25 @@ export function OwnerDashboardPage({ onNavigate }) {
           }}
         >
           <div className="box stat">
-            <small>{language === 'en' ? 'USERS & STAFF' : 'NGƯỜI DÙNG & NHÂN SỰ'}</small>
+            <small>{language === 'en' ? 'USERS' : 'NGƯỜI DÙNG'}</small>
             <b className="serif">{stats?.users_summary?.total_users ?? totalUsers}</b>
-            <small>
-              {stats?.users_summary?.by_role?.ADMIN ?? 0} Admins ·{' '}
-              {stats?.users_summary?.by_role?.OWNER ?? 1} Owner
-            </small>
           </div>
 
           <div className="box stat">
-            <small>{language === 'en' ? 'ACCOUNT STATUS' : 'TRẠNG THÁI TÀI KHOẢN'}</small>
+            <small>{language === 'en' ? 'ACTIVE ACCOUNTS' : 'ĐANG HOẠT ĐỘNG'}</small>
             <b className="serif" style={{ color: '#2D7D46' }}>
               {stats?.users_summary?.active_users ?? totalUsers}
             </b>
-            <small style={{ color: (stats?.users_summary?.deactivated_users > 0) ? '#C44B2B' : 'var(--muted)' }}>
-              {stats?.users_summary?.deactivated_users ?? 0} {language === 'en' ? 'locked accounts' : 'tài khoản bị khóa'}
-            </small>
           </div>
 
           <div className="box stat">
-            <small>{language === 'en' ? 'EXHIBITION ARTWORKS' : 'TÁC PHẨM TRIỂN LÃM'}</small>
+            <small>{language === 'en' ? 'ARTWORKS' : 'TÁC PHẨM'}</small>
             <b className="serif">{stats?.exhibition_summary?.total_artworks ?? 0}</b>
-            <small>
-              {stats?.exhibition_summary?.approved_artworks ?? 0} {language === 'en' ? 'on display' : 'đang treo'} ·{' '}
-              {stats?.exhibition_summary?.pending_artworks ?? 0} {language === 'en' ? 'pending' : 'chờ duyệt'}
-            </small>
           </div>
 
           <div className="box stat">
-            <small>{language === 'en' ? 'DIARIES & CAPSULES' : 'NHẬT KÝ & HÒM THƯ'}</small>
+            <small>{language === 'en' ? 'DIARIES' : 'NHẬT KÝ'}</small>
             <b className="serif">{stats?.diaries_summary?.total_diaries ?? 0}</b>
-            <small>
-              {stats?.capsules_summary?.total_capsules ?? 0} {language === 'en' ? 'messages' : 'thông điệp'} ·{' '}
-              {stats?.capsules_summary?.total_draws ?? 0} {language === 'en' ? 'draws' : 'lượt rút'}
-            </small>
           </div>
         </div>
 
@@ -722,25 +690,25 @@ export function OwnerDashboardPage({ onNavigate }) {
             className={activeSegment === 0 ? 'on' : ''}
             onClick={() => setActiveSegment(0)}
           >
-            {language === 'en' ? 'Users & Admins Directory' : 'Danh sách người dùng & Admin'} · {totalUsers}
+            {language === 'en' ? 'Users & Admins Directory' : 'Người dùng và quản trị viên'}
           </span>
           <span
             className={activeSegment === 1 ? 'on' : ''}
             onClick={() => setActiveSegment(1)}
           >
-            {language === 'en' ? 'Account Deletion Requests' : 'Yêu cầu xóa tài khoản từ Admin'} {deletionRequests.length > 0 ? `· ${deletionRequests.length}` : ''}
+            {language === 'en' ? 'Account Deletion Requests' : 'Yêu cầu xóa tài khoản'}
           </span>
           <span
             className={activeSegment === 2 ? 'on' : ''}
             onClick={() => setActiveSegment(2)}
           >
-            {language === 'en' ? 'System-wide Audit Logs' : 'Nhật ký kiểm toán toàn hệ thống'}
+            {language === 'en' ? 'System-wide Audit Logs' : 'Nhật ký hệ thống'}
           </span>
           <span
             className={activeSegment === 3 ? 'on' : ''}
             onClick={() => setActiveSegment(3)}
           >
-            {language === 'en' ? 'AI Copilot Engine' : 'Cấu hình AI Copilot'}
+            {language === 'en' ? 'AI Copilot Engine' : 'Cấu hình AI'}
           </span>
         </div>
       </div>
@@ -754,7 +722,7 @@ export function OwnerDashboardPage({ onNavigate }) {
               <div className="search" style={{ width: '280px', background: 'var(--paper)' }}>
                 <input
                   type="text"
-                  placeholder={language === 'en' ? 'Search by username, email, name...' : 'Tìm theo username, email, tên...'}
+                  placeholder={language === 'en' ? 'Search by username, email, name...' : 'Tìm theo tên đăng nhập, email, biệt danh...'}
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -776,9 +744,9 @@ export function OwnerDashboardPage({ onNavigate }) {
                 }}
               >
                 <option value="ALL">{language === 'en' ? 'All roles' : 'Tất cả vai trò'}</option>
-                <option value="USER">USER</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="OWNER">OWNER</option>
+                <option value="USER">{language === 'en' ? 'User' : 'Người dùng'}</option>
+                <option value="ADMIN">{language === 'en' ? 'Admin' : 'Quản trị viên'}</option>
+                <option value="OWNER">{language === 'en' ? 'Owner' : 'Chủ sở hữu'}</option>
               </select>
 
               <span className="muted" style={{ fontSize: '13px' }}>
@@ -1003,7 +971,7 @@ export function OwnerDashboardPage({ onNavigate }) {
               <small className="muted">
                 {language === 'en'
                   ? 'Admins cannot directly delete user accounts; they must submit an authenticated deletion request to the Owner.'
-                  : 'Admin không có quyền xóa trực tiếp tài khoản mà phải gửi phiếu yêu cầu có xác thực danh tính lên Chủ sở hữu.'}
+                  : 'Quản trị viên không xóa trực tiếp được tài khoản, mà phải gửi yêu cầu có xác minh danh tính lên Chủ sở hữu.'}
               </small>
             </div>
             {isLoadingRequests && (
@@ -1053,7 +1021,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                       </b>
                     </div>
                     <div className="muted" style={{ fontSize: '13px', marginTop: '6px' }}>
-                      {language === 'en' ? 'Admin requested' : 'Admin gửi yêu cầu'}: <b>{req.created_by_admin?.nickname || 'Admin'}</b> · {language === 'en' ? 'Time' : 'Thời gian'}: {formatDate(req.performed_at)}
+                      {language === 'en' ? 'Admin requested' : 'Người gửi yêu cầu'}: <b>{req.created_by_admin?.nickname || 'Admin'}</b> · {language === 'en' ? 'Time' : 'Thời gian'}: {formatDate(req.performed_at)}
                     </div>
                   </div>
 
@@ -1065,7 +1033,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                         const promptId = window.prompt(
                           language === 'en'
                             ? 'Enter ID (UUID) of the account to permanently delete to approve this request:'
-                            : 'Nhập ID (UUID) của tài khoản cần xóa vĩnh viễn để xác nhận duyệt yêu cầu này:'
+                            : 'Nhập mã của tài khoản cần xóa vĩnh viễn để xác nhận:'
                         );
                         if (promptId && promptId.trim()) {
                           setDeletingUser({
@@ -1091,8 +1059,8 @@ export function OwnerDashboardPage({ onNavigate }) {
           <div className="row between" style={{ marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
             <h3 className="serif" style={{ fontSize: '20px', margin: 0, fontWeight: 600 }}>
               {language === 'en'
-                ? 'Complete System Audit Logs (Owner View)'
-                : 'Toàn bộ nhật ký kiểm toán hệ thống (Owner View)'}
+                ? 'Complete System Audit Logs'
+                : 'Toàn bộ nhật ký hệ thống'}
             </h3>
             {isLoadingAudit && (
               <span className="muted" style={{ fontSize: '13px' }}>
@@ -1110,14 +1078,14 @@ export function OwnerDashboardPage({ onNavigate }) {
                   <th style={{ width: '140px' }}>{language === 'en' ? 'Action' : 'Hành động'}</th>
                   <th style={{ width: '120px' }}>{language === 'en' ? 'Room' : 'Phòng'}</th>
                   <th>{language === 'en' ? 'Artwork / Target' : 'Tác phẩm / Đối tượng'}</th>
-                  <th>{language === 'en' ? 'Audit Details' : 'Chi tiết kiểm toán'}</th>
+                  <th>{language === 'en' ? 'Audit Details' : 'Chi tiết'}</th>
                 </tr>
               </thead>
               <tbody>
                 {auditLogs.length === 0 ? (
                   <tr>
                     <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
-                      {language === 'en' ? 'No audit logs recorded yet' : 'Chưa có nhật ký kiểm toán nào'}
+                      {language === 'en' ? 'No audit logs recorded yet' : 'Chưa có nhật ký nào'}
                     </td>
                   </tr>
                 ) : (
@@ -1153,7 +1121,7 @@ export function OwnerDashboardPage({ onNavigate }) {
               <div style={{ maxWidth: '640px' }}>
                 <div className="row" style={{ gap: '10px', alignItems: 'center', marginBottom: '6px' }}>
                   <h2 className="serif" style={{ fontSize: '20px', margin: 0, fontWeight: 600 }}>
-                    {language === 'en' ? 'AI Copilot Engine & Multi-Provider Hub' : 'Hệ thống AI Copilot & Điều phối Multi-Provider'}
+                    {language === 'en' ? 'AI Assistant' : 'Trợ lý AI'}
                   </h2>
                   <span
                     className={`badge ${isMasterAiEnabled ? 'b-ok' : 'b-wait'}`}
@@ -1166,8 +1134,8 @@ export function OwnerDashboardPage({ onNavigate }) {
                 </div>
                 <p className="muted" style={{ margin: 0, fontSize: '13.5px', lineHeight: 1.5 }}>
                   {language === 'en'
-                    ? 'Central orchestration for dynamic model discovery, Fernet AES-128 encrypted credentials, moderation rubrics, and artistic image generation.'
-                    : 'Trung tâm điều phối khám phá model động từ Provider, bảo mật API Key mã hóa Fernet AES-128, kiểm duyệt bài viết chuẩn Rubric và tự động sinh tranh nghệ thuật.'}
+                    ? 'Set up AI to help moderate posts, translate content and draw illustrations. API keys are encrypted before being stored.'
+                    : 'Nơi cài đặt AI hỗ trợ kiểm duyệt bài viết, dịch nội dung và vẽ tranh minh họa. Khóa API được mã hóa trước khi lưu.'}
                 </p>
               </div>
 
@@ -1182,9 +1150,9 @@ export function OwnerDashboardPage({ onNavigate }) {
                   {isTogglingMasterAi ? (
                     language === 'en' ? 'Updating...' : 'Đang cập nhật...'
                   ) : isMasterAiEnabled ? (
-                    language === 'en' ? 'Pause All AI Services' : 'Tạm dừng toàn bộ AI'
+                    language === 'en' ? 'Pause All AI Services' : 'Tạm dừng AI'
                   ) : (
-                    language === 'en' ? 'Activate AI System' : 'Bật toàn bộ hệ thống AI'
+                    language === 'en' ? 'Activate AI System' : 'Bật AI'
                   )}
                 </button>
               </div>
@@ -1206,7 +1174,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                     </span>
                   </div>
                   <small className="muted" style={{ display: 'block', marginTop: '4px' }}>
-                    {language === 'en' ? 'Human-in-the-loop scoring (0-100), room fitness & polite neutral rewrite' : 'Chấm điểm Rubric 100đ, phân tích phù hợp phòng và đề xuất viết lại trung tính'}
+                    {language === 'en' ? 'Human-in-the-loop scoring (0-100), room fitness & polite neutral rewrite' : 'Chấm điểm bài viết trên thang 100, xem bài có hợp phòng không và gợi ý cách viết nhẹ nhàng hơn'}
                   </small>
                 </div>
 
@@ -1223,11 +1191,11 @@ export function OwnerDashboardPage({ onNavigate }) {
 
               {/* API Key Status & Management */}
               <div>
-                <div className="fieldl">{language === 'en' ? 'Current API Key Status' : 'Khóa API hiện tại'}</div>
+                <div className="fieldl">{language === 'en' ? 'Current API Key Status' : 'Khóa API đang dùng'}</div>
                 <div className="row between" style={{ background: 'var(--wall)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace', fontSize: '13px' }}>
                     <span style={{ color: aiSettings?.moderation?.is_key_configured ? 'var(--ink)' : 'var(--muted)' }}>
-                      {aiSettings?.moderation?.masked_api_key || (language === 'en' ? 'No API key configured' : 'Chưa cấu hình API Key')}
+                      {aiSettings?.moderation?.masked_api_key || (language === 'en' ? 'No API key configured' : 'Chưa có khóa API')}
                     </span>
                   </div>
                   {aiSettings?.moderation?.is_key_configured && (
@@ -1238,7 +1206,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                       style={{ padding: '4px 10px', fontSize: '12px' }}
                       title="Xóa API Key kiểm duyệt này khỏi cơ sở dữ liệu"
                     >
-                      {language === 'en' ? 'Delete Key' : 'Xóa Key'}
+                      {language === 'en' ? 'Delete Key' : 'Xóa khóa'}
                     </button>
                   )}
                 </div>
@@ -1259,7 +1227,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                   </select>
                 </div>
                 <div>
-                  <div className="fieldl">{language === 'en' ? 'New API Key (leave empty to keep)' : 'Nhập API Key mới (để trống nếu giữ nguyên)'}</div>
+                  <div className="fieldl">{language === 'en' ? 'New API Key (leave empty to keep)' : 'Nhập khóa API mới (để trống nếu giữ nguyên)'}</div>
                   <input
                     type="password"
                     className="inp"
@@ -1293,14 +1261,14 @@ export function OwnerDashboardPage({ onNavigate }) {
                   disabled={isDiscoveringMod}
                 >
                   {isDiscoveringMod
-                    ? (language === 'en' ? 'Connecting to Provider API...' : 'Đang kết nối tới Provider kiểm tra Key & quét Model...')
-                    : (language === 'en' ? 'Test Key & Discover Models' : 'Kiểm tra Key & Khám phá Model động')}
+                    ? (language === 'en' ? 'Connecting to Provider API...' : 'Đang kiểm tra khóa và tìm mô hình...')
+                    : (language === 'en' ? 'Test Key & Discover Models' : 'Kiểm tra khóa và tìm mô hình')}
                 </button>
               </div>
 
               {/* Active Model Selection */}
               <div>
-                <div className="fieldl">{language === 'en' ? 'Active Model for Moderation' : 'Model kiểm duyệt đang sử dụng'}</div>
+                <div className="fieldl">{language === 'en' ? 'Active Model for Moderation' : 'Mô hình kiểm duyệt đang dùng'}</div>
                 {modDiscoveredModels.length > 0 ? (
                   <select
                     className="inp"
@@ -1360,11 +1328,11 @@ export function OwnerDashboardPage({ onNavigate }) {
 
               {/* API Key Status & Management */}
               <div>
-                <div className="fieldl">{language === 'en' ? 'Current API Key Status' : 'Khóa API hiện tại'}</div>
+                <div className="fieldl">{language === 'en' ? 'Current API Key Status' : 'Khóa API đang dùng'}</div>
                 <div className="row between" style={{ background: 'var(--wall)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace', fontSize: '13px' }}>
                     <span style={{ color: aiSettings?.image_generation?.is_key_configured ? 'var(--ink)' : 'var(--muted)' }}>
-                      {aiSettings?.image_generation?.masked_api_key || (language === 'en' ? 'No API key configured' : 'Chưa cấu hình API Key')}
+                      {aiSettings?.image_generation?.masked_api_key || (language === 'en' ? 'No API key configured' : 'Chưa có khóa API')}
                     </span>
                   </div>
                   {aiSettings?.image_generation?.is_key_configured && (
@@ -1375,7 +1343,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                       style={{ padding: '4px 10px', fontSize: '12px' }}
                       title="Xóa API Key sinh ảnh này khỏi cơ sở dữ liệu"
                     >
-                      {language === 'en' ? 'Delete Key' : 'Xóa Key'}
+                      {language === 'en' ? 'Delete Key' : 'Xóa khóa'}
                     </button>
                   )}
                 </div>
@@ -1396,7 +1364,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                   </select>
                 </div>
                 <div>
-                  <div className="fieldl">{language === 'en' ? 'New API Key (leave empty to keep)' : 'Nhập API Key mới (để trống nếu giữ nguyên)'}</div>
+                  <div className="fieldl">{language === 'en' ? 'New API Key (leave empty to keep)' : 'Nhập khóa API mới (để trống nếu giữ nguyên)'}</div>
                   <input
                     type="password"
                     className="inp"
@@ -1430,14 +1398,14 @@ export function OwnerDashboardPage({ onNavigate }) {
                   disabled={isDiscoveringImg}
                 >
                   {isDiscoveringImg
-                    ? (language === 'en' ? 'Connecting to Provider API...' : 'Đang kết nối tới Provider kiểm tra Key & quét Model...')
-                    : (language === 'en' ? 'Test Key & Discover Image Models' : 'Kiểm tra Key & Khám phá Model sinh ảnh')}
+                    ? (language === 'en' ? 'Connecting to Provider API...' : 'Đang kiểm tra khóa và tìm mô hình...')
+                    : (language === 'en' ? 'Test Key & Discover Image Models' : 'Kiểm tra khóa và tìm mô hình sinh ảnh')}
                 </button>
               </div>
 
               {/* Active Model Selection */}
               <div>
-                <div className="fieldl">{language === 'en' ? 'Active Model for Image Generation' : 'Model sinh ảnh đang sử dụng'}</div>
+                <div className="fieldl">{language === 'en' ? 'Active Model for Image Generation' : 'Mô hình sinh ảnh đang dùng'}</div>
                 {imgDiscoveredModels.length > 0 ? (
                   <select
                     className="inp"
@@ -1485,8 +1453,8 @@ export function OwnerDashboardPage({ onNavigate }) {
                 style={{ minWidth: '220px', padding: '12px 24px', fontSize: '15px', fontWeight: 600 }}
               >
                 {isSavingAiSettings
-                  ? (language === 'en' ? 'Saving AI Settings...' : 'Đang lưu cấu hình AI...')
-                  : (language === 'en' ? 'Save All AI Settings' : 'Lưu toàn bộ cấu hình AI')}
+                  ? (language === 'en' ? 'Saving AI Settings...' : 'Đang lưu...')
+                  : (language === 'en' ? 'Save All AI Settings' : 'Lưu cấu hình AI')}
               </button>
             </div>
           </div>
@@ -1682,7 +1650,7 @@ export function OwnerDashboardPage({ onNavigate }) {
             >
               {language === 'en'
                 ? 'Only the Platform Owner has the authority to permanently delete user accounts.'
-                : 'Chỉ duy nhất Chủ sở hữu (Owner) mới có quyền thực hiện xóa vĩnh viễn tài khoản.'}
+                : 'Chỉ Chủ sở hữu mới xóa vĩnh viễn được tài khoản.'}
             </div>
 
             <div className="row" style={{ justifyContent: 'flex-end', marginTop: '24px', gap: '10px' }}>
@@ -1754,7 +1722,7 @@ export function OwnerDashboardPage({ onNavigate }) {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <h2 className="serif" style={{ fontSize: '22px', margin: 0, color: '#C42B1C', fontWeight: 600 }}>
-                {language === 'en' ? 'Confirm API Key Removal' : 'Xác nhận xóa khóa API'}
+                {language === 'en' ? 'Confirm API Key Removal' : 'Xóa khóa API?'}
               </h2>
             </div>
 
@@ -1807,7 +1775,7 @@ export function OwnerDashboardPage({ onNavigate }) {
               >
                 {isDeletingApiKey
                   ? (language === 'en' ? 'Removing...' : 'Đang xóa...')
-                  : (language === 'en' ? 'Confirm Key Removal' : 'Xác nhận xóa Key')}
+                  : (language === 'en' ? 'Confirm Key Removal' : 'Xóa khóa')}
               </button>
             </div>
           </div>

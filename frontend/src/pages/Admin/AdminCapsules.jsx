@@ -290,7 +290,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
               />
               <b>{meta.label}:</b>
               <span>{cat.total_count}</span>
-              <small className="muted">({cat.active_count} bật · {cat.inactive_count} tắt)</small>
+              
             </div>
           );
         })}
@@ -412,7 +412,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
                           onClick={() => handleOpenEdit(c)}
                           style={{ width: '28px', height: '28px', border: '1px solid var(--line)', background: 'var(--paper)' }}
                         >
-                          <Icon name="feather" size={13} />
+                          <Icon name="edit" size={14} />
                         </button>
                         <button
                           type="button"

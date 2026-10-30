@@ -37,13 +37,13 @@ export function AdminAuditLog({ triggerToast }) {
 
   // Action display mapping
   const actionMap = {
-    CREATE_DIRECT: { label: language === 'en' ? 'STUDIO PUBLISH' : 'XUẤT BẢN STUDIO', badgeClass: 'b-priv', color: '#5B4EB5' },
+    CREATE_DIRECT: { label: language === 'en' ? 'STUDIO PUBLISH' : 'XUẤT BẢN TỪ STUDIO', badgeClass: 'b-priv', color: '#5B4EB5' },
     APPROVE: { label: language === 'en' ? 'APPROVE' : 'PHÊ DUYỆT', badgeClass: 'b-ok', color: '#2D7D46' },
     APPROVE_AND_UPLOAD_MEDIA: { label: language === 'en' ? 'APPROVE & UPLOAD' : 'DUYỆT & TẢI ẢNH', badgeClass: 'b-ok', color: '#2D7D46' },
     REJECT: { label: language === 'en' ? 'REJECT' : 'TỪ CHỐI', badgeClass: 'b-wait', color: '#C44B2B' },
     ARCHIVE: { label: language === 'en' ? 'ARCHIVE' : 'LƯU TRỮ (GỠ BÀI)', badgeClass: 'b-wait', color: '#888888' },
     UPDATE: { label: language === 'en' ? 'UPDATE' : 'CHỈNH SỬA', badgeClass: 'b-blue', color: '#1B6FB5' },
-    REQUEST_DELETE_USER: { label: language === 'en' ? 'REQUEST DELETE USER' : 'YÊU CẦU XÓA USER', badgeClass: 'b-wait', color: '#D97706' },
+    REQUEST_DELETE_USER: { label: language === 'en' ? 'REQUEST DELETE USER' : 'YÊU CẦU XÓA TÀI KHOẢN', badgeClass: 'b-wait', color: '#D97706' },
     LOCK_USER: { label: language === 'en' ? 'LOCK USER' : 'KHÓA TÀI KHOẢN', badgeClass: 'b-wait', color: '#8E2A22' },
   };
 
@@ -97,7 +97,7 @@ export function AdminAuditLog({ triggerToast }) {
           alert(
             language === 'en'
               ? 'Please enter the user ID to update status.'
-              : 'Vui lòng nhập ID người dùng cần thay đổi trạng thái.'
+              : 'Vui lòng nhập mã tài khoản cần thay đổi trạng thái.'
           );
           setIsSubmittingUserAction(false);
           return;
@@ -121,7 +121,7 @@ export function AdminAuditLog({ triggerToast }) {
           alert(
             language === 'en'
               ? 'Identity verification policy requires exact Username and Email.'
-              : 'Theo quy tắc bảo mật danh tính, bắt buộc phải nhập chính xác Username và Email của tài khoản.'
+              : 'Để xác minh danh tính, cần nhập chính xác tên đăng nhập và email của tài khoản.'
           );
           setIsSubmittingUserAction(false);
           return;
@@ -138,7 +138,7 @@ export function AdminAuditLog({ triggerToast }) {
           triggerToast(
             language === 'en'
               ? 'Sent account deletion request to Owner for approval.'
-              : 'Đã gửi yêu cầu xóa tài khoản lên Chủ sở hữu (Owner) chờ phê duyệt.'
+              : 'Đã gửi yêu cầu xóa tài khoản lên Chủ sở hữu, đang chờ duyệt.'
           );
         }
       }
@@ -176,7 +176,7 @@ export function AdminAuditLog({ triggerToast }) {
             {language === 'en' ? 'SYSTEM AUDIT TRAIL' : 'NHẬT KÝ KIỂM TOÁN HỆ THỐNG'}
           </div>
           <h2 className="serif" style={{ fontSize: '24px', margin: '4px 0 0', fontWeight: 600 }}>
-            {language === 'en' ? 'Administrative Operations History' : 'Lịch sử thao tác quản trị'} ({totalLogs})
+            {language === 'en' ? 'Administrative Operations History' : 'Lịch sử thao tác quản trị'}
           </h2>
         </div>
 
@@ -208,10 +208,10 @@ export function AdminAuditLog({ triggerToast }) {
             }}
           >
             <option value="ALL">{language === 'en' ? 'All actions' : 'Tất cả hành động'}</option>
-            <option value="APPROVE">{language === 'en' ? 'Approve (APPROVE)' : 'Phê duyệt (APPROVE)'}</option>
+            <option value="APPROVE">{language === 'en' ? 'Approve (APPROVE)' : 'Phê duyệt'}</option>
             <option value="REJECT">{language === 'en' ? 'Reject (REJECT)' : 'Từ chối (REJECT)'}</option>
-            <option value="ARCHIVE">{language === 'en' ? 'Archive (ARCHIVE)' : 'Lưu trữ (ARCHIVE)'}</option>
-            <option value="CREATE_DIRECT">{language === 'en' ? 'Studio Publish (CREATE_DIRECT)' : 'Xuất bản Studio (CREATE_DIRECT)'}</option>
+            <option value="ARCHIVE">{language === 'en' ? 'Archive (ARCHIVE)' : 'Lưu trữ'}</option>
+            <option value="CREATE_DIRECT">{language === 'en' ? 'Studio Publish (CREATE_DIRECT)' : 'Xuất bản từ Studio'}</option>
             <option value="APPROVE_AND_UPLOAD_MEDIA">{language === 'en' ? 'Approve & Upload Media' : 'Duyệt & Tải ảnh'}</option>
             <option value="REQUEST_DELETE_USER">{language === 'en' ? 'Request Delete User' : 'Yêu cầu xóa tài khoản'}</option>
           </select>
@@ -229,9 +229,9 @@ export function AdminAuditLog({ triggerToast }) {
             }}
           >
             <option value="ALL">{language === 'en' ? 'All rooms' : 'Tất cả phòng'}</option>
-            <option value="1">{language === 'en' ? 'Room 1 (Broken)' : 'Phòng 1 (Đổ vỡ)'}</option>
-            <option value="2">{language === 'en' ? 'Room 2 (Lanterns)' : 'Phòng 2 (Lồng đèn)'}</option>
-            <option value="3">{language === 'en' ? 'Room 3 (Message Tree)' : 'Phòng 3 (Cây thông điệp)'}</option>
+            <option value="1">{language === 'en' ? 'Room 1' : 'Phòng 1'}</option>
+            <option value="2">{language === 'en' ? 'Room 2' : 'Phòng 2'}</option>
+            <option value="3">{language === 'en' ? 'Room 3' : 'Phòng 3'}</option>
           </select>
         </div>
 
@@ -325,7 +325,7 @@ export function AdminAuditLog({ triggerToast }) {
             <div className="sub">
               {language === 'en'
                 ? 'Admins can directly lock violating accounts. To permanently purge data, submit an authenticated deletion request to the Owner.'
-                : 'Admin có quyền khóa tài khoản vi phạm. Để xóa vĩnh viễn dữ liệu, hãy gửi phiếu yêu cầu lên Chủ sở hữu (Owner).'}
+                : 'Quản trị viên có thể khóa tài khoản vi phạm. Muốn xóa vĩnh viễn thì gửi yêu cầu lên Chủ sở hữu.'}
             </div>
 
             {/* Segment Switcher */}
@@ -340,7 +340,7 @@ export function AdminAuditLog({ triggerToast }) {
                 className={userModalTab === 'REQUEST_DELETE' ? 'on' : ''}
                 onClick={() => setUserModalTab('REQUEST_DELETE')}
               >
-                {language === 'en' ? 'Request Deletion to Owner' : 'Gửi yêu cầu xóa lên Owner'}
+                {language === 'en' ? 'Request Deletion to Owner' : 'Gửi yêu cầu xóa lên Chủ sở hữu'}
               </span>
             </div>
 
@@ -348,13 +348,13 @@ export function AdminAuditLog({ triggerToast }) {
               {userModalTab === 'LOCK' ? (
                 <>
                   <div className="fieldl">
-                    {language === 'en' ? 'User ID (User UUID)' : 'ID người dùng (User UUID)'}
+                    {language === 'en' ? 'User ID (User UUID)' : 'Mã tài khoản'}
                   </div>
                   <input
                     className="inp"
                     value={targetUserId}
                     onChange={(e) => setTargetUserId(e.target.value)}
-                    placeholder={language === 'en' ? 'Enter UUID of target account...' : 'Nhập ID tài khoản cần thay đổi trạng thái...'}
+                    placeholder={language === 'en' ? 'Enter UUID of target account...' : 'Nhập mã tài khoản cần thay đổi trạng thái...'}
                     required
                   />
 
@@ -399,12 +399,12 @@ export function AdminAuditLog({ triggerToast }) {
                     <b>{language === 'en' ? 'Identity Verification Policy:' : 'Ràng buộc bảo mật danh tính:'}</b>{' '}
                     {language === 'en'
                       ? 'Enter both exact Username and registered Email to verify credentials before forwarding request to the Owner.'
-                      : 'Nhập chính xác cả Username và Email để hệ thống đối chiếu xác minh trước khi chuyển tiếp lên Owner.'}
+                      : 'Nhập chính xác tên đăng nhập và email để hệ thống đối chiếu trước khi chuyển lên Chủ sở hữu.'}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
-                      <div className="fieldl">{language === 'en' ? 'Username' : 'Tên người dùng (Username)'}</div>
+                      <div className="fieldl">{language === 'en' ? 'Username' : 'Tên đăng nhập'}</div>
                       <input
                         className="inp"
                         value={targetUsername}
@@ -427,7 +427,7 @@ export function AdminAuditLog({ triggerToast }) {
                   </div>
 
                   <div className="fieldl" style={{ marginTop: '12px' }}>
-                    {language === 'en' ? 'User ID (Optional)' : 'ID người dùng (Tùy chọn nếu có)'}
+                    {language === 'en' ? 'User ID (Optional)' : 'Mã tài khoản (không bắt buộc)'}
                   </div>
                   <input
                     className="inp"
@@ -471,7 +471,7 @@ export function AdminAuditLog({ triggerToast }) {
                     ? lockStatus
                       ? (language === 'en' ? 'Confirm Unlock' : 'Xác nhận mở khóa')
                       : (language === 'en' ? 'Confirm Lock Account' : 'Xác nhận khóa tài khoản')
-                    : (language === 'en' ? 'Submit Request to Owner' : 'Gửi yêu cầu lên Owner')}
+                    : (language === 'en' ? 'Submit Request to Owner' : 'Gửi yêu cầu lên Chủ sở hữu')}
                 </button>
               </div>
             </form>

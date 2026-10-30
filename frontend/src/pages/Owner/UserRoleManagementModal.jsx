@@ -97,7 +97,7 @@ export function UserRoleManagementModal({
             <small className="muted" style={{ display: 'block', marginTop: '4px' }}>
               {language === 'en'
                 ? 'Moderator (Review 3 exhibition rooms, diaries, time capsules, studio)'
-                : 'Quản trị viên (Kiểm duyệt 3 phòng, nhật ký, kho thông điệp, studio)'}
+                : 'Quản trị viên: duyệt bài ở 3 phòng, nhật ký, kho thông điệp và Studio'}
             </small>
           </div>
         </div>

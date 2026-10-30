@@ -10,7 +10,6 @@ import { AdminRejectModal } from './AdminRejectModal';
 import { adminRoomService } from '../../services/adminRoomService';
 import { adminDiaryService } from '../../services/adminDiaryService';
 import { adminCapsuleService } from '../../services/adminCapsuleService';
-import { adminStudioService } from '../../services/adminStudioService';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -30,14 +29,6 @@ export function AdminPage({ onOpenNotifications }) {
   const [roomPendingCounts, setRoomPendingCounts] = useState({ 1: 0, 2: 0, 3: 0 });
   const [diaryPendingCount, setDiaryPendingCount] = useState(0);
   const [capsuleCount, setCapsuleCount] = useState(0);
-
-  // Dynamic Admin Presence State (online / offline)
-  const [adminPresence, setAdminPresence] = useState({
-    total_admins: 0,
-    total_online: 0,
-    total_offline: 0,
-    admins: [],
-  });
 
   const triggerToast = (msg) => {
     setToastMessage(msg);
@@ -87,25 +78,6 @@ export function AdminPage({ onOpenNotifications }) {
   useEffect(() => {
     fetchCounts();
   }, [fetchCounts, refreshTrigger]);
-
-  // Fetch real-time online/offline status of admin team
-  const fetchAdminPresence = useCallback(async () => {
-    try {
-      const res = await adminStudioService.getAdminPresence();
-      const data = res?.data || res;
-      if (data && data.admins) {
-        setAdminPresence(data);
-      }
-    } catch (err) {
-      console.warn('Could not fetch admin presence:', err);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAdminPresence();
-    const interval = setInterval(fetchAdminPresence, 20000);
-    return () => clearInterval(interval);
-  }, [fetchAdminPresence]);
 
   // Map activeTab to Room ID (0 -> 1, 1 -> 2, 2 -> 3)
   const isRoomTab = activeTab >= 0 && activeTab <= 2;
@@ -200,88 +172,6 @@ export function AdminPage({ onOpenNotifications }) {
           </div>
 
           <div className="row" style={{ gap: '14px', alignItems: 'center' }}>
-            {adminPresence.total_admins > 0 ? (
-              <div className="row" style={{ gap: '8px', alignItems: 'center', fontSize: '13px' }}>
-                <span
-                  style={{
-                    color: '#2D7D46',
-                    fontWeight: 600,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                  title={language === 'en' ? 'Online admins' : 'Quản trị viên đang trực tuyến'}
-                >
-                  <span
-                    style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: '#22c55e',
-                      boxShadow: '0 0 5px rgba(34, 197, 94, 0.6)',
-                      display: 'inline-block',
-                    }}
-                  />
-                  {adminPresence.total_online} {language === 'en' ? 'online' : 'đang trực'}
-                </span>
-                <span className="muted">·</span>
-                <span
-                  style={{
-                    color: '#C42B1C',
-                    fontWeight: 500,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                  title={language === 'en' ? 'Offline admins' : 'Quản trị viên ngoại tuyến'}
-                >
-                  <span
-                    style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: '#ef4444',
-                      display: 'inline-block',
-                    }}
-                  />
-                  {adminPresence.total_offline} {language === 'en' ? 'offline' : 'vắng mặt'}
-                </span>
-              </div>
-            ) : (
-              <span className="muted">{language === 'en' ? 'Online' : 'Đang trực'}</span>
-            )}
-
-            <div className="avs">
-              {adminPresence.admins.map((adm, i) => {
-                const isOnline = adm.is_online ?? adm.online;
-                const displayName = adm.nickname || adm.name || adm.username || 'Admin';
-                const avatar = adm.avatar_url;
-                const bg = adm.color || 'var(--acc)';
-
-                return (
-                  <i
-                    key={adm.id || i}
-                    className={isOnline ? 'on online' : 'off offline'}
-                    style={{ background: bg }}
-                    title={`${displayName} (${isOnline ? (language === 'en' ? 'Online' : 'Đang trực tuyến') : (language === 'en' ? 'Offline' : 'Ngoại tuyến')})`}
-                  >
-                    {avatar ? (
-                      <img
-                        src={avatar}
-                        alt={displayName}
-                        style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      displayName[0].toUpperCase()
-                    )}
-                  </i>
-                );
-              })}
-            </div>
-            <span className="muted">
-              {language === 'en' ? 'Admin Team' : 'Ban Quản Trị'}
-            </span>
-
             {/* Language Switcher (Same format and style as rooms) */}
             <div className="lang glass" style={{ cursor: 'pointer', userSelect: 'none' }}>
               <b
@@ -306,7 +196,6 @@ export function AdminPage({ onOpenNotifications }) {
               onClick={onOpenNotifications}
             >
               <Icon name="bell" size={19} />
-              <span className="n">3</span>
             </div>
           </div>
         </div>
@@ -323,7 +212,6 @@ export function AdminPage({ onOpenNotifications }) {
               }}
             >
               {t.name}
-              {t.count > 0 && <b className="n">{t.count}</b>}
             </span>
           ))}
         </div>
@@ -337,7 +225,7 @@ export function AdminPage({ onOpenNotifications }) {
               className={statusSegment === 0 ? 'on' : ''}
               onClick={() => setStatusSegment(0)}
             >
-              {t('admin_seg_pending')} · {roomPendingCounts[currentRoomId] || 0}
+              {t('admin_seg_pending')}
             </span>
             <span
               className={statusSegment === 1 ? 'on' : ''}

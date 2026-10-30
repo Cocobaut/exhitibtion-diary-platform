@@ -194,7 +194,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
         triggerToast(
           language === 'en'
             ? 'Applied AI Copilot suggested rewrite to editor!'
-            : 'Đã cập nhật nội dung đề xuất từ AI Copilot vào khung biên tập!'
+            : 'Đã đưa nội dung AI đề xuất vào khung biên tập.'
         );
       }
     }
@@ -323,13 +323,13 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
             className={segment === 0 ? 'on' : ''}
             onClick={() => setSegment(0)}
           >
-            {language === 'en' ? 'Pending Community' : 'Chờ duyệt cộng đồng'} · {totalPending}
+            {language === 'en' ? 'Pending Community' : 'Chờ duyệt cộng đồng'}
           </span>
           <span
             className={segment === 1 ? 'on' : ''}
             onClick={() => setSegment(1)}
           >
-            {language === 'en' ? 'Public Diaries' : 'Đang công khai'} · {approvedTotal}
+            {language === 'en' ? 'Public Diaries' : 'Đang công khai'}
           </span>
         </div>
       </div>
@@ -545,7 +545,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                   />
                   <div className="fieldl" style={{ marginTop: '14px' }}>
                     {language === 'en' ? 'Content (Vietnamese)' : 'Nội dung Tiếng Việt (VN)'}{' '}
-                    <span>{language === 'en' ? 'Editable' : 'Admin sửa được'}</span>
+                    <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
                   </div>
                   <textarea
                     className="inp area"
@@ -568,7 +568,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                   />
                   <div className="fieldl" style={{ marginTop: '14px' }}>
                     {language === 'en' ? 'Content (English)' : 'Nội dung Tiếng Anh (EN)'}{' '}
-                    <span>{language === 'en' ? 'Editable' : 'Admin sửa được'}</span>
+                    <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
                   </div>
                   <textarea
                     className="inp area"

@@ -187,7 +187,7 @@ export function AdminPending({
         err?.message ||
         (language === 'en'
           ? 'Unable to call AI Copilot service. Please check Owner AI configuration.'
-          : 'Không thể gọi dịch vụ AI Copilot. Vui lòng kiểm tra lại cấu hình Owner AI.');
+          : 'Chưa gọi được trợ lý AI. Hãy nhờ Chủ sở hữu kiểm tra phần cấu hình AI.');
       if (triggerToast) {
         triggerToast(`[AI Copilot] ${errMsg}`);
       } else {
@@ -247,7 +247,7 @@ export function AdminPending({
         err?.message ||
         (language === 'en'
           ? 'Failed to generate image via AI. Please check Image Generation settings.'
-          : 'Không thể sinh tranh vẽ bằng AI. Vui lòng kiểm tra cấu hình Image Generation.');
+          : 'Chưa vẽ được tranh bằng AI. Hãy kiểm tra phần cấu hình sinh ảnh.');
       if (triggerToast) {
         triggerToast(`[AI Image] ${errMsg}`);
       } else {
@@ -587,7 +587,7 @@ export function AdminPending({
                 <div>
                   <div className="fieldl">
                     {language === 'en' ? 'Content (Vietnamese)' : 'Nội dung Tiếng Việt (VN)'}{' '}
-                    <span>{language === 'en' ? 'Editable' : 'Admin sửa được'}</span>
+                    <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
                   </div>
                   <textarea
                     className="inp area"
@@ -605,7 +605,7 @@ export function AdminPending({
                 <div>
                   <div className="fieldl">
                     {language === 'en' ? 'Content (English)' : 'Nội dung Tiếng Anh (EN)'}{' '}
-                    <span>{language === 'en' ? 'Editable' : 'Admin sửa được'}</span>
+                    <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
                   </div>
                   <textarea
                     className="inp area"
