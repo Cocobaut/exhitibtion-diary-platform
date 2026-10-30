@@ -23,7 +23,24 @@ import { ProfilePage } from './pages/Profile/ProfilePage';
 function MainApp() {
   const { theme, setTheme } = useTheme();
   const { user, isAdmin, isGuest, login } = useAuth();
-  const [currentRoute, setCurrentRoute] = useState('login'); // Ban đầu bắt buộc vào trang đăng nhập thay vì trang chính
+  // Tải lại trang thì giữ phiên đăng nhập và trang đang xem; chưa đăng nhập thì vào trang đăng nhập
+  const [currentRoute, setCurrentRoute] = useState(() => {
+    try {
+      const hasSession = localStorage.getItem('access_token') || localStorage.getItem('is_guest') === 'true';
+      if (!hasSession || window.location.search.includes('reset_token=')) return 'login';
+      return sessionStorage.getItem('museum_route') || 'home';
+    } catch {
+      return 'login';
+    }
+  });
+
+  React.useEffect(() => {
+    try {
+      if (currentRoute !== 'login') sessionStorage.setItem('museum_route', currentRoute);
+    } catch {
+      // bỏ qua khi trình duyệt chặn bộ nhớ
+    }
+  }, [currentRoute]);
   const [notificationTarget, setNotificationTarget] = useState(null);
   const [isMailboxOpen, setIsMailboxOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
