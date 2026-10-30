@@ -77,6 +77,9 @@ export function OwnerDashboardPage({ onNavigate }) {
   const [imgDiscoveredModels, setImgDiscoveredModels] = useState([]);
   const [isDiscoveringImg, setIsDiscoveringImg] = useState(false);
 
+  // Dùng chung một khóa cho duyệt bài và vẽ tranh
+  const [useSameAiKey, setUseSameAiKey] = useState(true);
+
   // Master AI switch
   const [isMasterAiEnabled, setIsMasterAiEnabled] = useState(true);
   const [isTogglingMasterAi, setIsTogglingMasterAi] = useState(false);
@@ -244,11 +247,11 @@ export function OwnerDashboardPage({ onNavigate }) {
 
   const handleDiscoverModels = async (taskType) => {
     const isMod = taskType === 'moderation';
-    const keyToTest = isMod ? modApiKey.trim() : imgApiKey.trim();
+    const keyToTest = isMod || useSameAiKey ? modApiKey.trim() : imgApiKey.trim();
     const provider = isMod ? modProvider : imgProvider;
     const baseUrl = isMod ? modBaseUrl.trim() : imgBaseUrl.trim();
 
-    if (!keyToTest && !(isMod ? aiSettings?.moderation?.is_key_configured : aiSettings?.image_generation?.is_key_configured)) {
+    if (!keyToTest && !(isMod || useSameAiKey ? aiSettings?.moderation?.is_key_configured : aiSettings?.image_generation?.is_key_configured)) {
       triggerToast(
         language === 'en'
           ? '⚠️ API Key is missing. Please enter an API Key to test and discover models.'
@@ -349,7 +352,7 @@ export function OwnerDashboardPage({ onNavigate }) {
         image_generation: {
           is_enabled: imgEnabled,
           provider: imgProvider,
-          api_key: imgApiKey.trim() || null,
+          api_key: (useSameAiKey ? modApiKey.trim() : imgApiKey.trim()) || null,
           model_name: imgModel.trim() || undefined,
           base_url: imgBaseUrl.trim() || null,
         },
@@ -1112,351 +1115,257 @@ export function OwnerDashboardPage({ onNavigate }) {
         </div>
       )}
 
-      {/* SEGMENT 3: AI COPILOT ENGINE CONFIGURATION */}
+      {/* SEGMENT 3: AI SETTINGS */}
       {activeSegment === 3 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Master AI Control Card */}
-          <div className="box" style={{ padding: '24px 28px' }}>
-            <div className="row between" style={{ flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
-              <div style={{ maxWidth: '640px' }}>
-                <div className="row" style={{ gap: '10px', alignItems: 'center', marginBottom: '6px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '880px' }}>
+          {/* Trạng thái chung */}
+          <div className="box" style={{ padding: '20px 24px' }}>
+            <div className="row between" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+              <div style={{ flex: '1 1 360px', minWidth: 0 }}>
+                <div className="row" style={{ gap: '10px', alignItems: 'center' }}>
                   <h2 className="serif" style={{ fontSize: '20px', margin: 0, fontWeight: 600 }}>
-                    {language === 'en' ? 'AI Assistant' : 'Trợ lý AI'}
+                    {language === 'en' ? 'AI assistant' : 'Trợ lý AI'}
                   </h2>
-                  <span
-                    className={`badge ${isMasterAiEnabled ? 'b-ok' : 'b-wait'}`}
-                    style={{ fontSize: '11px', padding: '3px 8px' }}
-                  >
-                    {isMasterAiEnabled
-                      ? (language === 'en' ? 'ACTIVE' : 'HOẠT ĐỘNG')
-                      : (language === 'en' ? 'PAUSED' : 'TẠM DỪNG')}
+                  <span className={`badge ${isMasterAiEnabled ? 'b-ok' : 'b-wait'}`} style={{ fontSize: '11px' }}>
+                    {isMasterAiEnabled ? (language === 'en' ? 'On' : 'Đang bật') : (language === 'en' ? 'Off' : 'Đang tắt')}
                   </span>
                 </div>
-                <p className="muted" style={{ margin: 0, fontSize: '13.5px', lineHeight: 1.5 }}>
+                <p className="muted" style={{ margin: '6px 0 0', fontSize: '13.5px', lineHeight: 1.5 }}>
                   {language === 'en'
-                    ? 'Set up AI to help moderate posts, translate content and draw illustrations. API keys are encrypted before being stored.'
-                    : 'Nơi cài đặt AI hỗ trợ kiểm duyệt bài viết, dịch nội dung và vẽ tranh minh họa. Khóa API được mã hóa trước khi lưu.'}
+                    ? 'Helps admins review posts, translate them and draw illustrations. Admins always make the final call.'
+                    : 'Giúp quản trị viên duyệt bài, dịch bài và vẽ tranh minh họa. Quyết định cuối cùng vẫn do quản trị viên.'}
                 </p>
               </div>
-
-              <div className="row" style={{ gap: '12px', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className={`btn ${isMasterAiEnabled ? 'danger' : 'main'}`}
-                  onClick={() => handleToggleMasterAi(!isMasterAiEnabled)}
-                  disabled={isTogglingMasterAi}
-                  style={{ minWidth: '160px' }}
-                >
-                  {isTogglingMasterAi ? (
-                    language === 'en' ? 'Updating...' : 'Đang cập nhật...'
-                  ) : isMasterAiEnabled ? (
-                    language === 'en' ? 'Pause All AI Services' : 'Tạm dừng AI'
-                  ) : (
-                    language === 'en' ? 'Activate AI System' : 'Bật AI'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Grid of 2 Sub-Services: Moderation & Image Gen */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '20px' }}>
-            {/* SERVICE CARD 1: CONTENT MODERATION */}
-            <div className="box" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="row between" style={{ alignItems: 'flex-start', borderBottom: '1px solid var(--line)', paddingBottom: '14px' }}>
-                <div>
-                  <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
-                    <h3 className="serif" style={{ fontSize: '18px', margin: 0, fontWeight: 600 }}>
-                      {language === 'en' ? 'Content Moderation' : 'Kiểm duyệt nội dung bài viết'}
-                    </h3>
-                    <span className={`badge ${modEnabled ? 'b-ok' : 'b-wait'}`} style={{ fontSize: '11px' }}>
-                      {modEnabled ? (language === 'en' ? 'Active' : 'Đang bật') : (language === 'en' ? 'Disabled' : 'Đã tắt')}
-                    </span>
-                  </div>
-                  <small className="muted" style={{ display: 'block', marginTop: '4px' }}>
-                    {language === 'en' ? 'Human-in-the-loop scoring (0-100), room fitness & polite neutral rewrite' : 'Chấm điểm bài viết trên thang 100, xem bài có hợp phòng không và gợi ý cách viết nhẹ nhàng hơn'}
-                  </small>
-                </div>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                  <input
-                    type="checkbox"
-                    checked={modEnabled}
-                    onChange={(e) => setModEnabled(e.target.checked)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  {language === 'en' ? 'Enable' : 'Kích hoạt'}
-                </label>
-              </div>
-
-              {/* API Key Status & Management */}
-              <div>
-                <div className="fieldl">{language === 'en' ? 'Current API Key Status' : 'Khóa API đang dùng'}</div>
-                <div className="row between" style={{ background: 'var(--wall)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace', fontSize: '13px' }}>
-                    <span style={{ color: aiSettings?.moderation?.is_key_configured ? 'var(--ink)' : 'var(--muted)' }}>
-                      {aiSettings?.moderation?.masked_api_key || (language === 'en' ? 'No API key configured' : 'Chưa có khóa API')}
-                    </span>
-                  </div>
-                  {aiSettings?.moderation?.is_key_configured && (
-                    <button
-                      type="button"
-                      className="btn danger sm"
-                      onClick={() => setDeletingApiKeyService('moderation')}
-                      style={{ padding: '4px 10px', fontSize: '12px' }}
-                      title="Xóa API Key kiểm duyệt này khỏi cơ sở dữ liệu"
-                    >
-                      {language === 'en' ? 'Delete Key' : 'Xóa khóa'}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Provider & Custom URL */}
-              <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '12px' }}>
-                <div>
-                  <div className="fieldl">{language === 'en' ? 'Provider' : 'Nhà cung cấp'}</div>
-                  <select
-                    className="inp"
-                    value={modProvider}
-                    onChange={(e) => setModProvider(e.target.value)}
-                  >
-                    <option value="gemini">Google Gemini</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="custom">Custom Proxy / Local</option>
-                  </select>
-                </div>
-                <div>
-                  <div className="fieldl">{language === 'en' ? 'New API Key (leave empty to keep)' : 'Nhập khóa API mới (để trống nếu giữ nguyên)'}</div>
-                  <input
-                    type="password"
-                    className="inp"
-                    placeholder="API_KEY..."
-                    value={modApiKey}
-                    onChange={(e) => setModApiKey(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {modProvider === 'custom' && (
-                <div>
-                  <div className="fieldl">{language === 'en' ? 'Custom Base URL' : 'Base URL tùy chỉnh'}</div>
-                  <input
-                    type="text"
-                    className="inp"
-                    placeholder="https://api.openai.com/v1 hoặc http://localhost:11434/v1"
-                    value={modBaseUrl}
-                    onChange={(e) => setModBaseUrl(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {/* Discover Models Button */}
-              <div>
-                <button
-                  type="button"
-                  className="btn line"
-                  style={{ width: '100%', borderColor: '#d97706', color: '#b45309', fontWeight: 600 }}
-                  onClick={() => handleDiscoverModels('moderation')}
-                  disabled={isDiscoveringMod}
-                >
-                  {isDiscoveringMod
-                    ? (language === 'en' ? 'Connecting to Provider API...' : 'Đang kiểm tra khóa và tìm mô hình...')
-                    : (language === 'en' ? 'Test Key & Discover Models' : 'Kiểm tra khóa và tìm mô hình')}
-                </button>
-              </div>
-
-              {/* Active Model Selection */}
-              <div>
-                <div className="fieldl">{language === 'en' ? 'Active Model for Moderation' : 'Mô hình kiểm duyệt đang dùng'}</div>
-                {modDiscoveredModels.length > 0 ? (
-                  <select
-                    className="inp"
-                    value={modModel}
-                    onChange={(e) => setModModel(e.target.value)}
-                  >
-                    {modDiscoveredModels.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.display_name} ({m.id}) {m.badge ? `— [${m.badge}]` : ''}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    className="inp"
-                    placeholder="gemini-3-flash-preview, gpt-4o-mini..."
-                    value={modModel}
-                    onChange={(e) => setModModel(e.target.value)}
-                  />
-                )}
-                {modDiscoveredModels.length > 0 && (
-                  <small className="muted" style={{ display: 'block', marginTop: '6px', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.5 }}>
-                    {modDiscoveredModels.find((m) => m.id === modModel)?.reason || 'Chọn model tối ưu theo khuyến nghị của hệ thống.'}
-                  </small>
-                )}
-              </div>
-            </div>
-
-            {/* SERVICE CARD 2: ART IMAGE GENERATION */}
-            <div className="box" style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="row between" style={{ alignItems: 'flex-start', borderBottom: '1px solid var(--line)', paddingBottom: '14px' }}>
-                <div>
-                  <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
-                    <h3 className="serif" style={{ fontSize: '18px', margin: 0, fontWeight: 600 }}>
-                      {language === 'en' ? 'Art Image Generation' : 'Sinh tranh minh họa nghệ thuật'}
-                    </h3>
-                    <span className={`badge ${imgEnabled ? 'b-ok' : 'b-wait'}`} style={{ fontSize: '11px' }}>
-                      {imgEnabled ? (language === 'en' ? 'Active' : 'Đang bật') : (language === 'en' ? 'Disabled' : 'Đã tắt')}
-                    </span>
-                  </div>
-                  <small className="muted" style={{ display: 'block', marginTop: '4px' }}>
-                    {language === 'en' ? 'Extracts visual themes & mood to synthesize expressive fine art' : 'Chuyển hóa cảm xúc và câu chuyện thành tranh vẽ mỹ thuật sơn dầu/màu nước'}
-                  </small>
-                </div>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-                  <input
-                    type="checkbox"
-                    checked={imgEnabled}
-                    onChange={(e) => setImgEnabled(e.target.checked)}
-                    style={{ cursor: 'pointer' }}
-                  />
-                  {language === 'en' ? 'Enable' : 'Kích hoạt'}
-                </label>
-              </div>
-
-              {/* API Key Status & Management */}
-              <div>
-                <div className="fieldl">{language === 'en' ? 'Current API Key Status' : 'Khóa API đang dùng'}</div>
-                <div className="row between" style={{ background: 'var(--wall)', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--line)', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'monospace', fontSize: '13px' }}>
-                    <span style={{ color: aiSettings?.image_generation?.is_key_configured ? 'var(--ink)' : 'var(--muted)' }}>
-                      {aiSettings?.image_generation?.masked_api_key || (language === 'en' ? 'No API key configured' : 'Chưa có khóa API')}
-                    </span>
-                  </div>
-                  {aiSettings?.image_generation?.is_key_configured && (
-                    <button
-                      type="button"
-                      className="btn danger sm"
-                      onClick={() => setDeletingApiKeyService('image_generation')}
-                      style={{ padding: '4px 10px', fontSize: '12px' }}
-                      title="Xóa API Key sinh ảnh này khỏi cơ sở dữ liệu"
-                    >
-                      {language === 'en' ? 'Delete Key' : 'Xóa khóa'}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Provider & Custom URL */}
-              <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '12px' }}>
-                <div>
-                  <div className="fieldl">{language === 'en' ? 'Provider' : 'Nhà cung cấp'}</div>
-                  <select
-                    className="inp"
-                    value={imgProvider}
-                    onChange={(e) => setImgProvider(e.target.value)}
-                  >
-                    <option value="gemini">Google Gemini / Imagen</option>
-                    <option value="openai">OpenAI (DALL·E)</option>
-                    <option value="custom">Custom Proxy / Local</option>
-                  </select>
-                </div>
-                <div>
-                  <div className="fieldl">{language === 'en' ? 'New API Key (leave empty to keep)' : 'Nhập khóa API mới (để trống nếu giữ nguyên)'}</div>
-                  <input
-                    type="password"
-                    className="inp"
-                    placeholder="API_KEY..."
-                    value={imgApiKey}
-                    onChange={(e) => setImgApiKey(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {imgProvider === 'custom' && (
-                <div>
-                  <div className="fieldl">{language === 'en' ? 'Custom Base URL' : 'Base URL tùy chỉnh'}</div>
-                  <input
-                    type="text"
-                    className="inp"
-                    placeholder="https://api.openai.com/v1 hoặc http://localhost:11434/v1"
-                    value={imgBaseUrl}
-                    onChange={(e) => setImgBaseUrl(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {/* Discover Models Button */}
-              <div>
-                <button
-                  type="button"
-                  className="btn line"
-                  style={{ width: '100%', borderColor: '#8b5cf6', color: '#6d28d9', fontWeight: 600 }}
-                  onClick={() => handleDiscoverModels('image_generation')}
-                  disabled={isDiscoveringImg}
-                >
-                  {isDiscoveringImg
-                    ? (language === 'en' ? 'Connecting to Provider API...' : 'Đang kiểm tra khóa và tìm mô hình...')
-                    : (language === 'en' ? 'Test Key & Discover Image Models' : 'Kiểm tra khóa và tìm mô hình sinh ảnh')}
-                </button>
-              </div>
-
-              {/* Active Model Selection */}
-              <div>
-                <div className="fieldl">{language === 'en' ? 'Active Model for Image Generation' : 'Mô hình sinh ảnh đang dùng'}</div>
-                {imgDiscoveredModels.length > 0 ? (
-                  <select
-                    className="inp"
-                    value={imgModel}
-                    onChange={(e) => setImgModel(e.target.value)}
-                  >
-                    {imgDiscoveredModels.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.display_name} ({m.id}) {m.badge ? `— [${m.badge}]` : ''}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    className="inp"
-                    placeholder="imagen-3.0-generate-002, dall-e-3, gemini-3.6-flash..."
-                    value={imgModel}
-                    onChange={(e) => setImgModel(e.target.value)}
-                  />
-                )}
-                {imgDiscoveredModels.length > 0 && (
-                  <small className="muted" style={{ display: 'block', marginTop: '6px', overflowWrap: 'anywhere', wordBreak: 'break-word', lineHeight: 1.5 }}>
-                    {imgDiscoveredModels.find((m) => m.id === imgModel)?.reason || 'Chọn engine sinh ảnh theo nhu cầu triển lãm.'}
-                  </small>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Bottom Save Action Bar */}
-          <div className="box" style={{ padding: '18px 24px' }}>
-            <div className="row between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-              <div className="muted" style={{ fontSize: '13.5px' }}>
-                {language === 'en'
-                  ? 'All changes to models, providers, and API keys will take effect instantly across all exhibition rooms.'
-                  : 'Mọi thay đổi cấu hình model, nhà cung cấp và API key sẽ có hiệu lực ngay lập tức trên toàn bộ các phòng triển lãm và khu vực nhật ký.'}
-              </div>
-
               <button
                 type="button"
-                className="btn main"
-                onClick={handleSaveAllAiSettings}
-                disabled={isSavingAiSettings}
-                style={{ minWidth: '220px', padding: '12px 24px', fontSize: '15px', fontWeight: 600 }}
+                className={`btn ${isMasterAiEnabled ? 'line' : 'main'}`}
+                onClick={() => handleToggleMasterAi(!isMasterAiEnabled)}
+                disabled={isTogglingMasterAi}
+                style={{ minWidth: '140px' }}
               >
-                {isSavingAiSettings
-                  ? (language === 'en' ? 'Saving AI Settings...' : 'Đang lưu...')
-                  : (language === 'en' ? 'Save All AI Settings' : 'Lưu cấu hình AI')}
+                {isTogglingMasterAi
+                  ? (language === 'en' ? 'Updating...' : 'Đang cập nhật...')
+                  : isMasterAiEnabled
+                    ? (language === 'en' ? 'Turn off' : 'Tắt AI')
+                    : (language === 'en' ? 'Turn on' : 'Bật AI')}
               </button>
             </div>
+          </div>
+
+          {/* Bước 1: khóa API */}
+          <div className="box" style={{ padding: '20px 24px' }}>
+            <h3 className="serif" style={{ fontSize: '17px', margin: '0 0 4px', fontWeight: 600 }}>
+              {language === 'en' ? '1. API key' : '1. Khóa API'}
+            </h3>
+            <p className="muted" style={{ margin: '0 0 14px', fontSize: '13.5px', lineHeight: 1.5 }}>
+              {language === 'en' ? 'Get a free Gemini key at ' : 'Lấy khóa Gemini miễn phí tại '}
+              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: 'var(--acc)' }}>
+                Google AI Studio
+              </a>
+              {language === 'en' ? ', then paste it below. The key is encrypted before it is stored.' : ', rồi dán vào ô bên dưới. Khóa được mã hóa trước khi lưu.'}
+            </p>
+
+            <div className="row" style={{ gap: '10px', alignItems: 'center', marginBottom: '12px', fontSize: '13.5px', flexWrap: 'wrap' }}>
+              <span className="muted">{language === 'en' ? 'Current key:' : 'Khóa hiện tại:'}</span>
+              <b style={{ fontWeight: 600 }}>
+                {aiSettings?.moderation?.masked_api_key || (language === 'en' ? 'none yet' : 'chưa có')}
+              </b>
+              {aiSettings?.moderation?.is_key_configured && (
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  style={{ color: '#C42B1C' }}
+                  onClick={() => setDeletingApiKeyService('moderation')}
+                >
+                  {language === 'en' ? 'Remove' : 'Xóa khóa'}
+                </button>
+              )}
+            </div>
+
+            <div className="row" style={{ gap: '10px', flexWrap: 'wrap' }}>
+              <input
+                type="password"
+                className="inp"
+                style={{ flex: '1 1 280px' }}
+                placeholder={language === 'en' ? 'Paste a new key (leave empty to keep the current one)' : 'Dán khóa mới (để trống nếu giữ khóa cũ)'}
+                value={modApiKey}
+                onChange={(e) => setModApiKey(e.target.value)}
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                className="btn line"
+                onClick={() => handleDiscoverModels('moderation')}
+                disabled={isDiscoveringMod}
+              >
+                {isDiscoveringMod
+                  ? (language === 'en' ? 'Checking...' : 'Đang kiểm tra...')
+                  : (language === 'en' ? 'Check key' : 'Kiểm tra khóa')}
+              </button>
+            </div>
+
+            <label className="row" style={{ gap: '8px', marginTop: '12px', fontSize: '13.5px', cursor: 'pointer' }}>
+              <input type="checkbox" checked={useSameAiKey} onChange={(e) => setUseSameAiKey(e.target.checked)} />
+              <span>{language === 'en' ? 'Use this key for drawing illustrations too' : 'Dùng khóa này cho cả việc vẽ tranh'}</span>
+            </label>
+          </div>
+
+          {/* Bước 2: việc AI sẽ làm */}
+          <div className="box" style={{ padding: '20px 24px' }}>
+            <h3 className="serif" style={{ fontSize: '17px', margin: '0 0 12px', fontWeight: 600 }}>
+              {language === 'en' ? '2. What AI helps with' : '2. Việc AI sẽ làm'}
+            </h3>
+            {[
+              {
+                on: modEnabled,
+                set: setModEnabled,
+                title: language === 'en' ? 'Review and translate posts' : 'Duyệt bài và dịch bài',
+                desc: language === 'en'
+                  ? 'Scores posts, suggests gentler wording and translates between Vietnamese and English.'
+                  : 'Chấm điểm bài viết, gợi ý cách viết nhẹ nhàng hơn và dịch qua lại Việt Anh.',
+              },
+              {
+                on: imgEnabled,
+                set: setImgEnabled,
+                title: language === 'en' ? 'Draw illustrations' : 'Vẽ tranh minh họa',
+                desc: language === 'en'
+                  ? 'Draws a picture for Room 1 posts based on the story.'
+                  : 'Vẽ tranh cho bài ở Phòng 1 dựa trên nội dung câu chuyện.',
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="row between"
+                style={{ gap: '16px', alignItems: 'center', padding: '12px 0', borderTop: i ? '1px solid var(--line)' : 'none' }}
+              >
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: '14.5px' }}>{item.title}</div>
+                  <div className="muted" style={{ fontSize: '13px', marginTop: '2px' }}>{item.desc}</div>
+                </div>
+                <span
+                  className={`tog ${item.on ? 'on' : ''}`}
+                  role="switch"
+                  aria-checked={item.on}
+                  onClick={() => item.set(!item.on)}
+                  style={{ cursor: 'pointer', flexShrink: 0 }}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Tùy chỉnh nâng cao */}
+          <details className="box" style={{ padding: '16px 24px' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600, fontSize: '14.5px' }}>
+              {language === 'en' ? 'Advanced settings' : 'Tùy chỉnh nâng cao'}
+              <span className="muted" style={{ fontWeight: 400, fontSize: '13px', marginLeft: '8px' }}>
+                {language === 'en' ? 'provider and model, usually no need to change' : 'nhà cung cấp và mô hình, thường không cần đổi'}
+              </span>
+            </summary>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginTop: '16px' }}>
+              {[
+                {
+                  key: 'moderation',
+                  title: language === 'en' ? 'Review and translate' : 'Duyệt bài và dịch',
+                  provider: modProvider, setProvider: setModProvider,
+                  baseUrl: modBaseUrl, setBaseUrl: setModBaseUrl,
+                  model: modModel, setModel: setModModel,
+                  models: modDiscoveredModels,
+                  providers: [['gemini', 'Google Gemini'], ['openai', 'OpenAI'], ['custom', language === 'en' ? 'Other (OpenAI-compatible)' : 'Khác (tương thích OpenAI)']],
+                  placeholder: 'gemini-2.5-flash',
+                },
+                {
+                  key: 'image_generation',
+                  title: language === 'en' ? 'Draw illustrations' : 'Vẽ tranh',
+                  provider: imgProvider, setProvider: setImgProvider,
+                  baseUrl: imgBaseUrl, setBaseUrl: setImgBaseUrl,
+                  model: imgModel, setModel: setImgModel,
+                  models: imgDiscoveredModels,
+                  providers: [['gemini', 'Google Gemini'], ['openai', 'OpenAI'], ['custom', language === 'en' ? 'Other (OpenAI-compatible)' : 'Khác (tương thích OpenAI)']],
+                  placeholder: 'imagen-3.0-generate-002',
+                },
+              ].map((svc) => (
+                <div key={svc.key}>
+                  <div style={{ fontWeight: 600, marginBottom: '10px' }}>{svc.title}</div>
+
+                  <div className="fieldl">{language === 'en' ? 'Provider' : 'Nhà cung cấp'}</div>
+                  <select className="inp" value={svc.provider} onChange={(e) => svc.setProvider(e.target.value)}>
+                    {svc.providers.map(([v, label]) => (
+                      <option key={v} value={v}>{label}</option>
+                    ))}
+                  </select>
+
+                  {svc.provider === 'custom' && (
+                    <>
+                      <div className="fieldl" style={{ marginTop: '10px' }}>{language === 'en' ? 'Server address' : 'Địa chỉ máy chủ'}</div>
+                      <input
+                        className="inp"
+                        placeholder="https://..."
+                        value={svc.baseUrl}
+                        onChange={(e) => svc.setBaseUrl(e.target.value)}
+                      />
+                    </>
+                  )}
+
+                  <div className="fieldl" style={{ marginTop: '10px' }}>{language === 'en' ? 'Model' : 'Mô hình'}</div>
+                  {svc.models.length > 0 ? (
+                    <select className="inp" value={svc.model} onChange={(e) => svc.setModel(e.target.value)}>
+                      {svc.models.map((m) => (
+                        <option key={m.id} value={m.id}>{m.display_name || m.id}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      className="inp"
+                      placeholder={svc.placeholder}
+                      value={svc.model}
+                      onChange={(e) => svc.setModel(e.target.value)}
+                    />
+                  )}
+
+                  {svc.key === 'image_generation' && !useSameAiKey && (
+                    <>
+                      <div className="fieldl" style={{ marginTop: '10px' }}>
+                        {language === 'en' ? 'Separate key for drawing' : 'Khóa riêng cho vẽ tranh'}
+                        <span>{aiSettings?.image_generation?.masked_api_key || (language === 'en' ? 'none yet' : 'chưa có')}</span>
+                      </div>
+                      <input
+                        type="password"
+                        className="inp"
+                        placeholder={language === 'en' ? 'Leave empty to keep the current one' : 'Để trống nếu giữ khóa cũ'}
+                        value={imgApiKey}
+                        onChange={(e) => setImgApiKey(e.target.value)}
+                        autoComplete="off"
+                      />
+                    </>
+                  )}
+
+                  <button
+                    type="button"
+                    className="btn ghost sm"
+                    style={{ marginTop: '10px' }}
+                    onClick={() => handleDiscoverModels(svc.key)}
+                    disabled={svc.key === 'moderation' ? isDiscoveringMod : isDiscoveringImg}
+                  >
+                    {language === 'en' ? 'Load model list' : 'Tải danh sách mô hình'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </details>
+
+          <div className="row" style={{ justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="btn main"
+              onClick={handleSaveAllAiSettings}
+              disabled={isSavingAiSettings}
+              style={{ minWidth: '180px', padding: '12px 24px', fontSize: '15px', fontWeight: 600 }}
+            >
+              {isSavingAiSettings
+                ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+                : (language === 'en' ? 'Save' : 'Lưu cài đặt')}
+            </button>
           </div>
         </div>
       )}
