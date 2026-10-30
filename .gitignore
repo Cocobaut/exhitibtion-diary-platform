@@ -39,11 +39,13 @@ dist/
 frontend/specification/
 backend/specification/
 backend/postman_json/
-backend/tests/
 
-# Frontend mock data
-frontend/src/data/
+# (frontend/src/data/mockData.js chứa hằng số UI dùng thật, không được ignore)
 
-# Database folder content (ignored except .gitkeep)
+# Database folder: chỉ commit schema, seed và từ điển badwords
 backend/database/*
 !backend/database/.gitkeep
+!backend/database/*.sql
+!backend/database/badwords_seed.json
+# Bản sao lưu trên máy chủ
+backups/
