@@ -269,9 +269,8 @@ Project_exhibition_diary_platform/
 │   │       ├── room1_service.py         # Nghiệp vụ Phòng 1
 │   │       ├── room2_service.py         # Nghiệp vụ Phòng 2
 │   │       └── reaction_service.py      # Nghiệp vụ quản lý cảm xúc
-│   ├── database/                        # Database scripts & .gitkeep
+│   ├── database/                        # 01_schema.sql, 02_seed.sql, badwords_seed.json
 │   ├── Dockerfile                       # Docker image backend
-│   ├── docker-compose.yml               # Cấu hình chạy nhanh Backend & DB
 │   └── requirements.txt                 # Thư viện phụ thuộc Python
 │
 ├── frontend/                            # REACT + VITE FRONTEND SPA
@@ -294,8 +293,11 @@ Project_exhibition_diary_platform/
 │   │   ├── services/                    # Axios API Clients
 │   │   ├── App.jsx                      # Router & App Shell
 │   │   └── main.jsx                     # Entry Point
+│   ├── Dockerfile                       # Build Vite + phục vụ bằng nginx
+│   ├── nginx.conf                       # Proxy /api và /static sang backend
 │   ├── package.json
 │   └── vite.config.js
+├── docker-compose.yml                   # db + backend + frontend (+ adminer)
 └── README.md                            # Tài liệu tổng quan dự án
 ```
 
@@ -303,7 +305,37 @@ Project_exhibition_diary_platform/
 
 ## 7. Hướng dẫn Khởi chạy & Cài đặt (Getting Started)
 
-### Yêu cầu môi trường
+> Deploy lên máy chủ thật (Azure, HTTPS, sao lưu): xem **[DEPLOY.md](DEPLOY.md)**. Bản production dùng `docker-compose.prod.yml` và không có tài khoản mẫu.
+
+### Cách nhanh nhất: Docker Compose
+
+Chỉ cần Docker. Lần chạy đầu, Postgres tự tạo bảng từ `backend/database/01_schema.sql` và nạp dữ liệu mẫu từ `02_seed.sql`.
+
+```bash
+cp .env.example .env
+# Điền SECRET_KEY vào .env, ví dụ: openssl rand -hex 32
+docker compose up -d --build
+```
+
+- Ứng dụng: http://localhost:3000 (nginx proxy `/api` và `/static` sang backend, không cần cấu hình CORS)
+- API docs: http://localhost:8000/docs
+- Adminer (tùy chọn): `docker compose --profile tools up -d`, mở http://localhost:8080 (server `db`)
+- Đổi cổng nếu bị trùng: chỉnh `FRONTEND_PORT` / `BACKEND_PORT` trong `.env`
+- Nạp lại dữ liệu mẫu từ đầu: `docker compose down -v && docker compose up -d` (xóa toàn bộ dữ liệu cũ)
+
+Tài khoản mẫu (chỉ có trong bản dev, dữ liệu từ `02_seed.sql`):
+
+| Vai trò | Tài khoản | Mật khẩu |
+| :--- | :--- | :--- |
+| OWNER | `owner_master` | `AdminPassword@2026` |
+| ADMIN | `admin_exhibition` | `AdminPassword@2026` |
+| USER | `minh_tam` | `UserPassword@2026` |
+
+Chạy test backend: `cd backend && pip install -r requirements-dev.txt && pytest`
+
+---
+
+### Yêu cầu môi trường (chạy thủ công)
 - **Python**: `>= 3.10`
 - **Node.js**: `>= 18.x` & `npm` / `yarn`
 - **PostgreSQL**: `>= 15.x` (hoặc sử dụng Docker)
@@ -339,6 +371,13 @@ Project_exhibition_diary_platform/
    cp .env.example .env
    ```
    *(Cập nhật thông số kết nối PostgreSQL và Secret Key phù hợp)*
+
+   Tạo bảng và dữ liệu mẫu cho database trống:
+   ```bash
+   psql "$DATABASE_URL_PSQL" -f database/01_schema.sql
+   psql "$DATABASE_URL_PSQL" -f database/02_seed.sql
+   ```
+   *(`DATABASE_URL_PSQL` là chuỗi kết nối dạng `postgresql://user:pass@localhost:5432/exhibition_diary_db`)*
 
 5. **Khởi chạy máy chủ phát triển Backend (Uvicorn):**
    ```bash

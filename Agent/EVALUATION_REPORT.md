@@ -2,14 +2,14 @@
 
 > **Dự án**: Bảo Tàng Gọi Tên Cảm Xúc (*The Name of Feeling Museum*)  
 > **Module đánh giá**: `AiModerationService`, `BadWordsService`, `AiImageService`, `AiDiscoveryService`  
-> **Thư mục lưu trữ**: `E:\Hcmut material\Business_Communication\Project_exhibition_diary_platform\Agent`  
+> **Thư mục lưu trữ**: `Agent/`  
 > **API Key kiểm thử**: Google Gemini Developer API (phát hiện **50 models** khả dụng)
 
 ---
 
 ## 1. Phân Tích & Lựa Chọn Bộ Metric Phù Hợp Cho Agent
 
-Dựa trên kiến trúc thực tế của hệ thống AI Copilot trong dự án (kết hợp **Hybrid Rule Engine Pre-filter + Dynamic Model Discovery + LLM Structured Output Reasoning + Strict No-Hallucination Rewrite + Art Image Synthesis**), dưới đây là ma trận các đại lượng metric được chọn lọc từ danh sách của bạn:
+Dựa trên kiến trúc thực tế của hệ thống AI Copilot trong dự án (kết hợp **Hybrid Rule Engine Pre-filter + Dynamic Model Discovery + LLM Structured Output Reasoning + Strict No-Hallucination Rewrite + Art Image Synthesis**), dưới đây là ma trận các đại lượng metric được chọn lọc như sau:
 
 ### A. Chất lượng suy luận & Kết quả cuối (Task Success & Quality)
 1. **Task Success Rate / Goal Completion Rate (%)**: Tỷ lệ Agent hoàn thành trọn vẹn yêu cầu kiểm duyệt + định tuyến phòng + viết lại văn bản trung tính đạt chuẩn mà không gặp lỗi schema hoặc vi phạm ràng buộc.
@@ -35,7 +35,7 @@ Dựa trên kiến trúc thực tế của hệ thống AI Copilot trong dự á
 
 ## 2. Kết Quả Đánh Giá Thực Nghiệm (Trên Golden Dataset 32 Test Cases + 6 Art Cases)
 
-Chúng tôi đã tiến hành đo lường trực tiếp trên **3 cấu hình thực nghiệm** bằng script [`evaluate_agent.py`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/Agent/evaluate_agent.py) với khóa API của bạn:
+Chúng tôi đã tiến hành đo lường trực tiếp trên **3 cấu hình thực nghiệm** bằng script [`evaluate_agent.py`](evaluate_agent.py) với một khóa Gemini API thử nghiệm:
 - **Cấu hình 1 (Live LLM - Dynamic Discovery `gemini-flash-lite-latest`)**: Khi gọi model mặc định `gemini-2.5-flash` (bị Google trả về `404 No longer available to new users`), Agent tự động kích hoạt **Dynamic Model Discovery** quét 50 models và điều hướng sang `gemini-flash-lite-latest`.
 - **Cấu hình 2 (Live LLM - Direct `gemini-3-flash-preview` + Hybrid Fallback)**: Gọi trực tiếp model thế hệ mới `gemini-3-flash-preview` (phản hồi ~4.3s – 6.7s/câu khi còn hạn ngạch RPM, và tự động chuyển về Rule Engine trong ~2.1s khi chạm ngưỡng Rate Limit `HTTP 429`).
 - **Cấu hình 3 (Deterministic Rule Engine Baseline)**: Chạy thuần tầng Rule Engine nội bộ không gọi mạng ngoài.
@@ -71,20 +71,20 @@ Chúng tôi đã tiến hành đo lường trực tiếp trên **3 cấu hình t
      - Ngược lại, **Live Gemini LLM** chấm chính xác `TC_016` (85 điểm - `APPROVE_WITH_EDITS`) và `TC_018` (75 điểm - `APPROVE_WITH_EDITS`), đồng thời viết lại câu văn vô cùng tự nhiên: *"Ngày nhận tin trượt học bổng, tôi buồn vô cùng và chỉ biết ngồi lặng lẽ bên hiên nhà..."* và ẩn số điện thoại thành `098***`.
 2. **Phát hiện lỗiDeprecated Model (`gemini-2.5-flash` trả về HTTP 404)**:
    - Với khóa API mới, Google trả về thông báo: `"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash"` hoặc sử dụng `gemini-3-flash-preview` / `gemini-flash-lite-latest`.
-   - Nhờ kiến trúc **Dynamic Model Discovery** trong [`ai_moderation_service.py`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/backend/app/services/ai_moderation_service.py#L196-L235) và [`ai_image_service.py`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/backend/app/services/ai_image_service.py#L129-L167), hệ thống **không bị sập (0% crash)** mà tự động quét danh sách model của key để gọi sang `gemini-flash-lite-latest` và `gemini-3-flash-preview`.
+   - Nhờ kiến trúc **Dynamic Model Discovery** trong [`ai_moderation_service.py`](../backend/app/services/ai_moderation_service.py#L196-L235) và [`ai_image_service.py`](../backend/app/services/ai_image_service.py#L129-L167), hệ thống **không bị sập (0% crash)** mà tự động quét danh sách model của key để gọi sang `gemini-flash-lite-latest` và `gemini-3-flash-preview`.
    - Tuy nhiên, việc thử gọi `gemini-2.5-flash` bị 404 rồi mới gọi `/v1beta/models` ở mỗi request làm cộng thêm ~15–20 giây độ trễ. **Khuyến nghị tối ưu**: Đổi model mặc định trong `OwnerAiService` từ `gemini-2.5-flash` sang `gemini-3-flash-preview` hoặc `gemini-flash-lite-latest`, đồng thời cache danh sách dynamic models vào RAM.
 3. **Phát hiện Edge Case Schema Validation (`TC_032` thiếu `line_number`)**:
-   - Trong 1/32 test case (`TC_032` bằng tiếng Anh), model `gemini-flash-lite-latest` trả về object `ViolationDetail` nhưng quên trường `"line_number": 1`, dẫn đến `Pydantic ValidationError`. **Khuyến nghị tối ưu**: Đặt giá trị mặc định `line_number: int = Field(default=1, ge=1)` trong [`ai_copilot.py`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/backend/app/schemas/ai_copilot.py#L12) để đạt **100% Schema Compliance Rate** trên mọi model nhỏ.
+   - Trong 1/32 test case (`TC_032` bằng tiếng Anh), model `gemini-flash-lite-latest` trả về object `ViolationDetail` nhưng quên trường `"line_number": 1`, dẫn đến `Pydantic ValidationError`. **Khuyến nghị tối ưu**: Đặt giá trị mặc định `line_number: int = Field(default=1, ge=1)` trong [`ai_copilot.py`](../backend/app/schemas/ai_copilot.py#L12) để đạt **100% Schema Compliance Rate** trên mọi model nhỏ.
 
 ---
 
 ## 4. Hướng Dẫn Sử Dụng Lại Script Đánh Giá
 
-Toàn bộ các tệp đánh giá đã được lưu tại `E:\Hcmut material\Business_Communication\Project_exhibition_diary_platform\Agent`:
-- [`Agent/golden_dataset.json`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/Agent/golden_dataset.json): 32 test cases chuẩn.
-- [`Agent/evaluate_agent.py`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/Agent/evaluate_agent.py): Script chạy benchmark.
-- [`Agent/evaluation_results.json`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/Agent/evaluation_results.json): Dữ liệu kết quả JSON chi tiết của lượt chạy Live Gemini API.
-- [`Agent/EVALUATION_REPORT.md`](file:///e:/Hcmut%20material/Business_Communication/Project_exhibition_diary_platform/Agent/EVALUATION_REPORT.md): Báo cáo tổng hợp.
+Toàn bộ các tệp đánh giá đã được lưu tại `Agent/`:
+- [`Agent/golden_dataset.json`](golden_dataset.json): 32 test cases chuẩn.
+- [`Agent/evaluate_agent.py`](evaluate_agent.py): Script chạy benchmark.
+- [`Agent/evaluation_results.json`](evaluation_results.json): Dữ liệu kết quả JSON chi tiết của lượt chạy Live Gemini API.
+- [`Agent/EVALUATION_REPORT.md`](EVALUATION_REPORT.md): Báo cáo tổng hợp.
 
 ```powershell
 # Chạy với model ổn định nhất trên key của bạn (gemini-3-flash-preview):

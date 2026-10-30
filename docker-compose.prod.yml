@@ -1,0 +1,72 @@
+# Production: chỉ Caddy mở cổng 80/443 ra ngoài; db, backend, frontend chỉ nói chuyện trong mạng nội bộ.
+# Chạy: docker compose -f docker-compose.prod.yml up -d --build
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Hãy đặt POSTGRES_PASSWORD trong .env}
+      POSTGRES_DB: ${POSTGRES_DB:-exhibition_diary_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Chỉ chạy lần đầu khi volume còn trống: tạo bảng + dữ liệu hệ thống, không có tài khoản mẫu
+      - ./backend/database/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./backend/database/02_seed_production.sql:/docker-entrypoint-initdb.d/02_seed_production.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-exhibition_diary_db}
+      SECRET_KEY: ${SECRET_KEY:?Hãy đặt SECRET_KEY trong .env (openssl rand -hex 32)}
+      DEBUG: "False"
+      PUBLIC_BASE_URL: https://${DOMAIN:?Hãy đặt DOMAIN trong .env}
+      BACKEND_CORS_ORIGINS: https://${DOMAIN}
+      FRONTEND_RESET_URL: https://${DOMAIN}/
+      EMAIL_BACKEND: ${EMAIL_BACKEND:-smtp}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL:-}
+      EMAILS_FROM_NAME: ${EMAILS_FROM_NAME:-Bảo Tàng Gọi Tên Cảm Xúc}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    restart: always
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2.8-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Hãy đặt ACME_EMAIL trong .env (email nhận thông báo chứng chỉ HTTPS)}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  postgres_data:
+  uploads:
+  caddy_data:
+  caddy_config:
