@@ -75,22 +75,25 @@ apiClient.interceptors.response.use(
     if (error.response) {
       const { status, data } = error.response;
 
-      // 401 Unauthorized: Token hết hạn hoặc không hợp lệ -> Xoá session và điều hướng về /login
+      // 401 Unauthorized: Token hết hạn hoặc không hợp lệ -> Xoá session
       if (status === 401) {
+        let hadToken = false;
         try {
+          hadToken = Boolean(localStorage.getItem('access_token'));
           localStorage.removeItem('access_token');
           localStorage.removeItem('user_info');
         } catch (e) {
           console.warn('Không thể xoá localStorage:', e);
         }
 
-        // Tự động chuyển hướng nếu đang ở browser và không ở trang login
+        // Chỉ bắn event / điều hướng nếu người dùng trước đó đã đăng nhập (có token) nhưng bị hết hạn.
+        // Khách vãng lai (không có token) không bị ép chuyển hướng về /login.
         if (
+          hadToken &&
           typeof window !== 'undefined' &&
           window.location &&
           window.location.pathname !== '/login'
         ) {
-          // Bắn custom event để các component React hoặc AuthContext lắng nghe đồng bộ
           window.dispatchEvent(new CustomEvent('auth:unauthorized'));
           window.location.href = '/login';
         }

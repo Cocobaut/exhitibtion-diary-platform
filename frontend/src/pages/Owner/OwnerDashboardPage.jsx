@@ -1117,7 +1117,17 @@ export function OwnerDashboardPage({ onNavigate }) {
 
       {/* SEGMENT 3: AI SETTINGS */}
       {activeSegment === 3 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '880px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            width: '100%',
+            maxWidth: '880px',
+            margin: '0 auto',
+            alignSelf: 'center',
+          }}
+        >
           {/* Trạng thái chung */}
           <div className="box" style={{ padding: '20px 24px' }}>
             <div className="row between" style={{ flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>

@@ -66,6 +66,12 @@ export function Room2Page({
 
   // Load lanterns based on filter and search
   const loadLanterns = useCallback(async () => {
+    if (activeFilter === 'mine' && (isGuest || !user)) {
+      setLanterns([]);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       if (debouncedSearch) {
@@ -95,8 +101,8 @@ export function Room2Page({
           });
         }
 
-        // Silent auto-landing check result
-        if (data?.freshly_landed && data.freshly_landed.length > 0) {
+        // Silent auto-landing check result (only for authenticated users)
+        if (!isGuest && user && data?.freshly_landed && data.freshly_landed.length > 0) {
           triggerToast(
             language === 'en'
               ? '✦ A future lantern of yours has reached its time and landed gently on the dunes! ✦'
@@ -110,10 +116,15 @@ export function Room2Page({
     } finally {
       setIsLoading(false);
     }
-  }, [activeFilter, debouncedSearch, language]);
+  }, [activeFilter, debouncedSearch, isGuest, user, language]);
 
   // Load personal lantern & countdown widget
   const loadPersonalLantern = useCallback(async () => {
+    if (isGuest || !user) {
+      setPersonalLantern(null);
+      setRemainingSeconds(null);
+      return;
+    }
     try {
       const res = await room2Service.getMyPersonalLantern();
       const data = res?.data || res;
@@ -131,10 +142,15 @@ export function Room2Page({
       setPersonalLantern(null);
       setRemainingSeconds(null);
     }
-  }, []);
+  }, [isGuest, user]);
 
   // Check ready-to-fall lanterns for user
   const checkReadyToFall = useCallback(async () => {
+    if (isGuest || !user) {
+      setReadyLanterns([]);
+      setShowReadyBanner(false);
+      return;
+    }
     try {
       const res = await room2Service.getReadyToFallLanterns();
       const data = res?.data || res;
@@ -146,7 +162,7 @@ export function Room2Page({
     } catch {
       // Ignore if not logged in
     }
-  }, []);
+  }, [isGuest, user]);
 
   // Initial load
   useEffect(() => {
@@ -154,9 +170,16 @@ export function Room2Page({
   }, [loadLanterns]);
 
   useEffect(() => {
-    loadPersonalLantern();
-    checkReadyToFall();
-  }, [loadPersonalLantern, checkReadyToFall]);
+    if (!isGuest && user) {
+      loadPersonalLantern();
+      checkReadyToFall();
+    } else {
+      setPersonalLantern(null);
+      setRemainingSeconds(null);
+      setReadyLanterns([]);
+      setShowReadyBanner(false);
+    }
+  }, [isGuest, user, loadPersonalLantern, checkReadyToFall]);
 
   // Dynamic 1-second countdown ticker
   useEffect(() => {
