@@ -424,58 +424,111 @@ export function AdminStudio({ triggerToast, onPublished }) {
         <div className="box" style={{ padding: '20px', position: 'sticky', top: 0, flex: '0 1 320px', minWidth: '260px' }}>
           <div className="fieldl">
             {language === 'en' ? 'Preview' : 'Xem trước'}
-            {roomId === 1 && <span style={{ color: 'var(--acc)' }}>{language === 'en' ? 'Image required' : 'Cần có tranh'}</span>}
+            {roomId === 1 ? (
+              <span style={{ color: 'var(--acc)' }}>{language === 'en' ? 'Image required' : 'Cần có tranh'}</span>
+            ) : (
+              <span className="muted">{language === 'en' ? 'Text preview' : 'Xem trước ngắn'}</span>
+            )}
           </div>
 
           <div style={{ background: 'var(--wall)', borderRadius: '12px', padding: '14px', border: '1px solid var(--line)' }}>
-            <article className="work" style={{ margin: 0 }}>
-              <div className="art" style={{ height: '170px', overflow: 'hidden' }}>
-                {mediaUrl ? (
-                  <img
-                    src={mediaUrl}
-                    alt={language === 'en' ? 'Preview' : 'Xem trước'}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <Painting seed={99} kind={roomId === 1 ? 'door' : 'letter'} />
-                )}
+            {roomId === 1 ? (
+              <article className="work" style={{ margin: 0 }}>
+                <div className="art" style={{ height: '170px', overflow: 'hidden' }}>
+                  {mediaUrl ? (
+                    <img
+                      src={mediaUrl}
+                      alt={language === 'en' ? 'Preview' : 'Xem trước'}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <Painting seed={99} kind="door" />
+                  )}
+                </div>
+                <div className="cap">
+                  <h4>{previewTitle}</h4>
+                  <p style={{ height: 'auto' }}>{previewSummary}</p>
+                </div>
+              </article>
+            ) : (
+              /* Room 2 & Room 3: Xem trước rút gọn chỉ còn Tiêu đề tác phẩm và Tóm tắt ngắn */
+              <div style={{ padding: '6px 4px' }}>
+                <div style={{ marginBottom: '8px' }}>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      padding: '2px 8px',
+                      borderRadius: '999px',
+                      background: 'rgba(0, 0, 0, 0.07)',
+                      color: '#000000',
+                      border: '1px solid rgba(0, 0, 0, 0.2)',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {roomId === 2
+                      ? (language === 'en' ? 'Room 02 · Lantern Letter' : 'Phòng 02 · Thư lồng đèn')
+                      : (language === 'en' ? 'Room 03 · Tree Message' : 'Phòng 03 · Thông điệp cây')}
+                  </span>
+                </div>
+                <h4 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.4 }}>
+                  {previewTitle}
+                </h4>
+                <p style={{ margin: 0, fontSize: '13.5px', color: 'var(--ink2)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                  {previewSummary}
+                </p>
               </div>
-              <div className="cap">
-                <h4>{previewTitle}</h4>
-                <p style={{ height: 'auto' }}>{previewSummary}</p>
-              </div>
-            </article>
+            )}
           </div>
 
-          <div className="row" style={{ gap: '8px', marginTop: '12px' }}>
-            <button
-              type="button"
-              className="btn line sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              <Icon name="upload" size={15} />
-              {isUploading
-                ? (language === 'en' ? 'Uploading...' : 'Đang tải...')
-                : mediaUrl
-                  ? (language === 'en' ? 'Change image' : 'Đổi tranh')
-                  : (language === 'en' ? 'Upload image' : 'Tải tranh lên')}
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              accept="image/png,image/jpeg,image/webp"
-              onChange={handleUploadImage}
-            />
-            {mediaUrl && (
+          {/* Phần tải tranh lên: mờ đi (opacity 0.4, cursor not-allowed) khi ở Phòng 2 hoặc Phòng 3 */}
+          <div
+            style={{
+              marginTop: '12px',
+              opacity: (roomId === 2 || roomId === 3) ? 0.38 : 1,
+              pointerEvents: (roomId === 2 || roomId === 3) ? 'none' : 'auto',
+              transition: 'opacity 0.25s ease',
+            }}
+          >
+            <div className="row" style={{ gap: '8px' }}>
               <button
                 type="button"
-                className="btn ghost sm"
-                onClick={() => setMediaUrl('')}
+                className="btn line sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading || roomId === 2 || roomId === 3}
+                style={{ cursor: (roomId === 2 || roomId === 3) ? 'not-allowed' : 'pointer' }}
+                title={(roomId === 2 || roomId === 3) ? (language === 'en' ? 'Images not required for Room 2 & 3' : 'Phòng 2 & 3 không cần tải ảnh') : ''}
               >
-                {language === 'en' ? 'Remove' : 'Bỏ tranh'}
+                <Icon name="upload" size={15} />
+                {isUploading
+                  ? (language === 'en' ? 'Uploading...' : 'Đang tải...')
+                  : mediaUrl
+                    ? (language === 'en' ? 'Change image' : 'Đổi tranh')
+                    : (language === 'en' ? 'Upload image' : 'Tải tranh lên')}
               </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleUploadImage}
+              />
+              {mediaUrl && (
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  onClick={() => setMediaUrl('')}
+                  disabled={roomId === 2 || roomId === 3}
+                >
+                  {language === 'en' ? 'Remove' : 'Bỏ tranh'}
+                </button>
+              )}
+            </div>
+            {(roomId === 2 || roomId === 3) && (
+              <div className="muted" style={{ fontSize: '12px', marginTop: '6px', fontStyle: 'italic' }}>
+                {language === 'en'
+                  ? '* Image not required for Room 2 & 3.'
+                  : '* Không cần tải ảnh cho Phòng 2 & 3.'}
+              </div>
             )}
           </div>
 

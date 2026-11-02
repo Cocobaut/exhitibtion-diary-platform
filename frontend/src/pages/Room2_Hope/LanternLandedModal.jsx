@@ -3,6 +3,7 @@ import { Icon } from '../../components/common/Icons';
 import { ReactionButton } from '../../components/common/Reactions';
 import { SingleLantern } from './LanternSky';
 import { room2Service } from '../../services/room2Service';
+import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
 import { TranslationToggle } from '../../components/common/TranslationToggle';
@@ -12,8 +13,10 @@ export function LanternLandedModal({
   onClose,
   onSaveToNotebook,
   onReplyFuture,
+  onReactionUpdated,
   letterData,
 }) {
+  const { isGuest, isAuthenticated } = useAuth();
   const { guardAction } = useGuestGuard();
   const { original, language } = useLanguage();
   const [letter, setLetter] = useState(letterData || null);
@@ -28,6 +31,10 @@ export function LanternLandedModal({
     SYMPATHY: 0,
     total: 0,
   });
+
+  const isUuid = (val) =>
+    typeof val === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
   useEffect(() => {
     if (!isOpen || !letterData) return;
@@ -46,8 +53,8 @@ export function LanternLandedModal({
       });
     }
 
-    // If letter has an id, call openLantern API to mark opened on server & fetch full content
-    if (letterData.id) {
+    // If letter has a valid UUID, call openLantern API to mark opened on server & fetch full content
+    if (letterData.id && isUuid(String(letterData.id))) {
       setIsLoading(true);
       room2Service
         .openLantern(letterData.id)
@@ -131,7 +138,7 @@ export function LanternLandedModal({
 
     const willSave = !isSaved;
     try {
-      if (currentLetter.id) {
+      if (currentLetter.id && isUuid(String(currentLetter.id))) {
         if (willSave) {
           await room2Service.saveLanternToNotebook(currentLetter.id);
         } else {
@@ -179,31 +186,65 @@ export function LanternLandedModal({
     }
   };
 
-  const handleToggleReaction = async (type) => {
-    guardAction(async () => {
-      try {
-        if (currentLetter?.id) {
-          const res = await room2Service.toggleReaction(currentLetter.id, type);
-          const data = res?.data || res;
-          if (data) {
-            setCurrentReaction(data.current_reaction);
-            if (data.reactions_summary) {
-              setReactionsMap(data.reactions_summary);
-            }
-          }
-        } else {
-          const next = currentReaction === type ? null : type;
-          setCurrentReaction(next);
-          setReactionsMap((prev) => ({
-            ...prev,
-            [type]: (prev[type] || 0) + (next ? 1 : -1),
-            total: (prev.total || 0) + (next ? 1 : -1),
-          }));
-        }
-      } catch (err) {
-        console.warn('Lỗi khi cập nhật cảm xúc lồng đèn:', err);
+  const applyLocalReaction = (type) => {
+    const isDeselecting = currentReaction === type;
+    const prevReaction = currentReaction;
+    const nextReaction = isDeselecting ? null : type;
+
+    setCurrentReaction(nextReaction);
+    setReactionsMap((prev) => {
+      const nextMap = {
+        HEART: prev?.HEART || 0,
+        HUG: prev?.HUG || 0,
+        SYMPATHY: prev?.SYMPATHY || 0,
+        total: prev?.total || 0,
+      };
+
+      if (prevReaction && nextMap[prevReaction] !== undefined) {
+        nextMap[prevReaction] = Math.max(0, nextMap[prevReaction] - 1);
       }
-    }, language === 'en' ? 'express empathy with this lantern letter' : 'bày tỏ sự đồng cảm với bức thư lồng đèn');
+
+      if (nextReaction && nextMap[nextReaction] !== undefined) {
+        nextMap[nextReaction] = (nextMap[nextReaction] || 0) + 1;
+      }
+
+      nextMap.total = (nextMap.HEART || 0) + (nextMap.HUG || 0) + (nextMap.SYMPATHY || 0);
+      return nextMap;
+    });
+
+    if (onReactionUpdated && currentLetter?.id) {
+      onReactionUpdated(currentLetter.id, {
+        my_reaction: nextReaction,
+      });
+    }
+  };
+
+  const handleToggleReaction = async (type) => {
+    // 1. Phản hồi lạc quan tức thì trên UI để người dùng click là đổi trạng thái ngay
+    applyLocalReaction(type);
+
+    // 2. Nếu là khách vãng lai, chưa đăng nhập hoặc là thư mẫu không có UUID
+    if (isGuest || !isAuthenticated || !currentLetter?.id || !isUuid(String(currentLetter.id))) {
+      return;
+    }
+
+    // 3. Nếu người dùng đã đăng nhập và là lồng đèn thực tế -> đồng bộ lên máy chủ
+    try {
+      const res = await room2Service.toggleReaction(currentLetter.id, type);
+      const data = res?.data || res;
+      if (data && data.reactions_summary) {
+        setCurrentReaction(data.current_reaction);
+        setReactionsMap(data.reactions_summary);
+        if (onReactionUpdated) {
+          onReactionUpdated(currentLetter.id, {
+            my_reaction: data.current_reaction,
+            reactions: data.reactions_summary,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn('Lỗi khi đồng bộ cảm xúc lên backend, đã giữ cập nhật cục bộ:', err);
+    }
   };
 
   const formattedTarget = currentLetter.target_date
@@ -247,6 +288,7 @@ export function LanternLandedModal({
           overflowY: 'auto',
           background: '#FBF4E6',
           boxShadow: '0 24px 60px rgba(10,5,12,0.4)',
+          zIndex: 35,
         }}
       >
         <span className="x" onClick={onClose} role="button" tabIndex={0}>

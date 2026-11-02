@@ -428,6 +428,11 @@ export function Room2Page({
         letterData={selectedLetter}
         onClose={() => setShowLandedModal(false)}
         onSaveToNotebook={onSaveToNotebook}
+        onReactionUpdated={(lanternId, updatedData) => {
+          setLanterns((prev) =>
+            prev.map((item) => (item.id === lanternId ? { ...item, ...updatedData } : item))
+          );
+        }}
         onReplyFuture={() => {
           setShowLandedModal(false);
           setShowReleaseModal(true);

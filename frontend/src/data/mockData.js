@@ -317,6 +317,8 @@ export const MOCK_LANTERN_LETTERS = [
     statusNote: 'Đã tới giờ hẹn · 09:00, 25.10.2026',
     statusNote_vi: 'Đã tới giờ hẹn · 09:00, 25.10.2026',
     statusNote_en: 'Arrival time reached · 09:00, Oct 25, 2026',
+    reactions: { HEART: 12, HUG: 24, SYMPATHY: 8, total: 44 },
+    my_reaction: null,
     isMine: true
   },
   {
@@ -334,6 +336,8 @@ export const MOCK_LANTERN_LETTERS = [
     statusNote: 'Lồng đèn công khai đã mở · 20.10.2026',
     statusNote_vi: 'Lồng đèn công khai đã mở · 20.10.2026',
     statusNote_en: 'Public lantern opened · Oct 20, 2026',
+    reactions: { HEART: 19, HUG: 8, SYMPATHY: 15, total: 42 },
+    my_reaction: null,
     isMine: false
   },
   {
@@ -351,6 +355,8 @@ export const MOCK_LANTERN_LETTERS = [
     statusNote: 'Lồng đèn công khai đã mở · 24.10.2026',
     statusNote_vi: 'Lồng đèn công khai đã mở · 24.10.2026',
     statusNote_en: 'Public lantern opened · Oct 24, 2026',
+    reactions: { HEART: 28, HUG: 14, SYMPATHY: 9, total: 51 },
+    my_reaction: null,
     isMine: false
   },
   {
@@ -368,6 +374,8 @@ export const MOCK_LANTERN_LETTERS = [
     statusNote: 'Lồng đèn công khai đã mở · 18.10.2026',
     statusNote_vi: 'Lồng đèn công khai đã mở · 18.10.2026',
     statusNote_en: 'Public lantern opened · Oct 18, 2026',
+    reactions: { HEART: 16, HUG: 19, SYMPATHY: 7, total: 42 },
+    my_reaction: null,
     isMine: false
   },
   {
@@ -385,6 +393,8 @@ export const MOCK_LANTERN_LETTERS = [
     statusNote: 'Lồng đèn công khai đã mở · 22.10.2026',
     statusNote_vi: 'Lồng đèn công khai đã mở · 22.10.2026',
     statusNote_en: 'Public lantern opened · Oct 22, 2026',
+    reactions: { HEART: 31, HUG: 22, SYMPATHY: 18, total: 71 },
+    my_reaction: null,
     isMine: false
   }
 ];
