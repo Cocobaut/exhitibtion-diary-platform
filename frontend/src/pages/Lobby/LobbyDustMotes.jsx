@@ -1,10 +1,14 @@
 import React, { useMemo } from 'react';
+import { useTheme } from '../../context/ThemeContext';
 
 /**
  * LobbyDustMotes: Museum Light Dust Motes (Hạt bụi ánh sáng bảo tàng).
  * Simulates gentle golden dust particles drifting peacefully in the ambient hall light.
  */
 export function LobbyDustMotes() {
+  const { theme } = useTheme();
+  const isPaper = theme === 'paper';
+
   const motes = useMemo(() => {
     const list = [];
     let seed = 38419;
@@ -101,12 +105,20 @@ export function LobbyDustMotes() {
             '--m-dy1': `${m.dy1}px`,
             '--m-dx2': `${m.dx2}px`,
             '--m-dy2': `${m.dy2}px`,
-            background: m.isSoftGlow
-              ? 'radial-gradient(circle, rgba(255, 238, 175, 0.95) 0%, rgba(230, 190, 110, 0.5) 45%, rgba(212, 176, 106, 0) 75%)'
-              : 'radial-gradient(circle, #FFFBEB 0%, #F6C844 50%, rgba(212, 176, 106, 0) 80%)',
-            boxShadow: m.isSoftGlow
-              ? '0 0 10px 2px rgba(245, 205, 110, 0.55)'
-              : '0 0 6px 1.5px rgba(255, 225, 140, 0.75)',
+            background: isPaper
+              ? (m.isSoftGlow
+                  ? 'radial-gradient(circle, rgba(160, 96, 46, 0.92) 0%, rgba(135, 78, 35, 0.5) 45%, rgba(110, 60, 25, 0) 75%)'
+                  : 'radial-gradient(circle, #945729 0%, #B87333 50%, rgba(148, 87, 41, 0) 80%)')
+              : (m.isSoftGlow
+                  ? 'radial-gradient(circle, rgba(255, 238, 175, 0.95) 0%, rgba(230, 190, 110, 0.5) 45%, rgba(212, 176, 106, 0) 75%)'
+                  : 'radial-gradient(circle, #FFFBEB 0%, #F6C844 50%, rgba(212, 176, 106, 0) 80%)'),
+            boxShadow: isPaper
+              ? (m.isSoftGlow
+                  ? '0 0 8px 2px rgba(150, 88, 38, 0.45)'
+                  : '0 0 5px 1.5px rgba(148, 87, 41, 0.55)')
+              : (m.isSoftGlow
+                  ? '0 0 10px 2px rgba(245, 205, 110, 0.55)'
+                  : '0 0 6px 1.5px rgba(255, 225, 140, 0.75)'),
             filter: m.isSoftGlow ? 'blur(0.8px)' : 'none',
             animation: `museumDustMoteFloat ${m.duration}s cubic-bezier(0.25, 1, 0.5, 1) infinite`,
             animationDelay: `-${m.delay}s`,

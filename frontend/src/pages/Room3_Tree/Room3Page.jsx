@@ -7,12 +7,16 @@ import { room3Service, CATEGORY_MAP, toFrontendCategory } from '../../services/r
 import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { useTheme } from '../../context/ThemeContext';
 
 /**
  * StarrySky component covering almost the entire screen with twinkling stars.
  * The stars stand completely still in fixed positions, only twinkling in place.
  */
 function StarrySky() {
+  const { theme } = useTheme();
+  const isPaper = theme === 'paper';
+
   const stars = useMemo(() => {
     const list = [];
     let seed = 42891;
@@ -21,7 +25,7 @@ function StarrySky() {
       return (seed - 1) / 2147483646;
     };
 
-    // 110 stars distributed across almost the entire screen (1% to 99% width, 1% to 92% height)
+    // Stars distributed across the night sky (excluding the left corner completely)
     for (let i = 0; i < 110; i++) {
       const x = +(rng() * 97.6 + 1.2).toFixed(2);
       const y = +(rng() * 90.0 + 1.5).toFixed(2);
@@ -29,6 +33,11 @@ function StarrySky() {
       const size = isSparkle ? +(rng() * 6 + 7).toFixed(1) : +(rng() * 2.8 + 1.8).toFixed(1);
       const duration = +(rng() * 2.4 + 2.2).toFixed(2);
       const delay = +(rng() * 5).toFixed(2);
+
+      // Clean top-left corner completely: remove all stars in x < 24% and y < 65%, or near the left edge x < 8%
+      if ((x < 24 && y < 65) || x < 8) {
+        continue;
+      }
 
       list.push({
         id: i,
@@ -93,13 +102,15 @@ function StarrySky() {
               width={st.size}
               height={st.size}
               style={{
-                filter: 'drop-shadow(0 0 5px rgba(255, 240, 180, 0.9))',
+                filter: isPaper
+                  ? 'drop-shadow(0 0 5px rgba(184, 115, 51, 0.85))'
+                  : 'drop-shadow(0 0 5px rgba(255, 240, 180, 0.9))',
                 overflow: 'visible',
               }}
             >
               <path
                 d="M12 0 Q12 12 24 12 Q12 12 12 24 Q12 12 0 12 Q12 12 12 0 Z"
-                fill="#FFFCE8"
+                fill={isPaper ? '#B87333' : '#FFFCE8'}
               />
             </svg>
           ) : (
@@ -108,8 +119,12 @@ function StarrySky() {
                 width: '100%',
                 height: '100%',
                 borderRadius: '50%',
-                background: '#FFEAA0',
-                boxShadow: '0 0 7px 1.5px rgba(255, 235, 160, 0.95)',
+                background: isPaper
+                  ? 'radial-gradient(circle, #E0A653 0%, #B87333 60%, #945729 100%)'
+                  : '#FFEAA0',
+                boxShadow: isPaper
+                  ? '0 0 7px 2px rgba(184, 115, 51, 0.7)'
+                  : '0 0 7px 1.5px rgba(255, 235, 160, 0.95)',
                 display: 'block',
               }}
             />
@@ -486,6 +501,7 @@ export function Room3Page({
           onHoverLeaf={setHoveredLeaf}
           onOpenLeafModal={handleOpenReadModal}
           onDrawRandomLeaf={handleDrawRandomLeaf}
+          isModalOpen={showReadModal}
         />
       </div>
 
@@ -548,24 +564,35 @@ export function Room3Page({
         </div>
       )}
 
-      {/* Footer: Dark Floor Soil Strip Pinned at Bottom */}
+      {/* Footer: Enchanted Twilight Garden Bank */}
       <div
         style={{
           position: 'absolute',
           left: 0,
           right: 0,
           bottom: 0,
-          height: '48px',
-          background: '#261A13',
-          borderTop: '1px solid rgba(70, 49, 34, 0.6)',
-          zIndex: 20,
+          height: '46px',
+          background: 'linear-gradient(180deg, var(--wall3) 0%, rgba(18, 14, 11, 0.92) 100%)',
+          borderTop: '1px solid var(--line)',
+          zIndex: 12,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '0 16px',
-          boxShadow: '0 -8px 24px rgba(0,0,0,0.35)',
+          boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.35)',
         }}
       >
+        <div
+          style={{
+            position: 'absolute',
+            top: '-10px',
+            left: '15%',
+            right: '15%',
+            height: '10px',
+            background: 'radial-gradient(ellipse at center, rgba(212, 176, 106, 0.22) 0%, rgba(212, 176, 106, 0) 70%)',
+            pointerEvents: 'none',
+          }}
+        />
       </div>
 
       {/* Modals */}

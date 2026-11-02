@@ -182,7 +182,7 @@ p {
   padding: 16px 0 14px;
   box-sizing: border-box;
   gap: 4px;
-  z-index: 20;
+  z-index: 50; /* Elevated above room footers and page contents */
 }
 
 .side .mark {
@@ -1375,7 +1375,6 @@ table.at td {
   top: 0;
   bottom: var(--lobby-floor-h);
   background: radial-gradient(ellipse at 50% 20%, rgba(212, 176, 106, 0.16) 0%, rgba(30, 20, 15, 0.12) 75%, rgba(18, 12, 10, 0.55) 100%), var(--wall);
-  border-top: 12px solid var(--wall3);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;

@@ -202,7 +202,7 @@ export function Sidebar({ currentRoute, onNavigate, isAdmin = true, user = null 
           style={{
             position: 'absolute',
             left: '84px',
-            bottom: '16px',
+            bottom: '22px',
             background: 'var(--paper)',
             color: 'var(--ink)',
             borderRadius: '16px',
