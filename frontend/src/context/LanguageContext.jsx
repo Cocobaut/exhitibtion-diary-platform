@@ -40,7 +40,8 @@ export const DICTIONARY = {
     // Main Lobby
     lobby_greeting_guest: 'Chào bạn, hôm nay bạn muốn ghé đâu?',
     lobby_greeting_user: 'Chào {name}, hôm nay bạn muốn ghé đâu?',
-    lobby_quote: 'Bạn hơn cả thành tích của mình.',
+    lobby_quote:
+      '“The Name of Feeling Museum là dự án bảo tàng kỹ thuật số dành cho cộng đồng, nơi người trẻ có thể chia sẻ và nhìn lại những trải nghiệm thất bại của bản thân. Thay vì tôn vinh thành công, bảo tàng biến những câu chuyện thất bại thành các tác phẩm nghệ thuật, khuyến khích sự chiêm nghiệm.\n”',
     lobby_room01_badge: 'PHÒNG 01',
     lobby_room01_title: 'Triển lãm Đổ vỡ',
     lobby_room01_count: 'Kể về một lần vấp ngã',
@@ -198,7 +199,8 @@ export const DICTIONARY = {
     // Main Lobby
     lobby_greeting_guest: 'Hello friend, where would you like to visit today?',
     lobby_greeting_user: 'Hello {name}, where would you like to visit today?',
-    lobby_quote: 'You are more than your achievements.',
+    lobby_quote:
+      '“The Name of Feeling Museum is a digital community museum project where young people can share and reflect on their personal experiences of failure. Instead of celebrating success, the museum transforms stories of failure into works of art, encouraging deep contemplation.\n”',
     lobby_room01_badge: 'ROOM 01',
     lobby_room01_title: 'Broken Pieces Exhibition',
     lobby_room01_count: 'Share a time you stumbled',

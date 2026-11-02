@@ -1446,7 +1446,7 @@ table.at td {
   position: absolute;
   left: clamp(24px, 2.2vw, 36px);
   right: clamp(24px, 2.2vw, 36px); /* 1.5rem to 2rem from right edge */
-  top: clamp(14px, 1.8vh, 22px);
+  top: clamp(18px, 2.4vh, 28px);
   height: 48px;
   display: flex;
   align-items: center;
@@ -1458,7 +1458,7 @@ table.at td {
 .lobby-logo-wrapper {
   position: absolute;
   left: 50%;
-  top: clamp(12px, 1.6vh, 18px);
+  top: clamp(32px, 4.2vh, 46px);
   transform: translateX(-50%);
   pointer-events: auto;
   z-index: 25;
@@ -1468,7 +1468,7 @@ table.at td {
 .lobby-mobile-quicknav {
   display: none;
   position: absolute;
-  top: 68px;
+  top: 86px;
   left: 50%;
   transform: translateX(-50%);
   gap: 8px;
@@ -1688,20 +1688,30 @@ table.at td {
 /* 4. Footer Quote */
 .lobby-footer-bar {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: clamp(6px, 1.2vh, 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: clamp(6px, 1.2vh, 14px);
+  width: 100%;
+  max-width: min(980px, 92vw);
+  padding: 0 16px;
+  box-sizing: border-box;
   text-align: center;
-  font-size: 14px;
-  color: var(--onw2);
   pointer-events: none;
   z-index: 15;
 }
 
+.lobby-footer-quote,
 .lobby-footer-bar i {
   font-family: var(--serif);
-  font-size: clamp(14px, 1.1vw, 18px);
+  font-style: italic;
+  font-size: clamp(11.5px, 0.92vw, 13px);
+  line-height: 1.55;
   color: var(--gold);
+  opacity: 0.92;
+  white-space: pre-line;
+  margin: 0;
+  display: block;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
 }
 
 /* Responsive adjustments */

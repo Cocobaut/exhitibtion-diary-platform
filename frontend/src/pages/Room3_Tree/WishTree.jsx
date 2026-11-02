@@ -1,4 +1,4 @@
-import React, { useId, useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import React, { useId, useMemo, useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { rng, f } from '../../utils/rng';
 import { CATS, CAT_KEYS } from '../../data/mockData';
 import { toFrontendCategory, CATEGORY_MAP } from '../../services/room3Service';
@@ -18,14 +18,17 @@ function stringToSeed(str) {
   return Math.abs(hash);
 }
 
-export function WishTree({
-  leaves = [],
-  filterCategory,
-  hoveredLeaf,
-  onHoverLeaf,
-  onOpenLeafModal,
-  onDrawRandomLeaf,
-}) {
+export const WishTree = forwardRef(function WishTree(
+  {
+    leaves = [],
+    filterCategory,
+    hoveredLeaf,
+    onHoverLeaf,
+    onOpenLeafModal,
+    onDrawRandomLeaf,
+  },
+  ref
+) {
   const { language } = useLanguage();
   const compId = useId().replace(/:/g, '');
   const id = `wt_${compId}_`;
@@ -34,13 +37,6 @@ export function WishTree({
   const [swayAngle, setSwayAngle] = useState(0);
   const [isShaking, setIsShaking] = useState(false);
   const [fallingParticles, setFallingParticles] = useState([]);
-
-  // Interactive Slider State (located beside tree trunk on the right)
-  const [sliderX, setSliderX] = useState(0);
-  const [isSliding, setIsSliding] = useState(false);
-  const sliderDragStart = useRef(0);
-  const hasTriggeredDraw = useRef(false);
-  const maxSlideDistance = 94; // Compact half-size track slide range
 
   const nextParticleId = useRef(1);
 
@@ -177,80 +173,23 @@ export function WishTree({
     setSwayAngle(0);
     spawnLeafParticles(8);
 
-    if (leaves && leaves.length > 0 && onDrawRandomLeaf) {
-      const randomItem = leaves[Math.floor(Math.random() * leaves.length)];
-      onDrawRandomLeaf(randomItem);
-    }
-
+    // Give 550ms for user to clearly enjoy the tree shake and falling leaf effect before modal opens
     setTimeout(() => {
+      if (leaves && leaves.length > 0 && onDrawRandomLeaf) {
+        const randomItem = leaves[Math.floor(Math.random() * leaves.length)];
+        onDrawRandomLeaf(randomItem);
+      }
       setIsShaking(false);
-    }, 500);
+    }, 550);
   }, [leaves, onDrawRandomLeaf, spawnLeafParticles]);
 
-  // Interactive Slider Handlers (Right side of trunk)
-  const handleSliderPointerDown = (clientX) => {
-    setIsSliding(true);
-    sliderDragStart.current = clientX - sliderX;
-    hasTriggeredDraw.current = false;
-  };
-
-  const handleSliderPointerMove = (clientX) => {
-    if (!isSliding) return;
-    const currentOffset = Math.max(0, Math.min(maxSlideDistance, clientX - sliderDragStart.current));
-    setSliderX(currentOffset);
-
-    const progress = currentOffset / maxSlideDistance;
-    const computedAngle = Math.max(-5, Math.min(5, progress * 4.2));
-    setSwayAngle(computedAngle);
-
-    if (progress > 0.35 && Math.random() < 0.2) {
-      spawnLeafParticles(1);
-    }
-
-    // Auto complete if dragged past 85%
-    if (progress >= 0.85 && !hasTriggeredDraw.current) {
-      hasTriggeredDraw.current = true;
-      setIsSliding(false);
-      setSliderX(maxSlideDistance);
-
-      triggerDrawSuccess();
-
-      setTimeout(() => {
-        setSliderX(0);
-        setSwayAngle(0);
-      }, 600);
-    }
-  };
-
-  const handleSliderPointerUp = () => {
-    if (!isSliding) return;
-    setIsSliding(false);
-
-    if (sliderX >= maxSlideDistance * 0.72 && !hasTriggeredDraw.current) {
-      hasTriggeredDraw.current = true;
-      triggerDrawSuccess();
-    }
-
-    // Spring back smoothly
-    setSliderX(0);
-    setSwayAngle(0);
-  };
-
-  // Direct click on slider track to auto-slide & draw
-  const handleSliderTrackClick = () => {
-    if (isSliding || isShaking) return;
-    setSliderX(maxSlideDistance);
-    setSwayAngle(3.5);
-    spawnLeafParticles(3);
-
-    setTimeout(() => {
-      triggerDrawSuccess();
-      setTimeout(() => {
-        setSliderX(0);
-        setSwayAngle(0);
-      }, 500);
-    }, 250);
-  };
+  useImperativeHandle(
+    ref,
+    () => ({
+      triggerDraw: triggerDrawSuccess,
+    }),
+    [triggerDrawSuccess]
+  );
 
   // Exactly 1 leaf per record from DB (100% Data-Driven)
   const renderedLeaves = useMemo(() => {
@@ -412,98 +351,19 @@ export function WishTree({
       onMouseLeave={() => {
         // Automatically hide hover preview card when cursor leaves tree area
         onHoverLeaf && onHoverLeaf(null);
-        handleSliderPointerUp();
       }}
-      onMouseMove={(e) => handleSliderPointerMove(e.clientX)}
-      onMouseUp={handleSliderPointerUp}
-      onTouchMove={(e) => {
-        if (e.touches[0]) handleSliderPointerMove(e.touches[0].clientX);
-      }}
-      onTouchEnd={handleSliderPointerUp}
     >
-      {/* Interactive Compact Slider on the Right of Tree Trunk (Half-size) */}
-      <div
-        className="tree-draw-slider"
-        style={{
-          position: 'absolute',
-          right: 'clamp(16px, 4.5vw, 80px)',
-          bottom: '22px',
-          zIndex: 25,
-          width: '130px',
-          height: '38px',
-          borderRadius: '999px',
-          background: 'rgba(32, 20, 14, 0.88)',
-          border: '1.2px solid rgba(212, 176, 106, 0.5)',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(12px)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '3px',
-          cursor: 'pointer',
-          userSelect: 'none',
-        }}
-        onClick={handleSliderTrackClick}
-        title={language === 'en' ? 'Slide or click to draw a wish' : 'Trượt hoặc nhấn để rút thông điệp'}
-      >
-        {/* Shimmering Track Guide Text */}
-        <span
-          style={{
-            position: 'absolute',
-            left: '36px',
-            right: '8px',
-            textAlign: 'center',
-            fontSize: '10.5px',
-            fontWeight: 600,
-            letterSpacing: '0.02em',
-            color: '#EAD7BA',
-            opacity: isSliding ? Math.max(0.15, 1 - sliderX / 60) : 0.85,
-            pointerEvents: 'none',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {isSliding
-            ? (language === 'en' ? 'Release!' : 'Thả ra!')
-            : (language === 'en' ? 'Draw wish →' : 'Rút lá →')}
-        </span>
-
-        {/* Golden Slider Knob */}
-        <div
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            handleSliderPointerDown(e.clientX);
-          }}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            if (e.touches[0]) handleSliderPointerDown(e.touches[0].clientX);
-          }}
-          style={{
-            width: '30px',
-            height: '30px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #ECC880 0%, #A67830 100%)',
-            border: '1.5px solid #FFF5DC',
-            boxShadow: isSliding
-              ? '0 0 14px rgba(236,200,128,0.9), 0 4px 10px rgba(0,0,0,0.5)'
-              : '0 2px 8px rgba(0,0,0,0.4)',
-            transform: `translateX(${sliderX}px)`,
-            transition: isSliding ? 'none' : 'transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)',
-            display: 'grid',
-            placeItems: 'center',
-            fontSize: '13px',
-            cursor: isSliding ? 'grabbing' : 'grab',
-            zIndex: 2,
-          }}
-          title={language === 'en' ? 'Drag to draw wish' : 'Kéo để rút thông điệp'}
-        >
-          🍃
-        </div>
-      </div>
-
       {/* Main Tree SVG Element: fits snugly and shows full trunk & base */}
       <svg
         className={isShaking ? 'tree-shaking' : ''}
+        onClick={(e) => {
+          // Touching or clicking on trunk/branches shakes tree and drops leaves
+          if (!isShaking) {
+            setIsShaking(true);
+            spawnLeafParticles(5);
+            setTimeout(() => setIsShaking(false), 500);
+          }
+        }}
         viewBox="0 0 1200 620"
         preserveAspectRatio="xMidYMax meet"
         style={{
@@ -517,7 +377,7 @@ export function WishTree({
             ? undefined
             : `rotate(${Math.max(-5, Math.min(5, swayAngle))}deg)`,
           transformOrigin: '50% 95%',
-          transition: isSliding ? 'none' : 'transform 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.28)',
+          transition: 'transform 0.5s cubic-bezier(0.17, 0.89, 0.32, 1.28)',
         }}
         aria-label="Cây Thông Điệp Tri Ân & Động Viên"
       >
@@ -589,6 +449,6 @@ export function WishTree({
       </svg>
     </div>
   );
-}
+});
 
 export default WishTree;

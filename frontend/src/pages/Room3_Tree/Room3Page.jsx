@@ -147,6 +147,7 @@ export function Room3Page({
   const [showHangModal, setShowHangModal] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  const wishTreeRef = useRef(null);
   const searchTimerRef = useRef(null);
 
   // Debounce search input
@@ -291,6 +292,25 @@ export function Room3Page({
     );
   };
 
+  const handleDrawWishClick = () => {
+    if (wishTreeRef.current?.triggerDraw) {
+      wishTreeRef.current.triggerDraw();
+    } else if (leaves && leaves.length > 0) {
+      const lucky = leaves[Math.floor(Math.random() * leaves.length)];
+      handleDrawRandomLeaf(lucky);
+    } else {
+      handleDrawRandomLeaf({
+        id: 'random',
+        title: language === 'en' ? 'A Whisper of Hope' : 'Lời Thì Thầm Của Hy Vọng',
+        content:
+          language === 'en'
+            ? 'Even the quietest leaf on this ancient tree carries strength. You are never alone in what you feel.'
+            : 'Mỗi chiếc lá trên cây cổ thụ này đều mang theo sự kiên cường. Bạn không hề đơn độc với những cảm xúc của mình.',
+        author_name: language === 'en' ? 'A quiet friend' : 'Một người bạn ẩn danh',
+      });
+    }
+  };
+
   const hoveredCatConfig = hoveredLeaf
     ? CATEGORY_MAP[toFrontendCategory(hoveredLeaf.tag_category)] || CATEGORY_MAP.CL
     : CATEGORY_MAP.CL;
@@ -369,16 +389,52 @@ export function Room3Page({
             )}
           </div>
 
-          <button
-            type="button"
-            className="btn main shrink-0"
-            style={{ whiteSpace: 'nowrap' }}
-            onClick={() => {
-              guardAction(() => setShowHangModal(true), 'treo thông điệp lên Cây');
-            }}
-          >
-            {t('r3_btn_hang')}
-          </button>
+          <div className="row" style={{ gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+            {/* Chức năng rút lá (draw wish) với icon viền rỗng nằm ngang với hang message */}
+            <button
+              type="button"
+              className="btn glass shrink-0"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '7px',
+                whiteSpace: 'nowrap',
+                color: 'var(--onw)',
+                borderColor: 'rgba(212, 176, 106, 0.45)',
+                cursor: 'pointer',
+              }}
+              onClick={handleDrawWishClick}
+              title={language === 'en' ? 'Draw a wish from the tree' : 'Rút một thông điệp từ Cây'}
+            >
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ display: 'block', flexShrink: 0 }}
+                aria-hidden="true"
+              >
+                <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
+                <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+              </svg>
+              <span>{language === 'en' ? 'Draw wish' : 'Rút lá'}</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn main shrink-0"
+              style={{ whiteSpace: 'nowrap' }}
+              onClick={() => {
+                guardAction(() => setShowHangModal(true), 'treo thông điệp lên Cây');
+              }}
+            >
+              {t('r3_btn_hang')}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -423,6 +479,7 @@ export function Room3Page({
         }}
       >
         <WishTree
+          ref={wishTreeRef}
           leaves={leaves}
           filterCategory={filterCategory}
           hoveredLeaf={hoveredLeaf}

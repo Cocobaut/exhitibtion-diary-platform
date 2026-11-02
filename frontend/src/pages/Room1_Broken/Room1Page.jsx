@@ -5,6 +5,7 @@ import { ArtworkDetailModal } from './ArtworkDetailModal';
 import { SubmitArtworkModal } from './SubmitArtworkModal';
 import { ConfirmSubmitModal } from './ConfirmSubmitModal';
 import { ArtworkPreparedModal } from './ArtworkPreparedModal';
+import { KintsugiFlakes } from './KintsugiFlakes';
 import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -288,6 +289,9 @@ export function Room1Page({
 
   return (
     <div className="stage">
+      {/* Ambient Floating Kintsugi Gold Flakes */}
+      <KintsugiFlakes />
+
       {/* Top Header */}
       <TopNav
         roomNo="01"

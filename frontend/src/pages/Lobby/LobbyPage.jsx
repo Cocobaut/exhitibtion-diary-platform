@@ -7,6 +7,7 @@ import {
   MailboxGraphic,
   BenchGraphic,
 } from './LobbyScene';
+import { LobbyDustMotes } from './LobbyDustMotes';
 import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -81,6 +82,9 @@ export function LobbyPage({
     <div className="lobby-stage">
       {/* 1. Ambient Museum Hall Backdrop (Wall, Horizon boundary, Dark Floor) */}
       <LobbyBackdrop />
+
+      {/* Museum Light Dust Motes */}
+      <LobbyDustMotes />
 
       {/* 2. Top Header Bar spanning full width, with utility buttons pinned right */}
       <header className="lobby-header-bar">
@@ -240,7 +244,7 @@ export function LobbyPage({
 
       {/* 4. Footer Inspiration Quote in dark floor area */}
       <footer className="lobby-footer-bar">
-        <i>{t('lobby_quote')}</i>
+        <p className="lobby-footer-quote">{t('lobby_quote')}</p>
       </footer>
     </div>
   );
