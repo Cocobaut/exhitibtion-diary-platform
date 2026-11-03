@@ -1101,7 +1101,7 @@ export function OwnerDashboardPage({ onNavigate }) {
                         </span>
                       </td>
                       <td className="muted" style={{ fontSize: '12.5px' }}>
-                        {log.room_code ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id}` : (language === 'en' ? 'System' : 'Hệ thống')}
+                        {log.room_code ? (log.room_id === 1 ? (language === 'en' ? 'Journey Exhibition (Room 1)' : 'Triển lãm Hành trình (Phòng 1)') : `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id}`) : (language === 'en' ? 'System' : 'Hệ thống')}
                       </td>
                       <td style={{ fontWeight: 600 }}>{log.artwork_title || `${language === 'en' ? 'Target' : 'Đối tượng'} #${log.artwork_id || ''}`}</td>
                       <td className="muted" style={{ fontSize: '13px' }}>{log.details || log.note || '—'}</td>
@@ -1238,8 +1238,8 @@ export function OwnerDashboardPage({ onNavigate }) {
                 set: setImgEnabled,
                 title: language === 'en' ? 'Draw illustrations' : 'Vẽ tranh minh họa',
                 desc: language === 'en'
-                  ? 'Draws a picture for Room 1 posts based on the story.'
-                  : 'Vẽ tranh cho bài ở Phòng 1 dựa trên nội dung câu chuyện.',
+                  ? 'Draws a picture for Journey Exhibition (Room 1) posts based on the story.'
+                  : 'Vẽ tranh cho bài ở Triển lãm Hành trình (Phòng 1) dựa trên nội dung câu chuyện.',
               },
             ].map((item, i) => (
               <div

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '../../components/common/Icons';
-import { MOODS } from '../../data/mockData';
 import { diaryService } from '../../services/diaryService';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -17,10 +16,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
 
   const [date, setDate] = useState(getTodayISO);
   const [title, setTitle] = useState('');
-  const [mood, setMood] = useState('Bình yên');
-  const [selectedFont, setSelectedFont] = useState('Lora'); // 'Lora' | 'Hand' | 'Sans'
   const [content, setContent] = useState('');
-  const [isPrivate, setIsPrivate] = useState(true);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
@@ -32,20 +28,6 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
 
   const fileInputRef = useRef(null);
 
-  const MOOD_TRANSLATIONS = {
-    'Bình yên': { vi: 'Bình yên', en: 'Peaceful' },
-    'Trầm lắng': { vi: 'Trầm lắng', en: 'Reflective' },
-    'Biết ơn': { vi: 'Biết ơn', en: 'Grateful' },
-    'Hy vọng': { vi: 'Hy vọng', en: 'Hopeful' },
-    'Mệt mỏi': { vi: 'Mệt mỏi', en: 'Exhausted' },
-  };
-
-  const fontOptions = [
-    { id: 'Lora', labelVi: 'Lora', labelEn: 'Lora', family: 'var(--book)' },
-    { id: 'Hand', labelVi: 'Viết tay', labelEn: 'Handwritten', family: 'var(--hand)' },
-    { id: 'Sans', labelVi: 'Gọn gàng', labelEn: 'Clean', family: 'var(--sans)' },
-  ];
-
   useEffect(() => {
     if (isOpen) {
       setErrorMessage('');
@@ -54,17 +36,13 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
       if (editData) {
         setTitle(editData.title || '');
         setDate(editData.entry_date || getTodayISO());
-        setMood(editData.mood || 'Bình yên');
         setContent(editData.content || editData.snippet || '');
-        setIsPrivate(editData.is_public === false || editData.visibility === 'PRIVATE');
         const existingMedia = editData.media_urls || (editData.image_url ? [editData.image_url] : []);
         setPreviewUrls(existingMedia);
       } else {
         setDate(getTodayISO());
         setTitle('');
-        setMood('Bình yên');
         setContent('');
-        setIsPrivate(true);
         setSelectedFiles([]);
         setPreviewUrls([]);
       }
@@ -126,25 +104,26 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
 
       let result;
       if (editData?.id) {
-        // Edit mode
+        // Edit mode: strictly private personal diary, mood is null
         result = await diaryService.updateDiary(editData.id, {
           title: title.trim() || undefined,
           entry_date: date,
-          mood,
+          mood: null,
           content: cleanContent,
           media_urls: finalMediaUrls,
-          is_public: !isPrivate,
+          is_public: false,
+          visibility: 'PRIVATE',
         });
       } else {
-        // Create mode
+        // Create mode: strictly private personal diary, mood is null
         result = await diaryService.createDiary({
           title: title.trim() || undefined,
           entry_date: date,
-          mood,
+          mood: null,
           content: cleanContent,
           media_urls: finalMediaUrls,
-          visibility: isPrivate ? 'PRIVATE' : 'COMMUNITY',
-          is_public: !isPrivate,
+          visibility: 'PRIVATE',
+          is_public: false,
         });
       }
 
@@ -168,55 +147,85 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
 
   return (
     <>
-      <div className="scrim" onClick={onClose} />
+      <div
+        className="scrim"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 90,
+        }}
+        onClick={onClose}
+      />
       <div
         className="panel"
         style={{
-          width: '980px',
+          position: 'fixed',
+          zIndex: 100,
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '940px',
+          maxWidth: '95vw',
           maxHeight: '92vh',
-          overflowY: 'auto',
           display: 'grid',
-          gridTemplateColumns: '1fr 310px',
-          gap: '30px',
-          boxShadow: '0 25px 70px rgba(0,0,0,0.45)',
+          gridTemplateColumns: '1.45fr 1fr',
+          gap: '28px',
+          padding: '30px 32px',
+          background: 'var(--paper)',
+          color: 'var(--ink)',
+          borderRadius: '22px',
+          boxShadow: '0 30px 80px rgba(0, 0, 0, 0.45)',
+          overflowY: 'auto',
+          textAlign: 'left',
         }}
       >
-        <span className="x" onClick={onClose} role="button" tabIndex={0}>
-          <Icon name="x" size={22} />
+        <span
+          className="x"
+          onClick={onClose}
+          role="button"
+          tabIndex={0}
+          style={{
+            position: 'absolute',
+            right: '22px',
+            top: '20px',
+            fontSize: '22px',
+            cursor: 'pointer',
+            color: 'var(--ink2)',
+            zIndex: 10,
+          }}
+        >
+          ✕
         </span>
 
-        {/* Left Side: Editor */}
+        {/* Left Side: Writing Inputs */}
         <div>
-          <h2>
-            {editData
-              ? (language === 'en' ? 'Edit Diary Entry' : 'Chỉnh sửa nhật ký')
-              : (language === 'en' ? 'Write New Entry' : 'Viết nhật ký mới')}
-          </h2>
-          <div className="sub">
-            {language === 'en'
-              ? 'No one can read this page unless you choose to share.'
-              : 'Không ai đọc được trang này nếu bạn không muốn.'}
+          <div style={{ marginBottom: '14px' }}>
+            <h2 className="serif" style={{ fontSize: '26px', color: 'var(--ink)', margin: 0 }}>
+              {editData
+                ? (language === 'en' ? 'Edit Diary Entry' : 'Chỉnh sửa nhật ký')
+                : (language === 'en' ? 'New Diary Entry' : 'Viết nhật ký mới')}
+            </h2>
           </div>
 
           {errorMessage && (
             <div
               style={{
-                marginTop: '12px',
-                padding: '10px 14px',
+                color: 'var(--acc)',
+                background: 'rgba(180, 50, 40, 0.08)',
+                padding: '8px 14px',
                 borderRadius: '8px',
-                background: 'rgba(196, 43, 28, 0.1)',
-                border: '1px solid #C42B1C',
-                color: '#8A180E',
-                fontSize: '13.5px',
+                fontSize: '13px',
+                marginBottom: '14px',
+                border: '1px solid rgba(180, 50, 40, 0.2)',
               }}
             >
-              ⚠️ {errorMessage}
+              {errorMessage}
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '14px', marginTop: '10px' }}>
-            <div>
-              <div className="fieldl">{language === 'en' ? 'Entry Date' : 'Ngày ghi'}</div>
+          <div className="row" style={{ gap: '14px', marginBottom: '12px' }}>
+            <div style={{ flex: '0 0 160px' }}>
+              <div className="fieldl">{language === 'en' ? 'Date' : 'Ngày'}</div>
               <input
                 type="date"
                 className="inp"
@@ -224,7 +233,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
-            <div>
+            <div style={{ flex: 1 }}>
               <div className="fieldl">{language === 'en' ? 'Title' : 'Tiêu đề'}</div>
               <input
                 className="inp"
@@ -236,37 +245,7 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
             </div>
           </div>
 
-          <div className="fieldl">{language === 'en' ? 'Mood' : 'Tâm trạng'}</div>
-          <div className="row" style={{ gap: '6px', flexWrap: 'wrap' }}>
-            {Object.keys(MOODS).map((m) => (
-              <span
-                key={m}
-                className={`ichip ${mood === m ? 'on' : ''}`}
-                onClick={() => setMood(m)}
-                style={{ cursor: 'pointer' }}
-              >
-                <i className="dot" style={{ background: MOODS[m] }} />
-                {MOOD_TRANSLATIONS[m]?.[language] || m}
-              </span>
-            ))}
-          </div>
-
           <div className="fieldl">{language === 'en' ? 'Content' : 'Nội dung'}</div>
-          <div className="row" style={{ gap: '6px', marginBottom: '6px' }}>
-            {fontOptions.map((opt) => (
-              <span
-                key={opt.id}
-                className={`ichip ${selectedFont === opt.id ? 'on' : ''}`}
-                style={{ fontFamily: opt.family, cursor: 'pointer' }}
-                onClick={() => setSelectedFont(opt.id)}
-              >
-                {language === 'en' ? opt.labelEn : opt.labelVi}
-              </span>
-            ))}
-            <span className="muted" style={{ marginLeft: '6px' }}>
-              <Icon name="font" size={16} />
-            </span>
-          </div>
 
           <textarea
             className="inp area focus"
@@ -276,21 +255,16 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
                 : 'Hôm nay của bạn thế nào?'
             }
             style={{
-              minHeight: '180px',
-              fontFamily:
-                selectedFont === 'Hand'
-                  ? 'var(--hand)'
-                  : selectedFont === 'Sans'
-                  ? 'var(--sans)'
-                  : 'var(--book)',
-              fontSize: selectedFont === 'Hand' ? '20px' : '16px',
+              minHeight: '230px',
+              fontFamily: 'var(--book)',
+              fontSize: '16.5px',
               lineHeight: 1.8,
             }}
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
 
-          <div className="fieldl">
+          <div className="fieldl" style={{ marginTop: '14px' }}>
             {language === 'en' ? 'Photos' : 'Ảnh'} ({previewUrls.length}/5)
           </div>
           <div className="row" style={{ gap: '10px', flexWrap: 'wrap' }}>
@@ -365,46 +339,30 @@ export function WriteDiaryModal({ isOpen, onClose, onSave, editData = null }) {
         </div>
 
         {/* Right Side: Privacy & Save */}
-        <div style={{ paddingTop: '56px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ paddingTop: '50px', display: 'flex', flexDirection: 'column' }}>
           <div className="fieldl" style={{ marginTop: 0 }}>
-            {language === 'en' ? 'Who can read?' : 'Ai được đọc?'}
+            {language === 'en' ? 'Privacy' : 'Quyền riêng tư'}
           </div>
 
           <div
-            className={`opt ${isPrivate ? 'on' : ''}`}
-            style={{ marginBottom: '10px', cursor: 'pointer' }}
-            onClick={() => setIsPrivate(true)}
+            className="opt on"
+            style={{ marginBottom: '14px', cursor: 'default' }}
           >
             <b>
-              <Icon name="lock" size={17} /> {language === 'en' ? 'Only Me' : 'Chỉ mình tôi'}
+              <Icon name="lock" size={17} /> {language === 'en' ? 'Personal Only' : 'Chỉ mình tôi'}
             </b>
-            <div className="muted" style={{ fontSize: '12px' }}>
+            <div className="muted" style={{ fontSize: '12.5px', marginTop: '4px', lineHeight: 1.5 }}>
               {language === 'en'
-                ? 'Saved instantly, completely private.'
-                : 'Không ai khác đọc được.'}
+                ? 'Saved privately to your personal space. No one else can read this.'
+                : 'Không gian riêng tư tuyệt đối, chỉ một mình bạn có thể đọc.'}
             </div>
           </div>
 
-          <div
-            className={`opt ${!isPrivate ? 'on' : ''}`}
-            style={{ cursor: 'pointer' }}
-            onClick={() => setIsPrivate(false)}
-          >
-            <b>
-              <Icon name="globe" size={17} /> {language === 'en' ? 'Share with community' : 'Chia sẻ với mọi người'}
-            </b>
-            <div className="muted" style={{ fontSize: '12px' }}>
-              {language === 'en'
-                ? 'Enters moderation queue. If not approved, it stays safely in your private diary.'
-                : 'Hiện lên sau khi được duyệt. Trang vẫn luôn nằm trong nhật ký của bạn.'}
-            </div>
-          </div>
-
-          <div style={{ marginTop: '16px' }}>
+          <div style={{ marginTop: '12px' }}>
             <div className="fieldl" style={{ marginTop: 0 }}>
-              <span>{language === 'en' ? 'Shown as' : 'Tên hiển thị'}</span>
+              <span>{language === 'en' ? 'Author Pen Name' : 'Bút danh tác giả'}</span>
               <span style={{ fontSize: '11.5px', color: 'var(--ink2)' }}>
-                {language === 'en' ? '(from your profile)' : '(lấy từ hồ sơ)'}
+                {language === 'en' ? '(from profile)' : '(từ hồ sơ)'}
               </span>
             </div>
             <input

@@ -106,8 +106,8 @@ export function AdminStudio({ triggerToast, onPublished }) {
     if (roomId === 1 && !mediaUrl) {
       setErrorMsg(
         language === 'en'
-          ? 'Artwork illustration is required in Room 1.'
-          : 'Tranh minh họa là bắt buộc ở Phòng 1.'
+          ? 'Artwork illustration is required in Journey Exhibition (Room 1).'
+          : 'Tranh minh họa là bắt buộc ở Triển lãm Hành trình (Phòng 1).'
       );
       return;
     }

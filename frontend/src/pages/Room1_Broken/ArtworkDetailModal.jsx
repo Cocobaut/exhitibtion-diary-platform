@@ -246,7 +246,7 @@ export function ArtworkDetailModal({
               color: 'var(--acc)',
             }}
           >
-            {language === 'en' ? 'ROOM 01 · BROKEN EXHIBITION' : 'PHÒNG 01 · TRIỂN LÃM ĐỔ VỠ'}
+            {language === 'en' ? 'ROOM 01 · JOURNEY EXHIBITION' : 'PHÒNG 01 · TRIỂN LÃM HÀNH TRÌNH'}
           </div>
 
           <h2 style={{ fontSize: '34px', marginTop: '6px', color: 'var(--ink)' }}>

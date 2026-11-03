@@ -80,7 +80,7 @@ export function DoorArch({ roomNum }) {
   const id = `da_${compId}_`;
   const r = rng(roomNum * 47);
 
-  // Door 1 (Triển lãm Đổ vỡ)
+  // Door 1 (Triển lãm Hành trình)
   const renderRoom1Inner = () => (
     <>
       <rect x="15" y="60" width="210" height="390" fill={`url(#${id}d1)`} />

@@ -624,7 +624,7 @@ export function AdminPending({
 
               {roomId === 1 && (
                 <div style={{ marginBottom: '14px' }}>
-                  <div className="fieldl">{language === 'en' ? 'Artistic Quote (Phòng 1)' : 'Trích dẫn nghệ thuật (Phòng 1)'}</div>
+                  <div className="fieldl">{language === 'en' ? 'Artistic Quote (Room 1 · Journey)' : 'Trích dẫn nghệ thuật (Triển lãm Hành trình)'}</div>
                   <input
                     className="inp"
                     value={quote}
@@ -640,7 +640,7 @@ export function AdminPending({
               <div className="fieldl">
                 {language === 'en' ? 'Illustration' : 'Tranh minh họa'}{' '}
                 {roomId === 1 && (
-                  <span style={{ color: 'var(--acc)' }}>{language === 'en' ? 'Required in Room 1' : 'Bắt buộc ở Phòng 1'}</span>
+                  <span style={{ color: 'var(--acc)' }}>{language === 'en' ? 'Required in Room 1 (Journey)' : 'Bắt buộc ở Triển lãm Hành trình'}</span>
                 )}
               </div>
 

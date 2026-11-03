@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Icon } from '../../components/common/Icons';
 import { DiaryPersonal } from './DiaryPersonal';
-import { DiaryCommunity } from './DiaryCommunity';
 import { WriteDiaryModal } from './WriteDiaryModal';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -12,7 +11,6 @@ export function DiaryPage({
   onClearInitialDiary,
 }) {
   const { language, setLanguage, t } = useLanguage();
-  const [activeTab, setActiveTab] = useState(0); // 0: Bản thân, 1: Cộng đồng
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [showWriteModal, setShowWriteModal] = useState(false);
@@ -23,17 +21,8 @@ export function DiaryPage({
   const searchTimerRef = useRef(null);
 
   useEffect(() => {
-    if (!initialDiaryTarget) return;
-    if (initialDiaryTarget.tab === 'community') {
-      setActiveTab(1);
-      if (!initialDiaryTarget.id && onClearInitialDiary) {
-        onClearInitialDiary();
-      }
-    } else {
-      setActiveTab(0);
-      if (onClearInitialDiary) {
-        onClearInitialDiary();
-      }
+    if (initialDiaryTarget && onClearInitialDiary) {
+      onClearInitialDiary();
     }
   }, [initialDiaryTarget, onClearInitialDiary]);
 
@@ -57,12 +46,8 @@ export function DiaryPage({
     setShowWriteModal(true);
   };
 
-  const handleSaveDiary = (savedData) => {
-    triggerToast(
-      savedData?.is_public
-        ? (language === 'en' ? '✦ Saved! It will appear in Community once approved.' : '✦ Đã lưu! Trang sẽ hiện ở Cộng đồng sau khi được duyệt.')
-        : (language === 'en' ? '✦ Saved.' : '✦ Đã lưu.')
-    );
+  const handleSaveDiary = () => {
+    triggerToast(language === 'en' ? '✦ Saved to your diary.' : '✦ Đã lưu vào nhật ký của bạn.');
     setRefreshTrigger((prev) => prev + 1);
   };
 
@@ -72,47 +57,15 @@ export function DiaryPage({
       <div className="top">
         <div className="room-tag">
           <small>{language === 'en' ? 'Private space' : 'Không gian riêng'}</small>
-          <b>{language === 'en' ? 'Diary' : 'Nhật ký'}</b>
+          <b>{language === 'en' ? 'Personal Diary' : 'Nhật ký cá nhân'}</b>
         </div>
 
         <div className="row" style={{ gap: '12px', flex: 1, justifyContent: 'center' }}>
-          <div
-            className="seg glass"
-            style={{ background: 'var(--glass)', borderColor: 'var(--glass-line)' }}
-          >
-            <span
-              className={activeTab === 0 ? 'on' : ''}
-              onClick={() => setActiveTab(0)}
-              style={{
-                background: activeTab === 0 ? 'var(--paper)' : 'transparent',
-                color: activeTab === 0 ? 'var(--ink)' : 'var(--onw2)',
-                cursor: 'pointer',
-              }}
-            >
-              <Icon name="lock" size={14} /> {language === 'en' ? 'Personal' : 'Bản thân'}
-            </span>
-            <span
-              className={activeTab === 1 ? 'on' : ''}
-              onClick={() => setActiveTab(1)}
-              style={{
-                background: activeTab === 1 ? 'var(--paper)' : 'transparent',
-                color: activeTab === 1 ? 'var(--ink)' : 'var(--onw2)',
-                cursor: 'pointer',
-              }}
-            >
-              <Icon name="globe" size={14} /> {language === 'en' ? 'Community' : 'Cộng đồng'}
-            </span>
-          </div>
-
-          <div className="search glass" style={{ maxWidth: '320px' }}>
+          <div className="search glass" style={{ maxWidth: '380px', width: '100%' }}>
             <Icon name="search" size={18} />
             <input
               type="text"
-              placeholder={
-                language === 'en'
-                  ? (activeTab === 0 ? 'Search in your diary…' : 'Search in community diary…')
-                  : (activeTab === 0 ? 'Tìm trong nhật ký của bạn…' : 'Tìm trong nhật ký cộng đồng…')
-              }
+              placeholder={language === 'en' ? 'Search in your diary…' : 'Tìm trong nhật ký của bạn…'}
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
@@ -189,20 +142,12 @@ export function DiaryPage({
         </div>
       )}
 
-      {/* Main Tab Content */}
-      {activeTab === 0 ? (
-        <DiaryPersonal
-          onOpenWriteModal={handleOpenWrite}
-          searchQuery={debouncedSearch}
-          refreshTrigger={refreshTrigger}
-        />
-      ) : (
-        <DiaryCommunity
-          searchQuery={debouncedSearch}
-          initialDiaryId={initialDiaryTarget?.tab === 'community' ? initialDiaryTarget.id : null}
-          onClearInitialDiary={onClearInitialDiary}
-        />
-      )}
+      {/* Main Content: 100% Personal Diary */}
+      <DiaryPersonal
+        onOpenWriteModal={handleOpenWrite}
+        searchQuery={debouncedSearch}
+        refreshTrigger={refreshTrigger}
+      />
 
       {/* Write / Edit Diary Modal */}
       <WriteDiaryModal

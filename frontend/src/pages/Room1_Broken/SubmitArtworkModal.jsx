@@ -89,8 +89,8 @@ export function SubmitArtworkModal({ isOpen, onClose, onSubmit }) {
           </h2>
           <div className="sub" style={{ fontSize: '14.5px', color: 'var(--ink2)', marginBottom: '18px' }}>
             {language === 'en'
-              ? 'Recount a setback or failure. Our team will review, illustrate artwork, and hang it on the gallery wall for you.'
-              : 'Kể về một lần vấp ngã. Chúng mình sẽ vẽ tranh minh họa và treo lên tường giúp bạn.'}
+              ? 'Tell us about your life lately. We will illustrate and hang your artwork on the gallery wall for you.'
+              : 'Kể về cuộc sống dạo này của bạn. Chúng mình sẽ vẽ tranh minh họa và treo lên tường giúp bạn.'}
           </div>
 
           <div>

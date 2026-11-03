@@ -43,8 +43,8 @@ export const DICTIONARY = {
     lobby_quote:
       '“The Name of Feeling Museum là dự án bảo tàng kỹ thuật số dành cho cộng đồng, nơi người trẻ có thể chia sẻ và nhìn lại những trải nghiệm thất bại của bản thân. Thay vì tôn vinh thành công, bảo tàng biến những câu chuyện thất bại thành các tác phẩm nghệ thuật, khuyến khích sự chiêm nghiệm.\n”',
     lobby_room01_badge: 'PHÒNG 01',
-    lobby_room01_title: 'Triển lãm Đổ vỡ',
-    lobby_room01_count: 'Kể về một lần vấp ngã',
+    lobby_room01_title: 'Triển lãm Hành trình',
+    lobby_room01_count: 'Kể về cuộc sống dạo này của bạn',
     lobby_room02_badge: 'PHÒNG 02',
     lobby_room02_title: 'Bầu trời Lồng đèn',
     lobby_room02_count: 'Viết thư gửi tương lai',
@@ -61,7 +61,7 @@ export const DICTIONARY = {
 
     // Room 1
     r1_tag: 'Phòng 01',
-    r1_name: 'Triển lãm Đổ vỡ',
+    r1_name: 'Triển lãm Hành trình',
     r1_search_placeholder: 'Tìm theo tiêu đề, câu chuyện, bút danh…',
     r1_filter_all: 'Tất cả tác phẩm',
     r1_filter_mine: 'Tác phẩm của tôi',
@@ -80,7 +80,7 @@ export const DICTIONARY = {
     rx_be_first: 'Hãy là người đầu tiên gửi lời an ủi.',
     rx_reacted: 'Đã thả cảm xúc',
     rx_send_reaction: 'Gửi cảm xúc',
-    r1_story_title: 'Câu chuyện phía sau sự đổ vỡ',
+    r1_story_title: 'Câu chuyện hành trình',
     r1_express_sympathy: 'Gửi cảm xúc đến tác giả',
     r1_empty: 'Chưa có tác phẩm nào phù hợp với bộ lọc.',
     r1_loading_more: '✦ Đang tải thêm...',
@@ -133,7 +133,7 @@ export const DICTIONARY = {
     // Admin
     admin_title: 'Không gian Quản trị',
     admin_online_team: 'Ban Quản trị online',
-    admin_tab_r1: 'Phòng 1',
+    admin_tab_r1: 'Triển lãm Hành trình',
     admin_tab_r2: 'Phòng 2',
     admin_tab_r3: 'Phòng 3',
     admin_tab_diary: 'Nhật ký',
@@ -202,8 +202,8 @@ export const DICTIONARY = {
     lobby_quote:
       '“The Name of Feeling Museum is a digital community museum project where young people can share and reflect on their personal experiences of failure. Instead of celebrating success, the museum transforms stories of failure into works of art, encouraging deep contemplation.\n”',
     lobby_room01_badge: 'ROOM 01',
-    lobby_room01_title: 'Broken Pieces Exhibition',
-    lobby_room01_count: 'Share a time you stumbled',
+    lobby_room01_title: 'Journey Exhibition',
+    lobby_room01_count: 'Tell us about your life lately',
     lobby_room02_badge: 'ROOM 02',
     lobby_room02_title: 'Lantern Sky',
     lobby_room02_count: 'Write to your future self',
@@ -220,7 +220,7 @@ export const DICTIONARY = {
 
     // Room 1
     r1_tag: 'Room 01',
-    r1_name: 'Broken Pieces Exhibition',
+    r1_name: 'Journey Exhibition',
     r1_search_placeholder: 'Search by title, story, pen name…',
     r1_filter_all: 'All artworks',
     r1_filter_mine: 'My artworks',
@@ -239,7 +239,7 @@ export const DICTIONARY = {
     rx_be_first: 'Be the first to share comforting words with the author.',
     rx_reacted: 'Reacted',
     rx_send_reaction: 'Express Empathy',
-    r1_story_title: 'The story behind the broken pieces',
+    r1_story_title: 'The journey story',
     r1_express_sympathy: 'Express sympathy to the author',
     r1_empty: 'No artworks found matching this filter.',
     r1_loading_more: '✦ Lighting up more artworks...',
@@ -292,7 +292,7 @@ export const DICTIONARY = {
     // Admin
     admin_title: 'Admin Moderation Space',
     admin_online_team: 'Admin Team online',
-    admin_tab_r1: 'Room 1',
+    admin_tab_r1: 'Journey Exhibition',
     admin_tab_r2: 'Room 2',
     admin_tab_r3: 'Room 3',
     admin_tab_diary: 'Diaries',

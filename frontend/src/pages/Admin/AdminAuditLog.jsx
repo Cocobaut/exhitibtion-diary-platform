@@ -229,7 +229,7 @@ export function AdminAuditLog({ triggerToast }) {
             }}
           >
             <option value="ALL">{language === 'en' ? 'All rooms' : 'Tất cả phòng'}</option>
-            <option value="1">{language === 'en' ? 'Room 1' : 'Phòng 1'}</option>
+            <option value="1">{language === 'en' ? 'Room 1 · Journey' : 'Phòng 1 · Triển lãm Hành trình'}</option>
             <option value="2">{language === 'en' ? 'Room 2' : 'Phòng 2'}</option>
             <option value="3">{language === 'en' ? 'Room 3' : 'Phòng 3'}</option>
           </select>

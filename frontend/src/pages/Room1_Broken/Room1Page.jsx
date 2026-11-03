@@ -259,7 +259,7 @@ export function Room1Page({
       setShowSubmitModal(false);
       setShowConfirmModal(true);
       setSubmitError('');
-    }, 'trưng bày tác phẩm đổ vỡ');
+    }, 'trưng bày tác phẩm hành trình');
   };
 
   // Bước 2: Xác nhận gửi tác phẩm (POST /api/v1/rooms/1/artworks)
@@ -340,7 +340,7 @@ export function Room1Page({
           type="button"
           className="btn main"
           onClick={() => {
-            guardAction(() => setShowSubmitModal(true), 'trưng bày tác phẩm đổ vỡ');
+            guardAction(() => setShowSubmitModal(true), 'trưng bày tác phẩm hành trình');
           }}
         >
           {t('r1_btn_submit')}
