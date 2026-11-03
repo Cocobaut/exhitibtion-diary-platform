@@ -14,6 +14,7 @@ from app.core.rate_limit import (
 from app.models.user import User
 from app.schemas.auth import (
     ForgotPasswordRequest,
+    ForgotPasswordResponse,
     LoginRequest,
     LoginResponse,
     LoginResponseData,
@@ -99,16 +100,16 @@ async def login(
 
 @router.post(
     "/forgot-password",
-    response_model=MessageResponse,
+    response_model=ForgotPasswordResponse,
     status_code=status.HTTP_200_OK,
-    summary="Gửi email chứa link đặt lại mật khẩu"
+    summary="Xác thực tên đăng nhập và email để tạo mã đặt lại mật khẩu"
 )
 async def forgot_password(
     req: ForgotPasswordRequest,
     request: Request,
     db: AsyncSession = Depends(deps.get_db),
-) -> MessageResponse:
-    """1.3 Gửi link đặt lại mật khẩu. Phản hồi giống nhau dù email có tồn tại hay không."""
+) -> ForgotPasswordResponse:
+    """1.3 Xác thực username + email trong cơ sở dữ liệu. Nếu khớp, trả về reset_token để đổi mật khẩu."""
     ip = _client_ip(request)
     if reset_ip_limiter.is_blocked(ip) or reset_email_limiter.is_blocked(req.email):
         raise AppException(
@@ -118,10 +119,11 @@ async def forgot_password(
         )
     reset_ip_limiter.hit(ip)
     reset_email_limiter.hit(req.email)
-    await AuthService.request_password_reset(db, req.email)
-    return MessageResponse(
+    token = await AuthService.verify_and_create_reset_token(db, username=req.username, email=req.email)
+    return ForgotPasswordResponse(
         success=True,
-        message="Nếu email này đã đăng ký, bạn sẽ nhận được link đặt lại mật khẩu trong vài phút."
+        message="Xác thực thông tin tài khoản thành công",
+        reset_token=token
     )
 
 
@@ -129,13 +131,13 @@ async def forgot_password(
     "/reset-password",
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
-    summary="Đặt mật khẩu mới bằng link trong email"
+    summary="Đặt mật khẩu mới bằng token hợp lệ"
 )
 async def reset_password(
     req: ResetPasswordRequest,
     db: AsyncSession = Depends(deps.get_db),
 ) -> MessageResponse:
-    """1.4 Đặt mật khẩu mới bằng token một lần dùng."""
+    """1.4 Đặt mật khẩu mới bằng token một lần dùng (áp dụng cho User, Admin, Owner)."""
     await AuthService.reset_password(db, req=req)
     return MessageResponse(
         success=True,

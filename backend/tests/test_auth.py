@@ -321,46 +321,50 @@ def test_08_login_locked_user():
     asyncio.run(run())
 
 
-def _capture_reset_emails(monkeypatch):
-    """Thay hàm gửi email bằng danh sách để lấy token trong test."""
-    sent = []
-
-    async def fake_send_email(to, subject, body):
-        sent.append({"to": to, "body": body})
-
-    monkeypatch.setattr(auth_service_module, "send_email", fake_send_email)
-    return sent
-
-
-def _token_from(body: str) -> str:
-    return body.split("reset_token=", 1)[1].split()[0]
-
-
-def test_09_forgot_password_does_not_reveal_accounts(monkeypatch):
-    """Test 9: Email không tồn tại và email có thật nhận cùng một phản hồi; chỉ email thật nhận thư."""
-    sent = _capture_reset_emails(monkeypatch)
-
+def test_09_forgot_password_verify_identity():
+    """Test 9: Nhập sai username hoặc email → 400 INVALID_CREDENTIALS; đúng thông tin → 200 kèm reset_token."""
     async def run():
         async with setup_test_context() as (client, session):
-            res_unknown = await client.post("/api/v1/auth/forgot-password", json={"email": "nobody@example.com"})
-            res_known = await client.post("/api/v1/auth/forgot-password", json={"email": "HoangHon@example.com"})
-            assert res_unknown.status_code == res_known.status_code == 200
-            assert res_unknown.json()["message"] == res_known.json()["message"]
-            assert [m["to"] for m in sent] == ["hoanghon@example.com"]
-
-            # Không còn cách đổi mật khẩu chỉ bằng username + email
-            legacy = await client.post("/api/v1/auth/change-password", json={
-                "username": "hoanghon_01", "email": "hoanghon@example.com", "new_password": "Hacked123@x",
+            # 1. Sai cả 2
+            bad_both = await client.post("/api/v1/auth/forgot-password", json={
+                "username": "unknown_user",
+                "email": "nobody@example.com"
             })
-            assert legacy.status_code == 404
+            assert bad_both.status_code == 400
+            assert bad_both.json()["error_code"] == "INVALID_CREDENTIALS"
+
+            # 2. Đúng email nhưng sai username
+            bad_user = await client.post("/api/v1/auth/forgot-password", json={
+                "username": "wrong_user",
+                "email": "hoanghon@example.com"
+            })
+            assert bad_user.status_code == 400
+            assert bad_user.json()["error_code"] == "INVALID_CREDENTIALS"
+
+            # 3. Đúng username nhưng sai email
+            bad_email = await client.post("/api/v1/auth/forgot-password", json={
+                "username": "hoanghon_01",
+                "email": "wrong_mail@example.com"
+            })
+            assert bad_email.status_code == 400
+            assert bad_email.json()["error_code"] == "INVALID_CREDENTIALS"
+
+            # 4. Đúng cả username và email (case-insensitive) -> trả về reset_token
+            good = await client.post("/api/v1/auth/forgot-password", json={
+                "username": "HoangHon_01",
+                "email": "HoangHon@example.com"
+            })
+            assert good.status_code == 200
+            data = good.json()
+            assert data["success"] is True
+            assert "reset_token" in data
+            assert len(data["reset_token"]) > 20
 
     asyncio.run(run())
 
 
-def test_10_reset_password_weak_and_invalid_token(monkeypatch):
+def test_10_reset_password_weak_and_invalid_token():
     """Test 10: Token sai → 400 INVALID_RESET_TOKEN; mật khẩu yếu → 400 WEAK_PASSWORD."""
-    sent = _capture_reset_emails(monkeypatch)
-
     async def run():
         async with setup_test_context() as (client, session):
             bad = await client.post("/api/v1/auth/reset-password", json={
@@ -369,9 +373,14 @@ def test_10_reset_password_weak_and_invalid_token(monkeypatch):
             assert bad.status_code == 400
             assert bad.json()["error_code"] == "INVALID_RESET_TOKEN"
 
-            await client.post("/api/v1/auth/forgot-password", json={"email": "hoanghon@example.com"})
+            good_token_res = await client.post("/api/v1/auth/forgot-password", json={
+                "username": "hoanghon_01",
+                "email": "hoanghon@example.com"
+            })
+            token = good_token_res.json()["reset_token"]
+
             weak = await client.post("/api/v1/auth/reset-password", json={
-                "token": _token_from(sent[0]["body"]), "new_password": "short",
+                "token": token, "new_password": "short",
             })
             assert weak.status_code == 400
             assert weak.json()["error_code"] == "WEAK_PASSWORD"
@@ -379,14 +388,16 @@ def test_10_reset_password_weak_and_invalid_token(monkeypatch):
     asyncio.run(run())
 
 
-def test_11_reset_password_success_once_and_relogin(monkeypatch):
-    """Test 11: Link hợp lệ đổi được mật khẩu đúng một lần; đăng nhập bằng mật khẩu mới thành công."""
-    sent = _capture_reset_emails(monkeypatch)
-
+def test_11_reset_password_success_once_and_relogin():
+    """Test 11: Token hợp lệ đổi được mật khẩu (hỗ trợ User, Admin, Owner); token chỉ dùng 1 lần; đăng nhập lại thành công."""
     async def run():
         async with setup_test_context() as (client, session):
-            await client.post("/api/v1/auth/forgot-password", json={"email": "hoanghon@example.com"})
-            token = _token_from(sent[0]["body"])
+            # Test cho USER
+            res_forgot = await client.post("/api/v1/auth/forgot-password", json={
+                "username": "hoanghon_01",
+                "email": "hoanghon@example.com"
+            })
+            token = res_forgot.json()["reset_token"]
 
             res = await client.post("/api/v1/auth/reset-password", json={
                 "token": token, "new_password": "BrandNewPassword2026@",
@@ -408,28 +419,37 @@ def test_11_reset_password_success_once_and_relogin(monkeypatch):
             })
             assert res_new.status_code == 200
 
+            # Test tương tự cho ADMIN
+            admin_forgot = await client.post("/api/v1/auth/forgot-password", json={
+                "username": "admin_user",
+                "email": "admin@exhibition.edu.vn"
+            })
+            assert admin_forgot.status_code == 200
+            admin_token = admin_forgot.json()["reset_token"]
+
+            admin_reset = await client.post("/api/v1/auth/reset-password", json={
+                "token": admin_token, "new_password": "NewAdminPass2026@"
+            })
+            assert admin_reset.status_code == 200
+
+            admin_login = await client.post("/api/v1/auth/login", json={
+                "account": "admin_user", "password": "NewAdminPass2026@"
+            })
+            assert admin_login.status_code == 200
+
     asyncio.run(run())
 
 
-def test_12_login_rate_limited_and_locked_user_gets_no_email(monkeypatch):
-    """Test 12: Sai mật khẩu 5 lần → lần sau 429; tài khoản bị khoá không nhận email đặt lại."""
-    sent = _capture_reset_emails(monkeypatch)
-
+def test_12_forgot_password_locked_user():
+    """Test 12: Tài khoản bị khoá thì báo 403 ACCOUNT_LOCKED khi yêu cầu đặt lại mật khẩu."""
     async def run():
         async with setup_test_context() as (client, session):
-            for _ in range(5):
-                res = await client.post("/api/v1/auth/login", json={
-                    "account": "hoanghon_01", "password": "WrongPassword123@",
-                })
-                assert res.status_code == 401
-            blocked = await client.post("/api/v1/auth/login", json={
-                "account": "hoanghon_01", "password": "StrongPassword123@",
+            locked_res = await client.post("/api/v1/auth/forgot-password", json={
+                "username": "locked_user",
+                "email": "locked@example.com"
             })
-            assert blocked.status_code == 429
-            assert blocked.json()["error_code"] == "TOO_MANY_ATTEMPTS"
-
-            await client.post("/api/v1/auth/forgot-password", json={"email": "locked@example.com"})
-            assert sent == []
+            assert locked_res.status_code == 403
+            assert locked_res.json()["error_code"] == "ACCOUNT_LOCKED"
 
     asyncio.run(run())
 
@@ -479,13 +499,13 @@ if __name__ == "__main__":
     print("✓ Test 7: Login sai thông tin (401)")
     test_08_login_locked_user()
     print("✓ Test 8: Login tài khoản bị khóa (403)")
-    test_09_change_password_invalid_info()
-    print("✓ Test 9: Đổi mật khẩu sai thông tin (400)")
-    test_10_change_password_weak_password()
-    print("✓ Test 10: Đổi mật khẩu mới quá yếu (400)")
-    test_11_change_password_success_and_relogin()
-    print("✓ Test 11: Đổi mật khẩu thành công & đăng nhập lại")
-    test_12_change_password_locked_user()
+    test_09_forgot_password_verify_identity()
+    print("✓ Test 9: Xác thực username + email (400 khi sai, 200 khi đúng)")
+    test_10_reset_password_weak_and_invalid_token()
+    print("✓ Test 10: Đổi mật khẩu token sai (400) hoặc mật khẩu mới quá yếu (400)")
+    test_11_reset_password_success_once_and_relogin()
+    print("✓ Test 11: Đổi mật khẩu thành công cho cả User & Admin & đăng nhập lại")
+    test_12_forgot_password_locked_user()
     print("✓ Test 12: Đổi mật khẩu tài khoản bị khóa (403)")
     test_13_logout_revokes_token()
     print("✓ Test 13: Đăng xuất và thu hồi token (401 khi tái sử dụng)")

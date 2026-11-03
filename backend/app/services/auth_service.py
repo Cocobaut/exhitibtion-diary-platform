@@ -139,17 +139,55 @@ class AuthService:
         return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
     @staticmethod
-    async def request_password_reset(db: AsyncSession, email: str) -> None:
-        """Gửi link đặt lại mật khẩu nếu email thuộc một tài khoản đang hoạt động.
-
-        Luôn im lặng khi email không tồn tại để không lộ ai đã đăng ký.
+    async def verify_and_create_reset_token(db: AsyncSession, username: str, email: str) -> str:
+        """Xác thực username và email thuộc về cùng một tài khoản đang hoạt động (USER, ADMIN, OWNER).
+        Nếu đúng thì tạo reset_token một lần dùng và trả về trực tiếp (không gửi email).
         """
+        user = await db.scalar(
+            select(User).where(
+                func.lower(User.username) == username.strip().lower(),
+                func.lower(User.email) == email.strip().lower(),
+            )
+        )
+        if not user:
+            raise AppException(
+                status_code=400,
+                error_code="INVALID_CREDENTIALS",
+                message="Tên đăng nhập hoặc email không chính xác"
+            )
+
+        if not user.is_active:
+            raise AppException(
+                status_code=403,
+                error_code="ACCOUNT_LOCKED",
+                message="Tài khoản của bạn đang bị khóa"
+            )
+
+        now = datetime.now(timezone.utc)
+        # Mỗi lần chỉ một link/token còn hiệu lực cho tài khoản này
+        await db.execute(
+            delete(PasswordResetToken).where(
+                PasswordResetToken.user_id == user.id,
+                PasswordResetToken.used_at.is_(None),
+            )
+        )
+        token = secrets.token_urlsafe(32)
+        db.add(PasswordResetToken(
+            user_id=user.id,
+            token_hash=AuthService._hash_reset_token(token),
+            expires_at=now + timedelta(minutes=settings.PASSWORD_RESET_EXPIRE_MINUTES),
+        ))
+        await db.commit()
+        return token
+
+    @staticmethod
+    async def request_password_reset(db: AsyncSession, email: str) -> None:
+        """Gửi link đặt lại mật khẩu nếu email thuộc một tài khoản đang hoạt động (legacy flow)."""
         user = await db.scalar(select(User).where(func.lower(User.email) == email.lower()))
         if not user or not user.is_active:
             return
 
         now = datetime.now(timezone.utc)
-        # Mỗi lần chỉ một link còn hiệu lực
         await db.execute(
             delete(PasswordResetToken).where(
                 PasswordResetToken.user_id == user.id,
@@ -180,7 +218,7 @@ class AuthService:
 
     @staticmethod
     async def reset_password(db: AsyncSession, req: ResetPasswordRequest) -> None:
-        """Đặt mật khẩu mới bằng token một lần dùng từ email."""
+        """Đặt mật khẩu mới bằng token một lần dùng (hỗ trợ cả USER, ADMIN, OWNER)."""
         now = datetime.now(timezone.utc)
         record = await db.scalar(
             select(PasswordResetToken).where(
@@ -194,7 +232,7 @@ class AuthService:
             raise AppException(
                 status_code=400,
                 error_code="INVALID_RESET_TOKEN",
-                message="Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn"
+                message="Phiên đặt lại mật khẩu không hợp lệ hoặc đã hết hạn"
             )
 
         user = await db.get(User, record.user_id)

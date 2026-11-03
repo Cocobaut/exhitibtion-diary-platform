@@ -32,15 +32,19 @@ export const authService = {
   },
 
   /**
-   * 1.3 Gửi email chứa link đặt lại mật khẩu
-   * @param {Object} data { email }
+   * 1.3 Xác thực tên đăng nhập và email để lấy mã đặt lại mật khẩu (áp dụng cho User, Admin, Owner)
+   * @param {Object} data { username, email }
+   * @returns {Promise<Object>} { success, message, reset_token }
    */
-  async forgotPassword({ email }) {
-    return await apiClient.post('/auth/forgot-password', { email: email?.trim() });
+  async forgotPassword({ username, email }) {
+    return await apiClient.post('/auth/forgot-password', {
+      username: username?.trim(),
+      email: email?.trim(),
+    });
   },
 
   /**
-   * 1.4 Đặt mật khẩu mới bằng token trong link email
+   * 1.4 Đặt mật khẩu mới bằng token
    * @param {Object} data { token, new_password }
    */
   async resetPassword({ token, new_password }) {

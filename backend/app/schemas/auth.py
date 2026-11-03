@@ -51,7 +51,10 @@ class LoginRequest(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr = Field(..., max_length=255)
+    username: str = Field(..., min_length=1, max_length=50, description="Tên đăng nhập")
+    email: EmailStr = Field(..., max_length=255, description="Email đã đăng ký")
+
+    model_config = ConfigDict(extra="ignore")
 
     @field_validator("email", mode="before")
     @classmethod
@@ -59,6 +62,20 @@ class ForgotPasswordRequest(BaseModel):
         if isinstance(v, str):
             return v.strip().lower()
         return v
+
+    @field_validator("username")
+    @classmethod
+    def strip_username(cls, v: str) -> str:
+        stripped = v.strip()
+        if not stripped:
+            raise ValueError("Tên đăng nhập không được để trống")
+        return stripped
+
+
+class ForgotPasswordResponse(BaseModel):
+    success: bool = True
+    message: str = "Xác thực thông tin tài khoản thành công"
+    reset_token: str
 
 
 class ResetPasswordRequest(BaseModel):
