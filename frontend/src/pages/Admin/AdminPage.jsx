@@ -34,7 +34,7 @@ export function AdminPage({ onOpenNotifications }) {
     }, 4500);
   };
 
-  // Fetch counts for all exhibition rooms and capsules
+  // Fetch counts for all rooms & capsules
   const fetchCounts = useCallback(async () => {
     try {
       const [r1, r2, r3, capSummary] = await Promise.allSettled([
@@ -104,82 +104,29 @@ export function AdminPage({ onOpenNotifications }) {
       setShowRejectModal(false);
       setSelectedRejectArtwork(null);
       setRefreshTrigger((prev) => prev + 1);
-      fetchCounts();
     } catch (err) {
-      console.error('Lỗi khi từ chối tác phẩm:', err);
-      alert(err.message || (language === 'en' ? 'Could not decline this item.' : 'Không thể từ chối tác phẩm lúc này.'));
+      console.error('Error rejecting artwork:', err);
+      const apiMsg =
+        err?.response?.data?.message || err?.message || (language === 'en' ? 'Could not decline this artwork right now.' : 'Không thể từ chối tác phẩm lúc này.');
+      alert(apiMsg);
     } finally {
       setIsRejecting(false);
     }
   };
 
   const handleApproveSuccess = () => {
+    triggerToast(language === 'en' ? '✦ Approved. The artwork is now on display.' : '✦ Đã duyệt, tác phẩm đang được trưng bày.');
     setRefreshTrigger((prev) => prev + 1);
-    fetchCounts();
   };
 
   return (
-    <div className="stage" style={{ background: 'var(--wall)' }}>
-      {/* Top Header */}
-      <div className="top">
-        <div className="room-tag">
-          <small>{t('admin_online_team')}</small>
-          <b>{t('admin_title')}</b>
-        </div>
-
-        {/* Global Tab Navigation */}
-        <div className="tabs">
-          {tabs.map((tab, idx) => (
-            <div
-              key={idx}
-              className={`tab ${activeTab === idx ? 'on' : ''}`}
-              onClick={() => {
-                setActiveTab(idx);
-                // Reset sub-segment to Pending when entering room tab
-                if (idx <= 2) setStatusSegment(0);
-              }}
-            >
-              <span>{tab.name}</span>
-              {tab.count > 0 && <span className="tab-badge">{tab.count}</span>}
-            </div>
-          ))}
-        </div>
-
-        <div className="row" style={{ gap: '10px' }}>
-          <div className="lang glass">
-            <b
-              className={language === 'vi' ? 'on' : ''}
-              onClick={() => setLanguage('vi')}
-              style={{ cursor: 'pointer' }}
-            >
-              VI
-            </b>
-            <b
-              className={language === 'en' ? 'on' : ''}
-              onClick={() => setLanguage('en')}
-              style={{ cursor: 'pointer' }}
-            >
-              EN
-            </b>
-          </div>
-
-          <button
-            type="button"
-            className="iconbtn glass"
-            title={language === 'en' ? 'Notifications' : 'Thông báo'}
-            onClick={onOpenNotifications}
-          >
-            <Icon name="bell" size={20} />
-          </button>
-        </div>
-      </div>
-
-      {/* Floating Toast Notification */}
+    <div className="stage admin">
+      {/* Toast Notification */}
       {toastMessage && (
         <div
           className="abs"
           style={{
-            top: '72px',
+            top: '20px',
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 40,
@@ -198,31 +145,74 @@ export function AdminPage({ onOpenNotifications }) {
         </div>
       )}
 
-      {/* Sub-Header Segments (Chỉ hiển thị với Room 1, 2, 3) */}
-      {isRoomTab && (
-        <div
-          className="row between"
-          style={{
-            padding: '12px 28px',
-            borderBottom: '1px solid var(--line)',
-            background: 'var(--paper)',
-          }}
-        >
-          <div className="row" style={{ gap: '16px' }}>
-            <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink)' }}>
-              {currentRoomId === 1
-                ? t('r1_name')
-                : currentRoomId === 2
-                ? t('r2_name')
-                : t('r3_name')}
-            </span>
-            <span className="badge b-wait" style={{ fontSize: '11px' }}>
-              {language === 'en'
-                ? `${roomPendingCounts[currentRoomId] || 0} waiting`
-                : `${roomPendingCounts[currentRoomId] || 0} bài chờ duyệt`}
-            </span>
+      {/* Top Header */}
+      <div className="abs" style={{ left: '32px', right: '32px', top: '22px' }}>
+        <div className="row between" style={{ alignItems: 'flex-start' }}>
+          <div>
+            <div
+              style={{
+                fontSize: '12px',
+                letterSpacing: '.2em',
+                fontWeight: 600,
+                color: 'var(--acc)',
+              }}
+            >
+              {language === 'en' ? 'ADMIN PANEL' : 'BẢNG QUẢN TRỊ'}
+            </div>
+            <h1 style={{ margin: '4px 0 0', fontSize: '26px', color: 'var(--ink)' }}>
+              {language === 'en' ? 'Moderation & Exhibition' : 'Kiểm duyệt & trưng bày'}
+            </h1>
           </div>
 
+          <div className="row" style={{ gap: '14px', alignItems: 'center' }}>
+            {/* Language Switcher */}
+            <div className="lang glass" style={{ cursor: 'pointer', userSelect: 'none' }}>
+              <b
+                className={language === 'vi' ? 'on' : ''}
+                onClick={() => setLanguage('vi')}
+                title="Tiếng Việt"
+              >
+                VI
+              </b>
+              <b
+                className={language === 'en' ? 'on' : ''}
+                onClick={() => setLanguage('en')}
+                title="English"
+              >
+                EN
+              </b>
+            </div>
+
+            <div
+              className="iconbtn"
+              style={{ border: '1px solid var(--line)', background: 'var(--paper)', cursor: 'pointer' }}
+              onClick={onOpenNotifications}
+            >
+              <Icon name="bell" size={19} />
+            </div>
+          </div>
+        </div>
+
+        {/* Global Tabs Navigation */}
+        <div className="tabs" style={{ marginTop: '14px' }}>
+          {tabs.map((t, i) => (
+            <span
+              key={i}
+              className={i === activeTab ? 'on' : ''}
+              onClick={() => {
+                setActiveTab(i);
+                setStatusSegment(0);
+              }}
+            >
+              {t.name}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Subtab Segment Switcher (for Exhibition Room tabs only) */}
+      {isRoomTab && (
+        <div className="abs" style={{ left: '32px', top: '142px' }}>
           <div className="seg">
             <span
               className={statusSegment === 0 ? 'on' : ''}
@@ -281,21 +271,33 @@ export function AdminPage({ onOpenNotifications }) {
           triggerToast={triggerToast}
         />
       ) : (
-        <div className="card muted" style={{ textAlign: 'center', padding: '60px' }}>
-          {language === 'en' ? 'Section under construction.' : 'Khu vực đang được cập nhật.'}
+        <div
+          className="abs box"
+          style={{
+            left: '32px',
+            right: '32px',
+            top: '194px',
+            bottom: '26px',
+            display: 'grid',
+            placeItems: 'center',
+            color: 'var(--muted)',
+            fontSize: '15px',
+          }}
+        >
+          <div>{language === 'en' ? 'This section is not ready yet.' : 'Mục này đang được hoàn thiện.'}</div>
         </div>
       )}
 
-      {/* Rejection Modal with predefined reasons */}
+      {/* Rejection Modal */}
       <AdminRejectModal
         isOpen={showRejectModal}
         artwork={selectedRejectArtwork}
+        isSubmitting={isRejecting}
         onClose={() => {
           setShowRejectModal(false);
           setSelectedRejectArtwork(null);
         }}
-        onConfirm={handleConfirmReject}
-        isLoading={isRejecting}
+        onConfirmReject={handleConfirmReject}
       />
     </div>
   );
