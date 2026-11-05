@@ -25,6 +25,8 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
   const [titleEn, setTitleEn] = useState('');
   const [contentVi, setContentVi] = useState('');
   const [contentEn, setContentEn] = useState('');
+  // Validation state: Admin is final checkpoint before public release
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Reject Modal State
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
@@ -146,11 +148,13 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
       const cEn = currentItem.content_en || (isOrigEn ? rawContent : '') || '';
       setContentVi(cVi);
       setContentEn(cEn);
+      setValidationErrors({});
     } else {
       setTitleVi('');
       setTitleEn('');
       setContentVi('');
       setContentEn('');
+      setValidationErrors({});
     }
   }, [currentItem]);
 
@@ -219,18 +223,45 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
   // -------------------------------------------------------------
   const handleApprove = async () => {
     if (!currentItem) return;
+
+    // Strict validation: Admin is the final quality checkpoint before public community release
+    const errors = {};
+    if (!titleVi.trim()) {
+      errors.titleVi = language === 'en' ? 'Vietnamese title is required.' : 'Tiêu đề Tiếng Việt không được để trống.';
+    }
+    if (!titleEn.trim()) {
+      errors.titleEn = language === 'en' ? 'English title is required.' : 'Tiêu đề Tiếng Anh không được để trống.';
+    }
+    if (!contentVi.trim()) {
+      errors.contentVi = language === 'en' ? 'Vietnamese content is required.' : 'Nội dung Tiếng Việt không được để trống.';
+    }
+    if (!contentEn.trim()) {
+      errors.contentEn = language === 'en' ? 'English content is required.' : 'Nội dung Tiếng Anh không được để trống.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      const totalMissing = Object.keys(errors).length;
+      const reqMsg = language === 'en'
+        ? `⚠️ Missing ${totalMissing} required field(s). Admin is the final checkpoint before public publication. Please complete all fields marked with (*). You can click "AI Translate" to auto-fill English.`
+        : `⚠️ Còn ${totalMissing} ô thông tin bắt buộc bị để trống. Ban quản trị là nơi kiểm duyệt cuối cùng trước khi public. Vui lòng điền đủ các ô có dấu (*). Bạn có thể bấm "Dịch AI" để tự động hoàn thiện tiếng Anh.`;
+      if (triggerToast) {
+        triggerToast(reqMsg);
+      } else {
+        alert(reqMsg);
+      }
+      return;
+    }
+
+    setValidationErrors({});
     setIsApproving(true);
     try {
-      let payload = null;
-      if (titleVi.trim() || titleEn.trim() || contentVi.trim() || contentEn.trim()) {
-        const origEn = currentItem.original_language === 'en';
-        payload = {
-          title_vi: titleVi.trim() || (!origEn ? currentItem.title : undefined) || undefined,
-          title_en: titleEn.trim() || (origEn ? currentItem.title : undefined) || undefined,
-          content_vi: contentVi.trim() || (!origEn ? currentItem.content : undefined) || undefined,
-          content_en: contentEn.trim() || (origEn ? currentItem.content : undefined) || undefined,
-        };
-      }
+      const payload = {
+        title_vi: titleVi.trim(),
+        title_en: titleEn.trim(),
+        content_vi: contentVi.trim(),
+        content_en: contentEn.trim(),
+      };
 
       await adminDiaryService.approveDiary(currentItem.id, payload);
 
@@ -528,6 +559,38 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                 </div>
               )}
 
+              {/* Validation Warning Banner if required fields are missing */}
+              {Object.keys(validationErrors).length > 0 && (
+                <div
+                  style={{
+                    marginBottom: '16px',
+                    padding: '12px 16px',
+                    borderRadius: '8px',
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1px solid #ef4444',
+                    color: '#b91c1c',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                  }}
+                >
+                  <Icon name="x" size={18} />
+                  <div>
+                    <strong>
+                      {language === 'en'
+                        ? '⚠️ Missing required fields:'
+                        : '⚠️ Ban quản trị phải điền đầy đủ các ô còn thiếu trước khi công khai:'}
+                    </strong>
+                    <span style={{ marginLeft: '6px' }}>
+                      {language === 'en'
+                        ? 'All fields marked with (*) are required. You can click "AI Translate" to quickly complete English.'
+                        : 'Tất cả các ô có dấu (*) không được để trống. Hãy bấm "Dịch AI" để tự động hoàn thiện tiếng Anh.'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <AiTranslateButton
                 originalLanguage={currentItem.original_language}
                 source={currentItem.original_language === 'en'
@@ -535,11 +598,23 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                   : { title: titleVi, content: contentVi }}
                 onTranslated={(d, target) => {
                   if (target === 'en') {
-                    if (d.title) setTitleEn(d.title);
-                    if (d.content) setContentEn(d.content);
+                    if (d.title) {
+                      setTitleEn(d.title);
+                      setValidationErrors((prev) => ({ ...prev, titleEn: null }));
+                    }
+                    if (d.content) {
+                      setContentEn(d.content);
+                      setValidationErrors((prev) => ({ ...prev, contentEn: null }));
+                    }
                   } else {
-                    if (d.title) setTitleVi(d.title);
-                    if (d.content) setContentVi(d.content);
+                    if (d.title) {
+                      setTitleVi(d.title);
+                      setValidationErrors((prev) => ({ ...prev, titleVi: null }));
+                    }
+                    if (d.content) {
+                      setContentVi(d.content);
+                      setValidationErrors((prev) => ({ ...prev, contentVi: null }));
+                    }
                   }
                 }}
                 onError={(msg) => triggerToast && triggerToast(`[AI] ${msg}`)}
@@ -548,48 +623,110 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div>
                   <div className="fieldl">
-                    {language === 'en' ? 'Title (Vietnamese)' : 'Tiêu đề Tiếng Việt (VN)'}
+                    {language === 'en' ? 'Title (Vietnamese)' : 'Tiêu đề Tiếng Việt (VN)'}{' '}
+                    <span style={{ color: '#ef4444' }}>*</span>
                   </div>
                   <input
                     className="inp"
+                    style={{
+                      borderColor: validationErrors.titleVi ? '#ef4444' : undefined,
+                    }}
                     value={titleVi}
-                    onChange={(e) => setTitleVi(e.target.value)}
+                    onChange={(e) => {
+                      setTitleVi(e.target.value);
+                      if (validationErrors.titleVi) {
+                        setValidationErrors((prev) => ({ ...prev, titleVi: null }));
+                      }
+                    }}
                     placeholder={language === 'en' ? 'Vietnamese title...' : 'Tiêu đề tiếng Việt...'}
                   />
+                  {validationErrors.titleVi && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.titleVi}
+                    </div>
+                  )}
+
                   <div className="fieldl" style={{ marginTop: '14px' }}>
                     {language === 'en' ? 'Content (Vietnamese)' : 'Nội dung Tiếng Việt (VN)'}{' '}
-                    <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
+                    <span style={{ color: '#ef4444' }}>*</span> <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
                   </div>
                   <textarea
                     className="inp area"
-                    style={{ minHeight: '230px', fontFamily: 'var(--sans)', fontSize: '14.5px', lineHeight: 1.6 }}
+                    style={{
+                      minHeight: '230px',
+                      fontFamily: 'var(--sans)',
+                      fontSize: '14.5px',
+                      lineHeight: 1.6,
+                      borderColor: validationErrors.contentVi ? '#ef4444' : undefined,
+                    }}
                     value={contentVi}
-                    onChange={(e) => setContentVi(e.target.value)}
+                    onChange={(e) => {
+                      setContentVi(e.target.value);
+                      if (validationErrors.contentVi) {
+                        setValidationErrors((prev) => ({ ...prev, contentVi: null }));
+                      }
+                    }}
                     placeholder={language === 'en' ? 'Vietnamese diary content...' : 'Nội dung nhật ký tiếng Việt...'}
                   />
+                  {validationErrors.contentVi && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.contentVi}
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <div className="fieldl">
-                    {language === 'en' ? 'Title (English)' : 'Tiêu đề Tiếng Anh (EN)'}
+                    {language === 'en' ? 'Title (English)' : 'Tiêu đề Tiếng Anh (EN)'}{' '}
+                    <span style={{ color: '#ef4444' }}>*</span>
                   </div>
                   <input
                     className="inp"
+                    style={{
+                      borderColor: validationErrors.titleEn ? '#ef4444' : undefined,
+                    }}
                     value={titleEn}
-                    onChange={(e) => setTitleEn(e.target.value)}
+                    onChange={(e) => {
+                      setTitleEn(e.target.value);
+                      if (validationErrors.titleEn) {
+                        setValidationErrors((prev) => ({ ...prev, titleEn: null }));
+                      }
+                    }}
                     placeholder={language === 'en' ? 'English title...' : 'Tiêu đề tiếng Anh...'}
                   />
+                  {validationErrors.titleEn && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.titleEn}
+                    </div>
+                  )}
+
                   <div className="fieldl" style={{ marginTop: '14px' }}>
                     {language === 'en' ? 'Content (English)' : 'Nội dung Tiếng Anh (EN)'}{' '}
-                    <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
+                    <span style={{ color: '#ef4444' }}>*</span> <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
                   </div>
                   <textarea
                     className="inp area"
-                    style={{ minHeight: '230px', fontFamily: 'var(--sans)', fontSize: '14.5px', lineHeight: 1.6 }}
+                    style={{
+                      minHeight: '230px',
+                      fontFamily: 'var(--sans)',
+                      fontSize: '14.5px',
+                      lineHeight: 1.6,
+                      borderColor: validationErrors.contentEn ? '#ef4444' : undefined,
+                    }}
                     value={contentEn}
-                    onChange={(e) => setContentEn(e.target.value)}
+                    onChange={(e) => {
+                      setContentEn(e.target.value);
+                      if (validationErrors.contentEn) {
+                        setValidationErrors((prev) => ({ ...prev, contentEn: null }));
+                      }
+                    }}
                     placeholder={language === 'en' ? 'English translated content...' : 'Nội dung nhật ký tiếng Anh...'}
                   />
+                  {validationErrors.contentEn && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.contentEn}
+                    </div>
+                  )}
                 </div>
               </div>
 

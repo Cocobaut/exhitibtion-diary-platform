@@ -52,6 +52,54 @@ class NotificationService:
         return notification
 
     @staticmethod
+    async def notify_admins_and_owners(
+        db: AsyncSession,
+        *,
+        title: str,
+        body: str,
+        target_url: Optional[str] = None,
+        sender_id: Optional[uuid.UUID] = None,
+        exclude_user_id: Optional[uuid.UUID] = None,
+        notification_type: str = "SYSTEM",
+    ) -> List[Notification]:
+        """Tạo thông báo gửi tới tất cả ADMIN và OWNER đang hoạt động.
+        
+        Quy tắc:
+        - Chỉ INSERT vào db session, không tự commit (commit cùng transaction nghiệp vụ).
+        - Nếu exclude_user_id được truyền (ví dụ Admin vừa duyệt bài), loại trừ admin đó.
+        - Nếu sender_id trùng recipient_id thì bỏ qua.
+        """
+        from app.models.user import User, UserRole
+
+        stmt = select(User.id).where(
+            User.role.in_([UserRole.ADMIN.value, UserRole.OWNER.value, "ADMIN", "OWNER"]),
+            User.is_active == True,
+        )
+        if exclude_user_id is not None:
+            stmt = stmt.where(User.id != exclude_user_id)
+
+        admin_owner_ids = (await db.execute(stmt)).scalars().all()
+
+        notifications: List[Notification] = []
+        for uid in admin_owner_ids:
+            if sender_id is not None and uid == sender_id:
+                continue
+
+            notif = Notification(
+                recipient_id=uid,
+                sender_id=sender_id,
+                type=notification_type,
+                title=title,
+                body=body,
+                target_url=target_url,
+                is_read=False,
+            )
+            db.add(notif)
+            notifications.append(notif)
+
+        return notifications
+
+    @staticmethod
     async def count_unread(db: AsyncSession, recipient_id: uuid.UUID) -> int:
         """4.1 Đếm số lượng thông báo chưa đọc của user.
         Query: SELECT count(*) FROM notifications WHERE recipient_id = :uid AND is_read = FALSE

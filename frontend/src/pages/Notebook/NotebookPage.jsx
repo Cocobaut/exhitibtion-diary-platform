@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TopNav } from '../../components/layout/TopNav';
 import { Icon } from '../../components/common/Icons';
+import { NotebookDustMotes } from './NotebookDustMotes';
 import { notebookService } from '../../services/notebookService';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -143,6 +144,9 @@ export function NotebookPage({
 
   return (
     <div className="stage" style={{ background: 'var(--wall)' }}>
+      {/* Golden Dust Motes & Star Particles */}
+      <NotebookDustMotes />
+
       {/* Top Header */}
       <TopNav
         roomNo="NOTEBOOK"
@@ -267,6 +271,7 @@ export function NotebookPage({
               <div
                 key={item.id}
                 onClick={() => setReadingItem(item)}
+                className="notebook-polaroid-card"
                 style={{
                   background: 'var(--paper)',
                   color: 'var(--ink)',
@@ -278,15 +283,7 @@ export function NotebookPage({
                   flexDirection: 'column',
                   position: 'relative',
                   cursor: 'pointer',
-                  transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.boxShadow = '0 18px 40px rgba(0,0,0,.32)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 12px 30px rgba(0,0,0,.25)';
+                  transform: 'none',
                 }}
               >
                 {/* Header: Source badge & Date */}
@@ -396,14 +393,20 @@ export function NotebookPage({
         <>
           <div className="scrim" onClick={() => setReadingItem(null)} />
           <div
-            className="panel"
+            className="panel wax-seal-modal"
             style={{
+              position: 'fixed',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
               width: '600px',
               maxHeight: '85vh',
               overflowY: 'auto',
               background: '#FBF4E6',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
-              padding: '34px 42px',
+              boxShadow: '0 28px 70px rgba(0,0,0,0.45)',
+              padding: '32px 42px 34px',
+              borderRadius: '16px',
+              border: '1px solid rgba(201, 154, 59, 0.4)',
             }}
           >
             <span
@@ -414,6 +417,28 @@ export function NotebookPage({
             >
               <Icon name="x" size={22} />
             </span>
+
+            {/* Wax Seal Stamp (Mở phong ấn sáp / Thư hạ cánh) */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '16px' }}>
+              <div
+                className="wax-seal-stamp"
+                style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #A8241E 0%, #6E120D 100%)',
+                  boxShadow: '0 4px 14px rgba(110, 18, 13, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.25), inset 0 -2px 4px rgba(0, 0, 0, 0.4)',
+                  border: '2px solid #C99A3B',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#FFECB3',
+                }}
+                title={language === 'en' ? 'Wax Seal' : 'Con dấu sáp kỷ niệm'}
+              >
+                <Icon name={readingItem.icon || 'sparkle'} size={20} />
+              </div>
+            </div>
 
             <div className="row between" style={{ marginBottom: '14px' }}>
               <span className={`badge ${readingItem.badgeClass || 'b-ok'}`}>
@@ -461,7 +486,7 @@ export function NotebookPage({
             )}
 
             <div
-              className="book"
+              className="book wax-letter-body"
               style={{
                 fontSize: '17px',
                 lineHeight: 1.85,

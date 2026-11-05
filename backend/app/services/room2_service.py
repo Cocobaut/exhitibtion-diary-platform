@@ -418,6 +418,26 @@ class Room2Service:
         await db.flush()
         await db.refresh(new_lantern)
 
+        # Thông báo tới tất cả Admin và Owner khi có lồng đèn mới
+        author_display = "Người dùng ẩn danh" if request.is_anonymous else (current_user.nickname or current_user.username or "Người dùng")
+        if request.visibility == "PUBLIC":
+            notif_title = "[Phòng 2] Lồng đèn hy vọng mới chờ duyệt"
+            notif_body = f'Tác giả {author_display} vừa thả lồng đèn hy vọng công khai "{new_lantern.title}" lên bầu trời. Vui lòng kiểm duyệt.'
+            notif_target = "/admin"
+        else:
+            notif_title = "[Phòng 2] Lồng đèn hy vọng mới"
+            notif_body = f'Tác giả {author_display} vừa thả một lồng đèn hy vọng riêng tư hẹn ngày hạ cánh.'
+            notif_target = "/r2"
+
+        await NotificationService.notify_admins_and_owners(
+            db,
+            title=notif_title,
+            body=notif_body,
+            target_url=notif_target,
+            sender_id=current_user.id,
+            notification_type="SYSTEM",
+        )
+
         data = {
             "id": new_lantern.id,
             "room_id": new_lantern.room_id,

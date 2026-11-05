@@ -136,6 +136,25 @@ class AdminStudioService:
             note="Admin xuất bản bài viết trực tiếp qua Studio",
         )
 
+        # Thông báo cho tất cả Admin và Owner khác biết tác phẩm đã xuất bản trực tiếp qua Studio
+        from app.services.notification_service import NotificationService
+        approver_name = admin.nickname or admin.username or "Quản trị viên"
+        room_names = {
+            1: "Phòng 1 (Đổ vỡ)",
+            2: "Phòng 2 (Hy vọng)",
+            3: "Phòng 3 (Cây nguyện ước)",
+        }
+        room_label = room_names.get(artwork.room_id, f"Phòng {artwork.room_id}")
+        await NotificationService.notify_admins_and_owners(
+            db,
+            title=f"[Studio] {approver_name} đã xuất bản trực tiếp tác phẩm",
+            body=f'{approver_name} vừa xuất bản trực tiếp tác phẩm "{artwork.title}" tại {room_label}.',
+            target_url=f"/rooms/{artwork.room_id}/artworks/{artwork.id}",
+            sender_id=admin.id,
+            exclude_user_id=admin.id,
+            notification_type="SYSTEM",
+        )
+
         await db.commit()
         await db.refresh(artwork)
 

@@ -265,6 +265,16 @@ class AdminRoomService:
             artwork.tag_category = payload.tag_category
         if payload.color_code is not None:
             artwork.color_code = payload.color_code
+        if payload.visibility is not None:
+            artwork.visibility = payload.visibility
+        if payload.target_date is not None:
+            if isinstance(payload.target_date, str) and payload.target_date.strip():
+                try:
+                    artwork.target_date = datetime.fromisoformat(payload.target_date.strip().replace('Z', '+00:00'))
+                except ValueError:
+                    pass
+            elif isinstance(payload.target_date, datetime):
+                artwork.target_date = payload.target_date
 
         artwork.status = "APPROVED"
         artwork.reviewed_by = admin.id
@@ -281,6 +291,25 @@ class AdminRoomService:
             target_url=f"/rooms/{room_id}/artworks/{artwork.id}",
         )
         notification_sent = notif is not None or artwork.user_id == admin.id
+
+        # Thông báo cho tất cả Admin và Owner khác biết tác phẩm đã được duyệt
+        approver_name = admin.nickname or admin.username or "Quản trị viên"
+        room_names = {
+            1: "Phòng 1 (Đổ vỡ)",
+            2: "Phòng 2 (Hy vọng)",
+            3: "Phòng 3 (Cây nguyện ước)",
+        }
+        room_label = room_names.get(room_id, f"Phòng {room_id}")
+
+        await NotificationService.notify_admins_and_owners(
+            db,
+            title=f"[Ban Quản Trị] {approver_name} đã duyệt tác phẩm",
+            body=f'{approver_name} vừa phê duyệt tác phẩm "{artwork.title}" tại {room_label}.',
+            target_url=f"/rooms/{room_id}/artworks/{artwork.id}",
+            sender_id=admin.id,
+            exclude_user_id=admin.id,
+            notification_type="SYSTEM",
+        )
 
         # Audit Log
         action_type = "APPROVE_AND_UPLOAD_MEDIA" if payload.media_url else "APPROVE"

@@ -11,7 +11,7 @@ import { adminCapsuleService } from '../../services/adminCapsuleService';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
-export function AdminPage({ onOpenNotifications }) {
+export function AdminPage({ onOpenNotifications, onOpenThemeModal }) {
   const { user } = useAuth();
   const { t, language, setLanguage } = useLanguage();
 
@@ -120,7 +120,7 @@ export function AdminPage({ onOpenNotifications }) {
   };
 
   return (
-    <div className="stage admin">
+    <div className="stage admin" style={{ background: 'var(--wall)', transition: 'background 0.3s ease' }}>
       {/* Toast Notification */}
       {toastMessage && (
         <div
@@ -183,13 +183,27 @@ export function AdminPage({ onOpenNotifications }) {
               </b>
             </div>
 
-            <div
-              className="iconbtn"
-              style={{ border: '1px solid var(--line)', background: 'var(--paper)', cursor: 'pointer' }}
-              onClick={onOpenNotifications}
+            {/* Theme Palette Switcher */}
+            <button
+              type="button"
+              className="iconbtn glass"
+              style={{ cursor: 'pointer' }}
+              title={language === 'en' ? 'Color theme' : 'Bảng màu nền'}
+              onClick={onOpenThemeModal}
             >
-              <Icon name="bell" size={19} />
-            </div>
+              <Icon name="palette" size={20} />
+            </button>
+
+            {/* Notifications Bell */}
+            <button
+              type="button"
+              className="iconbtn glass"
+              style={{ cursor: 'pointer' }}
+              onClick={onOpenNotifications}
+              title={language === 'en' ? 'Notifications' : 'Thông báo'}
+            >
+              <Icon name="bell" size={20} />
+            </button>
           </div>
         </div>
 

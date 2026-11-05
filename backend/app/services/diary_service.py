@@ -176,6 +176,20 @@ class DiaryService:
         await db.flush()
         await db.refresh(new_diary)
 
+        # Thông báo tới tất cả Admin và Owner khi có nhật ký công khai chờ duyệt
+        if request.is_public:
+            from app.services.notification_service import NotificationService
+            author_display = current_user.nickname or current_user.username or "Người dùng"
+            diary_title = new_diary.title or "Không có tiêu đề"
+            await NotificationService.notify_admins_and_owners(
+                db,
+                title="[Nhật ký] Bài viết cộng đồng mới chờ duyệt",
+                body=f'{author_display} vừa gửi bài nhật ký "{diary_title}" để chia sẻ với cộng đồng. Vui lòng kiểm duyệt.',
+                target_url="/admin",
+                sender_id=current_user.id,
+                notification_type="SYSTEM",
+            )
+
         data = {
             "id": new_diary.id,
             "entry_date": new_diary.entry_date,

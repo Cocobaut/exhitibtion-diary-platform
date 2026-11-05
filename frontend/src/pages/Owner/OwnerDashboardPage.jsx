@@ -7,7 +7,7 @@ import { adminStudioService } from '../../services/adminStudioService';
 import { aiCopilotService } from '../../services/aiCopilotService';
 import { UserRoleManagementModal } from './UserRoleManagementModal';
 
-export function OwnerDashboardPage({ onNavigate }) {
+export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThemeModal }) {
   const { user, isOwner } = useAuth();
   const { language, setLanguage } = useLanguage();
 
@@ -72,9 +72,17 @@ export function OwnerDashboardPage({ onNavigate }) {
   const [imgEnabled, setImgEnabled] = useState(true);
   const [imgProvider, setImgProvider] = useState('gemini');
   const [imgApiKey, setImgApiKey] = useState('');
-  const [imgModel, setImgModel] = useState('');
+  const [imgModel, setImgModel] = useState('imagen-3.0-generate-002');
   const [imgBaseUrl, setImgBaseUrl] = useState('');
-  const [imgDiscoveredModels, setImgDiscoveredModels] = useState([]);
+  const DEFAULT_IMAGE_MODELS = [
+    { id: 'imagen-3.0-generate-002', display_name: 'Google Imagen 3 (imagen-3.0-generate-002) - Khuyên dùng' },
+    { id: 'imagen-3.0-fast-generate-001', display_name: 'Google Imagen 3 Fast (imagen-3.0-fast-generate-001) - Tốc độ cao' },
+    { id: 'imagen-3.0-capability-001', display_name: 'Google Imagen 3 Capability (imagen-3.0-capability-001)' },
+    { id: 'gemini-2.5-flash', display_name: 'Gemini 2.5 Flash Art Vector Engine (gemini-2.5-flash) - Tương thích 100%' },
+    { id: 'gemini-2.0-flash', display_name: 'Gemini 2.0 Flash Art Engine (gemini-2.0-flash)' },
+    { id: 'gemini-1.5-pro', display_name: 'Gemini 1.5 Pro Art Master (gemini-1.5-pro)' },
+  ];
+  const [imgDiscoveredModels, setImgDiscoveredModels] = useState(DEFAULT_IMAGE_MODELS);
   const [isDiscoveringImg, setIsDiscoveringImg] = useState(false);
 
   // Dùng chung một khóa cho duyệt bài và vẽ tranh
@@ -260,8 +268,12 @@ export function OwnerDashboardPage({ onNavigate }) {
       return;
     }
 
-    if (isMod) setIsDiscoveringMod(true);
-    else setIsDiscoveringImg(true);
+    if (isMod) {
+      setIsDiscoveringMod(true);
+      if (useSameAiKey) setIsDiscoveringImg(true);
+    } else {
+      setIsDiscoveringImg(true);
+    }
 
     try {
       const res = await aiCopilotService.discoverModels({
@@ -275,35 +287,44 @@ export function OwnerDashboardPage({ onNavigate }) {
       if (data?.discovered_models && data.discovered_models.length > 0) {
         if (isMod) {
           setModDiscoveredModels(data.discovered_models);
-          if (data.recommended_model_id) setModModel(data.recommended_model_id);
-          triggerToast(
-            language === 'en'
-              ? `✦ Successfully discovered ${data.discovered_models.length} model(s) for Moderation.`
-              : `✦ Tìm thấy ${data.discovered_models.length} mô hình cho kiểm duyệt.`
-          );
+          if (data.recommended_model_id && !modModel) setModModel(data.recommended_model_id);
         } else {
           setImgDiscoveredModels(data.discovered_models);
-          if (data.recommended_model_id) setImgModel(data.recommended_model_id);
-          triggerToast(
-            language === 'en'
-              ? `✦ Successfully discovered ${data.discovered_models.length} model(s) for Image Generation.`
-              : `✦ Tìm thấy ${data.discovered_models.length} mô hình cho sinh ảnh.`
-          );
+          if (data.recommended_model_id && !imgModel) setImgModel(data.recommended_model_id);
         }
-      } else {
-        triggerToast(
-          language === 'en'
-            ? 'Key verified, but no specific models were returned by the provider.'
-            : 'Khóa API hợp lệ nhưng nhà cung cấp chưa trả về danh sách mô hình.'
-        );
       }
+
+      // If checking moderation with shared key, also discover image models automatically!
+      if (isMod && useSameAiKey) {
+        try {
+          const imgRes = await aiCopilotService.discoverModels({
+            api_key: keyToTest || 'KEEP_CURRENT_KEY',
+            provider: imgProvider || modProvider || 'gemini',
+            task_type: 'image_generation',
+            base_url: imgBaseUrl.trim() || null,
+          });
+          const imgData = imgRes?.data || imgRes;
+          if (imgData?.discovered_models && imgData.discovered_models.length > 0) {
+            setImgDiscoveredModels(imgData.discovered_models);
+            if (imgData.recommended_model_id && !imgModel) setImgModel(imgData.recommended_model_id);
+          }
+        } catch (imgErr) {
+          console.warn('Image models discovery note:', imgErr);
+        }
+      }
+
+      triggerToast(
+        language === 'en'
+          ? '✦ Successfully verified API Key and loaded available models!'
+          : '✦ Đã kiểm tra khóa API và tải danh sách các mô hình khả dụng thành công!'
+      );
     } catch (err) {
       console.error('Lỗi khi khám phá models:', err);
       const msg = err?.response?.data?.detail || err?.response?.data?.message || err?.message || 'Không kết nối được tới nhà cung cấp';
       triggerToast(msg);
     } finally {
-      if (isMod) setIsDiscoveringMod(false);
-      else setIsDiscoveringImg(false);
+      setIsDiscoveringMod(false);
+      setIsDiscoveringImg(false);
     }
   };
 
@@ -548,7 +569,7 @@ export function OwnerDashboardPage({ onNavigate }) {
   // Strict role guard: Only OWNER is permitted
   if (!isOwner && user?.role !== 'OWNER') {
     return (
-      <div className="stage admin" style={{ display: 'grid', placeItems: 'center' }}>
+      <div className="stage admin owner-dashboard-stage" style={{ display: 'grid', placeItems: 'center', background: 'var(--wall)', transition: 'background 0.3s ease' }}>
         <div className="box" style={{ padding: '36px', textAlign: 'center', maxWidth: '480px' }}>
           <h2 className="serif" style={{ fontSize: '24px', margin: '0 0 10px', fontWeight: 600 }}>
             {language === 'en' ? 'Owner Access Required' : 'Cần quyền Chủ sở hữu'}
@@ -574,8 +595,10 @@ export function OwnerDashboardPage({ onNavigate }) {
 
   return (
     <div
-      className="stage admin custom-scrollbar"
+      className="stage admin custom-scrollbar owner-dashboard-stage"
       style={{
+        background: 'var(--wall)',
+        transition: 'background 0.3s ease',
         overflowY: 'auto',
         overflowX: 'hidden',
         padding: '24px 32px 56px',
@@ -635,7 +658,29 @@ export function OwnerDashboardPage({ onNavigate }) {
             </h1>
           </div>
 
-          <div className="row" style={{ gap: '14px', alignItems: 'center' }}>
+          <div className="row" style={{ gap: '12px', alignItems: 'center' }}>
+            {/* Theme Palette Switcher */}
+            <button
+              type="button"
+              className="iconbtn glass"
+              style={{ cursor: 'pointer' }}
+              title={language === 'en' ? 'Color theme' : 'Bảng màu nền'}
+              onClick={onOpenThemeModal}
+            >
+              <Icon name="palette" size={20} />
+            </button>
+
+            {/* Notifications Bell */}
+            <button
+              type="button"
+              className="iconbtn glass"
+              style={{ cursor: 'pointer' }}
+              onClick={onOpenNotifications}
+              title={language === 'en' ? 'Notifications' : 'Thông báo'}
+            >
+              <Icon name="bell" size={20} />
+            </button>
+
             {/* Language Switcher */}
             <div className="lang glass" style={{ cursor: 'pointer', userSelect: 'none' }}>
               <b

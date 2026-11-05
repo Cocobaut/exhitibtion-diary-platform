@@ -100,54 +100,67 @@ class AiDiscoveryService:
                 discovered[0].reason = "Mô hình khả dụng được cung cấp trực tiếp từ Provider API cho tài khoản của bạn."
 
         else:  # image_generation
-            for m in raw_models:
-                m_name = m.get("name", "").replace("models/", "")
-                if (
-                    "imagen" in m_name.lower()
-                    or "image" in m_name.lower()
-                    or "banana" in m_name.lower()
-                ):
-                    discovered.append(DiscoveredModelItem(
-                        id=m_name,
-                        display_name=m.get("displayName", m_name),
-                        is_recommended=False,
-                        badge="Khả dụng",
-                        reason=m.get("description", "Mô hình sinh ảnh nghệ thuật của Google"),
-                    ))
-
-            # Flagship Imagen 3 (imagen-3.0-generate-002) is Google's primary requested text-to-image engine
-            has_imagen_3 = any("imagen-3.0-generate-002" in item.id for item in discovered)
-            if not has_imagen_3:
-                discovered.insert(0, DiscoveredModelItem(
+            # Predefined comprehensive Google Imagen & Gemini Image models suite
+            google_image_catalog = [
+                DiscoveredModelItem(
                     id="imagen-3.0-generate-002",
                     display_name="Google Imagen 3 (imagen-3.0-generate-002)",
                     is_recommended=True,
                     badge="Khuyên dùng số 1",
-                    reason="Mô hình sinh ảnh nghệ thuật tiêu chuẩn cao cấp nhất của Google (độ nét 1024x1024, phong cách nghệ thuật tinh xảo).",
-                ))
-                rec_id = "imagen-3.0-generate-002"
-            else:
-                priority_image_order = [
-                    "imagen-3.0-generate-002",
-                    "gemini-2.5-flash-image",
-                    "gemini-3-pro-image",
-                    "gemini-3.1-flash-image",
-                ]
-                rec_id = None
-                for p in priority_image_order:
-                    for item in discovered:
-                        if p in item.id:
-                            rec_id = item.id
-                            item.is_recommended = True
-                            item.badge = "Khuyên dùng số 1"
-                            item.reason = "Chất lượng hình ảnh nghệ thuật đỉnh cao, độ chi tiết tinh xảo và phản hồi nhanh."
-                            break
-                    if rec_id:
-                        break
+                    reason="Mô hình sinh ảnh nghệ thuật tiêu chuẩn cao cấp nhất của Google (độ nét 1024x1024, phong cách hội họa tinh xảo).",
+                ),
+                DiscoveredModelItem(
+                    id="imagen-3.0-fast-generate-001",
+                    display_name="Google Imagen 3 Fast (imagen-3.0-fast-generate-001)",
+                    is_recommended=False,
+                    badge="Tốc độ cao",
+                    reason="Mô hình sinh ảnh tốc độ cao của Google, tối ưu hạn ngạch (quota) và thời gian phản hồi.",
+                ),
+                DiscoveredModelItem(
+                    id="imagen-3.0-capability-001",
+                    display_name="Google Imagen 3 Capability (imagen-3.0-capability-001)",
+                    is_recommended=False,
+                    badge="Đa năng",
+                    reason="Hỗ trợ các yêu cầu tạo hình ảnh nghệ thuật và bố cục đa phong cách.",
+                ),
+                DiscoveredModelItem(
+                    id="gemini-2.5-flash",
+                    display_name="Gemini 2.5 Flash Art Vector Engine (gemini-2.5-flash)",
+                    is_recommended=False,
+                    badge="Vector SVG",
+                    reason="Tương thích 100% mọi API Key (kể cả key dùng thử). Sinh tranh nghệ thuật dạng vector SVG tuyệt đẹp.",
+                ),
+                DiscoveredModelItem(
+                    id="gemini-2.0-flash",
+                    display_name="Gemini 2.0 Flash Art Engine (gemini-2.0-flash)",
+                    is_recommended=False,
+                    badge="Khả dụng",
+                    reason="Mô hình thế hệ mới với khả năng hiểu ngữ nghĩa văn học và dựng tranh nghệ thuật sắc sảo.",
+                ),
+                DiscoveredModelItem(
+                    id="gemini-1.5-pro",
+                    display_name="Gemini 1.5 Pro Art Master (gemini-1.5-pro)",
+                    is_recommended=False,
+                    badge="Chuyên sâu",
+                    reason="Mô hình suy luận sâu, tái hiện chi tiết bối cảnh và cảm xúc phức tạp của tác phẩm.",
+                ),
+            ]
 
-                if not rec_id and discovered:
-                    discovered[0].is_recommended = True
-                    rec_id = discovered[0].id
+            catalog_ids = {item.id for item in google_image_catalog}
+            for m in raw_models:
+                m_name = m.get("name", "").replace("models/", "")
+                if ("imagen" in m_name.lower() or "image" in m_name.lower()) and m_name not in catalog_ids:
+                    google_image_catalog.append(DiscoveredModelItem(
+                        id=m_name,
+                        display_name=m.get("displayName", m_name),
+                        is_recommended=False,
+                        badge="Khả dụng",
+                        reason=m.get("description", "Mô hình sinh ảnh bổ sung phát hiện từ tài khoản Google."),
+                    ))
+                    catalog_ids.add(m_name)
+
+            discovered = google_image_catalog
+            rec_id = "imagen-3.0-generate-002" 
 
 
 

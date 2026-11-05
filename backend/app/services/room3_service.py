@@ -458,6 +458,26 @@ class Room3Service:
             author_nickname=current_user.nickname,
         )
 
+        # Thông báo tới tất cả Admin và Owner khi có dải thông điệp mới
+        author_display = "Người dùng ẩn danh" if request.is_anonymous else (current_user.nickname or current_user.username or "Người dùng")
+        if status_val == "PENDING":
+            notif_title = "[Phòng 3] Dải thông điệp mới chờ duyệt"
+            notif_body = f'Tác giả {author_display} vừa treo dải thông điệp "{new_ribbon.title}" lên Cây Nguyện Ước. Vui lòng kiểm duyệt.'
+            notif_target = "/admin"
+        else:
+            notif_title = "[Phòng 3] Dải thông điệp mới trên Cây"
+            notif_body = f'Tác giả {author_display} vừa treo dải thông điệp "{new_ribbon.title}" lên Cây Nguyện Ước.'
+            notif_target = f"/rooms/3/artworks/{new_ribbon.id}"
+
+        await NotificationService.notify_admins_and_owners(
+            db,
+            title=notif_title,
+            body=notif_body,
+            target_url=notif_target,
+            sender_id=current_user.id,
+            notification_type="SYSTEM",
+        )
+
         data = {
             "id": new_ribbon.id,
             "room_id": new_ribbon.room_id,

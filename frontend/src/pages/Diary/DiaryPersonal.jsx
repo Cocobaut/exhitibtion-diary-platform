@@ -180,7 +180,7 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
           return (
             <div
               key={entry.id || idx}
-              className="row"
+              className={`row ${isSelected ? 'diary-entry-card-active' : ''}`}
               onClick={() => setSelectedIdx(idx)}
               style={{
                 alignItems: 'flex-start',
@@ -193,7 +193,8 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
                 color: isSelected ? 'var(--ink)' : 'inherit',
                 border: isSelected ? 'none' : '1px solid var(--glass-line)',
                 boxShadow: isSelected ? '0 8px 24px rgba(0,0,0,.15)' : 'none',
-                transition: 'all 0.15s ease',
+                transition: 'all 0.25s ease',
+                '--mood-aura': moodColor,
               }}
             >
               <div style={{ textAlign: 'center', width: '44px', flex: 'none' }}>
@@ -213,7 +214,10 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
                   className="row"
                   style={{ gap: '6px', fontSize: '12.5px', opacity: 0.85 }}
                 >
-                  <i className="dot" style={{ background: moodColor }} />
+                  <i
+                    className={`dot ${isSelected ? 'diary-mood-dot-breathing' : ''}`}
+                    style={{ background: moodColor, '--mood-aura': moodColor }}
+                  />
                   <span>{entry.mood || (language === 'en' ? 'Peaceful' : 'Bình yên')}</span>
                   <span style={{ marginLeft: 'auto' }} className="row">
                     {!entry.is_public ? (
@@ -264,7 +268,8 @@ export function DiaryPersonal({ onOpenWriteModal, searchQuery = '', refreshTrigg
       {/* Right Reading Notebook */}
       {currentDisplay ? (
         <div
-          className="abs custom-scrollbar diary-scroll"
+          key={currentDisplay.id || selectedIdx}
+          className="abs custom-scrollbar diary-scroll diary-page-curl"
           style={{
             left: '480px',
             right: 0,

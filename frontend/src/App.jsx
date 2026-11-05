@@ -184,12 +184,15 @@ function MainApp() {
           {currentRoute === 'admin' && (
             <AdminPage
               onOpenNotifications={() => setIsNotificationsOpen(true)}
+              onOpenThemeModal={() => setIsThemeModalOpen(true)}
             />
           )}
 
           {currentRoute === 'owner' && (
             <OwnerDashboardPage
               onNavigate={setCurrentRoute}
+              onOpenNotifications={() => setIsNotificationsOpen(true)}
+              onOpenThemeModal={() => setIsThemeModalOpen(true)}
             />
           )}
 

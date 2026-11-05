@@ -547,6 +547,17 @@ class Room1Service:
             author_nickname=current_user.nickname,
         )
 
+        # Thông báo tới tất cả Admin và Owner khi có tác phẩm mới chờ duyệt
+        author_display = "Người dùng ẩn danh" if request.is_anonymous else (current_user.nickname or current_user.username or "Người dùng")
+        await NotificationService.notify_admins_and_owners(
+            db,
+            title="[Phòng 1] Tác phẩm mới chờ duyệt",
+            body=f'Tác giả {author_display} vừa gửi tác phẩm "{new_artwork.title}" vào Triển lãm Hành trình (Phòng 1). Vui lòng kiểm duyệt.',
+            target_url="/admin",
+            sender_id=current_user.id,
+            notification_type="SYSTEM",
+        )
+
         return {
             "id": new_artwork.id,
             "room_id": new_artwork.room_id,

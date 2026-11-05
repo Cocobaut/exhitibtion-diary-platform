@@ -1743,3 +1743,338 @@ table.at td {
   }
 }
 
+
+
+/* -------------------------------------------------------------
+   Diary Page Flip Animation (Soft Page-Curl & Fade)
+   ------------------------------------------------------------- */
+@keyframes softPageCurlFade {
+  0% {
+    opacity: 0.35;
+    transform: perspective(1200px) rotateY(-7deg) translateX(14px) scale(0.985);
+    box-shadow: -18px 0 28px rgba(0, 0, 0, 0.22), 0 24px 50px rgba(0, 0, 0, 0.35);
+    filter: brightness(0.94);
+  }
+  60% {
+    filter: brightness(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1200px) rotateY(0deg) translateX(0) scale(1);
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.35);
+    filter: brightness(1);
+  }
+}
+
+.diary-page-curl {
+  transform-origin: left center;
+  animation: softPageCurlFade 0.44s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity, box-shadow;
+}
+
+/* -------------------------------------------------------------
+   Diary Mood Aura Breathing (Nhịp thở tâm trạng)
+   ------------------------------------------------------------- */
+@keyframes moodAuraPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--mood-aura, rgba(226, 188, 85, 0.25));
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 14px 5px var(--mood-aura, rgba(226, 188, 85, 0.65));
+    transform: scale(1.18);
+  }
+}
+
+@keyframes moodCardAuraGlow {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), inset 0 0 0 1px var(--mood-aura, rgba(226, 188, 85, 0.15));
+  }
+  50% {
+    box-shadow: 0 12px 34px var(--mood-aura, rgba(226, 188, 85, 0.32)), inset 0 0 18px 1px var(--mood-aura, rgba(226, 188, 85, 0.22));
+  }
+}
+
+.diary-mood-dot-breathing {
+  animation: moodAuraPulse 3.8s ease-in-out infinite;
+  display: inline-block;
+  border-radius: 50%;
+}
+
+.diary-entry-card-active {
+  animation: moodCardAuraGlow 4.2s ease-in-out infinite;
+}
+
+/* -------------------------------------------------------------
+   Notebook Polaroid / Scrapbook Tilt
+   ------------------------------------------------------------- */
+.notebook-polaroid-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
+  will-change: transform, box-shadow;
+  transform: none !important;
+}
+
+.notebook-polaroid-card:hover {
+  transform: translateY(-6px) scale(1.01) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28), 0 0 18px 2px rgba(201, 154, 59, 0.28) !important;
+  border-color: var(--gold) !important;
+  z-index: 5;
+}
+
+/* -------------------------------------------------------------
+   Wax Seal Flap Open Animation (Mở phong ấn sáp / Thư hạ cánh)
+   ------------------------------------------------------------- */
+@keyframes waxSealFlapModal {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.92) perspective(1000px) rotateX(10deg);
+    filter: blur(4px);
+  }
+  60% {
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) perspective(1000px) rotateX(0deg);
+  }
+}
+
+@keyframes waxSealStampBreak {
+  0% {
+    transform: scale(0.6) rotate(-18deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.18) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes letterParchmentUnfold {
+  0% {
+    clip-path: polygon(0 0, 100% 0, 100% 12%, 0 12%);
+    opacity: 0.4;
+  }
+  100% {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    opacity: 1;
+  }
+}
+
+.wax-seal-modal {
+  animation: waxSealFlapModal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.wax-seal-stamp {
+  animation: waxSealStampBreak 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.wax-letter-body {
+  animation: letterParchmentUnfold 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* -------------------------------------------------------------
+   Owner Dashboard Museum Typography & Aesthetics
+   ------------------------------------------------------------- */
+.owner-dashboard-stage {
+  font-family: var(--book);
+  color: var(--ink);
+}
+
+.owner-dashboard-stage h1,
+.owner-dashboard-stage h2,
+.owner-dashboard-stage h3,
+.owner-dashboard-stage h4,
+.owner-dashboard-stage .serif,
+.owner-dashboard-stage .stat b {
+  font-family: var(--serif) !important;
+}
+
+.owner-dashboard-stage .owner-badge-tag {
+  font-family: var(--serif) !important;
+  letter-spacing: 0.22em;
+}
+
+.owner-dashboard-stage .seg span {
+  font-family: var(--serif);
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.owner-dashboard-stage table th {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+}
+
+.owner-dashboard-stage table td {
+  font-family: var(--book);
+  font-size: 14.5px;
+}
+
+/* =============================================================
+   ENHANCED BUTTON CONTRAST & THEME ICONS (museum, moss, plum)
+   ============================================================= */
+
+/* Theme Palette & Bell Icons: Always sharp, clear, and visible in all themes */
+.iconbtn.glass {
+  background: var(--glass) !important;
+  border: 1px solid var(--glass-line) !important;
+  color: var(--onw) !important;
+  backdrop-filter: blur(8px);
+}
+
+.iconbtn.glass svg {
+  color: var(--onw) !important;
+  stroke: var(--onw) !important;
+}
+
+/* 1. Main Action Buttons in the 3 dark themes: vivid, clear white text */
+.screen:not([data-theme="paper"]) .btn.main {
+  background: linear-gradient(135deg, var(--acc) 0%, var(--acc2, #6A030C) 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+.screen:not([data-theme="paper"]) .btn.main:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* 2. Line (Secondary) Buttons: High contrast, dark text on light parchment surface */
+.screen:not([data-theme="paper"]) .btn.line {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #241A17 !important;
+  border: 1.5px solid var(--acc) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.screen:not([data-theme="paper"]) .btn.line:hover {
+  background: var(--acc) !important;
+  color: #FFFFFF !important;
+  border-color: var(--acc) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 3. Danger Buttons: Soft tinted background with high-contrast crimson text */
+.screen:not([data-theme="paper"]) .btn.danger {
+  background: #FFF0F0 !important;
+  color: #B91C1C !important;
+  border: 1.5px solid #F87171 !important;
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.12) !important;
+}
+
+.screen:not([data-theme="paper"]) .btn.danger:hover {
+  background: #B91C1C !important;
+  color: #FFFFFF !important;
+  border-color: #B91C1C !important;
+}
+
+/* 4. Ghost Buttons */
+.screen:not([data-theme="paper"]) .btn.ghost {
+  color: #241A17 !important;
+  font-weight: 600 !important;
+}
+
+.screen:not([data-theme="paper"]) .btn.ghost:hover {
+  color: var(--acc) !important;
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 5. AI Copilot & AI Art Buttons: high readability */
+.screen:not([data-theme="paper"]) button[style*="#b45309"],
+.screen:not([data-theme="paper"]) button[style*="#d97706"] {
+  background: #FEF3C7 !important;
+  color: #92400E !important;
+  border: 1.5px solid #D97706 !important;
+  font-weight: 600 !important;
+}
+
+.screen:not([data-theme="paper"]) button[style*="#6d28d9"],
+.screen:not([data-theme="paper"]) button[style*="#8b5cf6"] {
+  background: #F5F3FF !important;
+  color: #5B21B6 !important;
+  border: 1.5px solid #8B5CF6 !important;
+  font-weight: 600 !important;
+}
+
+/* 6. Admin Navigation Tabs on dark museum walls */
+.screen:not([data-theme="paper"]) .stage.admin .tabs {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.screen:not([data-theme="paper"]) .stage.admin .tabs span {
+  color: var(--onw2) !important;
+  font-weight: 500 !important;
+}
+
+.screen:not([data-theme="paper"]) .stage.admin .tabs span:hover {
+  color: var(--onw) !important;
+}
+
+.screen:not([data-theme="paper"]) .stage.admin .tabs span.on {
+  color: #FFFFFF !important;
+  border-bottom: 3px solid var(--gold) !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5) !important;
+}
+
+.screen:not([data-theme="paper"]) .stage.admin .tabs .n {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+}
+
+/* 7. Segment Switchers on dark museum walls (Admin & Owner) */
+.screen:not([data-theme="paper"]) .stage.admin .seg,
+.screen:not([data-theme="paper"]) .owner-dashboard-stage .seg {
+  background: rgba(0, 0, 0, 0.28) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px);
+}
+
+.screen:not([data-theme="paper"]) .stage.admin .seg span,
+.screen:not([data-theme="paper"]) .owner-dashboard-stage .seg span {
+  color: var(--onw2) !important;
+  font-weight: 500 !important;
+}
+
+.screen:not([data-theme="paper"]) .stage.admin .seg span:hover,
+.screen:not([data-theme="paper"]) .owner-dashboard-stage .seg span:hover {
+  color: #FFFFFF !important;
+}
+
+.screen:not([data-theme="paper"]) .stage.admin .seg span.on,
+.screen:not([data-theme="paper"]) .owner-dashboard-stage .seg span.on {
+  background: var(--acc) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+  font-weight: 600 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 8. Top page headers on dark museum walls */
+.screen:not([data-theme="paper"]) .stage.admin h1,
+.screen:not([data-theme="paper"]) .owner-dashboard-stage h1 {
+  color: var(--onw) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.screen:not([data-theme="paper"]) .stage.admin .lang.glass,
+.screen:not([data-theme="paper"]) .owner-dashboard-stage .lang.glass {
+  background: var(--glass) !important;
+  border: 1px solid var(--glass-line) !important;
+  color: var(--onw) !important;
+}

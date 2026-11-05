@@ -24,7 +24,8 @@ export function AdminPending({
   const [isApproving, setIsApproving] = useState(false);
   const [sortOrder, setSortOrder] = useState('oldest');
 
-  // Form edit fields - Bilingual support
+  // Form edit fields - Bilingual support & Room-specific forms
+  const [authorDisplayName, setAuthorDisplayName] = useState('');
   const [titleVi, setTitleVi] = useState('');
   const [titleEn, setTitleEn] = useState('');
   const [shortContentVi, setShortContentVi] = useState('');
@@ -33,8 +34,24 @@ export function AdminPending({
   const [contentEn, setContentEn] = useState('');
   const [mediaUrl, setMediaUrl] = useState('');
   const [quote, setQuote] = useState('');
+  // Room 2 fields
+  const [targetDate, setTargetDate] = useState('');
+  const [visibility, setVisibility] = useState('PUBLIC');
+  // Room 3 fields
+  const [tagCategory, setTagCategory] = useState('ENCOURAGEMENT');
+  const [colorCode, setColorCode] = useState('#FFD700');
+  // Validation state: Admin is final checkpoint before public
+  const [validationErrors, setValidationErrors] = useState({});
+
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const LEAF_CATEGORIES = [
+    { key: 'ENCOURAGEMENT', labelVi: 'Khích lệ, kiên trì (Vàng)', labelEn: 'Encouragement (Gold)', color: '#FFD700' },
+    { key: 'HEALING', labelVi: 'Chữa lành, bình an (Xanh lá)', labelEn: 'Healing (Green)', color: '#98FB98' },
+    { key: 'GRATITUDE', labelVi: 'Cảm ơn, trân trọng (Hồng)', labelEn: 'Gratitude (Pink)', color: '#FFB6C1' },
+    { key: 'PERSPECTIVE', labelVi: 'Góc nhìn cuộc sống (Xanh lam)', labelEn: 'Perspective (Sky Blue)', color: '#87CEFA' },
+  ];
 
   // AI Copilot states
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
@@ -99,13 +116,26 @@ export function AdminPending({
       setContentVi(cVi);
       setContentEn(cEn);
 
+      setAuthorDisplayName(currentItem.author_display_name || currentItem.nickname || '');
       setMediaUrl(currentItem.media_url || '');
       setQuote(
         currentItem.quote ||
           (roomId === 1 ? (language === 'en' ? '“Failure is a bend, not the end of the road.”' : '“Thất bại là một khúc quanh, không phải điểm dừng chân.”') : '')
       );
+      // Room 2 sync
+      const rawDate = currentItem.target_date ? String(currentItem.target_date).slice(0, 10) : '';
+      setTargetDate(rawDate);
+      setVisibility(currentItem.visibility || 'PUBLIC');
+      // Room 3 sync
+      const cat = currentItem.tag_category || 'ENCOURAGEMENT';
+      setTagCategory(cat);
+      const matchedCat = LEAF_CATEGORIES.find((c) => c.key === cat);
+      setColorCode(currentItem.color_code || matchedCat?.color || '#FFD700');
+
+      setValidationErrors({});
       setErrorMessage('');
     } else {
+      setAuthorDisplayName('');
       setTitleVi('');
       setTitleEn('');
       setShortContentVi('');
@@ -114,6 +144,11 @@ export function AdminPending({
       setContentEn('');
       setMediaUrl('');
       setQuote('');
+      setTargetDate('');
+      setVisibility('PUBLIC');
+      setTagCategory('ENCOURAGEMENT');
+      setColorCode('#FFD700');
+      setValidationErrors({});
     }
   }, [currentItem, roomId, language]);
 
@@ -262,12 +297,56 @@ export function AdminPending({
     if (!currentItem) return;
     setErrorMessage('');
 
-    // Room 1 strictly requires media_url
-    if (roomId === 1 && !mediaUrl) {
-      const reqMsg =
-        language === 'en'
-          ? 'Artwork image is required in Room 1 before approval.'
-          : 'Tranh minh họa là bắt buộc ở Phòng 1 trước khi phê duyệt.';
+    // Kiểm tra tính đầy đủ bắt buộc (Admin là chốt chặn cuối cùng trước khi public)
+    const errors = {};
+
+    if (!authorDisplayName.trim()) {
+      errors.authorDisplayName = language === 'en' ? 'Author pseudonym is required.' : 'Bút danh / tên tác giả không được để trống.';
+    }
+    if (!titleVi.trim()) {
+      errors.titleVi = language === 'en' ? 'Vietnamese title is required.' : 'Tiêu đề Tiếng Việt không được để trống.';
+    }
+    if (!titleEn.trim()) {
+      errors.titleEn = language === 'en' ? 'English title is required.' : 'Tiêu đề Tiếng Anh không được để trống.';
+    }
+    if (!shortContentVi.trim()) {
+      errors.shortContentVi = language === 'en' ? 'Vietnamese summary is required.' : 'Tóm tắt Tiếng Việt không được để trống.';
+    }
+    if (!shortContentEn.trim()) {
+      errors.shortContentEn = language === 'en' ? 'English summary is required.' : 'Tóm tắt Tiếng Anh không được để trống.';
+    }
+    if (!contentVi.trim()) {
+      errors.contentVi = language === 'en' ? 'Vietnamese content is required.' : 'Nội dung Tiếng Việt không được để trống.';
+    }
+    if (!contentEn.trim()) {
+      errors.contentEn = language === 'en' ? 'English content is required.' : 'Nội dung Tiếng Anh không được để trống.';
+    }
+
+    if (roomId === 1) {
+      if (!mediaUrl.trim()) {
+        errors.mediaUrl = language === 'en'
+          ? 'Artwork image is required in Room 1 (Journey) before approval. Please upload or generate art.'
+          : 'Tranh minh họa là bắt buộc ở Phòng 1 (Hành trình). Vui lòng tải ảnh lên hoặc bấm Vẽ tranh AI.';
+      }
+      if (!quote.trim()) {
+        errors.quote = language === 'en' ? 'Artistic quote is required in Room 1.' : 'Trích dẫn nghệ thuật là bắt buộc ở Phòng 1.';
+      }
+    } else if (roomId === 2) {
+      if (!targetDate) {
+        errors.targetDate = language === 'en' ? 'Descending date (Target Date) is required for Room 2 lantern.' : 'Ngày mở thư / hạ cánh là bắt buộc cho lồng đèn Phòng 2.';
+      }
+    } else if (roomId === 3) {
+      if (!tagCategory) {
+        errors.tagCategory = language === 'en' ? 'Message category is required for Room 3.' : 'Vui lòng chọn danh mục thông điệp cho Phòng 3.';
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      const totalMissing = Object.keys(errors).length;
+      const reqMsg = language === 'en'
+        ? `⚠️ Missing ${totalMissing} required field(s). Admin is the final checkpoint before public exhibition. Please complete all fields marked with (*). You can use "AI Translate" to auto-translate.`
+        : `⚠️ Còn ${totalMissing} ô thông tin bắt buộc bị để trống. Ban quản trị là nơi kiểm duyệt cuối cùng trước khi public. Vui lòng điền đủ các ô có dấu (*). Bạn có thể dùng nút "Dịch AI" để tự động điền tiếng Anh.`;
       if (triggerToast) {
         triggerToast(reqMsg);
       } else {
@@ -276,9 +355,9 @@ export function AdminPending({
       return;
     }
 
+    setValidationErrors({});
     setIsApproving(true);
     try {
-      // Cột gốc luôn theo ngôn ngữ tác giả viết, bản kia chỉ là bản dịch
       const origEn = currentItem.original_language === 'en';
       const activeTitle = (origEn ? titleEn : titleVi).trim() || currentItem.title;
       const activeShort = (origEn ? shortContentEn : shortContentVi).trim() || currentItem.short_content;
@@ -286,18 +365,21 @@ export function AdminPending({
 
       const payload = {
         title: activeTitle,
-        title_vi: titleVi.trim() || undefined,
-        title_en: titleEn.trim() || undefined,
+        title_vi: titleVi.trim(),
+        title_en: titleEn.trim(),
+        author_display_name: authorDisplayName.trim() || undefined,
         short_content: activeShort,
-        short_content_vi: shortContentVi.trim() || undefined,
-        short_content_en: shortContentEn.trim() || undefined,
+        short_content_vi: shortContentVi.trim(),
+        short_content_en: shortContentEn.trim(),
         content: activeContent,
-        content_vi: contentVi.trim() || undefined,
-        content_en: contentEn.trim() || undefined,
+        content_vi: contentVi.trim(),
+        content_en: contentEn.trim(),
         media_url: mediaUrl || undefined,
         quote: quote?.trim() || undefined,
-        tag_category: currentItem.tag_category,
-        color_code: currentItem.color_code,
+        target_date: roomId === 2 && targetDate ? targetDate : undefined,
+        visibility: roomId === 2 ? (visibility || 'PUBLIC') : undefined,
+        tag_category: roomId === 3 ? tagCategory : currentItem.tag_category,
+        color_code: roomId === 3 ? colorCode : currentItem.color_code,
       };
 
       const res = await adminRoomService.approveArtwork(roomId, currentItem.id, payload);
@@ -496,6 +578,38 @@ export function AdminPending({
             </div>
           </div>
 
+          {/* Validation Warning Banner if required fields are missing */}
+          {Object.keys(validationErrors).length > 0 && (
+            <div
+              style={{
+                marginTop: '16px',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid #ef4444',
+                color: '#b91c1c',
+                fontSize: '13px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+              }}
+            >
+              <Icon name="x" size={18} />
+              <div>
+                <strong>
+                  {language === 'en'
+                    ? '⚠️ Missing required fields:'
+                    : '⚠️ Ban quản trị phải điền đầy đủ các ô còn thiếu trước khi công khai:'}
+                </strong>
+                <span style={{ marginLeft: '6px' }}>
+                  {language === 'en'
+                    ? 'All fields marked with (*) are required. You can click "AI Translate" to quickly complete English.'
+                    : 'Tất cả các ô có dấu (*) không được để trống. Hãy bấm "Dịch AI" để tự động hoàn thiện tiếng Anh.'}
+                </span>
+              </div>
+            </div>
+          )}
+
           <div
             style={{
               display: 'grid',
@@ -506,49 +620,127 @@ export function AdminPending({
           >
             {/* Editor fields */}
             <div>
-              <AiTranslateButton
-                originalLanguage={currentItem.original_language}
-                source={currentItem.original_language === 'en'
-                  ? { title: titleEn, short_content: shortContentEn, content: contentEn }
-                  : { title: titleVi, short_content: shortContentVi, content: contentVi }}
-                onTranslated={(d, target) => {
-                  if (target === 'en') {
-                    if (d.title) setTitleEn(d.title);
-                    if (d.short_content) setShortContentEn(d.short_content);
-                    if (d.content) setContentEn(d.content);
-                  } else {
-                    if (d.title) setTitleVi(d.title);
-                    if (d.short_content) setShortContentVi(d.short_content);
-                    if (d.content) setContentVi(d.content);
-                  }
-                }}
-                onError={(msg) => (triggerToast ? triggerToast(`[AI] ${msg}`) : setErrorMessage(`[AI] ${msg}`))}
-              />
+              {/* Author pseudonym and translation bar */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '14px', alignItems: 'end', marginBottom: '14px' }}>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Author Pseudonym / Pen Name' : 'Bút danh / Tên hiển thị tác giả'}{' '}
+                    <span style={{ color: '#ef4444' }}>*</span>
+                  </div>
+                  <input
+                    className="inp"
+                    style={{
+                      borderColor: validationErrors.authorDisplayName ? '#ef4444' : undefined,
+                    }}
+                    placeholder={language === 'en' ? 'Author display name...' : 'Bút danh hiển thị tác giả...'}
+                    value={authorDisplayName}
+                    onChange={(e) => {
+                      setAuthorDisplayName(e.target.value);
+                      if (validationErrors.authorDisplayName) {
+                        setValidationErrors((prev) => ({ ...prev, authorDisplayName: null }));
+                      }
+                    }}
+                    maxLength={100}
+                  />
+                  {validationErrors.authorDisplayName && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.authorDisplayName}
+                    </div>
+                  )}
+                </div>
+                <div style={{ paddingBottom: '2px' }}>
+                  <AiTranslateButton
+                    originalLanguage={currentItem.original_language}
+                    source={currentItem.original_language === 'en'
+                      ? { title: titleEn, short_content: shortContentEn, content: contentEn }
+                      : { title: titleVi, short_content: shortContentVi, content: contentVi }}
+                    onTranslated={(d, target) => {
+                      if (target === 'en') {
+                        if (d.title) {
+                          setTitleEn(d.title);
+                          setValidationErrors((prev) => ({ ...prev, titleEn: null }));
+                        }
+                        if (d.short_content) {
+                          setShortContentEn(d.short_content);
+                          setValidationErrors((prev) => ({ ...prev, shortContentEn: null }));
+                        }
+                        if (d.content) {
+                          setContentEn(d.content);
+                          setValidationErrors((prev) => ({ ...prev, contentEn: null }));
+                        }
+                      } else {
+                        if (d.title) {
+                          setTitleVi(d.title);
+                          setValidationErrors((prev) => ({ ...prev, titleVi: null }));
+                        }
+                        if (d.short_content) {
+                          setShortContentVi(d.short_content);
+                          setValidationErrors((prev) => ({ ...prev, shortContentVi: null }));
+                        }
+                        if (d.content) {
+                          setContentVi(d.content);
+                          setValidationErrors((prev) => ({ ...prev, contentVi: null }));
+                        }
+                      }
+                    }}
+                    onError={(msg) => (triggerToast ? triggerToast(`[AI] ${msg}`) : setErrorMessage(`[AI] ${msg}`))}
+                  />
+                </div>
+              </div>
+
               {/* Bilingual Title Fields */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
                 <div>
                   <div className="fieldl">
-                    {language === 'en' ? 'Title (Vietnamese)' : 'Tiêu đề Tiếng Việt (VN)'}
+                    {language === 'en' ? 'Title (Vietnamese)' : 'Tiêu đề Tiếng Việt (VN)'}{' '}
+                    <span style={{ color: '#ef4444' }}>*</span>
                   </div>
                   <input
                     className="inp"
+                    style={{
+                      borderColor: validationErrors.titleVi ? '#ef4444' : undefined,
+                    }}
                     placeholder={language === 'en' ? 'Vietnamese title...' : 'Tiêu đề tiếng Việt...'}
                     value={titleVi}
-                    onChange={(e) => setTitleVi(e.target.value)}
+                    onChange={(e) => {
+                      setTitleVi(e.target.value);
+                      if (validationErrors.titleVi) {
+                        setValidationErrors((prev) => ({ ...prev, titleVi: null }));
+                      }
+                    }}
                     maxLength={150}
                   />
+                  {validationErrors.titleVi && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.titleVi}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="fieldl">
-                    {language === 'en' ? 'Title (English)' : 'Tiêu đề Tiếng Anh (EN)'}
+                    {language === 'en' ? 'Title (English)' : 'Tiêu đề Tiếng Anh (EN)'}{' '}
+                    <span style={{ color: '#ef4444' }}>*</span>
                   </div>
                   <input
                     className="inp"
+                    style={{
+                      borderColor: validationErrors.titleEn ? '#ef4444' : undefined,
+                    }}
                     placeholder={language === 'en' ? 'English title...' : 'Tiêu đề tiếng Anh...'}
                     value={titleEn}
-                    onChange={(e) => setTitleEn(e.target.value)}
+                    onChange={(e) => {
+                      setTitleEn(e.target.value);
+                      if (validationErrors.titleEn) {
+                        setValidationErrors((prev) => ({ ...prev, titleEn: null }));
+                      }
+                    }}
                     maxLength={150}
                   />
+                  {validationErrors.titleEn && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.titleEn}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -557,28 +749,54 @@ export function AdminPending({
                 <div>
                   <div className="fieldl">
                     {language === 'en' ? 'Short Content (Vietnamese)' : 'Tóm tắt Tiếng Việt (VN)'}{' '}
-                    <span>{shortContentVi.length} / 140</span>
+                    <span style={{ color: '#ef4444' }}>*</span> <span>{shortContentVi.length} / 140</span>
                   </div>
                   <input
                     className="inp"
+                    style={{
+                      borderColor: validationErrors.shortContentVi ? '#ef4444' : undefined,
+                    }}
                     placeholder={language === 'en' ? 'Short summary in Vietnamese...' : 'Tóm tắt ngắn tiếng Việt...'}
                     value={shortContentVi}
-                    onChange={(e) => setShortContentVi(e.target.value)}
+                    onChange={(e) => {
+                      setShortContentVi(e.target.value);
+                      if (validationErrors.shortContentVi) {
+                        setValidationErrors((prev) => ({ ...prev, shortContentVi: null }));
+                      }
+                    }}
                     maxLength={140}
                   />
+                  {validationErrors.shortContentVi && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.shortContentVi}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="fieldl">
                     {language === 'en' ? 'Short Content (English)' : 'Tóm tắt Tiếng Anh (EN)'}{' '}
-                    <span>{shortContentEn.length} / 140</span>
+                    <span style={{ color: '#ef4444' }}>*</span> <span>{shortContentEn.length} / 140</span>
                   </div>
                   <input
                     className="inp"
+                    style={{
+                      borderColor: validationErrors.shortContentEn ? '#ef4444' : undefined,
+                    }}
                     placeholder={language === 'en' ? 'Short summary in English...' : 'Tóm tắt ngắn tiếng Anh...'}
                     value={shortContentEn}
-                    onChange={(e) => setShortContentEn(e.target.value)}
+                    onChange={(e) => {
+                      setShortContentEn(e.target.value);
+                      if (validationErrors.shortContentEn) {
+                        setValidationErrors((prev) => ({ ...prev, shortContentEn: null }));
+                      }
+                    }}
                     maxLength={140}
                   />
+                  {validationErrors.shortContentEn && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.shortContentEn}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -587,7 +805,7 @@ export function AdminPending({
                 <div>
                   <div className="fieldl">
                     {language === 'en' ? 'Content (Vietnamese)' : 'Nội dung Tiếng Việt (VN)'}{' '}
-                    <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
+                    <span style={{ color: '#ef4444' }}>*</span>
                   </div>
                   <textarea
                     className="inp area"
@@ -596,16 +814,27 @@ export function AdminPending({
                       fontSize: '14.5px',
                       lineHeight: 1.6,
                       fontFamily: 'var(--sans)',
+                      borderColor: validationErrors.contentVi ? '#ef4444' : undefined,
                     }}
                     placeholder={language === 'en' ? 'Full story in Vietnamese...' : 'Nội dung câu chuyện tiếng Việt...'}
                     value={contentVi}
-                    onChange={(e) => setContentVi(e.target.value)}
+                    onChange={(e) => {
+                      setContentVi(e.target.value);
+                      if (validationErrors.contentVi) {
+                        setValidationErrors((prev) => ({ ...prev, contentVi: null }));
+                      }
+                    }}
                   />
+                  {validationErrors.contentVi && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.contentVi}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <div className="fieldl">
                     {language === 'en' ? 'Content (English)' : 'Nội dung Tiếng Anh (EN)'}{' '}
-                    <span>{language === 'en' ? 'Editable' : 'Quản trị viên sửa được'}</span>
+                    <span style={{ color: '#ef4444' }}>*</span>
                   </div>
                   <textarea
                     className="inp area"
@@ -614,23 +843,151 @@ export function AdminPending({
                       fontSize: '14.5px',
                       lineHeight: 1.6,
                       fontFamily: 'var(--sans)',
+                      borderColor: validationErrors.contentEn ? '#ef4444' : undefined,
                     }}
                     placeholder={language === 'en' ? 'Full story in English...' : 'Nội dung câu chuyện tiếng Anh...'}
                     value={contentEn}
-                    onChange={(e) => setContentEn(e.target.value)}
+                    onChange={(e) => {
+                      setContentEn(e.target.value);
+                      if (validationErrors.contentEn) {
+                        setValidationErrors((prev) => ({ ...prev, contentEn: null }));
+                      }
+                    }}
                   />
+                  {validationErrors.contentEn && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.contentEn}
+                    </div>
+                  )}
                 </div>
               </div>
 
+              {/* Room 1 Specifics: Quote */}
               {roomId === 1 && (
                 <div style={{ marginBottom: '14px' }}>
-                  <div className="fieldl">{language === 'en' ? 'Artistic Quote (Room 1 · Journey)' : 'Trích dẫn nghệ thuật (Triển lãm Hành trình)'}</div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Artistic Quote (Room 1 · Journey)' : 'Trích dẫn nghệ thuật (Triển lãm Hành trình)'}{' '}
+                    <span style={{ color: '#ef4444' }}>*</span>
+                  </div>
                   <input
                     className="inp"
+                    style={{
+                      borderColor: validationErrors.quote ? '#ef4444' : undefined,
+                    }}
                     value={quote}
-                    onChange={(e) => setQuote(e.target.value)}
+                    onChange={(e) => {
+                      setQuote(e.target.value);
+                      if (validationErrors.quote) {
+                        setValidationErrors((prev) => ({ ...prev, quote: null }));
+                      }
+                    }}
                     placeholder={language === 'en' ? '“A reflective quote...”' : '“Một câu nói lắng đọng...”'}
                   />
+                  {validationErrors.quote && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.quote}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Room 2 Specifics: Target Date & Visibility */}
+              {roomId === 2 && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                  <div>
+                    <div className="fieldl">
+                      {language === 'en' ? 'Descending Date / Target Date (Room 2)' : 'Ngày mở thư / hạ cánh (Phòng 2)'}{' '}
+                      <span style={{ color: '#ef4444' }}>*</span>
+                    </div>
+                    <input
+                      type="datetime-local"
+                      className="inp"
+                      style={{
+                        borderColor: validationErrors.targetDate ? '#ef4444' : undefined,
+                      }}
+                      value={targetDate}
+                      onChange={(e) => {
+                        setTargetDate(e.target.value);
+                        if (validationErrors.targetDate) {
+                          setValidationErrors((prev) => ({ ...prev, targetDate: null }));
+                        }
+                      }}
+                    />
+                    {validationErrors.targetDate && (
+                      <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                        {validationErrors.targetDate}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <div className="fieldl">
+                      {language === 'en' ? 'Visibility (Room 2)' : 'Chế độ hiển thị (Phòng 2)'}{' '}
+                      <span style={{ color: '#ef4444' }}>*</span>
+                    </div>
+                    <select
+                      className="inp"
+                      value={visibility}
+                      onChange={(e) => setVisibility(e.target.value)}
+                    >
+                      <option value="PUBLIC">
+                        {language === 'en' ? 'PUBLIC (Lantern flies on community sky)' : 'PUBLIC (Lồng đèn bay trên bầu trời công khai)'}
+                      </option>
+                      <option value="PRIVATE">
+                        {language === 'en' ? 'PRIVATE (Landed in private capsule)' : 'PRIVATE (Hạ cánh vào hộp thư riêng tư)'}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Room 3 Specifics: Leaf Category & Color */}
+              {roomId === 3 && (
+                <div style={{ marginBottom: '14px' }}>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Leaf Message Category (Room 3)' : 'Danh mục thông điệp (Phòng 3)'}{' '}
+                    <span style={{ color: '#ef4444' }}>*</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <select
+                      className="inp"
+                      style={{
+                        flex: 1,
+                        borderColor: validationErrors.tagCategory ? '#ef4444' : undefined,
+                      }}
+                      value={tagCategory}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTagCategory(val);
+                        const match = LEAF_CATEGORIES.find((c) => c.key === val);
+                        if (match) setColorCode(match.color);
+                        if (validationErrors.tagCategory) {
+                          setValidationErrors((prev) => ({ ...prev, tagCategory: null }));
+                        }
+                      }}
+                    >
+                      {LEAF_CATEGORIES.map((c) => (
+                        <option key={c.key} value={c.key}>
+                          {language === 'en' ? c.labelEn : c.labelVi}
+                        </option>
+                      ))}
+                    </select>
+                    <div
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        backgroundColor: colorCode,
+                        border: '2px solid rgba(0,0,0,0.15)',
+                        flexShrink: 0,
+                      }}
+                      title={language === 'en' ? `Leaf color: ${colorCode}` : `Màu lá: ${colorCode}`}
+                    />
+                  </div>
+                  {validationErrors.tagCategory && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.tagCategory}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -649,7 +1006,7 @@ export function AdminPending({
                   height: '210px',
                   borderRadius: '12px',
                   overflow: 'hidden',
-                  border: '1px solid var(--line)',
+                  border: validationErrors.mediaUrl ? '2px solid #ef4444' : '1px solid var(--line)',
                   background: '#F0EBE0',
                   display: 'flex',
                   alignItems: 'center',
@@ -703,6 +1060,11 @@ export function AdminPending({
                   onChange={handleImageUpload}
                 />
               </div>
+              {validationErrors.mediaUrl && (
+                <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '6px' }}>
+                  {validationErrors.mediaUrl}
+                </div>
+              )}
 
               <div className="fieldl" style={{ marginTop: '18px' }}>
                 {language === 'en' ? 'Wall preview' : 'Xem trước trên tường'}

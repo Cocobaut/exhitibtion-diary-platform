@@ -11,6 +11,7 @@ from app.schemas.ai_copilot import (
 )
 from app.services.ai_discovery_service import AiDiscoveryService
 from app.services.owner_ai_service import OwnerAiService
+from app.core.crypto import decrypt_aes_256
 
 router = APIRouter(
     prefix="/owner/ai-settings",
@@ -33,11 +34,25 @@ async def get_ai_settings(
 @router.post("/discover-models", status_code=status.HTTP_200_OK)
 async def discover_models(
     payload: DiscoverModelsRequest,
+    db: AsyncSession = Depends(get_db),
     owner: User = Depends(require_owner),
 ):
     """Owner tests API Key and dynamically discovers available models from the provider's real API."""
+    actual_key = (payload.api_key or "").strip()
+    if actual_key in ("KEEP_CURRENT_KEY", ""):
+        # Retrieve and decrypt currently saved API key from database
+        settings_record = await OwnerAiService.get_or_create_settings(db)
+        if payload.task_type == "image_generation" and settings_record.image_encrypted_api_key:
+            actual_key = decrypt_aes_256(settings_record.image_encrypted_api_key) or ""
+        elif payload.task_type == "moderation" and settings_record.moderation_encrypted_api_key:
+            actual_key = decrypt_aes_256(settings_record.moderation_encrypted_api_key) or ""
+        elif settings_record.moderation_encrypted_api_key:
+            actual_key = decrypt_aes_256(settings_record.moderation_encrypted_api_key) or ""
+        elif settings_record.image_encrypted_api_key:
+            actual_key = decrypt_aes_256(settings_record.image_encrypted_api_key) or ""
+
     data = await AiDiscoveryService.discover_models(
-        api_key=payload.api_key,
+        api_key=actual_key,
         provider=payload.provider or "auto",
         task_type=payload.task_type,
         base_url=payload.base_url,

@@ -156,6 +156,18 @@ class AdminDiaryService:
             target_url=f"/diaries/community/{diary.id}",
         )
 
+        # Thông báo cho tất cả Admin và Owner khác biết bài nhật ký đã được duyệt
+        approver_name = admin.nickname or admin.username or "Quản trị viên"
+        await NotificationService.notify_admins_and_owners(
+            db,
+            title=f"[Ban Quản Trị] {approver_name} đã duyệt nhật ký cộng đồng",
+            body=f'{approver_name} vừa phê duyệt bài nhật ký "{diary_title}" lên Tab Cộng đồng.',
+            target_url=f"/diaries/community/{diary.id}",
+            sender_id=admin.id,
+            exclude_user_id=admin.id,
+            notification_type="SYSTEM",
+        )
+
         await db.commit()
         await db.refresh(diary)
 
