@@ -4,7 +4,7 @@ import { Icon } from '../../components/common/Icons';
 import { adminRoomService } from '../../services/adminRoomService';
 import { aiCopilotService } from '../../services/aiCopilotService';
 import { AiModerationModal } from '../../components/Admin/AiModerationModal';
-import { AiTranslateButton } from '../../components/Admin/AiTranslateButton';
+
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -55,6 +55,7 @@ export function AdminPending({
 
   // AI Copilot states
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
+  const [isTranslatingAi, setIsTranslatingAi] = useState(false);
   const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiModerationData, setAiModerationData] = useState(null);
@@ -230,6 +231,88 @@ export function AdminPending({
       }
     } finally {
       setIsAnalyzingAi(false);
+    }
+  };
+
+  const handleTranslateWithAi = async () => {
+    if (!currentItem) return;
+    setIsTranslatingAi(true);
+    setErrorMessage('');
+    const sourceLang = currentItem.original_language === 'en' ? 'en' : 'vi';
+    const targetLang = sourceLang === 'en' ? 'vi' : 'en';
+
+    const sourcePayload = sourceLang === 'en'
+      ? { title: titleEn, short_content: shortContentEn, content: contentEn }
+      : { title: titleVi, short_content: shortContentVi, content: contentVi };
+
+    const hasSource = Object.values(sourcePayload).some((v) => v && v.trim());
+    if (!hasSource) {
+      const emptyMsg = language === 'en'
+        ? 'Please enter content before translating.'
+        : 'Vui lòng nhập nội dung trước khi bấm dịch AI.';
+      if (triggerToast) triggerToast(emptyMsg);
+      else setErrorMessage(emptyMsg);
+      setIsTranslatingAi(false);
+      return;
+    }
+
+    try {
+      const res = await aiCopilotService.translateContent({
+        source_lang: sourceLang,
+        target_lang: targetLang,
+        ...sourcePayload,
+      });
+      const data = res?.data || res;
+
+      if (targetLang === 'en') {
+        if (data.title) setTitleEn(data.title);
+        if (data.short_content) setShortContentEn(data.short_content);
+        if (data.content) setContentEn(data.content);
+        setValidationErrors((prev) => {
+          const next = { ...prev };
+          if (data.title) delete next.titleEn;
+          if (data.short_content) delete next.shortContentEn;
+          if (data.content) delete next.contentEn;
+          return next;
+        });
+      } else {
+        if (data.title) setTitleVi(data.title);
+        if (data.short_content) setShortContentVi(data.short_content);
+        if (data.content) setContentVi(data.content);
+        setValidationErrors((prev) => {
+          const next = { ...prev };
+          if (data.title) delete next.titleVi;
+          if (data.short_content) delete next.shortContentVi;
+          if (data.content) delete next.contentVi;
+          return next;
+        });
+      }
+
+      const successMsg = language === 'en'
+        ? '✦ Translated successfully, please review'
+        : '✦ Dịch thành công, vui lòng xem lại';
+      if (triggerToast) {
+        triggerToast(successMsg);
+      } else {
+        setErrorMessage('');
+      }
+    } catch (err) {
+      console.error('Lỗi khi dịch bằng AI:', err);
+      const errMsg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        err?.message ||
+        (language === 'en' ? 'Translation failed.' : 'Dịch không thành công.');
+      const fullError = language === 'en'
+        ? `Translation failed: ${errMsg}`
+        : `Dịch không thành công: ${errMsg}`;
+      if (triggerToast) {
+        triggerToast(fullError);
+      } else {
+        setErrorMessage(fullError);
+      }
+    } finally {
+      setIsTranslatingAi(false);
     }
   };
 
@@ -558,6 +641,23 @@ export function AdminPending({
               </button>
               <button
                 type="button"
+                className="btn line"
+                onClick={handleTranslateWithAi}
+                disabled={isAnalyzingAi || isTranslatingAi || isApproving}
+                style={{
+                  borderColor: '#0284c7',
+                  color: '#0369a1',
+                  fontWeight: 600,
+                  background: isTranslatingAi ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
+                }}
+                title={language === 'en' ? 'Translate to English using AI' : 'Dịch sang tiếng Anh bằng AI'}
+              >
+                {isTranslatingAi
+                  ? (language === 'en' ? 'AI Translating...' : 'AI đang dịch...')
+                  : (language === 'en' ? '✦ Translate to EN with AI' : '✦ Dịch sang tiếng Anh bằng AI')}
+              </button>
+              <button
+                type="button"
                 className="btn danger"
                 onClick={() => onOpenRejectModal && onOpenRejectModal(currentItem)}
                 disabled={isApproving}
@@ -579,7 +679,7 @@ export function AdminPending({
           </div>
 
           {/* Validation Warning Banner if required fields are missing */}
-          {Object.keys(validationErrors).length > 0 && (
+          {Object.values(validationErrors).some(Boolean) && (
             <div
               style={{
                 marginTop: '16px',
@@ -620,72 +720,36 @@ export function AdminPending({
           >
             {/* Editor fields */}
             <div>
-              {/* Author pseudonym and translation bar */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '14px', alignItems: 'end', marginBottom: '14px' }}>
-                <div>
-                  <div className="fieldl">
-                    {language === 'en' ? 'Author Pseudonym / Pen Name' : 'Bút danh / Tên hiển thị tác giả'}{' '}
-                    <span style={{ color: '#ef4444' }}>*</span>
+              {/* Author pseudonym */}
+              <div style={{ marginBottom: '14px' }}>
+                <div className="fieldl">
+                  {language === 'en' ? 'Author Pseudonym / Pen Name' : 'Bút danh / Tên hiển thị tác giả'}{' '}
+                  <span style={{ color: '#ef4444' }}>*</span>
+                </div>
+                <input
+                  className="inp"
+                  style={{
+                    borderColor: validationErrors.authorDisplayName ? '#ef4444' : undefined,
+                  }}
+                  placeholder={language === 'en' ? 'Author display name...' : 'Bút danh hiển thị tác giả...'}
+                  value={authorDisplayName}
+                  onChange={(e) => {
+                    setAuthorDisplayName(e.target.value);
+                    if (validationErrors.authorDisplayName) {
+                      setValidationErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.authorDisplayName;
+                        return next;
+                      });
+                    }
+                  }}
+                  maxLength={100}
+                />
+                {validationErrors.authorDisplayName && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {validationErrors.authorDisplayName}
                   </div>
-                  <input
-                    className="inp"
-                    style={{
-                      borderColor: validationErrors.authorDisplayName ? '#ef4444' : undefined,
-                    }}
-                    placeholder={language === 'en' ? 'Author display name...' : 'Bút danh hiển thị tác giả...'}
-                    value={authorDisplayName}
-                    onChange={(e) => {
-                      setAuthorDisplayName(e.target.value);
-                      if (validationErrors.authorDisplayName) {
-                        setValidationErrors((prev) => ({ ...prev, authorDisplayName: null }));
-                      }
-                    }}
-                    maxLength={100}
-                  />
-                  {validationErrors.authorDisplayName && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                      {validationErrors.authorDisplayName}
-                    </div>
-                  )}
-                </div>
-                <div style={{ paddingBottom: '2px' }}>
-                  <AiTranslateButton
-                    originalLanguage={currentItem.original_language}
-                    source={currentItem.original_language === 'en'
-                      ? { title: titleEn, short_content: shortContentEn, content: contentEn }
-                      : { title: titleVi, short_content: shortContentVi, content: contentVi }}
-                    onTranslated={(d, target) => {
-                      if (target === 'en') {
-                        if (d.title) {
-                          setTitleEn(d.title);
-                          setValidationErrors((prev) => ({ ...prev, titleEn: null }));
-                        }
-                        if (d.short_content) {
-                          setShortContentEn(d.short_content);
-                          setValidationErrors((prev) => ({ ...prev, shortContentEn: null }));
-                        }
-                        if (d.content) {
-                          setContentEn(d.content);
-                          setValidationErrors((prev) => ({ ...prev, contentEn: null }));
-                        }
-                      } else {
-                        if (d.title) {
-                          setTitleVi(d.title);
-                          setValidationErrors((prev) => ({ ...prev, titleVi: null }));
-                        }
-                        if (d.short_content) {
-                          setShortContentVi(d.short_content);
-                          setValidationErrors((prev) => ({ ...prev, shortContentVi: null }));
-                        }
-                        if (d.content) {
-                          setContentVi(d.content);
-                          setValidationErrors((prev) => ({ ...prev, contentVi: null }));
-                        }
-                      }
-                    }}
-                    onError={(msg) => (triggerToast ? triggerToast(`[AI] ${msg}`) : setErrorMessage(`[AI] ${msg}`))}
-                  />
-                </div>
+                )}
               </div>
 
               {/* Bilingual Title Fields */}
@@ -705,7 +769,11 @@ export function AdminPending({
                     onChange={(e) => {
                       setTitleVi(e.target.value);
                       if (validationErrors.titleVi) {
-                        setValidationErrors((prev) => ({ ...prev, titleVi: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.titleVi;
+                          return next;
+                        });
                       }
                     }}
                     maxLength={150}
@@ -731,7 +799,11 @@ export function AdminPending({
                     onChange={(e) => {
                       setTitleEn(e.target.value);
                       if (validationErrors.titleEn) {
-                        setValidationErrors((prev) => ({ ...prev, titleEn: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.titleEn;
+                          return next;
+                        });
                       }
                     }}
                     maxLength={150}
@@ -761,7 +833,11 @@ export function AdminPending({
                     onChange={(e) => {
                       setShortContentVi(e.target.value);
                       if (validationErrors.shortContentVi) {
-                        setValidationErrors((prev) => ({ ...prev, shortContentVi: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.shortContentVi;
+                          return next;
+                        });
                       }
                     }}
                     maxLength={140}
@@ -787,7 +863,11 @@ export function AdminPending({
                     onChange={(e) => {
                       setShortContentEn(e.target.value);
                       if (validationErrors.shortContentEn) {
-                        setValidationErrors((prev) => ({ ...prev, shortContentEn: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.shortContentEn;
+                          return next;
+                        });
                       }
                     }}
                     maxLength={140}
@@ -821,7 +901,11 @@ export function AdminPending({
                     onChange={(e) => {
                       setContentVi(e.target.value);
                       if (validationErrors.contentVi) {
-                        setValidationErrors((prev) => ({ ...prev, contentVi: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.contentVi;
+                          return next;
+                        });
                       }
                     }}
                   />
@@ -850,7 +934,11 @@ export function AdminPending({
                     onChange={(e) => {
                       setContentEn(e.target.value);
                       if (validationErrors.contentEn) {
-                        setValidationErrors((prev) => ({ ...prev, contentEn: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.contentEn;
+                          return next;
+                        });
                       }
                     }}
                   />
@@ -878,7 +966,11 @@ export function AdminPending({
                     onChange={(e) => {
                       setQuote(e.target.value);
                       if (validationErrors.quote) {
-                        setValidationErrors((prev) => ({ ...prev, quote: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.quote;
+                          return next;
+                        });
                       }
                     }}
                     placeholder={language === 'en' ? '“A reflective quote...”' : '“Một câu nói lắng đọng...”'}
@@ -909,7 +1001,11 @@ export function AdminPending({
                       onChange={(e) => {
                         setTargetDate(e.target.value);
                         if (validationErrors.targetDate) {
-                          setValidationErrors((prev) => ({ ...prev, targetDate: null }));
+                          setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.targetDate;
+                          return next;
+                        });
                         }
                       }}
                     />
@@ -961,7 +1057,11 @@ export function AdminPending({
                         const match = LEAF_CATEGORIES.find((c) => c.key === val);
                         if (match) setColorCode(match.color);
                         if (validationErrors.tagCategory) {
-                          setValidationErrors((prev) => ({ ...prev, tagCategory: null }));
+                          setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.tagCategory;
+                          return next;
+                        });
                         }
                       }}
                     >

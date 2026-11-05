@@ -36,7 +36,7 @@ export function AiTranslateButton({ originalLanguage, source, onTranslated, onEr
     : (language === 'en' ? 'Vietnamese' : 'tiếng Việt');
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
       <button
         type="button"
         className="btn ghost"
@@ -48,11 +48,6 @@ export function AiTranslateButton({ originalLanguage, source, onTranslated, onEr
           ? (language === 'en' ? 'Translating...' : 'Đang dịch...')
           : (language === 'en' ? `✦ Translate to ${targetName} with AI` : `✦ Dịch sang ${targetName} bằng AI`)}
       </button>
-      <span style={{ fontSize: '12.5px', color: 'var(--ink2)' }}>
-        {language === 'en'
-          ? `Original is in ${sourceLang === 'en' ? 'English' : 'Vietnamese'}. Translation is optional; please review it before saving.`
-          : `Bài gốc viết bằng ${sourceLang === 'en' ? 'tiếng Anh' : 'tiếng Việt'}. Bản dịch không bắt buộc, nhớ đọc lại trước khi lưu.`}
-      </span>
     </div>
   );
 }

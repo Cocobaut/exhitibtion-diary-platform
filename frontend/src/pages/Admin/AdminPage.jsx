@@ -121,24 +121,27 @@ export function AdminPage({ onOpenNotifications, onOpenThemeModal }) {
 
   return (
     <div className="stage admin" style={{ background: 'var(--wall)', transition: 'background 0.3s ease' }}>
-      {/* Toast Notification */}
+      {/* Floating Toast Notification (Góc phải trên cùng) */}
       {toastMessage && (
         <div
-          className="abs"
           style={{
-            top: '20px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 40,
-            background: 'rgba(28, 18, 14, 0.92)',
-            border: '1px solid var(--gold)',
+            position: 'fixed',
+            top: '24px',
+            right: '28px',
+            zIndex: 9999,
+            background: 'rgba(28, 18, 14, 0.95)',
+            border: '1.5px solid var(--gold)',
             color: '#FFF0D2',
-            padding: '10px 24px',
-            borderRadius: '999px',
+            padding: '12px 22px',
+            borderRadius: '10px',
             fontSize: '14px',
-            boxShadow: '0 8px 30px rgba(0,0,0,0.4)',
-            backdropFilter: 'blur(8px)',
+            fontWeight: 500,
+            boxShadow: '0 12px 35px rgba(0,0,0,0.45)',
+            backdropFilter: 'blur(10px)',
             animation: 'fadeIn 0.3s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
           }}
         >
           {toastMessage}

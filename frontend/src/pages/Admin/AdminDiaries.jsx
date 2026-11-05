@@ -3,7 +3,7 @@ import { Icon } from '../../components/common/Icons';
 import { adminDiaryService } from '../../services/adminDiaryService';
 import { aiCopilotService } from '../../services/aiCopilotService';
 import { AiModerationModal } from '../../components/Admin/AiModerationModal';
-import { AiTranslateButton } from '../../components/Admin/AiTranslateButton';
+
 import { useLanguage } from '../../context/LanguageContext';
 
 export function AdminDiaries({ onCountChange, triggerToast }) {
@@ -36,6 +36,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
 
   // AI Copilot State
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
+  const [isTranslatingAi, setIsTranslatingAi] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiModerationData, setAiModerationData] = useState(null);
 
@@ -197,6 +198,81 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
       }
     } finally {
       setIsAnalyzingAi(false);
+    }
+  };
+
+  const handleTranslateWithAi = async () => {
+    if (!currentItem) return;
+    setIsTranslatingAi(true);
+    const sourceLang = currentItem.original_language === 'en' ? 'en' : 'vi';
+    const targetLang = sourceLang === 'en' ? 'vi' : 'en';
+
+    const sourcePayload = sourceLang === 'en'
+      ? { title: titleEn, content: contentEn }
+      : { title: titleVi, content: contentVi };
+
+    const hasSource = Object.values(sourcePayload).some((v) => v && v.trim());
+    if (!hasSource) {
+      const emptyMsg = language === 'en'
+        ? 'Please enter content before translating.'
+        : 'Vui lòng nhập nội dung trước khi bấm dịch AI.';
+      if (triggerToast) triggerToast(emptyMsg);
+      else alert(emptyMsg);
+      setIsTranslatingAi(false);
+      return;
+    }
+
+    try {
+      const res = await aiCopilotService.translateContent({
+        source_lang: sourceLang,
+        target_lang: targetLang,
+        ...sourcePayload,
+      });
+      const data = res?.data || res;
+
+      if (targetLang === 'en') {
+        if (data.title) setTitleEn(data.title);
+        if (data.content) setContentEn(data.content);
+        setValidationErrors((prev) => {
+          const next = { ...prev };
+          if (data.title) delete next.titleEn;
+          if (data.content) delete next.contentEn;
+          return next;
+        });
+      } else {
+        if (data.title) setTitleVi(data.title);
+        if (data.content) setContentVi(data.content);
+        setValidationErrors((prev) => {
+          const next = { ...prev };
+          if (data.title) delete next.titleVi;
+          if (data.content) delete next.contentVi;
+          return next;
+        });
+      }
+
+      const successMsg = language === 'en'
+        ? '✦ Translated successfully, please review'
+        : '✦ Dịch thành công, vui lòng xem lại';
+      if (triggerToast) {
+        triggerToast(successMsg);
+      }
+    } catch (err) {
+      console.error('Lỗi khi dịch AI:', err);
+      const errMsg =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        err?.message ||
+        (language === 'en' ? 'Translation failed.' : 'Dịch không thành công.');
+      const fullError = language === 'en'
+        ? `Translation failed: ${errMsg}`
+        : `Dịch không thành công: ${errMsg}`;
+      if (triggerToast) {
+        triggerToast(fullError);
+      } else {
+        alert(fullError);
+      }
+    } finally {
+      setIsTranslatingAi(false);
     }
   };
 
@@ -518,6 +594,23 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                   </button>
                   <button
                     type="button"
+                    className="btn line"
+                    onClick={handleTranslateWithAi}
+                    disabled={isAnalyzingAi || isTranslatingAi || isApproving}
+                    style={{
+                      borderColor: '#0284c7',
+                      color: '#0369a1',
+                      fontWeight: 600,
+                      background: isTranslatingAi ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
+                    }}
+                    title={language === 'en' ? 'Translate to English using AI' : 'Dịch sang tiếng Anh bằng AI'}
+                  >
+                    {isTranslatingAi
+                      ? (language === 'en' ? 'AI Translating...' : 'AI đang dịch...')
+                      : (language === 'en' ? '✦ Translate to EN with AI' : '✦ Dịch sang tiếng Anh bằng AI')}
+                  </button>
+                  <button
+                    type="button"
                     className="btn danger"
                     onClick={() => setRejectModalOpen(true)}
                     disabled={isApproving}
@@ -560,7 +653,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
               )}
 
               {/* Validation Warning Banner if required fields are missing */}
-              {Object.keys(validationErrors).length > 0 && (
+              {Object.values(validationErrors).some(Boolean) && (
                 <div
                   style={{
                     marginBottom: '16px',
@@ -590,35 +683,6 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                   </div>
                 </div>
               )}
-
-              <AiTranslateButton
-                originalLanguage={currentItem.original_language}
-                source={currentItem.original_language === 'en'
-                  ? { title: titleEn, content: contentEn }
-                  : { title: titleVi, content: contentVi }}
-                onTranslated={(d, target) => {
-                  if (target === 'en') {
-                    if (d.title) {
-                      setTitleEn(d.title);
-                      setValidationErrors((prev) => ({ ...prev, titleEn: null }));
-                    }
-                    if (d.content) {
-                      setContentEn(d.content);
-                      setValidationErrors((prev) => ({ ...prev, contentEn: null }));
-                    }
-                  } else {
-                    if (d.title) {
-                      setTitleVi(d.title);
-                      setValidationErrors((prev) => ({ ...prev, titleVi: null }));
-                    }
-                    if (d.content) {
-                      setContentVi(d.content);
-                      setValidationErrors((prev) => ({ ...prev, contentVi: null }));
-                    }
-                  }
-                }}
-                onError={(msg) => triggerToast && triggerToast(`[AI] ${msg}`)}
-              />
               {/* Bilingual Title & Content Editor */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                 <div>
@@ -635,7 +699,11 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                     onChange={(e) => {
                       setTitleVi(e.target.value);
                       if (validationErrors.titleVi) {
-                        setValidationErrors((prev) => ({ ...prev, titleVi: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.titleVi;
+                          return next;
+                        });
                       }
                     }}
                     placeholder={language === 'en' ? 'Vietnamese title...' : 'Tiêu đề tiếng Việt...'}
@@ -663,7 +731,11 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                     onChange={(e) => {
                       setContentVi(e.target.value);
                       if (validationErrors.contentVi) {
-                        setValidationErrors((prev) => ({ ...prev, contentVi: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.contentVi;
+                          return next;
+                        });
                       }
                     }}
                     placeholder={language === 'en' ? 'Vietnamese diary content...' : 'Nội dung nhật ký tiếng Việt...'}
@@ -689,7 +761,11 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                     onChange={(e) => {
                       setTitleEn(e.target.value);
                       if (validationErrors.titleEn) {
-                        setValidationErrors((prev) => ({ ...prev, titleEn: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.titleEn;
+                          return next;
+                        });
                       }
                     }}
                     placeholder={language === 'en' ? 'English title...' : 'Tiêu đề tiếng Anh...'}
@@ -717,7 +793,11 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                     onChange={(e) => {
                       setContentEn(e.target.value);
                       if (validationErrors.contentEn) {
-                        setValidationErrors((prev) => ({ ...prev, contentEn: null }));
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.contentEn;
+                          return next;
+                        });
                       }
                     }}
                     placeholder={language === 'en' ? 'English translated content...' : 'Nội dung nhật ký tiếng Anh...'}
