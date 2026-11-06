@@ -19,6 +19,19 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
   const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState('');
 
+  // Responsive mode detection: Computer (> 1024px) vs Tablet Portrait / Mobile Landscape / Mobile Portrait (<= 1024px)
+  const [isComputerMode, setIsComputerMode] = useState(
+    typeof window !== 'undefined' ? window.innerWidth > 1024 : true
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsComputerMode(window.innerWidth > 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // -------------------------------------------------------------
   // Bilingual Edit Modal State
   // -------------------------------------------------------------
@@ -273,15 +286,26 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
     <>
       {/* Stats Cards Grid */}
       <div
-        className="abs"
-        style={{
-          left: '32px',
-          right: '32px',
-          top: '194px',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '16px',
-        }}
+        className={`admin-live-stats ${isComputerMode ? 'abs' : 'mobile-stats'}`}
+        style={
+          isComputerMode
+            ? {
+                left: '32px',
+                right: '32px',
+                top: '194px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '16px',
+              }
+            : {
+                position: 'relative',
+                width: '100%',
+                marginTop: '14px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+                gap: '10px',
+              }
+        }
       >
         {stats.map((s, idx) => (
           <div key={idx} className="box stat">
@@ -292,20 +316,40 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
         ))}
       </div>
 
-      {/* Artworks Management Table */}
+      {/* Artworks Management Table & Responsive Cards */}
       <div
-        className="abs box"
-        style={{
-          left: '32px',
-          right: '32px',
-          top: '330px',
-          bottom: '26px',
-          overflowY: 'auto',
-          padding: '16px',
-        }}
+        className={`box admin-live-table-box ${isComputerMode ? 'abs' : 'mobile-table-box'}`}
+        style={
+          isComputerMode
+            ? {
+                left: '32px',
+                right: '32px',
+                top: '330px',
+                bottom: '26px',
+                overflowY: 'auto',
+                padding: '16px',
+              }
+            : {
+                position: 'relative',
+                width: '100%',
+                marginTop: '14px',
+                padding: '14px',
+                overflowY: 'visible',
+                boxSizing: 'border-box',
+              }
+        }
       >
-        <div className="row between" style={{ marginBottom: '14px', padding: '0 4px' }}>
-          <div className="search" style={{ maxWidth: '320px', background: 'var(--paper)' }}>
+        <div
+          className="row between"
+          style={{
+            marginBottom: '14px',
+            padding: '0 4px',
+            flexWrap: 'wrap',
+            gap: '10px',
+            alignItems: 'center',
+          }}
+        >
+          <div className="search" style={{ maxWidth: isComputerMode ? '320px' : '100%', width: isComputerMode ? '320px' : '100%', background: 'var(--paper)' }}>
             <Icon name="search" size={17} />
             <input
               type="text"
@@ -325,43 +369,153 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
           )}
         </div>
 
-        <table className="at">
-          <thead>
-            <tr>
-              <th style={{ width: '90px' }} />
-              <th>{t('admin_col_artwork')}</th>
-              <th>{t('admin_col_author')}</th>
-              <th>{language === 'en' ? 'Views' : 'Lượt xem'}</th>
-              <th>{language === 'en' ? 'Reactions' : 'Cảm xúc'}</th>
-              <th>
-                {isArchive
-                  ? (language === 'en' ? 'Archive Date' : 'Ngày lưu trữ')
-                  : (language === 'en' ? 'Approved Date' : 'Ngày duyệt')}
-              </th>
-              <th style={{ width: '220px' }} />
-            </tr>
-          </thead>
-          <tbody>
-            {artworks.length === 0 && !isLoading && (
+        {/* Desktop View (> 1024px): Standard Table */}
+        {isComputerMode ? (
+          <table className="at">
+            <thead>
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
+                <th style={{ width: '90px' }} />
+                <th>{t('admin_col_artwork')}</th>
+                <th>{t('admin_col_author')}</th>
+                <th>{language === 'en' ? 'Views' : 'Lượt xem'}</th>
+                <th>{language === 'en' ? 'Reactions' : 'Cảm xúc'}</th>
+                <th>
                   {isArchive
-                    ? (language === 'en' ? 'No archived artworks in this room.' : 'Chưa có tác phẩm nào trong kho lưu trữ của phòng này.')
-                    : t('admin_empty_live')}
-                </td>
+                    ? (language === 'en' ? 'Archive Date' : 'Ngày lưu trữ')
+                    : (language === 'en' ? 'Approved Date' : 'Ngày duyệt')}
+                </th>
+                <th style={{ width: '220px' }} />
               </tr>
+            </thead>
+            <tbody>
+              {artworks.length === 0 && !isLoading && (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
+                    {isArchive
+                      ? (language === 'en' ? 'No archived artworks in this room.' : 'Chưa có tác phẩm nào trong kho lưu trữ của phòng này.')
+                      : t('admin_empty_live')}
+                  </td>
+                </tr>
+              )}
+
+              {artworks.map((w, i) => (
+                <tr key={w.id || i}>
+                  <td>
+                    <div
+                      style={{
+                        width: '70px',
+                        height: '46px',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        background: '#F0EBE0',
+                      }}
+                    >
+                      {w.media_url ? (
+                        <img
+                          src={w.media_url}
+                          alt=""
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        <Painting seed={100 + i * 7} kind="boat" />
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <b>{original(w, 'title') || w.title}</b>
+                    <div className="muted" style={{ fontSize: '12.5px' }}>
+                      {isArchive
+                        ? (language === 'en' ? 'archived' : 'lưu trữ')
+                        : (language === 'en' ? 'exhibited' : 'trưng bày')}{' '}
+                      {formatDate(w.reviewed_at || w.created_at)}
+                    </div>
+                  </td>
+                  <td>{w.author_display_name || w.author?.username || (language === 'en' ? 'Anonymous' : 'Ẩn danh')}</td>
+                  <td>{(w.view_count || 0).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN')}</td>
+                  <td>
+                    <span className="rxs">
+                      <ReactionStack types={['HEART', 'HUG']} size={18} />
+                      <span>{(w.reactions_count || 0).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN')}</span>
+                    </span>
+                  </td>
+                  <td>
+                    {formatDate(w.reviewed_at) ||
+                      (isArchive
+                        ? (language === 'en' ? 'Archived' : 'Đã lưu trữ')
+                        : (language === 'en' ? 'Approved' : 'Đã duyệt'))}
+                  </td>
+                  <td>
+                    <span className="row" style={{ gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="btn line sm"
+                        onClick={() => handleStartEdit(w)}
+                      >
+                        <Icon name="edit" size={14} /> {t('admin_btn_edit')}
+                      </button>
+
+                      {isArchive ? (
+                        <button
+                          type="button"
+                          className="btn line sm"
+                          style={{ color: '#2D7D46', borderColor: '#2D7D46' }}
+                          onClick={() => setRestoringItem(w)}
+                        >
+                          {language === 'en' ? 'Restore' : 'Khôi phục'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn line sm"
+                          style={{ color: '#A1342C' }}
+                          onClick={() => setArchivingItem(w)}
+                        >
+                          <Icon name="archive" size={14} /> {t('admin_btn_archive')}
+                        </button>
+                      )}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          /* Tablet & Mobile View (<= 1024px): Responsive Artwork Cards Scaled to fit screen */
+          <div className="admin-live-cards-list">
+            {artworks.length === 0 && !isLoading && (
+              <div style={{ textAlign: 'center', padding: '36px 14px', color: 'var(--muted)', fontSize: '13px' }}>
+                {isArchive
+                  ? (language === 'en' ? 'No archived artworks in this room.' : 'Chưa có tác phẩm nào trong kho lưu trữ của phòng này.')
+                  : t('admin_empty_live')}
+              </div>
             )}
 
             {artworks.map((w, i) => (
-              <tr key={w.id || i}>
-                <td>
+              <div
+                key={w.id || i}
+                className="admin-live-card"
+                style={{
+                  background: 'var(--paper)',
+                  border: '1px solid var(--line)',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  marginBottom: '12px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                {/* Header: Thumbnail + Title + Author & Status Badge */}
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                   <div
                     style={{
-                      width: '70px',
+                      width: '64px',
                       height: '46px',
                       borderRadius: '6px',
                       overflow: 'hidden',
                       background: '#F0EBE0',
+                      flexShrink: 0,
                     }}
                   >
                     {w.media_url ? (
@@ -374,65 +528,85 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
                       <Painting seed={100 + i * 7} kind="boat" />
                     )}
                   </div>
-                </td>
-                <td>
-                  <b>{original(w, 'title') || w.title}</b>
-                  <div className="muted" style={{ fontSize: '12.5px' }}>
-                    {isArchive
-                      ? (language === 'en' ? 'archived' : 'lưu trữ')
-                      : (language === 'en' ? 'exhibited' : 'trưng bày')}{' '}
-                    {formatDate(w.reviewed_at || w.created_at)}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <b style={{ fontSize: '14.5px', display: 'block', wordBreak: 'break-word', color: 'var(--ink)' }}>
+                      {original(w, 'title') || w.title}
+                    </b>
+                    <div className="muted" style={{ fontSize: '12px', marginTop: '2px' }}>
+                      {w.author_display_name || w.author?.username || (language === 'en' ? 'Anonymous' : 'Ẩn danh')}
+                      {' · '}
+                      <span className={isArchive ? 'badge b-priv' : 'badge b-pub'} style={{ fontSize: '10px', verticalAlign: 'middle' }}>
+                        {isArchive
+                          ? (language === 'en' ? 'Archived' : 'Lưu trữ')
+                          : (language === 'en' ? 'Exhibited' : 'Trưng bày')}
+                      </span>
+                    </div>
                   </div>
-                </td>
-                <td>{w.author_display_name || w.author?.username || (language === 'en' ? 'Anonymous' : 'Ẩn danh')}</td>
-                <td>{(w.view_count || 0).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN')}</td>
-                <td>
-                  <span className="rxs">
-                    <ReactionStack types={['HEART', 'HUG']} size={18} />
+                </div>
+
+                {/* Metrics Row: Views, Reactions, Date */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '12px',
+                    color: 'var(--muted)',
+                    borderTop: '1px solid var(--line)',
+                    borderBottom: '1px solid var(--line)',
+                    padding: '7px 0',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                  }}
+                >
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <Icon name="eye" size={13} />
+                    {(w.view_count || 0).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN')} {language === 'en' ? 'views' : 'lượt xem'}
+                  </span>
+                  <span className="rxs" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <ReactionStack types={['HEART', 'HUG']} size={16} />
                     <span>{(w.reactions_count || 0).toLocaleString(language === 'en' ? 'en-US' : 'vi-VN')}</span>
                   </span>
-                </td>
-                <td>
-                  {formatDate(w.reviewed_at) ||
-                    (isArchive
-                      ? (language === 'en' ? 'Archived' : 'Đã lưu trữ')
-                      : (language === 'en' ? 'Approved' : 'Đã duyệt'))}
-                </td>
-                <td>
-                  <span className="row" style={{ gap: '8px' }}>
+                  <span style={{ fontSize: '11.5px' }}>
+                    {formatDate(w.reviewed_at || w.created_at)}
+                  </span>
+                </div>
+
+                {/* Action Buttons: Edit, and Archive / Restore */}
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn line sm"
+                    onClick={() => handleStartEdit(w)}
+                    style={{ flex: '1 1 110px', minHeight: '34px' }}
+                  >
+                    <Icon name="edit" size={14} /> {t('admin_btn_edit')}
+                  </button>
+
+                  {isArchive ? (
                     <button
                       type="button"
                       className="btn line sm"
-                      onClick={() => handleStartEdit(w)}
+                      style={{ color: '#2D7D46', borderColor: '#2D7D46', flex: '1 1 110px', minHeight: '34px' }}
+                      onClick={() => setRestoringItem(w)}
                     >
-                      <Icon name="edit" size={14} /> {t('admin_btn_edit')}
+                      {language === 'en' ? 'Restore' : 'Khôi phục'}
                     </button>
-
-                    {isArchive ? (
-                      <button
-                        type="button"
-                        className="btn line sm"
-                        style={{ color: '#2D7D46', borderColor: '#2D7D46' }}
-                        onClick={() => setRestoringItem(w)}
-                      >
-                        {language === 'en' ? 'Restore' : 'Khôi phục'}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="btn line sm"
-                        style={{ color: '#A1342C' }}
-                        onClick={() => setArchivingItem(w)}
-                      >
-                        <Icon name="archive" size={14} /> {t('admin_btn_archive')}
-                      </button>
-                    )}
-                  </span>
-                </td>
-              </tr>
+                  ) : (
+                    <button
+                      type="button"
+                      className="btn line sm"
+                      style={{ color: '#A1342C', flex: '1 1 110px', minHeight: '34px' }}
+                      onClick={() => setArchivingItem(w)}
+                    >
+                      <Icon name="archive" size={14} /> {t('admin_btn_archive')}
+                    </button>
+                  )}
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        )}
       </div>
 
       {/* ========================================================= */}
@@ -445,10 +619,11 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
             className="panel"
             style={{
               width: '840px',
-              maxWidth: '95vw',
+              maxWidth: '92vw',
               maxHeight: '90vh',
               overflowY: 'auto',
               boxShadow: '0 25px 70px rgba(0,0,0,0.5)',
+              padding: isComputerMode ? '24px 28px' : '18px 16px',
             }}
           >
             <span
@@ -489,7 +664,7 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
               onError={(msg) => triggerToast && triggerToast(`[AI] ${msg}`)}
             />
             {/* Bilingual Titles */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isComputerMode ? '1fr 1fr' : '1fr', gap: '14px', marginBottom: '14px' }}>
               <div>
                 <div className="fieldl">
                   {language === 'en' ? 'Title (Vietnamese)' : 'Tiêu đề (Tiếng Việt)'}
@@ -517,7 +692,7 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
             </div>
 
             {/* Bilingual Short Content / Summaries */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isComputerMode ? '1fr 1fr' : '1fr', gap: '14px', marginBottom: '14px' }}>
               <div>
                 <div className="fieldl">
                   {language === 'en' ? 'Short Content / Summary (Vietnamese)' : 'Tóm tắt ngắn (Tiếng Việt)'}
@@ -545,7 +720,7 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
             </div>
 
             {/* Bilingual Full Content */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isComputerMode ? '1fr 1fr' : '1fr', gap: '14px', marginBottom: '16px' }}>
               <div>
                 <div className="fieldl">
                   {language === 'en' ? 'Detailed Content (Vietnamese)' : 'Nội dung câu chuyện (Tiếng Việt)'}
@@ -706,7 +881,7 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
       {archivingItem && (
         <>
           <div className="scrim" onClick={() => setArchivingItem(null)} />
-          <div className="panel" style={{ width: '520px', textAlign: 'center', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
+          <div className="panel" style={{ width: '520px', maxWidth: '92vw', textAlign: 'center', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
             <span
               className="x"
               onClick={() => setArchivingItem(null)}
@@ -771,7 +946,7 @@ export function AdminLive({ roomId = 1, statusSegment = 1, onRefreshCounts, trig
       {restoringItem && (
         <>
           <div className="scrim" onClick={() => setRestoringItem(null)} />
-          <div className="panel" style={{ width: '520px', textAlign: 'center', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
+          <div className="panel" style={{ width: '520px', maxWidth: '92vw', textAlign: 'center', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
             <span
               className="x"
               onClick={() => setRestoringItem(null)}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { TopNav } from '../../components/layout/TopNav';
+import { CustomFilterDropdown } from '../../components/common/CustomFilterDropdown';
 import { ArtworkCard } from './ArtworkCard';
 import { ArtworkDetailModal } from './ArtworkDetailModal';
 import { SubmitArtworkModal } from './SubmitArtworkModal';
@@ -305,7 +306,8 @@ export function Room1Page({
 
       {/* Filter Chips & Action */}
       <div className="chips-row">
-        <div className="chips">
+        {/* Desktop Chips */}
+        <div className="chips desktop-only-chips">
           <span
             className={`chip glass ${filter === 'all' ? 'on' : ''}`}
             onClick={() => setFilter('all')}
@@ -336,9 +338,31 @@ export function Room1Page({
           </span>
         </div>
 
+        {/* Mobile/Tablet Dropdown (customized with same format as desktop .chip.glass.on) */}
+        <div className="mobile-filter-wrapper">
+          <CustomFilterDropdown
+            options={[
+              { value: 'all', label: t('r1_filter_all') },
+              { value: 'mine', label: t('r1_filter_mine') },
+              { value: 'reacted', label: t('r1_filter_reacted') },
+              { value: 'most_sympathy', label: t('r1_filter_most_sympathy') },
+            ]}
+            value={filter}
+            onChange={(val) => {
+              if (val === 'mine') {
+                guardAction(() => setFilter('mine'), 'xem tác phẩm của tôi');
+              } else if (val === 'reacted') {
+                guardAction(() => setFilter('reacted'), 'xem tác phẩm bạn đã thả cảm xúc');
+              } else {
+                setFilter(val);
+              }
+            }}
+          />
+        </div>
+
         <button
           type="button"
-          className="btn main"
+          className="btn main r1-btn-submit"
           onClick={() => {
             guardAction(() => setShowSubmitModal(true), 'trưng bày tác phẩm hành trình');
           }}

@@ -21,6 +21,20 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
   const [showEnglishField, setShowEnglishField] = useState(false);
   const [activeImmediately, setActiveImmediately] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Responsive mode detection: Computer (> 1024px) vs Tablet Portrait / Mobile Landscape / Mobile Portrait (<= 1024px)
+  const [isComputerMode, setIsComputerMode] = useState(
+    typeof window !== 'undefined' ? window.innerWidth > 1024 : true
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsComputerMode(window.innerWidth > 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Modal: Edit capsule
   const [editingCapsule, setEditingCapsule] = useState(null);
@@ -147,6 +161,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
       setNewContentVi('');
       setNewContentEn('');
       setShowEnglishField(false);
+      setIsAddModalOpen(false);
 
       if (triggerToast) {
         triggerToast(L('✦ Đã lưu thông điệp mới vào kho.', '✦ New message saved.'));
@@ -250,20 +265,124 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
     }
   };
 
+  // Form component for adding new capsule (Desktop right panel or Mobile modal)
+  const renderAddCapsuleForm = (isModal = false) => (
+    <div>
+      <b className="serif" style={{ fontSize: '22px', display: 'block', marginBottom: '12px' }}>
+        {L('Thêm thông điệp', 'Add a message')}
+      </b>
+
+      <div className="fieldl">{L('Chủ đề', 'Topic')}</div>
+      <div className="row" style={{ gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
+        {[
+          { id: 'COURAGE', name: categoryMap.COURAGE.label },
+          { id: 'HEALING', name: categoryMap.HEALING.label },
+          { id: 'PERSPECTIVE', name: categoryMap.PERSPECTIVE.label },
+        ].map((t) => (
+          <span
+            key={t.id}
+            className={`ichip ${selectedTopic === t.id ? 'on' : ''}`}
+            onClick={() => setSelectedTopic(t.id)}
+            style={{ cursor: 'pointer' }}
+          >
+            {t.name}
+          </span>
+        ))}
+      </div>
+
+      <div className="fieldl">{L('Nội dung tiếng Việt', 'Vietnamese message')}</div>
+      <textarea
+        className="inp area"
+        style={{ minHeight: isModal ? '95px' : '110px', fontSize: '14px', lineHeight: 1.5, fontFamily: 'var(--sans)' }}
+        value={newContentVi}
+        onChange={(e) => setNewContentVi(e.target.value)}
+        placeholder={L('Một lời nhắn gửi người ghé thăm...', 'A kind word for visitors...')}
+      />
+
+      <div style={{ marginTop: '10px', marginBottom: '14px' }}>
+        <label
+          className="row muted"
+          style={{ gap: '8px', cursor: 'pointer', fontSize: '13px' }}
+        >
+          <input
+            type="checkbox"
+            checked={showEnglishField}
+            onChange={(e) => setShowEnglishField(e.target.checked)}
+          />
+          <span>{L('Thêm bản dịch tiếng Anh', 'Add an English translation')}</span>
+        </label>
+      </div>
+
+      {showEnglishField && (
+        <div style={{ marginBottom: '14px' }}>
+          <div className="fieldl">{L('Nội dung tiếng Anh', 'English message')}</div>
+          <textarea
+            className="inp area"
+            style={{ minHeight: '80px', fontSize: '13.5px', fontFamily: 'var(--sans)' }}
+            value={newContentEn}
+            onChange={(e) => setNewContentEn(e.target.value)}
+            placeholder={L('Bản dịch tiếng Anh...', 'English translation...')}
+          />
+        </div>
+      )}
+
+      <div className="row between" style={{ marginTop: '16px', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <span
+          className="row muted"
+          style={{ gap: '8px', cursor: 'pointer', fontSize: '13.5px' }}
+          onClick={() => setActiveImmediately(!activeImmediately)}
+        >
+          <span className={`tog ${activeImmediately ? 'on' : ''}`} /> {L('Bật ngay', 'Turn on now')}
+        </span>
+        <div className="row" style={{ gap: '8px' }}>
+          {isModal && (
+            <button
+              type="button"
+              className="btn ghost sm"
+              onClick={() => setIsAddModalOpen(false)}
+            >
+              {L('Hủy', 'Cancel')}
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn main sm"
+            onClick={handleAddCapsule}
+            disabled={isCreating || !newContentVi.trim()}
+          >
+            {isCreating ? L('Đang lưu...', 'Saving...') : L('Lưu vào kho', 'Save')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {/* Category Summary Header Badges */}
       <div
-        className="abs"
-        style={{
-          left: '32px',
-          right: '420px',
-          top: '142px',
-          display: 'flex',
-          gap: '12px',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-        }}
+        className={`admin-capsules-summary-badges ${isComputerMode ? 'abs' : 'mobile-summary'}`}
+        style={
+          isComputerMode
+            ? {
+                left: '32px',
+                right: '420px',
+                top: '142px',
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+              }
+            : {
+                position: 'relative',
+                width: '100%',
+                marginTop: '10px',
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+              }
+        }
       >
         <span className="muted" style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '.05em' }}>
           {L(`TỔNG SỐ: ${totalCount} THÔNG ĐIỆP`, `TOTAL: ${totalCount} MESSAGES`)}
@@ -295,7 +414,6 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
               />
               <b>{meta.label}:</b>
               <span>{cat.total_count}</span>
-              
             </div>
           );
         })}
@@ -303,19 +421,30 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
 
       {/* Main Table Container Box */}
       <div
-        className="abs box"
-        style={{
-          left: '32px',
-          right: '420px',
-          top: '194px',
-          bottom: '26px',
-          overflowY: 'auto',
-          padding: '16px',
-        }}
+        className={`box admin-capsules-main-box ${isComputerMode ? 'abs' : 'mobile-main-box'}`}
+        style={
+          isComputerMode
+            ? {
+                left: '32px',
+                right: '420px',
+                top: '194px',
+                bottom: '26px',
+                overflowY: 'auto',
+                padding: '16px',
+              }
+            : {
+                position: 'relative',
+                width: '100%',
+                marginTop: '12px',
+                padding: '14px',
+                overflowY: 'visible',
+                boxSizing: 'border-box',
+              }
+        }
       >
         {/* Table Filter Controls */}
-        <div className="row between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-          <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
+        <div className="row between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+          <div className="row" style={{ gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <span className="muted" style={{ fontSize: '13px' }}>{L('Chủ đề:', 'Topic:')}</span>
             <select
               className="inp"
@@ -329,7 +458,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
               <option value="PERSPECTIVE">{categoryMap.PERSPECTIVE.label}</option>
             </select>
 
-            <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>{L('Trạng thái:', 'Status:')}</span>
+            <span className="muted" style={{ fontSize: '13px', marginLeft: '4px' }}>{L('Trạng thái:', 'Status:')}</span>
             <select
               className="inp"
               style={{ width: '140px', padding: '6px 10px', fontSize: '13px' }}
@@ -342,29 +471,136 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
             </select>
           </div>
 
-          {isLoading && <span className="muted" style={{ fontSize: '12.5px' }}>{L('Đang tải...', 'Loading...')}</span>}
+          <div className="row" style={{ gap: '10px', alignItems: 'center' }}>
+            {isLoading && <span className="muted" style={{ fontSize: '12.5px' }}>{L('Đang tải...', 'Loading...')}</span>}
+
+            {/* Button "+ Thêm thông điệp" on Tablet Portrait, Mobile Landscape, Mobile Portrait */}
+            {!isComputerMode && (
+              <button
+                type="button"
+                className="btn main sm"
+                onClick={() => setIsAddModalOpen(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontWeight: 600,
+                }}
+              >
+                <Icon name="plus" size={15} />
+                {L('Thêm thông điệp', 'Add message')}
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Table of Capsules */}
-        <table className="at">
-          <thead>
-            <tr>
-              <th style={{ width: '45px' }}>#</th>
-              <th>{L('Nội dung thông điệp', 'Message')}</th>
-              <th style={{ width: '110px' }}>{L('Chủ đề', 'Topic')}</th>
-              <th style={{ width: '130px' }}>{L('Người tạo', 'Created by')}</th>
-              <th style={{ width: '85px', textAlign: 'center' }}>{L('Lượt rút', 'Draws')}</th>
-              <th style={{ width: '65px', textAlign: 'center' }}>Bật/Tắt</th>
-              <th style={{ width: '85px', textAlign: 'right' }}>{L('Thao tác', 'Actions')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {capsules.length === 0 ? (
+        {/* View Mode: Desktop Table vs Tablet/Mobile Cards */}
+        {isComputerMode ? (
+          <table className="at">
+            <thead>
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-                  {L('Không có thông điệp nào phù hợp', 'No matching messages')}
-                </td>
+                <th style={{ width: '45px' }}>#</th>
+                <th>{L('Nội dung thông điệp', 'Message')}</th>
+                <th style={{ width: '110px' }}>{L('Chủ đề', 'Topic')}</th>
+                <th style={{ width: '130px' }}>{L('Người tạo', 'Created by')}</th>
+                <th style={{ width: '85px', textAlign: 'center' }}>{L('Lượt rút', 'Draws')}</th>
+                <th style={{ width: '65px', textAlign: 'center' }}>Bật/Tắt</th>
+                <th style={{ width: '85px', textAlign: 'right' }}>{L('Thao tác', 'Actions')}</th>
               </tr>
+            </thead>
+            <tbody>
+              {capsules.length === 0 ? (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+                    {L('Không có thông điệp nào phù hợp', 'No matching messages')}
+                  </td>
+                </tr>
+              ) : (
+                capsules.map((c) => {
+                  const catMeta = categoryMap[c.category] || {
+                    label: c.category,
+                    badgeClass: 'b-priv',
+                  };
+                  const authorDisplay =
+                    c.author?.nickname || (c.author_role === 'ADMIN' ? L('Ban Quản trị', 'Admin team') : L('Hệ thống', 'System'));
+
+                  return (
+                    <tr key={c.id}>
+                      <td className="muted" style={{ fontSize: '12px' }}>{c.id}</td>
+                      <td style={{ maxWidth: '340px' }}>
+                        {(() => {
+                          const vi = c.message_vi || c.message;
+                          const en = c.message_en && c.message_en !== vi ? c.message_en : null;
+                          const main = language === 'en' && en ? en : vi;
+                          const other = language === 'en' ? (en ? vi : null) : en;
+                          return (
+                            <>
+                              <div style={{ lineHeight: 1.5, fontSize: '14px' }}>{main}</div>
+                              {other && (
+                                <small className="muted" style={{ display: 'block', marginTop: '3px', fontStyle: 'italic' }}>
+                                  {language === 'en' ? 'VI' : 'EN'}: {other}
+                                </small>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </td>
+                      <td>
+                        <span className={`badge ${catMeta.badgeClass}`}>
+                          {catMeta.label}
+                        </span>
+                      </td>
+                      <td className="muted" style={{ fontSize: '13px' }}>
+                        {authorDisplay}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className="badge b-blue" style={{ fontSize: '12px' }}>
+                          {c.draw_count ?? 0}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span
+                          className={`tog ${c.is_approved ? 'on' : ''}`}
+                          title={c.is_approved ? L('Đang bật, nhấn để tắt', 'On, click to turn off') : L('Đang tắt, nhấn để bật', 'Off, click to turn on')}
+                          onClick={() => handleToggleActive(c)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="row" style={{ gap: '6px', justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            className="iconbtn"
+                            title={L('Chỉnh sửa', 'Edit')}
+                            onClick={() => handleOpenEdit(c)}
+                            style={{ width: '28px', height: '28px', border: '1px solid var(--line)', background: 'var(--paper)' }}
+                          >
+                            <Icon name="edit" size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="iconbtn danger"
+                            title={L('Xóa thông điệp', 'Delete message')}
+                            onClick={() => handleDeleteCapsule(c)}
+                            style={{ width: '28px', height: '28px', border: '1px solid var(--line)', background: 'var(--paper)' }}
+                          >
+                            <Icon name="x" size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        ) : (
+          /* Tablet & Mobile View (<= 1024px): Bật/Tắt, Thao tác, Lượt rút hiển thị phía DƯỚI thông điệp */
+          <div className="admin-capsules-cards-list">
+            {capsules.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px 14px', color: 'var(--muted)', fontSize: '13px' }}>
+                {L('Không có thông điệp nào phù hợp', 'No matching messages')}
+              </div>
             ) : (
               capsules.map((c) => {
                 const catMeta = categoryMap[c.category] || {
@@ -375,9 +611,44 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
                   c.author?.nickname || (c.author_role === 'ADMIN' ? L('Ban Quản trị', 'Admin team') : L('Hệ thống', 'System'));
 
                 return (
-                  <tr key={c.id}>
-                    <td className="muted" style={{ fontSize: '12px' }}>{c.id}</td>
-                    <td style={{ maxWidth: '340px' }}>
+                  <div
+                    key={c.id}
+                    className="admin-capsule-card"
+                    style={{
+                      background: 'var(--paper)',
+                      border: '1px solid var(--line)',
+                      borderRadius: '12px',
+                      padding: '14px 16px',
+                      marginBottom: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    {/* Header: #ID, Category badge, Author display */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span className="muted" style={{ fontSize: '12px', fontWeight: 600 }}>#{c.id}</span>
+                        <span className={`badge ${catMeta.badgeClass}`} style={{ fontSize: '11px' }}>
+                          {catMeta.label}
+                        </span>
+                      </div>
+                      <span className="muted" style={{ fontSize: '12.5px' }}>
+                        {authorDisplay}
+                      </span>
+                    </div>
+
+                    {/* Middle: Message content (Vietnamese & English) */}
+                    <div style={{ padding: '2px 0' }}>
                       {(() => {
                         const vi = c.message_vi || c.message;
                         const en = c.message_en && c.message_en !== vi ? c.message_en : null;
@@ -385,159 +656,162 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
                         const other = language === 'en' ? (en ? vi : null) : en;
                         return (
                           <>
-                            <div style={{ lineHeight: 1.5, fontSize: '14px' }}>{main}</div>
+                            <div style={{ lineHeight: 1.55, fontSize: '14.5px', color: 'var(--ink)' }}>{main}</div>
                             {other && (
-                              <small className="muted" style={{ display: 'block', marginTop: '3px', fontStyle: 'italic' }}>
+                              <div className="muted" style={{ marginTop: '4px', fontSize: '13px', fontStyle: 'italic' }}>
                                 {language === 'en' ? 'VI' : 'EN'}: {other}
-                              </small>
+                              </div>
                             )}
                           </>
                         );
                       })()}
-                    </td>
-                    <td>
-                      <span className={`badge ${catMeta.badgeClass}`}>
-                        {catMeta.label}
-                      </span>
-                    </td>
-                    <td className="muted" style={{ fontSize: '13px' }}>
-                      {authorDisplay}
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span className="badge b-blue" style={{ fontSize: '12px' }}>
-                        {c.draw_count ?? 0}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span
-                        className={`tog ${c.is_approved ? 'on' : ''}`}
-                        title={c.is_approved ? L('Đang bật, nhấn để tắt', 'On, click to turn off') : L('Đang tắt, nhấn để bật', 'Off, click to turn on')}
-                        onClick={() => handleToggleActive(c)}
-                        style={{ cursor: 'pointer' }}
-                      />
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div className="row" style={{ gap: '6px', justifyContent: 'flex-end' }}>
+                    </div>
+
+                    {/* Bottom Row: Lượt rút, Bật/Tắt, và Thao tác hiển thị PHÍA DƯỚI thông điệp thay vì bên phải */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        borderTop: '1px solid var(--line)',
+                        paddingTop: '10px',
+                        marginTop: '2px',
+                        flexWrap: 'wrap',
+                        gap: '10px',
+                      }}
+                    >
+                      {/* Left: Lượt rút & Bật/Tắt */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                        {/* Lượt rút */}
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '12.5px',
+                            color: 'var(--muted)',
+                          }}
+                        >
+                          <span>{L('Lượt rút:', 'Draws:')}</span>
+                          <span className="badge b-blue" style={{ fontSize: '12px', fontWeight: 600 }}>
+                            {c.draw_count ?? 0}
+                          </span>
+                        </span>
+
+                        {/* Button Bật / Tắt */}
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            cursor: 'pointer',
+                            userSelect: 'none',
+                            fontSize: '13px',
+                          }}
+                          onClick={() => handleToggleActive(c)}
+                          title={c.is_approved ? L('Đang bật, nhấn để tắt', 'On, click to turn off') : L('Đang tắt, nhấn để bật', 'Off, click to turn on')}
+                        >
+                          <span className={`tog ${c.is_approved ? 'on' : ''}`} />
+                          <span style={{ color: c.is_approved ? '#2D7D46' : 'var(--muted)', fontWeight: 500 }}>
+                            {c.is_approved ? L('Đang bật', 'On') : L('Đang tắt', 'Off')}
+                          </span>
+                        </span>
+                      </div>
+
+                      {/* Right: Thao tác (Edit, Delete) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <button
                           type="button"
-                          className="iconbtn"
-                          title={L('Chỉnh sửa', 'Edit')}
+                          className="btn line sm"
                           onClick={() => handleOpenEdit(c)}
-                          style={{ width: '28px', height: '28px', border: '1px solid var(--line)', background: 'var(--paper)' }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 10px',
+                            fontSize: '12.5px',
+                          }}
                         >
-                          <Icon name="edit" size={14} />
+                          <Icon name="edit" size={13} />
+                          {L('Sửa', 'Edit')}
                         </button>
+
                         <button
                           type="button"
-                          className="iconbtn danger"
-                          title={L('Xóa thông điệp', 'Delete message')}
+                          className="btn line sm"
                           onClick={() => handleDeleteCapsule(c)}
-                          style={{ width: '28px', height: '28px', border: '1px solid var(--line)', background: 'var(--paper)' }}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: '4px 10px',
+                            fontSize: '12.5px',
+                            color: '#A1342C',
+                            borderColor: 'rgba(161, 52, 44, 0.3)',
+                          }}
                         >
-                          <Icon name="x" size={14} />
+                          <Icon name="x" size={13} />
+                          {L('Xóa', 'Delete')}
                         </button>
                       </div>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 );
               })
             )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Right Column: Add New Capsule Panel */}
-      <div
-        className="abs box"
-        style={{
-          right: '32px',
-          width: '368px',
-          top: '194px',
-          padding: '22px',
-        }}
-      >
-        <b className="serif" style={{ fontSize: '22px', display: 'block', marginBottom: '12px' }}>
-          {L('Thêm thông điệp', 'Add a message')}
-        </b>
-
-        <div className="fieldl">{L('Chủ đề', 'Topic')}</div>
-        <div className="row" style={{ gap: '6px', marginBottom: '14px' }}>
-          {[
-            { id: 'COURAGE', name: categoryMap.COURAGE.label },
-            { id: 'HEALING', name: categoryMap.HEALING.label },
-            { id: 'PERSPECTIVE', name: categoryMap.PERSPECTIVE.label },
-          ].map((t) => (
-            <span
-              key={t.id}
-              className={`ichip ${selectedTopic === t.id ? 'on' : ''}`}
-              onClick={() => setSelectedTopic(t.id)}
-              style={{ cursor: 'pointer' }}
-            >
-              {t.name}
-            </span>
-          ))}
-        </div>
-
-        <div className="fieldl">{L('Nội dung tiếng Việt', 'Vietnamese message')}</div>
-        <textarea
-          className="inp area"
-          style={{ minHeight: '110px', fontSize: '14px', lineHeight: 1.5, fontFamily: 'var(--sans)' }}
-          value={newContentVi}
-          onChange={(e) => setNewContentVi(e.target.value)}
-          placeholder={L('Một lời nhắn gửi người ghé thăm...', 'A kind word for visitors...')}
-        />
-
-        <div style={{ marginTop: '10px', marginBottom: '14px' }}>
-          <label
-            className="row muted"
-            style={{ gap: '8px', cursor: 'pointer', fontSize: '13px' }}
-          >
-            <input
-              type="checkbox"
-              checked={showEnglishField}
-              onChange={(e) => setShowEnglishField(e.target.checked)}
-            />
-            <span>{L('Thêm bản dịch tiếng Anh', 'Add an English translation')}</span>
-          </label>
-        </div>
-
-        {showEnglishField && (
-          <div style={{ marginBottom: '14px' }}>
-            <div className="fieldl">{L('Nội dung tiếng Anh', 'English message')}</div>
-            <textarea
-              className="inp area"
-              style={{ minHeight: '80px', fontSize: '13.5px', fontFamily: 'var(--sans)' }}
-              value={newContentEn}
-              onChange={(e) => setNewContentEn(e.target.value)}
-              placeholder={L('Bản dịch tiếng Anh...', 'English translation...')}
-            />
           </div>
         )}
-
-        <div className="row between" style={{ marginTop: '16px', alignItems: 'center' }}>
-          <span
-            className="row muted"
-            style={{ gap: '8px', cursor: 'pointer', fontSize: '13.5px' }}
-            onClick={() => setActiveImmediately(!activeImmediately)}
-          >
-            <span className={`tog ${activeImmediately ? 'on' : ''}`} /> {L('Bật ngay', 'Turn on now')}
-          </span>
-          <button
-            type="button"
-            className="btn main sm"
-            onClick={handleAddCapsule}
-            disabled={isCreating || !newContentVi.trim()}
-          >
-            {isCreating ? L('Đang lưu...', 'Saving...') : L('Lưu vào kho', 'Save')}
-          </button>
-        </div>
       </div>
+
+      {/* Right Column: Add New Capsule Panel (Desktop computer mode only) */}
+      {isComputerMode && (
+        <div
+          className="abs box admin-capsules-add-panel desktop-only-col"
+          style={{
+            right: '32px',
+            width: '368px',
+            top: '194px',
+            padding: '22px',
+          }}
+        >
+          {renderAddCapsuleForm(false)}
+        </div>
+      )}
+
+      {/* ADD CAPSULE MODAL (Tablet Portrait, Mobile Landscape, Mobile Portrait) */}
+      {isAddModalOpen && !isComputerMode && (
+        <>
+          <div className="scrim" onClick={() => setIsAddModalOpen(false)} />
+          <div
+            className="panel"
+            style={{
+              width: '540px',
+              maxWidth: '92vw',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 70px rgba(0,0,0,0.5)',
+              padding: '22px 24px',
+            }}
+          >
+            <span
+              className="x"
+              onClick={() => setIsAddModalOpen(false)}
+              role="button"
+              tabIndex={0}
+              style={{ fontSize: '24px', cursor: 'pointer' }}
+            >
+              &times;
+            </span>
+            {renderAddCapsuleForm(true)}
+          </div>
+        </>
+      )}
 
       {/* EDIT CAPSULE MODAL */}
       {editingCapsule && (
         <>
           <div className="scrim" onClick={() => setEditingCapsule(null)} />
-          <div className="panel" style={{ width: '560px', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
+          <div className="panel" style={{ width: '560px', maxWidth: '92vw', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
             <span className="x" onClick={() => setEditingCapsule(null)} role="button" tabIndex={0}>
               <Icon name="x" size={22} />
             </span>
@@ -548,7 +822,7 @@ export function AdminCapsules({ triggerToast, onCapsulesUpdated }) {
             </div>
 
             <div className="fieldl">{L('Chủ đề', 'Topic')}</div>
-            <div className="row" style={{ gap: '6px', marginBottom: '14px' }}>
+            <div className="row" style={{ gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
               {[
                 { id: 'COURAGE', name: categoryMap.COURAGE.label },
                 { id: 'HEALING', name: categoryMap.HEALING.label },

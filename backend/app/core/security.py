@@ -84,3 +84,65 @@ def decode_token(token: str) -> Optional[dict]:
         return payload
     except jwt.PyJWTError:
         return None
+
+
+def validate_safe_base_url(url: Optional[str]) -> str:
+    """Validates that a custom provider base_url is safe from SSRF attacks.
+    Blocks private IP addresses, loopback, link-local, cloud metadata (169.254.169.254),
+    and non-http(s) schemes.
+    """
+    import ipaddress
+    import socket
+    from urllib.parse import urlparse
+
+    if not url or not url.strip():
+        raise AppException(
+            status_code=400,
+            error_code="INVALID_BASE_URL",
+            message="base_url không được để trống.",
+        )
+
+    cleaned = url.strip()
+    parsed = urlparse(cleaned)
+    if (parsed.scheme or "").lower() not in ("http", "https"):
+        raise AppException(
+            status_code=400,
+            error_code="SSRF_UNSUPPORTED_SCHEME",
+            message=f"Giao thức '{parsed.scheme}' không được hỗ trợ. Chỉ cho phép http:// hoặc https://",
+        )
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise AppException(
+            status_code=400,
+            error_code="SSRF_MISSING_HOSTNAME",
+            message="base_url không chứa tên miền hoặc địa chỉ máy chủ hợp lệ.",
+        )
+
+    # Direct loopback / localhost block
+    if hostname.lower() in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
+        raise AppException(
+            status_code=400,
+            error_code="SSRF_LOCAL_HOST_BLOCKED",
+            message="Từ chối kết nối tới localhost hoặc loopback máy chủ nội bộ.",
+        )
+
+    # Resolve IP and verify against private/metadata IP spaces
+    try:
+        ip_str = socket.gethostbyname(hostname)
+        ip = ipaddress.ip_address(ip_str)
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+            raise AppException(
+                status_code=400,
+                error_code="SSRF_PRIVATE_IP_BLOCKED",
+                message=f"Địa chỉ đích ({ip_str}) thuộc mạng nội bộ hoặc dải địa chỉ bị hạn chế (SSRF Protection).",
+            )
+    except socket.gaierror:
+        raise AppException(
+            status_code=400,
+            error_code="SSRF_DNS_RESOLVE_FAILED",
+            message=f"Không thể phân giải tên miền: '{hostname}'. Vui lòng kiểm tra lại địa chỉ máy chủ.",
+        )
+
+    return cleaned.rstrip("/")
+

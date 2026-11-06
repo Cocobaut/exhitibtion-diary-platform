@@ -11,7 +11,7 @@ export function AccountSettingsModal({ isOpen, onClose }) {
   const { theme, setTheme } = useTheme();
   const { language } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState('info'); // 'info', 'security', 'theme'
+  const [activeTab, setActiveTab] = useState('info'); // 'info', 'security'
   const fileInputRef = useRef(null);
 
   // Form Profile
@@ -31,10 +31,6 @@ export function AccountSettingsModal({ isOpen, onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState({ type: '', text: '' });
-
-  // Theme
-  const [isSavingTheme, setIsSavingTheme] = useState(false);
-  const [themeMsg, setThemeMsg] = useState('');
 
   // Sync state khi mở modal hoặc khi user thay đổi
   useEffect(() => {
@@ -242,48 +238,8 @@ export function AccountSettingsModal({ isOpen, onClose }) {
     }
   };
 
-  // Chọn và lưu Theme
-  const handleSelectTheme = async (themeKey) => {
-    setTheme(themeKey);
-    setIsSavingTheme(true);
-    setThemeMsg('');
-
-    try {
-      await userService.updateProfile({ theme_preference: themeKey });
-      updateUser({ theme_preference: themeKey });
-      setThemeMsg(language === 'en' ? 'Color theme preference saved to your account' : 'Đã lưu bảng màu ưa thích vào tài khoản');
-    } catch {
-      // Offline fallback
-    } finally {
-      setIsSavingTheme(false);
-    }
-  };
-
   const displayName = user?.nickname || user?.username || (language === 'en' ? 'You' : 'Bạn');
   const initialLetter = displayName.charAt(0).toUpperCase();
-
-  const themesList = [
-    {
-      key: 'museum',
-      name: language === 'en' ? 'Museum Twilight (Default)' : 'Bảo tàng chiều (Mặc định)',
-      desc: language === 'en' ? 'Classic warm vintage tones with golden sunset glow' : 'Tông trầm ấm cổ điển, ánh vàng hoàng hôn',
-    },
-    {
-      key: 'moss',
-      name: language === 'en' ? 'Ancient Moss' : 'Rêu cổ',
-      desc: language === 'en' ? 'Tranquil serene greens of a meditative botanical garden' : 'Sắc xanh tĩnh lặng của khu vườn tĩnh dưỡng',
-    },
-    {
-      key: 'plum',
-      name: language === 'en' ? 'Ripe Plum' : 'Mận chín',
-      desc: language === 'en' ? 'Nostalgic deep violet and rosé hues, calm and contemplative' : 'Gam tím hồng hoài niệm, sâu lắng',
-    },
-    {
-      key: 'paper',
-      name: language === 'en' ? 'Aged Paper' : 'Giấy cũ',
-      desc: language === 'en' ? 'Gentle yellowed vintage book pages, soothing for the eyes' : 'Màu trang sách ngả vàng, êm dịu ánh mắt',
-    },
-  ];
 
   return (
     <Modal
@@ -358,20 +314,6 @@ export function AccountSettingsModal({ isOpen, onClose }) {
           }}
         >
           {language === 'en' ? 'Change Password' : 'Đổi mật khẩu'}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('theme')}
-          className="btn"
-          style={{
-            padding: '7px 16px',
-            fontSize: '14px',
-            background: activeTab === 'theme' ? 'var(--acc)' : 'transparent',
-            color: activeTab === 'theme' ? '#fff' : 'var(--ink)',
-            borderColor: activeTab === 'theme' ? 'var(--acc)' : 'var(--line)',
-          }}
-        >
-          {language === 'en' ? 'Theme & Appearance' : 'Bảng màu giao diện'}
         </button>
       </div>
 
@@ -628,70 +570,6 @@ export function AccountSettingsModal({ isOpen, onClose }) {
             </button>
           </div>
         </form>
-      )}
-
-      {/* TAB 3: BẢNG MÀU (THEME) */}
-      {activeTab === 'theme' && (
-        <div>
-          <div style={{ fontSize: '14.5px', color: 'var(--ink2)', marginBottom: '14px' }}>
-            {language === 'en'
-              ? 'Choose your favorite visual theme. This preference will be synchronized with your account.'
-              : 'Chọn phong cách thị giác yêu thích. Lựa chọn này sẽ được lưu đồng bộ vào tài khoản của bạn.'}
-          </div>
-
-          {themeMsg && (
-            <div
-              style={{
-                background: 'rgba(56, 142, 60, 0.12)',
-                border: '1px solid #388e3c',
-                color: '#2e7d32',
-                padding: '9px 12px',
-                borderRadius: '10px',
-                fontSize: '13.5px',
-                marginBottom: '14px',
-              }}
-            >
-              {themeMsg}
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {themesList.map((t) => {
-              const isSelected = theme === t.key;
-              return (
-                <div
-                  key={t.key}
-                  onClick={() => handleSelectTheme(t.key)}
-                  style={{
-                    padding: '14px 18px',
-                    borderRadius: '14px',
-                    border: `2px solid ${isSelected ? 'var(--gold)' : 'var(--line)'}`,
-                    background: isSelected ? 'rgba(201, 154, 59, 0.08)' : 'rgba(255, 255, 255, 0.5)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '15.5px', color: 'var(--ink)' }}>
-                      {t.name}
-                    </div>
-                    <div style={{ fontSize: '13px', color: 'var(--ink2)', marginTop: '2px' }}>
-                      {t.desc}
-                    </div>
-                  </div>
-                  {isSelected && (
-                    <span style={{ color: 'var(--gold)', fontWeight: 700, fontSize: '18px' }}>
-                      ✓
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
       )}
     </Modal>
   );

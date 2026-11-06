@@ -10,6 +10,7 @@ export function TopNav({
   tagLabel,
   roomName,
   greeting,
+  belowGreeting,
   searchPlaceholder,
   searchValue = '',
   onSearchChange,
@@ -68,8 +69,11 @@ export function TopNav({
           <b>{roomName}</b>
         </div>
       ) : greeting ? (
-        <div className="hand" style={{ fontSize: '24px' }}>
-          {greeting}
+        <div className="lobby-greeting-block">
+          <div className="hand" style={{ fontSize: '24px' }}>
+            {greeting}
+          </div>
+          {belowGreeting}
         </div>
       ) : (
         <div />
@@ -98,14 +102,14 @@ export function TopNav({
 
         <button
           type="button"
-          className="iconbtn glass"
+          className="iconbtn glass topnav-theme-btn"
           title={t('theme_palette')}
           onClick={onOpenThemeModal}
         >
           <Icon name="palette" size={20} />
         </button>
 
-        <div className="lang glass" style={{ cursor: 'pointer', userSelect: 'none' }}>
+        <div className="lang glass topnav-lang-btn" style={{ cursor: 'pointer', userSelect: 'none' }}>
           <b
             className={language === 'vi' ? 'on' : ''}
             onClick={() => setLanguage('vi')}
@@ -124,7 +128,7 @@ export function TopNav({
 
         <button
           type="button"
-          className="iconbtn glass"
+          className="iconbtn glass topnav-bell-btn"
           title={t('notifications')}
           onClick={() => {
             guardAction(() => {

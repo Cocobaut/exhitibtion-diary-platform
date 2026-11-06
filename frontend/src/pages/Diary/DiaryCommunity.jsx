@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MOODS } from '../../data/mockData';
 import { ReactionStack, ReactionButton } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
 import { diaryService } from '../../services/diaryService';
@@ -7,14 +6,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
 import { TranslationToggle } from '../../components/common/TranslationToggle';
-
-const MOOD_TRANSLATIONS = {
-  'Bình yên': 'Peaceful',
-  'Trầm lắng': 'Contemplative',
-  'Biết ơn': 'Grateful',
-  'Hy vọng': 'Hopeful',
-  'Mệt mỏi': 'Weary',
-};
 
 export function DiaryCommunity({
   searchQuery = '',
@@ -31,8 +22,6 @@ export function DiaryCommunity({
   const [selectedNote, setSelectedNote] = useState(null);
   const tr = useTranslationToggle(selectedNote, ['title', 'content']);
   const [togglingId, setTogglingId] = useState(null);
-
-  const getMoodLabel = (m) => (language === 'en' ? (MOOD_TRANSLATIONS[m] || m) : m);
 
   const loadCommunityDiaries = useCallback(async () => {
     setIsLoading(true);
@@ -207,7 +196,8 @@ export function DiaryCommunity({
                 padding: '20px 22px 16px',
                 boxShadow: '0 14px 30px rgba(0,0,0,.28)',
                 transform: `rotate(${rotations[i % rotations.length]}deg)`,
-                borderLeft: `8px solid ${MOODS[note.mood] || '#E2BC55'}`,
+                border: '1.5px solid var(--gold, #E6C280)',
+                borderLeft: '8px solid var(--gold, #E6C280)',
                 cursor: 'pointer',
                 transition: 'transform 0.18s ease, box-shadow 0.18s ease',
               }}
@@ -224,8 +214,6 @@ export function DiaryCommunity({
                 className="row muted"
                 style={{ gap: '6px', fontSize: '12.5px' }}
               >
-                <i className="dot" style={{ background: MOODS[note.mood] || '#E2BC55' }} />
-                <span>{getMoodLabel(note.mood) || (language === 'en' ? 'Peaceful' : 'Bình yên')}</span> ·{' '}
                 <span>{formatDate(note.entry_date || note.created_at)}</span>
               </div>
 
@@ -323,11 +311,6 @@ export function DiaryCommunity({
             </span>
 
             <div className="row muted" style={{ gap: '8px', fontSize: '13px' }}>
-              <i
-                className="dot"
-                style={{ background: MOODS[selectedNote.mood] || '#E2BC55' }}
-              />
-              <span>{getMoodLabel(selectedNote.mood) || (language === 'en' ? 'Peaceful' : 'Bình yên')}</span> ·{' '}
               <span>{formatDate(selectedNote.entry_date || selectedNote.created_at)}</span>
             </div>
 

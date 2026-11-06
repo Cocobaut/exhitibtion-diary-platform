@@ -35,31 +35,32 @@ Dựa trên kiến trúc thực tế của hệ thống AI Copilot trong dự á
 
 ## 2. Kết Quả Đánh Giá Thực Nghiệm (Trên Golden Dataset 32 Test Cases + 6 Art Cases)
 
-Chúng tôi đã tiến hành đo lường trực tiếp trên **3 cấu hình thực nghiệm** bằng script [`evaluate_agent.py`](evaluate_agent.py) với một khóa Gemini API thử nghiệm:
+Chúng tôi đã tiến hành đo lường trực tiếp trên **4 cấu hình thực nghiệm** bằng script [`evaluate_agent.py`](evaluate_agent.py):
 - **Cấu hình 1 (Live LLM - Dynamic Discovery `gemini-flash-lite-latest`)**: Khi gọi model mặc định `gemini-2.5-flash` (bị Google trả về `404 No longer available to new users`), Agent tự động kích hoạt **Dynamic Model Discovery** quét 50 models và điều hướng sang `gemini-flash-lite-latest`.
 - **Cấu hình 2 (Live LLM - Direct `gemini-3-flash-preview` + Hybrid Fallback)**: Gọi trực tiếp model thế hệ mới `gemini-3-flash-preview` (phản hồi ~4.3s – 6.7s/câu khi còn hạn ngạch RPM, và tự động chuyển về Rule Engine trong ~2.1s khi chạm ngưỡng Rate Limit `HTTP 429`).
 - **Cấu hình 3 (Deterministic Rule Engine Baseline)**: Chạy thuần tầng Rule Engine nội bộ không gọi mạng ngoài.
+- **Cấu hình 4 (Live LLM - DeepSeek-V3 / Flash qua Custom OpenAI-Compatible Provider)** ⭐: Đánh giá trực tiếp với khóa API DeepSeek (`deepseek-chat`) tại endpoint `https://api.deepseek.com`, vận hành trên kiến trúc Hybrid nâng cấp: **Rule Merge Engine + Prompt Injection Isolation Boundary + Fast Fallback Controller + SVG XSS Gate**.
 
 ### Bảng Tổng Hợp Đối Sánh Kết Quả Các Đại Lượng Metric
 
-| Nhóm | Đại lượng Metric (Evaluation Metric) | Live Gemini (`gemini-flash-lite-latest` Dynamic) | Live Gemini (`gemini-3-flash-preview` Hybrid) | Deterministic Baseline (Offline Rule Engine) | Đánh giá & Nhận xét Kỹ thuật |
-| :--- | :--- | :---: | :---: | :---: | :--- |
-| **A. Task Quality** | **Task Success Rate (Overall)** | **81.25%** | **84.38%** | **87.50%** | Hoàn thành trọn vẹn cả 4 tiêu chí (Schema + Verdict + Room + Rewrite) |
-| **A. Task Quality** | **Verdict Accuracy (`APPROVE` vs `DISAPPROVE`)** | **93.75%** (30/32) | **93.75%** (30/32) | **93.75%** (30/32) | Độ ổn định phán quyết rất cao trên cả LLM và Rule Engine |
-| **A. Task Quality** | **Rubric Score Range Accuracy** | **90.62%** (29/32) | **93.75%** (30/32) | **93.75%** (30/32) | Điểm trừ bám sát bảng trọng số Rubric 100 điểm |
-| **A. Task Quality** | **Room Routing Accuracy (Room 1 / 2 / 3)** | **87.50%** (28/32) | **100.00%** (32/32) | **100.00%** (32/32) | Phát hiện chính xác bài viết oán hận đăng nhầm vào Phòng Hy Vọng |
-| **A. Task Quality** | **JSON Schema Compliance Rate** | **96.88%** (31/32) | **100.00%** (32/32) | **100.00%** (32/32) | Chỉ 1/32 ca (`TC_032`) ở `flash-lite` thiếu trường `line_number` |
-| **A. Task Quality** | **Art Image Synthesis Success Rate** | **100.00%** (6/6) | **100.00%** (6/6) | **100.00%** (6/6) | Gemini tổng hợp trực tiếp mã đồ họa `<svg>` nghệ thuật 1024x1024 |
-| **A. Efficiency** | **Average Steps to Completion** | **2.91 steps** | **3.00 steps** | **3.00 steps** | Tối ưu cố định 3 bước; **Loop / Runaway Failure Rate = 0.0%** |
-| **B. Grounding** | **Violation Detection F1-Score** | **93.19%** | **97.40%** | **98.96%** | `gemini-3-flash` đạt **Precision 96.35%**, **Recall 100.0%** |
-| **B. Grounding** | **Evidence Quote Grounding Accuracy** | **100.00%** | **100.00%** | **100.00%** | 100% trích dẫn lỗi (`quote`) khớp nguyên văn trong bài gốc |
-| **B. Grounding** | **PII & Profanity Sanitization Rate** | **99.19%** ⭐ | **95.83%** | **95.83%** | **Live LLM vượt trội hơn Rule Engine** ở khả năng làm sạch từ lóng ngữ cảnh (`vãi đái`, `bullshit`, `asshole`) |
-| **B. Grounding** | **Core Meaning Preservation Rate** | **98.39%** | **100.00%** | **100.00%** | Bảo toàn trọn vẹn mạch cảm xúc và từ khóa cốt truyện của tác giả |
-| **B. Grounding** | **Strict No-Hallucination Faithfulness** | **90.32%** | **90.62%** | **93.75%** | Không bịa đặt thêm tình tiết ngoài văn bản gốc |
-| **C. System Perf** | **Moderation E2E Latency (P50)** | **21,863.8 ms** *(gồm 404 discovery)* | **2,260.5 ms** *(Direct LLM: ~4.8s)* | **1.30 ms** | Khi gọi trực tiếp `gemini-3-flash-preview`, latency thực tế là **4.3s – 6.7s** |
-| **C. System Perf** | **Moderation E2E Latency (P95 / P99)** | **38,852.9 ms / 41,873.1 ms** | **20,306.3 ms / 21,946.5 ms** | **1.69 ms / 7.66 ms** | Đuôi P95/P99 tăng khi gặp timeout 20s hoặc dynamic model fallback |
-| **C. Cost & Token** | **Average Token Usage per Run** | **747 tokens** (`606 in / 141 out`) | **759 tokens** (`606 in / 153 out`) | **750 tokens** | Rất gọn nhẹ nhờ System Prompt súc tích và JSON Schema chặt chẽ |
-| **C. Cost & Token** | **Est. Cost per 1,000 Successful Tasks** | **$0.2160 USD** | **$0.2166 USD** | **$0.2029 USD** | Chi phí cực kỳ tối ưu (~5,500 VNĐ cho 1,000 bài viết được kiểm duyệt) |
+| Nhóm | Đại lượng Metric (Evaluation Metric) | Live DeepSeek (`deepseek-chat`) ⭐ Mới | Live Gemini (`gemini-3-flash-preview` Hybrid) | Live Gemini (`gemini-flash-lite` Dynamic) | Deterministic Baseline (Offline Rule Engine) | Đánh giá & Nhận xét Kỹ thuật |
+| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
+| **A. Task Quality** | **Task Success Rate (Overall)** | **71.88%** | **84.38%** | **81.25%** | **87.50%** | Hoàn thành trọn vẹn cả 4 tiêu chí (Schema + Verdict + Room + Rewrite) |
+| **A. Task Quality** | **Verdict Accuracy (`APPROVE` vs `DISAPPROVE`)** | **90.62%** (29/32) | **93.75%** (30/32) | **93.75%** (30/32) | **93.75%** (30/32) | Độ ổn định phán quyết rất cao trên cả LLM và Rule Engine |
+| **A. Task Quality** | **Rubric Score Range Accuracy** | **93.75%** (30/32) | **93.75%** (30/32) | **90.62%** (29/32) | **93.75%** (30/32) | Điểm trừ bám sát bảng trọng số Rubric 100 điểm |
+| **A. Task Quality** | **Room Routing Accuracy (Room 1 / 2 / 3)** | **87.50%** (28/32) | **100.00%** (32/32) | **87.50%** (28/32) | **100.00%** (32/32) | Phát hiện chính xác bài viết oán hận đăng nhầm vào Phòng Hy Vọng |
+| **A. Task Quality** | **JSON Schema Compliance Rate** | **100.00%** (32/32) | **100.00%** (32/32) | **96.88%** (31/32) | **100.00%** (32/32) | 100% tuân thủ nghiêm ngặt Pydantic `ModerateArtData` |
+| **A. Task Quality** | **Art Image Synthesis Success Rate** | **100.00%** (6/6) | **100.00%** (6/6) | **100.00%** (6/6) | **100.00%** (6/6) | Tổng hợp trực tiếp mã đồ họa `<svg>` nghệ thuật đã được khử sạch XSS |
+| **A. Efficiency** | **Average Steps to Completion** | **3.00 steps** | **3.00 steps** | **2.91 steps** | **3.00 steps** | Tối ưu cố định 3 bước; **Loop / Runaway Failure Rate = 0.0%** |
+| **B. Grounding** | **Violation Detection F1-Score** | **93.21%** (R: 100%) | **97.40%** | **93.19%** | **98.96%** | **Recall đạt tuyệt đối 100.0%** nhờ Rule Merge Engine (không bỏ sót vi phạm nào) |
+| **B. Grounding** | **Evidence Quote Grounding Accuracy** | **97.18%** | **100.00%** | **100.00%** | **100.00%** | 97.18% trích dẫn lỗi (`quote`) khớp nguyên văn trong bài gốc |
+| **B. Grounding** | **PII & Profanity Sanitization Rate** | **100.00%** ⭐ | **95.83%** | **99.19%** | **95.83%** | **Đạt tuyệt đối 100.0%**: Làm sạch sạch sẽ 100% số điện thoại và từ cấm |
+| **B. Grounding** | **Core Meaning Preservation Rate** | **95.31%** | **100.00%** | **98.39%** | **100.00%** | Bảo toàn trọn vẹn mạch cảm xúc và từ khóa cốt truyện của tác giả |
+| **B. Grounding** | **Strict No-Hallucination Faithfulness** | **90.62%** | **90.62%** | **90.32%** | **93.75%** | Không bịa đặt thêm tình tiết ngoài văn bản gốc |
+| **C. System Perf** | **Moderation E2E Latency (P50)** | **2,357.4 ms** | **2,260.5 ms** | **21,863.8 ms** *(gồm 404 discovery)* | **1.30 ms** | Tốc độ phản hồi cực nhanh ~2.3 giây |
+| **C. System Perf** | **Moderation E2E Latency (P95 / P99)** | **3,816.0 ms / 4,587.6 ms** ⚡ | **20,306.3 ms / 21,946.5 ms** | **38,852.9 ms / 41,873.1 ms** | **Giảm ~89% P99**: Fast Fallback Controller khống chế trần dưới 4.6s |
+| **C. Cost & Token** | **Average Token Usage per Run** | **793 tokens** (`606 in / 187 out`) | **759 tokens** (`606 in / 153 out`) | **747 tokens** (`606 in / 141 out`) | **750 tokens** | Rất gọn nhẹ nhờ Prompt cô đọng và JSON mode |
+| **C. Cost & Token** | **Est. Cost per 1,000 Successful Tasks** | **$0.2825 USD** | **$0.2166 USD** | **$0.2160 USD** | **$0.2029 USD** | Chi phí vận hành chỉ ~7.000 VNĐ cho 1.000 tác vụ kiểm duyệt |
 
 ---
 

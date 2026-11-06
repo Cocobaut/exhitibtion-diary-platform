@@ -72,8 +72,11 @@ export function LobbyBackdrop() {
 
 /**
  * DoorArch Component
- * Renders an enlarged archway with spotlight, gold ornamental borders, and room-specific vector artwork.
- * Baseline ends exactly at y=450 for flush contact with horizon boundary.
+ * Renders the room window / entrance:
+ * - Desktop (>= 1025px): Classic grand archway with spotlight cone and finial.
+ * - Compact viewports (<= 1024px: Tablet Portrait, Mobile Landscape, Mobile Portrait):
+ *   Suspended rectangular window frame (ô hình chữ nhật) with double gold borders,
+ *   ornamental rivets, hanging wire, and full room artwork, designed to float like a dream bubble.
  */
 export function DoorArch({ roomNum }) {
   const compId = useId().replace(/:/g, '');
@@ -81,15 +84,15 @@ export function DoorArch({ roomNum }) {
   const r = rng(roomNum * 47);
 
   // Door 1 (Triển lãm Hành trình)
-  const renderRoom1Inner = () => (
+  const renderRoom1Inner = (isRect = false) => (
     <>
-      <rect x="15" y="60" width="210" height="390" fill={`url(#${id}d1)`} />
-      <rect x="15" y="385" width="210" height="65" fill="#B48A60" />
+      <rect x="15" y={isRect ? "42" : "60"} width="210" height="390" fill={`url(#${id}d1)`} />
+      <rect x="15" y={isRect ? "380" : "385"} width="210" height="65" fill="#B48A60" />
       {/* 3 picture frames with broken exhibition art */}
       {[
-        [-58, 215, 48, 38, "#7E8A6E"],
-        [-4, 195, 34, 50, "#A1342C"],
-        [44, 222, 46, 34, "#45606E"]
+        [-58, isRect ? 205 : 215, 48, 38, "#7E8A6E"],
+        [-4, isRect ? 185 : 195, 34, 50, "#A1342C"],
+        [44, isRect ? 212 : 222, 46, 34, "#45606E"]
       ].map(([dx, y, w, h, c], idx) => (
         <React.Fragment key={idx}>
           <rect x={120 + dx - 3} y={y - 3} width={w + 6} height={h + 6} fill="#3E302B" rx="1" />
@@ -100,11 +103,11 @@ export function DoorArch({ roomNum }) {
   );
 
   // Door 2 (Bầu trời Lồng đèn)
-  const renderRoom2Inner = () => {
+  const renderRoom2Inner = (isRect = false) => {
     const lanterns = [];
     for (let k = 0; k < 15; k++) {
       const lx = 35 + r() * 170;
-      const ly = 85 + r() * 290;
+      const ly = (isRect ? 65 : 85) + r() * 290;
       lanterns.push(
         <React.Fragment key={k}>
           <circle cx={f(lx)} cy={f(ly)} r="12" fill="#FFC774" opacity="0.28" />
@@ -114,15 +117,15 @@ export function DoorArch({ roomNum }) {
     }
     return (
       <>
-        <rect x="15" y="60" width="210" height="390" fill={`url(#${id}d2)`} />
+        <rect x="15" y={isRect ? "42" : "60"} width="210" height="390" fill={`url(#${id}d2)`} />
         {lanterns}
-        <path d="M15 435 Q120 395 225 425 V450 H15Z" fill="#2A1214" />
+        <path d="M15 425 Q120 390 225 415 V450 H15Z" fill="#2A1214" />
       </>
     );
   };
 
   // Door 3 (Cây Thông điệp)
-  const renderRoom3Inner = () => {
+  const renderRoom3Inner = (isRect = false) => {
     const leaves = [];
     for (let k = 0; k < 72; k++) {
       const a = r() * Math.PI * 2;
@@ -132,7 +135,7 @@ export function DoorArch({ roomNum }) {
         <circle
           key={k}
           cx={f(120 + Math.cos(a) * d)}
-          cy={f(245 + Math.sin(a) * d * 0.72)}
+          cy={f((isRect ? 235 : 245) + Math.sin(a) * d * 0.72)}
           r={f(2.6 + r() * 2)}
           fill={cat.c}
         />
@@ -140,10 +143,14 @@ export function DoorArch({ roomNum }) {
     }
     return (
       <>
-        <rect x="15" y="60" width="210" height="390" fill={`url(#${id}d3)`} />
-        <circle cx="120" cy="235" r="95" fill="#F6DD8F" opacity="0.24" />
+        <rect x="15" y={isRect ? "42" : "60"} width="210" height="390" fill={`url(#${id}d3)`} />
+        <circle cx="120" cy={isRect ? "225" : "235"} r="95" fill="#F6DD8F" opacity="0.24" />
         <path
-          d="M120 450 V275 M120 335 L82 285 M120 315 L158 265 M120 295 L100 245"
+          d={
+            isRect
+              ? "M120 440 V265 M120 325 L82 275 M120 305 L158 255 M120 285 L100 235"
+              : "M120 450 V275 M120 335 L82 285 M120 315 L158 265 M120 295 L100 245"
+          }
           stroke="#4A3326"
           strokeWidth="7"
           strokeLinecap="round"
@@ -182,49 +189,91 @@ export function DoorArch({ roomNum }) {
           <stop offset="100%" stopColor="#5E7A52" />
         </linearGradient>
 
-        {/* Arch Clip Path (radius 105, center x 120, baseline y 450) */}
+        {/* Arch Clip Path (Desktop >= 1025px) */}
         <clipPath id={`${id}archClip`}>
           <path d="M15 450 V135 A105 105 0 0 1 225 135 V450 Z" />
         </clipPath>
+
+        {/* Rectangular Window Clip Path (Tablet Portrait & Mobile <= 1024px) */}
+        <clipPath id={`${id}rectClip`}>
+          <rect x="15" y="42" width="210" height="390" rx="14" />
+        </clipPath>
       </defs>
 
-      {/* Ground Contact Ellipse Glow */}
-      <ellipse cx="120" cy="448" rx="108" ry="8" fill="var(--gold)" opacity="0.14" />
-
-      {/* Inner Artwork */}
-      <g clipPath={`url(#${id}archClip)`}>
-        {roomNum === 1
-          ? renderRoom1Inner()
-          : roomNum === 2
-          ? renderRoom2Inner()
-          : renderRoom3Inner()}
+      {/* 1. Classic Arch Shape (Desktop only >= 1025px) */}
+      <g className="door-arch-shape">
+        <ellipse cx="120" cy="448" rx="108" ry="8" fill="var(--gold)" opacity="0.14" />
+        <g clipPath={`url(#${id}archClip)`}>
+          {roomNum === 1
+            ? renderRoom1Inner(false)
+            : roomNum === 2
+            ? renderRoom2Inner(false)
+            : renderRoom3Inner(false)}
+        </g>
+        <path
+          d="M5 450 V135 A115 115 0 0 1 235 135 V450 Z"
+          fill="none"
+          stroke="var(--gold)"
+          strokeOpacity="0.32"
+          strokeWidth="1.5"
+        />
+        <path
+          d="M15 450 V135 A105 105 0 0 1 225 135 V450 Z"
+          fill="none"
+          stroke="var(--gold)"
+          strokeOpacity="0.88"
+          strokeWidth="3"
+        />
+        <path d="M120 0 V15" stroke="var(--gold)" strokeWidth="1.5" />
+        <rect x="105" y="15" width="30" height="6" rx="3" fill="var(--gold)" />
+        <path d="M120 28 l6 7 -6 7 -6 -7z" fill="var(--gold)" />
+        <path d="M108 21 L132 21 L235 450 L5 450 Z" fill={`url(#${id}cone)`} />
       </g>
 
-      {/* Outer Arch Border */}
-      <path
-        d="M5 450 V135 A115 115 0 0 1 235 135 V450 Z"
-        fill="none"
-        stroke="var(--gold)"
-        strokeOpacity="0.32"
-        strokeWidth="1.5"
-      />
-
-      {/* Main Arch Border */}
-      <path
-        d="M15 450 V135 A105 105 0 0 1 225 135 V450 Z"
-        fill="none"
-        stroke="var(--gold)"
-        strokeOpacity="0.88"
-        strokeWidth="3"
-      />
-
-      {/* Pendant Lamp & Diamond Finial */}
-      <path d="M120 0 V15" stroke="var(--gold)" strokeWidth="1.5" />
-      <rect x="105" y="15" width="30" height="6" rx="3" fill="var(--gold)" />
-      <path d="M120 28 l6 7 -6 7 -6 -7z" fill="var(--gold)" />
-
-      {/* Spotlight Cone */}
-      <path d="M108 21 L132 21 L235 450 L5 450 Z" fill={`url(#${id}cone)`} />
+      {/* 2. Rectangular Floating Window (Tablet Portrait & Mobile <= 1024px) */}
+      <g className="door-rect-shape">
+        <rect x="10" y="37" width="220" height="400" rx="18" fill="var(--gold)" opacity="0.08" />
+        <g clipPath={`url(#${id}rectClip)`}>
+          {roomNum === 1
+            ? renderRoom1Inner(true)
+            : roomNum === 2
+            ? renderRoom2Inner(true)
+            : renderRoom3Inner(true)}
+        </g>
+        <rect
+          x="9"
+          y="36"
+          width="222"
+          height="402"
+          rx="18"
+          fill="none"
+          stroke="var(--gold)"
+          strokeOpacity="0.36"
+          strokeWidth="1.5"
+        />
+        <rect
+          x="15"
+          y="42"
+          width="210"
+          height="390"
+          rx="14"
+          fill="none"
+          stroke="var(--gold)"
+          strokeOpacity="0.92"
+          strokeWidth="3"
+        />
+        <path
+          d="M20 46 L130 46 L45 220 L20 220 Z"
+          fill="rgba(255, 255, 255, 0.07)"
+        />
+        <circle cx="28" cy="55" r="3" fill="var(--gold)" opacity="0.85" />
+        <circle cx="212" cy="55" r="3" fill="var(--gold)" opacity="0.85" />
+        <circle cx="28" cy="419" r="3" fill="var(--gold)" opacity="0.85" />
+        <circle cx="212" cy="419" r="3" fill="var(--gold)" opacity="0.85" />
+        <path d="M120 0 V36" stroke="var(--gold)" strokeWidth="1.5" strokeDasharray="3 2" />
+        <circle cx="120" cy="36" r="4.5" fill="var(--gold)" />
+        <circle cx="120" cy="36" r="2" fill="#2A1B14" />
+      </g>
     </svg>
   );
 }

@@ -51,7 +51,8 @@ class AiTranslationService:
         if (provider or "gemini").lower() == "gemini":
             result, used = await cls._call_gemini(system, user_text, api_key, model_name)
         else:
-            result, used = await cls._call_openai(system, user_text, api_key, model_name, base_url)
+            effective_base = base_url or ("https://api.deepseek.com" if (provider or "").lower() == "deepseek" or "deepseek" in (model_name or "").lower() else "https://api.openai.com")
+            result, used = await cls._call_openai(system, user_text, api_key, model_name, effective_base)
 
         if result is None:
             raise AppException(502, "TRANSLATION_FAILED", "AI chưa dịch được lúc này, bạn thử lại sau nhé")
@@ -107,27 +108,43 @@ class AiTranslationService:
     @classmethod
     async def _call_openai(cls, system: str, user_text: str, api_key: str, model_name: str, base_url: Optional[str]):
         root_url = (base_url or "https://api.openai.com").rstrip("/")
-        payload = {
-            "model": model_name,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user_text},
-            ],
-            "temperature": 0.2,
-            "response_format": {"type": "json_object"},
-        }
+        is_deepseek = "deepseek" in root_url.lower() or "deepseek" in (model_name or "").lower()
+        candidate_models = []
+        if model_name and not (is_deepseek and model_name.startswith("gemini")):
+            candidate_models.append(model_name)
+        if is_deepseek:
+            for m in ["deepseek-chat", "deepseek-flash", "deepseek-v4-pro"]:
+                if m not in candidate_models:
+                    candidate_models.append(m)
+        else:
+            for m in ["gpt-4o-mini", "gpt-4o"]:
+                if m not in candidate_models:
+                    candidate_models.append(m)
+
+        url = f"{root_url}/chat/completions" if root_url.endswith("/v1") else f"{root_url}/v1/chat/completions"
         async with httpx.AsyncClient(timeout=30.0) as client:
-            try:
-                resp = await client.post(
-                    f"{root_url}/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {api_key.strip()}"},
-                    json=payload,
-                )
-            except httpx.HTTPError as ex:
-                print(f"[AI Translation] Error calling {model_name}: {ex}")
-                return None, None
-        if resp.status_code != 200:
-            print(f"[AI Translation] Model '{model_name}' returned HTTP {resp.status_code}")
-            return None, None
-        data = cls._parse_json(resp.json()["choices"][0]["message"]["content"])
-        return (data, model_name) if data is not None else (None, None)
+            for target_model in candidate_models[:2]:
+                payload = {
+                    "model": target_model,
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": f"{user_text}\n(Output JSON only)"},
+                    ],
+                    "temperature": 0.2,
+                    "response_format": {"type": "json_object"},
+                }
+                try:
+                    resp = await client.post(
+                        url,
+                        headers={"Authorization": f"Bearer {api_key.strip()}"},
+                        json=payload,
+                    )
+                    if resp.status_code == 200:
+                        data = cls._parse_json(resp.json()["choices"][0]["message"]["content"])
+                        if data is not None:
+                            return (data, target_model)
+                    print(f"[AI Translation] Model '{target_model}' returned HTTP {resp.status_code}")
+                except Exception as ex:
+                    print(f"[AI Translation] Error calling {target_model}: {ex}")
+                    continue
+        return None, None

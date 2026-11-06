@@ -621,6 +621,31 @@ p {
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
+/* Centered Theme Palette Modal */
+.theme-modal-panel {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@media (max-width: 896px) and (orientation: landscape), (max-height: 520px) {
+  .theme-modal-panel {
+    max-height: 86dvh !important;
+    width: min(440px, 92vw) !important;
+    padding: 16px 18px 12px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .theme-modal-panel {
+    width: min(350px, 92vw) !important;
+    padding: 18px 16px 12px !important;
+  }
+}
+
 .panel h2 {
   font-size: 30px;
   margin: 0;
@@ -1463,39 +1488,810 @@ table.at td {
   z-index: 25;
 }
 
-/* Mobile Quick Navigator */
-.lobby-mobile-quicknav {
-  display: none;
-  position: absolute;
-  top: 86px;
-  left: 50%;
-  transform: translateX(-50%);
-  gap: 8px;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: var(--glass);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid var(--glass-line);
-  z-index: 20;
+.compact-only-logo {
+  display: none !important;
 }
 
-.lobby-mobile-quicknav button {
-  background: transparent;
-  border: none;
+.desktop-only-logo {
+  display: block;
+}
+
+.lobby-greeting-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  pointer-events: auto;
+}
+
+.lobby-logo-sub-wrapper {
+  display: none;
+  margin-top: 6px;
+  pointer-events: auto;
+}
+
+/* =============================================================
+   LOBBY BUBBLE NAVIGATOR
+   Floating draggable 4-pointed star & synchronized museum spaces modal
+   ============================================================= */
+.lobby-bubble-nav-wrapper {
+  display: none;
+  position: static;
+  z-index: 110;
+}
+
+@keyframes bubbleGlowPulse {
+  0%, 100% {
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 10px rgba(230, 194, 128, 0.2);
+    border-color: rgba(230, 194, 128, 0.45);
+  }
+  50% {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55), 0 0 18px rgba(230, 194, 128, 0.45);
+    border-color: rgba(230, 194, 128, 0.75);
+  }
+}
+
+/* Floating Draggable 4-Pointed Star Button (Right side default, draggable anywhere) */
+.lobby-bubble-trigger-star {
+  position: fixed;
+  z-index: 110;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(34, 24, 20, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(230, 194, 128, 0.55);
+  color: var(--gold, #E6C280);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 14px rgba(230, 194, 128, 0.25);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  animation: bubbleGlowPulse 4s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+.lobby-bubble-trigger-star:hover,
+.lobby-bubble-trigger-star.active {
+  background: rgba(45, 33, 28, 0.96);
+  border-color: var(--gold, #E6C280);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 20px rgba(230, 194, 128, 0.5);
+}
+
+.lobby-bubble-trigger-star:active {
+  cursor: grabbing;
+}
+
+/* Synchronized Museum Modal Form for Lobby Spaces (Compact Redirection List) */
+.panel.lobby-spaces-panel,
+.lobby-spaces-panel {
+  position: fixed !important;
+  z-index: 130 !important;
+  left: 50% !important;
+  top: 50% !important;
+  bottom: auto !important;
+  right: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(390px, 90vw) !important;
+  max-width: 90vw !important;
+  max-height: min(84dvh, 480px) !important;
+  overflow-y: auto !important;
+  text-align: left !important;
+  background: var(--paper, #F3EADD) !important;
+  color: var(--ink, #2C211D) !important;
+  border: 1.5px solid var(--gold, #E6C280) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
+  padding: 16px 18px 14px !important;
+  box-sizing: border-box !important;
+  animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.lobby-spaces-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 2px !important;
+}
+
+.lobby-spaces-header-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  color: var(--gold, #C99A3B) !important;
+}
+
+.lobby-spaces-header-title h3 {
+  font-family: var(--serif) !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  color: var(--ink, #2C211D) !important;
+  line-height: 1.2 !important;
+}
+
+.lobby-spaces-close-btn {
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  color: var(--ink2, #7E6D61) !important;
+  padding: 4px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.18s ease !important;
+}
+
+.lobby-spaces-close-btn:hover {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: var(--ink, #2C211D) !important;
+}
+
+.lobby-spaces-subtitle {
+  font-size: 11.5px !important;
+  color: var(--ink2, #7E6D61) !important;
+  margin: 0 0 10px 0 !important;
+  line-height: 1.35 !important;
+}
+
+.lobby-spaces-modal-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 7px !important;
+  max-height: calc(84dvh - 75px) !important;
+  overflow-y: auto !important;
+  padding-right: 2px !important;
+}
+
+/* Individual Redirection Button */
+.lobby-redirect-btn {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+  background: rgba(230, 194, 128, 0.14) !important;
+  border: 1px solid rgba(230, 194, 128, 0.45) !important;
+  cursor: pointer !important;
+  text-align: left !important;
+  color: var(--ink, #2C211D) !important;
+  font-family: inherit !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-sizing: border-box !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.lobby-redirect-btn:hover {
+  background: rgba(201, 154, 59, 0.22) !important;
+  border-color: var(--gold, #E6C280) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(230, 194, 128, 0.2) !important;
+}
+
+.lobby-redirect-btn:active {
+  transform: scale(0.98) !important;
+}
+
+.lobby-redirect-btn.locked {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+/* Outlined hollow logo box (viền, rỗng - không fill bên trong) */
+.space-icon-outline-box {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 9px !important;
+  border: 1.3px solid var(--gold, #C99A3B) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--gold, #C99A3B) !important;
+  background: transparent !important;
+  flex-shrink: 0 !important;
+  transition: border-color 0.2s ease, transform 0.2s ease !important;
+}
+
+.space-icon-outline-box svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.lobby-redirect-btn:hover .space-icon-outline-box {
+  border-color: var(--acc, #92400e) !important;
+  transform: scale(1.05) !important;
+}
+
+.space-redirect-info {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+}
+
+.space-redirect-badge {
+  font-family: var(--serif) !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.15em !important;
+  color: var(--acc, #92400e) !important;
+  text-transform: uppercase !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.space-redirect-title {
+  font-family: var(--serif) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--ink, #2C211D) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.25 !important;
+}
+
+.space-redirect-action {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--gold, #C99A3B) !important;
+  flex-shrink: 0 !important;
+}
+
+.space-redirect-arrow {
+  font-size: 14px !important;
+  transition: transform 0.15s ease !important;
+}
+
+.lobby-redirect-btn:hover .space-redirect-arrow {
+  transform: translateX(3px) !important;
+  color: var(--acc, #92400e) !important;
+}
+
+/* =====================================================================
+   RESPONSIVE SPECIFICS FOR THE 3 VIEWPORTS:
+   1. Mobile Landscape (max-height <= 520px or landscape <= 896px)
+   ===================================================================== */
+@media (max-width: 896px) and (orientation: landscape), (max-height: 520px) {
+  .panel.lobby-spaces-panel,
+  .lobby-spaces-panel {
+    width: min(520px, 92vw) !important;
+    max-width: 92vw !important;
+    max-height: min(88dvh, 300px) !important;
+    padding: 10px 14px 8px !important;
+    border-radius: 14px !important;
+  }
+
+  .lobby-spaces-subtitle {
+    margin-bottom: 6px !important;
+    font-size: 10.5px !important;
+  }
+
+  .lobby-spaces-modal-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+    max-height: calc(88dvh - 50px) !important;
+  }
+
+  .lobby-redirect-btn {
+    padding: 6px 9px !important;
+    border-radius: 10px !important;
+  }
+
+  .space-icon-outline-box {
+    width: 26px !important;
+    height: 26px !important;
+  }
+  .space-icon-outline-box svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .space-redirect-title {
+    font-size: 12px !important;
+  }
+  .space-redirect-badge {
+    font-size: 8.5px !important;
+  }
+  .space-redirect-action {
+    font-size: 11px !important;
+  }
+
+  /* Diary in Mobile Landscape: Header gọn gàng, buttons All entries ở trên, Timeline nằm ngay bên dưới */
+  .stage .top {
+    position: absolute !important;
+    top: 6px !important;
+    left: 12px !important;
+    right: 12px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    z-index: 20 !important;
+  }
+
+  .stage .top .room-tag small {
+    font-size: 11px !important;
+  }
+  .stage .top .room-tag b {
+    font-size: 16px !important;
+  }
+  .stage .top .search {
+    height: 32px !important;
+    max-width: 130px !important;
+    padding: 2px 8px !important;
+  }
+
+  .stage .chips-row {
+    position: absolute !important;
+    top: 48px !important;
+    left: 12px !important;
+    right: 12px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    z-index: 25 !important;
+  }
+
+  .diary-timeline-col {
+    position: absolute !important;
+    left: 12px !important;
+    right: 12px !important;
+    top: 92px !important; /* Dưới các ô button All entries / chips-row trên mobile landscape */
+    bottom: calc(var(--bottom-nav-h, 50px) + var(--safe-bottom, 0px) + 6px) !important;
+    width: auto !important;
+    max-width: 100% !important;
+    padding: 0 4px 40px !important;
+    border-right: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    z-index: 5 !important;
+  }
+
+  /* Owner Dashboard & Room Chips in Mobile Landscape */
+  .desktop-only-chips,
+  .desktop-only-btn,
+  .owner-theme-btn,
+  .admin-theme-btn,
+  .admin-lang-btn,
+  .desktop-only-users-table,
+  .desktop-only-audit-table {
+    display: none !important;
+  }
+  .mobile-filter-wrapper {
+    display: flex !important;
+    align-items: center !important;
+  }
+  .mobile-only-users-list,
+  .mobile-only-audit-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  /* Admin Page Header & Subtab in Mobile Landscape */
+  .stage.admin .admin-top-header {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+  }
+  .stage.admin .admin-subtab-segment {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+  }
+  .stage.admin .admin-tabs-filter-wrapper {
+    display: flex !important;
+    align-items: center !important;
+  }
+  .stage.admin .admin-queue-col {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-detail-col.desktop-only-col {
+    display: none !important;
+  }
+  .stage.admin .admin-live-stats {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-live-table-box {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-capsules-summary-badges {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-capsules-main-box {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-capsules-add-panel.desktop-only-col {
+    display: none !important;
+  }
+  .stage.admin .admin-audit-log-container {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+    padding: 16px 14px 40px !important;
+  }
+
+  /* Room 3: Mobile Landscape: Phóng to cây, đế cây cách mép trái 5px và mép phải 5px */
+  .stage.room3-stage .room3-tree-container,
+  .room3-tree-container {
+    position: absolute !important;
+    left: 5px !important;
+    right: 5px !important;
+    width: calc(100% - 10px) !important;
+    max-width: calc(100% - 10px) !important;
+    margin: 0 auto !important;
+    top: 52px !important;
+    bottom: 36px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .room3-tree-container .wish-tree-wrapper {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+  }
+
+  .room3-tree-container .wish-tree-svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 auto !important;
+    display: block !important;
+  }
+
+  /* Diary Page Responsive Layout on Mobile Landscape */
+  .stage.diary-stage {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+  .stage.diary-stage .top {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    flex-shrink: 0 !important;
+  }
+  .stage.diary-stage .chips-row {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    flex-shrink: 0 !important;
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
+  }
+  .stage.diary-stage .diary-timeline-col {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    margin-top: 0 !important;
+    padding: 4px 12px calc(var(--bottom-nav-h, 50px) + var(--safe-bottom, 0px) + 20px) !important;
+    overflow-y: visible !important;
+  }
+}
+
+/* 2. Mobile Portrait (max-width <= 480px) */
+@media (max-width: 480px) {
+  .panel.lobby-spaces-panel,
+  .lobby-spaces-panel {
+    width: min(340px, 90vw) !important;
+    max-width: 90vw !important;
+    max-height: min(82dvh, 420px) !important;
+    padding: 14px 14px 12px !important;
+    border-radius: 16px !important;
+  }
+  .lobby-spaces-header-title h3 {
+    font-size: 16px !important;
+  }
+  .lobby-redirect-btn {
+    padding: 7px 10px !important;
+  }
+  .space-redirect-title {
+    font-size: 13.5px !important;
+  }
+}
+
+.lobby-bubble-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(36, 26, 22, 0.82);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(230, 194, 128, 0.45);
   color: var(--onw);
   font-family: var(--sans);
-  font-size: 12px;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 10px rgba(230, 194, 128, 0.2);
+  transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: bubbleGlowPulse 4s ease-in-out infinite;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.lobby-mobile-quicknav button:hover {
-  background: var(--paper);
-  color: var(--ink);
+.lobby-bubble-trigger:hover,
+.lobby-bubble-trigger.active {
+  background: rgba(45, 33, 28, 0.94);
+  border-color: var(--gold, #E6C280);
+  transform: scale(1.03);
+  color: var(--gold, #E6C280);
+}
+
+.bubble-icon-aura {
+  color: var(--gold, #E6C280);
+  font-size: 14px;
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(230, 194, 128, 0.6);
+}
+
+.bubble-trigger-text {
+  letter-spacing: 0.02em;
+}
+
+.bubble-badge-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  background: rgba(230, 194, 128, 0.22);
+  color: var(--gold, #E6C280);
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(230, 194, 128, 0.35);
+}
+
+.bubble-chevron {
+  font-size: 12px;
+  color: var(--gold, #E6C280);
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bubble-chevron.open {
+  transform: rotate(180deg);
+}
+
+/* Dropdown Card */
+@keyframes bubblePopIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.lobby-bubble-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(310px, 88vw);
+  background: rgba(28, 19, 15, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(230, 194, 128, 0.4);
+  border-radius: 18px;
+  padding: 10px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65), 0 0 24px rgba(230, 194, 128, 0.15);
+  z-index: 50;
+  animation: bubblePopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  box-sizing: border-box;
+}
+
+.bubble-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 6px;
+}
+
+.bubble-dropdown-title {
+  font-family: var(--serif);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gold, #E6C280);
+  text-transform: uppercase;
+}
+
+.bubble-dropdown-hint {
+  font-size: 10.5px;
+  color: var(--onw2);
+  font-style: italic;
+}
+
+.bubble-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.bubble-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--onw);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bubble-item-btn:hover {
+  background: rgba(230, 194, 128, 0.14);
+  border-color: rgba(230, 194, 128, 0.4);
+  transform: translateX(3px);
+}
+
+.bubble-item-btn.locked {
+  opacity: 0.55;
+}
+
+.bubble-item-icon-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(230, 194, 128, 0.1);
+  border: 1px solid rgba(230, 194, 128, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bubble-item-icon {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.bubble-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bubble-item-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bubble-item-badge {
+  font-family: var(--serif);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--gold, #E6C280);
+}
+
+.bubble-lock-icon {
+  font-size: 10px;
+}
+
+.bubble-item-title {
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--onw);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bubble-item-desc {
+  font-size: 10px;
+  color: var(--onw2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bubble-item-arrow {
+  color: var(--gold, #E6C280);
+  font-size: 13px;
+  opacity: 0.6;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.bubble-item-btn:hover .bubble-item-arrow {
+  opacity: 1;
+  transform: translateX(2px);
 }
 
 /* 3. Main Units Row:
@@ -1527,6 +2323,17 @@ table.at td {
   display: none;
 }
 
+/* Desktop default: Unroll semantic groups so all 5 units interlace directly in 1 row */
+.lobby-rooms-floating-group,
+.lobby-grounded-items-group {
+  display: contents;
+}
+.lobby-unit.r1-unit { order: 1; }
+.lobby-unit.mailbox-unit { order: 2; }
+.lobby-unit.r2-unit { order: 3; }
+.lobby-unit.bench-unit { order: 4; }
+.lobby-unit.r3-unit { order: 5; }
+
 /* Each Unit (Door or Interstitial Object) */
 .lobby-unit {
   display: flex;
@@ -1551,9 +2358,45 @@ table.at td {
   pointer-events: auto;
 }
 
-/* Door Arch Box & SVG sizing (Enlarged) */
+/* Door Arch Box & SVG sizing */
 .door-arch-box {
   height: auto;
+}
+
+/* Window shape control: Arch for Desktop >= 1025px, Rectangle for <= 1024px */
+.door-arch-shape {
+  display: inline;
+}
+.door-rect-shape {
+  display: none;
+}
+
+/* Floating bubble animation for Room 01, Room 02, Room 03 */
+@keyframes floatBubble1 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-12px) rotate(0.4deg);
+  }
+}
+
+@keyframes floatBubble2 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(-0.5deg);
+  }
+}
+
+@keyframes floatBubble3 {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(0.3deg);
+  }
 }
 
 .door-arch-svg {
@@ -1656,6 +2499,10 @@ table.at td {
 .interactive-badge-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: max-content;
+  max-width: 100%;
+  box-sizing: border-box;
   gap: 6px;
   padding: clamp(5px, 0.9vh, 7px) clamp(12px, 1.3vw, 18px);
   border-radius: 999px;
@@ -1671,8 +2518,13 @@ table.at td {
   transition: all 0.22s ease;
 }
 
-.badge-star {
+.interactive-badge-pill .badge-star {
+  flex-shrink: 0;
   color: var(--gold);
+}
+
+.interactive-badge-pill .badge-text {
+  white-space: nowrap;
 }
 
 .item-unit:hover .interactive-badge-pill,
@@ -1720,28 +2572,7 @@ table.at td {
   }
 }
 
-@media (max-width: 900px) {
-  .lobby-stage {
-    left: 0;
-  }
-  .lobby-mobile-quicknav {
-    display: flex;
-  }
-  .lobby-units-row {
-    justify-content: flex-start;
-    padding-left: 24px;
-    padding-right: 24px;
-    scroll-snap-type: x mandatory;
-    gap: 28px;
-  }
-  .lobby-unit {
-    scroll-snap-align: center;
-  }
-  .lobby-header-bar .top {
-    left: 16px;
-    right: 16px;
-  }
-}
+
 
 
 
@@ -1803,6 +2634,27 @@ table.at td {
 
 .diary-entry-card-active {
   animation: moodCardAuraGlow 4.2s ease-in-out infinite;
+}
+
+/* Diary page desktop positioning: Dời timeline và ô trắng đọc sách xuống dưới chips-row (148px) */
+.diary-timeline-col {
+  top: 148px;
+}
+
+.diary-page-col {
+  top: 148px;
+}
+
+.mobile-diary-white-box {
+  animation: softPageCurlFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Trong chế độ landscape computer và portrait computer (> 1024px):
+   Không hiển thị ô content trắng bung ra bên dưới các ô thanh timeline */
+@media (min-width: 1025px) {
+  .mobile-diary-white-box {
+    display: none !important;
+  }
 }
 
 /* -------------------------------------------------------------
@@ -2077,4 +2929,1804 @@ table.at td {
   background: var(--glass) !important;
   border: 1px solid var(--glass-line) !important;
   color: var(--onw) !important;
+}
+
+/* =============================================================
+   MUSEUM MOBILE & IPAD RESPONSIVE SYSTEM
+   ============================================================= */
+
+/* 1. Biến môi trường & Safe Area Insets */
+:root {
+  --bottom-nav-h: 62px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Tự động kích hoạt Dynamic Viewport Unit chống giật layout bàn phím */
+.app-wrapper,
+.screen-container,
+.screen {
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Ẩn Bottom Nav mặc định trên Desktop */
+.mobile-bottom-nav {
+  display: none;
+}
+
+/* Mobile filter select & chips responsive toggling */
+.mobile-filter-wrapper {
+  display: none;
+}
+.desktop-only-chips {
+  display: flex;
+}
+.desktop-only-btn {
+  display: inline-flex;
+}
+
+/* Users Directory Table & Card Responsive Toggling */
+.desktop-only-users-table {
+  display: block;
+}
+.mobile-only-users-list {
+  display: none;
+}
+
+/* Audit Logs Table & Card Responsive Toggling */
+.desktop-only-audit-table {
+  display: block;
+}
+.mobile-only-audit-list {
+  display: none;
+}
+
+/* Custom Filter Dropdown Styling (matches desktop .chip.glass.on format) */
+.custom-filter-dropdown-container {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  z-index: 35;
+}
+
+.custom-filter-chip-btn {
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+}
+
+.custom-filter-chip-btn:hover {
+  filter: brightness(1.1);
+}
+
+.custom-filter-dropdown-menu {
+  animation: fadeIn 0.15s ease-out;
+}
+
+.custom-filter-dropdown-item:hover:not(.active):not(.disabled) {
+  background: rgba(201, 154, 59, 0.28) !important;
+  border-color: var(--gold, #E6C280) !important;
+  color: var(--ink, #2C211D) !important;
+  transform: translateX(3px);
+}
+
+.custom-filter-dropdown-item.active {
+  background: var(--acc, #92400e) !important;
+  color: #ffffff !important;
+  border-color: var(--acc, #92400e) !important;
+}
+
+.custom-filter-dropdown-item.disabled {
+  opacity: 0.45 !important;
+  cursor: not-allowed !important;
+  filter: grayscale(60%) !important;
+  pointer-events: none !important;
+}
+
+/* -------------------------------------------------------------
+   2. TABLET STYLING (max-width: 1024px)
+   ------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  /* Thu gọn Sidebar từ 76px xuống 64px để tăng diện tích Stage */
+  .side {
+    width: 64px !important;
+    padding: 12px 0 !important;
+  }
+  .side a, .side button.side-btn {
+    width: 52px !important;
+    font-size: 10px !important;
+  }
+  .stage,
+  .lobby-stage {
+    left: 64px !important;
+    width: calc(100% - 64px) !important;
+  }
+
+  /* 1. Xóa chức năng Theme, Lang trên thanh Top, Admin & Owner page, chuyển vào Function drawer */
+  .top .topnav-theme-btn,
+  .top .topnav-lang-btn,
+  .owner-theme-btn,
+  .admin-theme-btn,
+  .admin-lang-btn,
+  .desktop-only-btn {
+    display: none !important;
+  }
+
+  /* 2. Giữ nút chuông thông báo trên góc phải màn hình */
+  .top .topnav-bell-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 3. Thu nhỏ ô tìm kiếm và đặt ngay sát cạnh nút thông báo trên 1 dòng */
+  .top {
+    position: absolute !important;
+    top: 14px !important;
+    left: 16px !important;
+    right: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    padding: 6px 0 !important;
+    height: auto !important;
+    min-height: 48px !important;
+    flex-wrap: nowrap !important;
+    z-index: 20 !important;
+  }
+
+  .top .room-tag,
+  .top .hand {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Phóng to số phòng và tên phòng trên tablet portrait & mobile */
+  .top .room-tag small {
+    display: block !important;
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.16em !important;
+    color: var(--gold, #E6C280) !important;
+    margin-bottom: 2px !important;
+  }
+
+  .top .room-tag b {
+    display: block !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+  }
+
+  .top .search {
+    margin-left: auto !important;
+    margin-right: 4px !important;
+    max-width: 155px !important;
+    flex: 0 1 155px !important;
+    min-width: 95px !important;
+    height: 38px !important;
+    padding: 4px 10px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .top .search input {
+    font-size: 12px !important;
+    width: 100% !important;
+  }
+
+  .top .tr {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* 4. Sub-header row: Dịch vị trí xuống dưới thanh search & bell, không bị đè lên */
+  .chips-row {
+    position: absolute !important;
+    top: 92px !important; /* Dịch hẳn xuống 92px để tránh va chạm với search/bell ở trên */
+    left: 16px !important;
+    right: 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    width: auto !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    flex-wrap: nowrap !important;
+    z-index: 25 !important;
+  }
+
+  .desktop-only-chips {
+    display: none !important;
+  }
+
+  .mobile-filter-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    flex: 0 1 auto !important;
+  }
+
+  /* 5. Diary: Ẩn cột đọc riêng biệt trên tablet/mobile, hiển thị list dưới toolbar All entries */
+  .diary-page-col {
+    display: none !important;
+  }
+
+  .stage.diary-stage {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .stage.diary-stage .top {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+    padding: 14px 16px 6px !important;
+  }
+
+  .stage.diary-stage .chips-row {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    flex-shrink: 0 !important;
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+    box-sizing: border-box !important;
+    padding: 0 16px !important;
+  }
+
+  .stage.diary-stage .diary-timeline-col {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    margin-top: 0 !important;
+    padding: 6px 16px calc(var(--bottom-nav-h, 0px) + var(--safe-bottom, 0px) + 40px) !important;
+    border-right: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    box-sizing: border-box !important;
+    z-index: 5 !important;
+  }
+
+  /* 6. Notebook: 1 cột danh sách, bấm vào bung chi tiết trực tiếp phía dưới */
+  .notebook-scroll {
+    padding: 0 16px 80px !important;
+    top: 154px !important;
+  }
+
+  .notebook-scroll > div {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  /* Gallery chuyển từ 4 cột sang 2-3 cột linh hoạt, dời xuống dưới .chips-row */
+  .gallery {
+    top: 160px !important;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    gap: 24px 20px !important;
+    padding: 10px 16px 40px !important;
+  }
+
+  /* Owner Users Directory & Audit Logs Responsive in Tablet Portrait */
+  .desktop-only-users-table,
+  .desktop-only-audit-table {
+    display: none !important;
+  }
+  .mobile-only-users-list,
+  .mobile-only-audit-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* Modal thu nhỏ tỷ lệ để không chạm mép màn hình iPad */
+  .panel {
+    max-width: 90vw !important;
+    padding: 20px 22px !important;
+  }
+
+  .stage.admin {
+    padding: 18px 20px 40px !important;
+    overflow-y: auto !important;
+  }
+  .stage.admin .admin-top-header {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-subtab-segment {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-top: 10px !important;
+  }
+  .stage.admin .admin-tabs-filter-wrapper {
+    display: flex !important;
+    align-items: center !important;
+  }
+  .stage.admin .admin-queue-col {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-detail-col.desktop-only-col {
+    display: none !important;
+  }
+  .stage.admin .admin-live-stats {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-live-table-box {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-capsules-summary-badges {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-capsules-main-box {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-capsules-add-panel.desktop-only-col {
+    display: none !important;
+  }
+  .stage.admin .admin-audit-log-container {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+    padding: 16px 14px 40px !important;
+  }
+
+  /* Room 3: Tablet Portrait: Phóng to cây, đế cây cách mép trái 5px và mép phải 5px */
+  .stage.room3-stage .room3-tree-container,
+  .room3-tree-container {
+    position: absolute !important;
+    left: 5px !important;
+    right: 5px !important;
+    width: calc(100% - 10px) !important;
+    max-width: calc(100% - 10px) !important;
+    margin: 0 auto !important;
+    top: 130px !important;
+    bottom: 48px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .room3-tree-container .wish-tree-wrapper {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+  }
+
+  .room3-tree-container .wish-tree-svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 auto !important;
+    display: block !important;
+  }
+
+  /* Hiển thị Bubble Navigator trên Tablet Portrait & Mobile */
+  .lobby-bubble-nav-wrapper {
+    display: block !important;
+  }
+
+  /* Sảnh bảo tàng trên Tablet Portrait:
+     - Sidebar 64px bên trái không che chữ Chào
+     - Mailbox và Diary nằm ngay mép đường kẻ vàng (.lobby-horizon-boundary)
+     - 3 ô cửa sổ hình chữ nhật (Room 01, 02, 03) dời xuống vùng giữa: đỉnh dưới logo và đáy trên Mailbox & Diary
+  */
+
+  .door-arch-shape {
+    display: none !important;
+  }
+  .door-rect-shape {
+    display: inline !important;
+  }
+
+  :root {
+    --lobby-floor-h: clamp(160px, 22vh, 220px) !important;
+  }
+
+  .lobby-logo-wrapper.desktop-only-logo {
+    display: none !important;
+  }
+
+  .compact-only-logo {
+    display: block !important;
+  }
+
+  .lobby-header-bar {
+    height: auto !important;
+    pointer-events: none !important;
+  }
+
+  .lobby-header-bar .top {
+    position: absolute !important;
+    top: 14px !important;
+    left: clamp(16px, 2.5vw, 24px) !important;
+    right: clamp(16px, 2.5vw, 24px) !important;
+    height: auto !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+  }
+
+  .top .lobby-greeting-block {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    flex: 0 0 auto !important;
+    pointer-events: auto !important;
+  }
+
+  .lobby-logo-sub-wrapper {
+    display: block !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 74px !important;
+    transform: translateX(-50%) scale(0.82) !important;
+    transform-origin: center top !important;
+    text-align: center !important;
+    width: max-content !important;
+    margin: 0 !important;
+    pointer-events: auto !important;
+    z-index: 25 !important;
+  }
+
+  .lobby-units-row {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+    overflow: hidden !important;
+  }
+
+  /* 3 Ô cửa sổ hình chữ nhật lơ lửng bồng bềnh: Ở vùng giữa tường (đỉnh dưới logo, đáy trên Mailbox/Diary) */
+  .lobby-rooms-floating-group {
+    position: absolute !important;
+    top: clamp(155px, 18vh, 190px) !important;
+    bottom: calc(var(--lobby-floor-h) + clamp(140px, 19vh, 190px) + 24px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: clamp(14px, 2.8vw, 32px) !important;
+    padding: 0 20px !important;
+    box-sizing: border-box !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+  }
+
+  .floating-window-unit {
+    pointer-events: auto !important;
+    flex: 0 1 clamp(160px, 22vw, 215px) !important;
+    width: auto !important;
+    max-width: 215px !important;
+    min-width: 0 !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .floating-window-unit.r1-unit {
+    animation: floatBubble1 4.6s ease-in-out infinite !important;
+  }
+  .floating-window-unit.r2-unit {
+    animation: floatBubble2 5.4s ease-in-out 0.8s infinite !important;
+  }
+  .floating-window-unit.r3-unit {
+    animation: floatBubble3 4.9s ease-in-out 1.5s infinite !important;
+  }
+
+  .door-unit:hover,
+  .floating-window-unit:hover {
+    animation-play-state: paused !important;
+  }
+
+  .floating-window-unit .unit-top-box {
+    flex: 0 0 auto !important;
+    height: auto !important;
+  }
+  .floating-window-unit .unit-bottom-box {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    padding-top: 6px !important;
+  }
+
+  .door-arch-svg {
+    height: clamp(160px, 22vh, 230px) !important;
+    aspect-ratio: 240 / 450 !important;
+    max-width: 100% !important;
+    width: auto !important;
+  }
+
+  .door-info-card {
+    width: 100% !important;
+    padding: 7px 10px !important;
+    border-radius: 9px !important;
+    background: var(--paper) !important;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35) !important;
+  }
+  .door-card-badge {
+    font-size: 9.5px !important;
+    letter-spacing: 0.12em !important;
+  }
+  .door-card-title {
+    font-size: 13px !important;
+    white-space: normal !important;
+    line-height: 1.2 !important;
+  }
+  .door-card-count {
+    font-size: 10px !important;
+  }
+
+  /* Mailbox & Diary (Grounded group): Chân đế đứng ngay trên đường kẻ vàng (.lobby-horizon-boundary) */
+  .lobby-grounded-items-group {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    align-items: flex-end !important;
+    padding: 0 clamp(24px, 8vw, 70px) !important;
+    box-sizing: border-box !important;
+    pointer-events: none !important;
+    z-index: 12 !important;
+  }
+
+  .grounded-item-unit {
+    pointer-events: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    height: auto !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .grounded-item-unit.mailbox-unit {
+    width: auto !important;
+    max-width: 250px !important;
+    overflow: visible !important;
+  }
+  .grounded-item-unit.bench-unit {
+    width: auto !important;
+    max-width: 250px !important;
+    overflow: visible !important;
+  }
+
+  .grounded-item-unit .unit-bottom-box {
+    height: var(--lobby-floor-h) !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding-top: clamp(10px, 1.6vh, 18px) !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  .grounded-item-unit .unit-top-box {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .mailbox-graphic-box .mailbox-svg {
+    height: clamp(140px, 19vh, 190px) !important;
+    aspect-ratio: 160 / 250 !important;
+    max-width: 125px !important;
+    width: auto !important;
+  }
+
+  .bench-graphic-box .bench-svg {
+    height: clamp(85px, 12vh, 120px) !important;
+    aspect-ratio: 220 / 142 !important;
+    max-width: 195px !important;
+    width: auto !important;
+  }
+
+  .interactive-badge-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 13px !important;
+    padding: 6px 16px !important;
+    width: max-content !important;
+    max-width: min(92vw, 240px) !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+  }
+
+  /* Dòng chữ quote không bị che bởi bottom bar */
+  .lobby-footer-bar {
+    position: absolute !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: calc(var(--bottom-nav-h, 0px) + var(--safe-bottom, 0px) + clamp(12px, 1.8vh, 20px)) !important;
+    width: 100% !important;
+    max-width: min(92vw, 560px) !important;
+    padding: 0 16px !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+    pointer-events: none !important;
+    z-index: 30 !important;
+    display: block !important;
+  }
+  .lobby-footer-quote {
+    font-size: clamp(10px, 1.3vw, 11.5px) !important;
+    line-height: 1.35 !important;
+    opacity: 0.9 !important;
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
+}
+
+/* -------------------------------------------------------------
+   3. MOBILE STYLING (max-width: 768px)
+   ------------------------------------------------------------- */
+@media (max-width: 768px) {
+  /* Ẩn sidebar đứng, chuyển quyền điều hướng cho Bottom Navigation */
+  .side {
+    display: none !important;
+  }
+
+  /* Stage giải phóng toàn bộ không gian ngang */
+  .stage,
+  .lobby-stage {
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    top: 0 !important;
+    bottom: calc(var(--bottom-nav-h) + var(--safe-bottom)) !important;
+    padding-top: var(--safe-top);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Bottom Navigation Bar phong cách bảo tàng */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--bottom-nav-h) + var(--safe-bottom));
+    padding-bottom: var(--safe-bottom);
+    background: var(--side, #241A17);
+    border-top: 1px solid var(--glass-line, rgba(255,255,255,0.12));
+    backdrop-filter: blur(16px);
+    z-index: 100;
+    align-items: center;
+    justify-content: space-around;
+    box-sizing: border-box;
+  }
+
+  .mobile-bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex: 1;
+    height: 100%;
+    color: var(--onw2);
+    text-decoration: none;
+    font-size: 10px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+  }
+
+  .mobile-bottom-nav-item.active {
+    color: var(--gold, #E6C280);
+    font-weight: 600;
+  }
+
+  /* Ẩn theme button & lang button trên mobile & tablet (đã có trong Function drawer) */
+  .owner-theme-btn,
+  .admin-theme-btn,
+  .admin-lang-btn,
+  .desktop-only-btn {
+    display: none !important;
+  }
+
+  /* Header phòng: Căn ngang 1 dòng mượt mà, không dùng position absolute cứng */
+  .top {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    padding: 12px 16px 6px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+  }
+
+  .top .room-tag small {
+    font-size: 12.5px !important;
+    letter-spacing: 0.12em !important;
+  }
+
+  .top .room-tag b {
+    font-size: 19px !important;
+  }
+
+  /* Sub-header row: Cách xa thanh Top bằng margin-top, không bao giờ bị search/bell đè lên */
+  .chips-row {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    margin-top: 10px !important;
+    padding: 0 16px 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .mobile-filter-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .custom-filter-chip-btn {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+
+  .diary-btn-write {
+    padding: 6px 14px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  .chips {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  /* Gallery tranh: 1 cột thẻ lớn rõ nét, vuốt mượt mà */
+  .gallery {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    flex: 1;
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+    padding: 8px 16px 32px !important;
+  }
+
+  .work {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .work .art {
+    height: 220px !important;
+  }
+
+  /* Modal chuyển thành Bottom Sheet trượt từ đáy màn hình */
+  .panel {
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    transform: none !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    max-height: 88dvh !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 20px 18px calc(20px + var(--safe-bottom)) !important;
+  }
+
+  /* Form song ngữ VI/EN trong Modal & Admin: Chuyển lưới 2 cột thành 1 cột */
+  .panel div[style*="gridTemplateColumns: '1fr 1fr'"],
+  .panel div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Admin navigation tabs scroll ngang */
+  .tabs {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    white-space: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .seg {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    white-space: nowrap;
+  }
+
+  /* Sảnh Bảo Tàng trên điện thoại: Tắt scroll snap cũ, kích hoạt bubble nav */
+  .lobby-stage {
+    position: fixed !important;
+    inset: 0 !important;
+    overflow: hidden !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .lobby-bubble-nav-wrapper {
+    display: block !important;
+  }
+
+  /* Bảng dữ liệu Owner / Admin */
+  .owner-dashboard-stage,
+  .stage.admin {
+    padding: 12px 14px calc(20px + var(--bottom-nav-h)) !important;
+  }
+
+  .stage.admin .admin-top-header {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+  }
+  .stage.admin .admin-subtab-segment {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+  }
+  .stage.admin .admin-tabs-filter-wrapper {
+    display: flex !important;
+    align-items: center !important;
+  }
+  .stage.admin .admin-queue-col {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-detail-col.desktop-only-col {
+    display: none !important;
+  }
+  .stage.admin .admin-live-stats {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-live-table-box {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-capsules-summary-badges {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-capsules-main-box {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .stage.admin .admin-capsules-add-panel.desktop-only-col {
+    display: none !important;
+  }
+  .stage.admin .admin-audit-log-container {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    margin-top: 10px !important;
+    box-sizing: border-box !important;
+    padding: 16px 14px 40px !important;
+  }
+
+  /* Room 3: Mobile Portrait: Phóng to cây, đế cây cách mép trái 5px và mép phải 5px */
+  .stage.room3-stage .room3-tree-container,
+  .room3-tree-container {
+    position: absolute !important;
+    left: 5px !important;
+    right: 5px !important;
+    width: calc(100% - 10px) !important;
+    max-width: calc(100% - 10px) !important;
+    margin: 0 auto !important;
+    top: 115px !important;
+    bottom: 48px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .room3-tree-container .wish-tree-wrapper {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+  }
+
+  .room3-tree-container .wish-tree-svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    margin: 0 auto !important;
+    display: block !important;
+  }
+
+  .owner-dashboard-stage .search {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Owner Users Directory & Audit Logs Responsive in Mobile */
+  .desktop-only-users-table,
+  .desktop-only-audit-table {
+    display: none !important;
+  }
+  .mobile-only-users-list,
+  .mobile-only-audit-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  .owner-dashboard-stage table,
+  .stage.admin table {
+    min-width: 580px;
+  }
+
+  /* Responsive Master-Detail Columns for Admin & Diary */
+  .mobile-hidden {
+    display: none !important;
+  }
+  .mobile-only-header {
+    display: block !important;
+  }
+  .admin-queue-col {
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    margin-top: 14px;
+    height: auto !important;
+    max-height: calc(100dvh - 240px);
+  }
+  .admin-detail-col {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    margin-top: 14px;
+    border-radius: 14px !important;
+  }
+  .diary-page-col {
+    display: none !important;
+  }
+
+  /* Diary Page Responsive Layout on Mobile */
+  .stage.diary-stage {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .stage.diary-stage .top {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .stage.diary-stage .chips-row {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 100% !important;
+    flex-shrink: 0 !important;
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+    box-sizing: border-box !important;
+  }
+
+  .stage.diary-stage .diary-timeline-col {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 auto !important;
+    margin-top: 0 !important;
+    padding: 0 16px calc(var(--bottom-nav-h, 56px) + var(--safe-bottom, 0px) + 36px) !important;
+    border-right: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+    box-sizing: border-box !important;
+    z-index: 5 !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-only-header {
+    display: none !important;
+  }
+}
+
+/* -----------------------------------------------------------------
+   4. LOBBY RESPONSIVE - MOBILE LANDSCAPE (<= 768px landscape / height <= 520px)
+   - Mailbox và Diary nằm ngay trên đường màu vàng (.lobby-horizon-boundary)
+   - 3 ô cửa sổ hình chữ nhật (Room 01, 02, 03) dời xuống vùng giữa: đỉnh dưới logo và đáy trên Mailbox & Diary
+   - Dòng chữ quote hiển thị rõ ràng phía trên bottom bar, không bị che
+   ----------------------------------------------------------------- */
+@media (max-width: 768px) and (orientation: landscape), (max-height: 520px) and (min-width: 481px) {
+  :root {
+    --lobby-floor-h: clamp(85px, 24vh, 105px) !important;
+  }
+
+  .side {
+    display: none !important;
+  }
+
+  .stage,
+  .lobby-stage {
+    left: 0 !important;
+    width: 100% !important;
+  }
+
+  .lobby-bubble-nav-wrapper {
+    display: block !important;
+  }
+
+  .lobby-bubble-trigger {
+    padding: 4px 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  .door-arch-shape {
+    display: none !important;
+  }
+  .door-rect-shape {
+    display: inline !important;
+  }
+
+  .lobby-logo-wrapper.desktop-only-logo {
+    display: none !important;
+  }
+
+  .compact-only-logo {
+    display: block !important;
+  }
+
+  .lobby-header-bar {
+    height: auto !important;
+    pointer-events: none !important;
+  }
+
+  .lobby-header-bar .top {
+    position: absolute !important;
+    top: 8px !important;
+    left: 12px !important;
+    right: 12px !important;
+    height: auto !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+  }
+
+  .top .lobby-greeting-block {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    flex: 0 0 auto !important;
+    pointer-events: auto !important;
+  }
+
+  .lobby-logo-sub-wrapper {
+    display: block !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 38px !important;
+    transform: translateX(-50%) scale(0.65) !important;
+    transform-origin: center top !important;
+    text-align: center !important;
+    width: max-content !important;
+    margin: 0 !important;
+    pointer-events: auto !important;
+    z-index: 25 !important;
+  }
+
+  .lobby-units-row {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+    overflow: hidden !important;
+  }
+
+  /* Room 01, 02, 03 lơ lửng ở vùng giữa */
+  .lobby-rooms-floating-group {
+    position: absolute !important;
+    top: clamp(88px, 21vh, 102px) !important;
+    bottom: calc(var(--lobby-floor-h) + clamp(65px, 18vh, 82px) + 8px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: clamp(8px, 2vw, 18px) !important;
+    padding: 0 10px !important;
+    box-sizing: border-box !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+  }
+
+  .floating-window-unit {
+    pointer-events: auto !important;
+    flex: 0 1 clamp(100px, 16vw, 135px) !important;
+    width: auto !important;
+    max-width: 135px !important;
+    min-width: 0 !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .floating-window-unit.r1-unit {
+    animation: floatBubble1Land 4.6s ease-in-out infinite !important;
+  }
+  .floating-window-unit.r2-unit {
+    animation: floatBubble2Land 5.4s ease-in-out 0.8s infinite !important;
+  }
+  .floating-window-unit.r3-unit {
+    animation: floatBubble3Land 4.9s ease-in-out 1.5s infinite !important;
+  }
+
+  @keyframes floatBubble1Land {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-5px) rotate(0.4deg); }
+  }
+  @keyframes floatBubble2Land {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-7px) rotate(-0.5deg); }
+  }
+  @keyframes floatBubble3Land {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-4px) rotate(0.3deg); }
+  }
+
+  .door-unit:hover,
+  .floating-window-unit:hover {
+    animation-play-state: paused !important;
+  }
+
+  .floating-window-unit .unit-top-box {
+    flex: 0 0 auto !important;
+    height: auto !important;
+  }
+  .floating-window-unit .unit-bottom-box {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    padding-top: 3px !important;
+  }
+
+  .door-arch-svg {
+    height: clamp(72px, 21vh, 92px) !important;
+    aspect-ratio: 240 / 450 !important;
+    max-width: 100% !important;
+    width: auto !important;
+  }
+
+  .door-info-card {
+    width: 100% !important;
+    padding: 3px 6px !important;
+    border-radius: 6px !important;
+    background: var(--paper) !important;
+  }
+  .door-card-badge {
+    font-size: 7.5px !important;
+  }
+  .door-card-title {
+    font-size: 9.5px !important;
+    line-height: 1.15 !important;
+  }
+  .door-card-count {
+    font-size: 8px !important;
+  }
+
+  /* Mailbox & Diary: Chân đế nằm ngay trên đường màu vàng (.lobby-horizon-boundary) */
+  .lobby-grounded-items-group {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    align-items: flex-end !important;
+    padding: 0 clamp(16px, 6vw, 40px) !important;
+    box-sizing: border-box !important;
+    pointer-events: none !important;
+    z-index: 12 !important;
+  }
+
+  .grounded-item-unit {
+    pointer-events: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    height: auto !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .grounded-item-unit.mailbox-unit {
+    width: auto !important;
+    max-width: 200px !important;
+    overflow: visible !important;
+  }
+  .grounded-item-unit.bench-unit {
+    width: auto !important;
+    max-width: 200px !important;
+    overflow: visible !important;
+  }
+
+  .grounded-item-unit .unit-bottom-box {
+    height: var(--lobby-floor-h) !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding-top: 3px !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  .grounded-item-unit .unit-top-box {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .mailbox-graphic-box .mailbox-svg {
+    height: clamp(65px, 18vh, 82px) !important;
+    aspect-ratio: 160 / 250 !important;
+    max-width: 55px !important;
+    width: auto !important;
+  }
+
+  .bench-graphic-box .bench-svg {
+    height: clamp(40px, 11vh, 52px) !important;
+    aspect-ratio: 220 / 142 !important;
+    max-width: 82px !important;
+    width: auto !important;
+  }
+
+  .interactive-badge-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 10.5px !important;
+    padding: 3px 10px !important;
+    width: max-content !important;
+    max-width: min(45vw, 190px) !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+  }
+
+  /* Quote trên Mobile Landscape: Hiện rõ ràng phía trên bottom bar, không bị che */
+  .lobby-footer-bar {
+    position: absolute !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: calc(var(--bottom-nav-h, 50px) + var(--safe-bottom, 0px) + 3px) !important;
+    width: 100% !important;
+    max-width: min(92vw, 480px) !important;
+    padding: 0 8px !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+    pointer-events: none !important;
+    z-index: 30 !important;
+    display: block !important;
+  }
+  .lobby-footer-quote {
+    font-size: 8.5px !important;
+    line-height: 1.25 !important;
+    opacity: 0.88 !important;
+    white-space: normal !important;
+  }
+}
+
+/* -----------------------------------------------------------------
+   5. LOBBY RESPONSIVE - MOBILE PORTRAIT (<= 768px portrait hoặc <= 600px)
+   - Mailbox và Diary nằm ngay trên đường màu vàng (.lobby-horizon-boundary)
+   - 3 ô cửa sổ hình chữ nhật (Room 01, 02, 03) dời xuống vùng giữa: đỉnh dưới logo và đáy trên Mailbox & Diary
+   - Dòng chữ quote hiển thị rõ ràng phía trên bottom bar, không bị che
+   ----------------------------------------------------------------- */
+@media (max-width: 768px) and (orientation: portrait), (max-width: 600px) {
+  :root {
+    --lobby-floor-h: clamp(145px, 23vh, 180px) !important;
+  }
+
+  .lobby-stage {
+    position: fixed !important;
+    inset: 0 !important;
+    overflow: hidden !important;
+    left: 0 !important;
+  }
+
+  .lobby-bubble-nav-wrapper {
+    display: block !important;
+  }
+  .lobby-bubble-trigger {
+    padding: 5px 12px !important;
+    font-size: 12px !important;
+  }
+
+  .door-arch-shape {
+    display: none !important;
+  }
+  .door-rect-shape {
+    display: inline !important;
+  }
+
+  .lobby-logo-wrapper.desktop-only-logo {
+    display: none !important;
+  }
+
+  .compact-only-logo {
+    display: block !important;
+  }
+
+  .lobby-header-bar {
+    height: auto !important;
+    pointer-events: none !important;
+  }
+
+  .lobby-header-bar .top {
+    position: absolute !important;
+    top: 12px !important;
+    left: 14px !important;
+    right: 14px !important;
+    height: auto !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+  }
+
+  .top .lobby-greeting-block {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    flex: 0 0 auto !important;
+    pointer-events: auto !important;
+  }
+
+  .lobby-logo-sub-wrapper {
+    display: block !important;
+    position: absolute !important;
+    left: 50% !important;
+    top: 66px !important;
+    transform: translateX(-50%) scale(0.72) !important;
+    transform-origin: center top !important;
+    text-align: center !important;
+    width: max-content !important;
+    margin: 0 !important;
+    pointer-events: auto !important;
+    z-index: 25 !important;
+  }
+
+  @media (max-width: 380px) {
+    .lobby-logo-sub-wrapper {
+      top: 60px !important;
+      transform: translateX(-50%) scale(0.65) !important;
+    }
+  }
+
+  .lobby-units-row {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+    overflow: hidden !important;
+  }
+
+  /* Room 01, 02, 03: Vùng giữa màn hình (đỉnh dưới logo, đáy trên Mailbox & Diary) */
+  .lobby-rooms-floating-group {
+    position: absolute !important;
+    top: clamp(128px, 15vh, 145px) !important;
+    bottom: calc(var(--lobby-floor-h) + clamp(100px, 14vh, 125px) + 16px) !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: clamp(6px, 1.8vw, 10px) !important;
+    padding: 0 8px !important;
+    box-sizing: border-box !important;
+    pointer-events: none !important;
+    z-index: 10 !important;
+  }
+
+  .floating-window-unit {
+    pointer-events: auto !important;
+    flex: 0 1 calc((100% - 24px) / 3) !important;
+    width: auto !important;
+    max-width: 118px !important;
+    min-width: 0 !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .floating-window-unit.r1-unit {
+    animation: floatBubble1Mob 4.6s ease-in-out infinite !important;
+  }
+  .floating-window-unit.r2-unit {
+    animation: floatBubble2Mob 5.4s ease-in-out 0.8s infinite !important;
+  }
+  .floating-window-unit.r3-unit {
+    animation: floatBubble3Mob 4.9s ease-in-out 1.5s infinite !important;
+  }
+
+  @keyframes floatBubble1Mob {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-7px) rotate(0.4deg); }
+  }
+  @keyframes floatBubble2Mob {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-9px) rotate(-0.5deg); }
+  }
+  @keyframes floatBubble3Mob {
+    0%, 100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-6px) rotate(0.3deg); }
+  }
+
+  .door-unit:hover,
+  .floating-window-unit:hover {
+    animation-play-state: paused !important;
+  }
+
+  .floating-window-unit .unit-top-box {
+    flex: 0 0 auto !important;
+    height: auto !important;
+  }
+  .floating-window-unit .unit-bottom-box {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    padding-top: 4px !important;
+  }
+
+  .door-arch-svg {
+    height: clamp(115px, 16vh, 145px) !important;
+    aspect-ratio: 240 / 450 !important;
+    max-width: 100% !important;
+    width: auto !important;
+  }
+
+  .door-info-card {
+    width: 100% !important;
+    padding: 4px 4px !important;
+    border-radius: 7px !important;
+    background: var(--paper) !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35) !important;
+  }
+  .door-card-badge {
+    font-size: 7.5px !important;
+    letter-spacing: 0.08em !important;
+    margin-bottom: 1px !important;
+  }
+  .door-card-title {
+    font-size: 9.5px !important;
+    line-height: 1.15 !important;
+    white-space: normal !important;
+  }
+  .door-card-count {
+    display: block !important;
+    font-size: 8px !important;
+    color: var(--ink2) !important;
+  }
+
+  /* Mailbox & Diary: Chân đế nằm ngay trên đường màu vàng (.lobby-horizon-boundary) */
+  .lobby-grounded-items-group {
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-around !important;
+    align-items: flex-end !important;
+    padding: 0 clamp(16px, 5vw, 32px) !important;
+    box-sizing: border-box !important;
+    pointer-events: none !important;
+    z-index: 12 !important;
+  }
+
+  .grounded-item-unit {
+    pointer-events: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    height: auto !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .grounded-item-unit.mailbox-unit {
+    width: auto !important;
+    max-width: min(46vw, 180px) !important;
+    overflow: visible !important;
+  }
+  .grounded-item-unit.bench-unit {
+    width: auto !important;
+    max-width: min(46vw, 180px) !important;
+    overflow: visible !important;
+  }
+
+  .grounded-item-unit .unit-bottom-box {
+    height: var(--lobby-floor-h) !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    padding-top: 8px !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
+
+  .grounded-item-unit .unit-top-box {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: center !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .mailbox-graphic-box .mailbox-svg {
+    height: clamp(100px, 14vh, 125px) !important;
+    aspect-ratio: 160 / 250 !important;
+    max-width: 80px !important;
+    width: auto !important;
+  }
+
+  .bench-graphic-box .bench-svg {
+    height: clamp(62px, 9vh, 80px) !important;
+    aspect-ratio: 220 / 142 !important;
+    max-width: 125px !important;
+    width: auto !important;
+  }
+
+  .interactive-badge-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+    padding: 4px 12px !important;
+    width: max-content !important;
+    max-width: min(45vw, 175px) !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  @media (max-width: 380px) {
+    .interactive-badge-pill {
+      font-size: 9.5px !important;
+      padding: 3px 8px !important;
+    }
+  }
+
+  /* Quote trên Mobile Portrait: Nằm trên sàn gỗ tối màu, ngay TRÊN bottom nav bar, không bị che */
+  .lobby-footer-bar {
+    position: absolute !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: calc(var(--bottom-nav-h, 56px) + var(--safe-bottom, 0px) + 8px) !important;
+    width: 100% !important;
+    max-width: min(92vw, 420px) !important;
+    padding: 0 8px !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+    pointer-events: none !important;
+    z-index: 30 !important;
+    display: block !important;
+  }
+
+  .lobby-footer-quote {
+    font-size: clamp(9px, 2.3vw, 10px) !important;
+    line-height: 1.35 !important;
+    opacity: 0.88 !important;
+    white-space: normal !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+  }
 }

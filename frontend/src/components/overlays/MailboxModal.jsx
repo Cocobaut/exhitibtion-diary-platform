@@ -440,6 +440,220 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
           transform: translateY(-1px);
           box-shadow: 0 4px 16px rgba(212, 176, 106, 0.45);
         }
+
+        /* -----------------------------------------------------------------
+           RESPONSIVE STYLING FOR MAILBOX MODAL
+           (Tablet Portrait, Mobile Landscape, Mobile Portrait)
+           ----------------------------------------------------------------- */
+        .mailbox-modal-header {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 46px;
+          text-align: center;
+          z-index: 85;
+          color: #F6E9DD;
+          pointer-events: none;
+          padding: 0 16px;
+          box-sizing: border-box;
+          transition: all 0.3s ease;
+        }
+        .mailbox-modal-title {
+          font-size: 30px;
+          font-weight: 700;
+          letter-spacing: 0.02em;
+          text-shadow: 0 2px 14px rgba(0,0,0,0.7);
+        }
+        .mailbox-modal-subtitle {
+          font-size: 13.5px;
+          margin-top: 6px;
+          color: rgba(246, 233, 221, 0.85);
+        }
+        .mailbox-card {
+          position: fixed !important;
+          left: 50% !important;
+          top: 52% !important;
+          transform: translate(-50%, -50%) !important;
+          bottom: auto !important;
+          right: auto !important;
+          z-index: 90 !important;
+          width: 560px;
+          max-width: 92vw;
+          padding: 28px 36px 22px;
+          border-radius: 24px;
+          box-sizing: border-box;
+        }
+        .mailbox-message-text {
+          font-size: 22px;
+          line-height: 1.7;
+          min-height: 80px;
+          padding: 6px 2px;
+        }
+        .mailbox-author-text {
+          text-align: right;
+          font-size: 19px;
+          color: var(--ink2);
+          margin-top: 10px;
+        }
+        .mailbox-footer {
+          margin-top: 20px;
+          border-top: 1px solid var(--line);
+          padding-top: 16px;
+          align-items: center;
+        }
+        .mailbox-charging-wrap {
+          position: fixed;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 95;
+          pointer-events: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          transition: transform 0.25s ease;
+        }
+        .mailbox-bg-svg {
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          top: 480px;
+          z-index: 82;
+          pointer-events: none;
+          transition: all 0.3s ease;
+        }
+
+        /* 1. TABLET PORTRAIT (768px - 1024px) */
+        @media (max-width: 1024px) {
+          .mailbox-modal-header {
+            top: 36px;
+          }
+          .mailbox-modal-title {
+            font-size: 25px;
+          }
+          .mailbox-modal-subtitle {
+            font-size: 13px;
+          }
+          .mailbox-card {
+            width: min(520px, 88vw) !important;
+            padding: 24px 28px 20px !important;
+            border-radius: 22px !important;
+          }
+          .mailbox-message-text {
+            font-size: 19.5px !important;
+            line-height: 1.65 !important;
+            min-height: 75px !important;
+          }
+          .mailbox-bg-svg {
+            transform: translateX(-50%) scale(0.85);
+            top: 440px;
+          }
+        }
+
+        /* 2. MOBILE LANDSCAPE (e.g. 481px - 767px horizontal, height <= 520px) */
+        @media (max-height: 520px) and (orientation: landscape), (max-width: 900px) and (max-height: 500px) {
+          .mailbox-modal-header {
+            top: 8px !important;
+          }
+          .mailbox-modal-title {
+            font-size: 17px !important;
+            line-height: 1.2 !important;
+          }
+          .mailbox-modal-subtitle {
+            font-size: 11px !important;
+            margin-top: 2px !important;
+          }
+          .mailbox-card {
+            top: 55% !important;
+            width: min(500px, 92vw) !important;
+            max-height: 82dvh !important;
+            overflow-y: auto !important;
+            padding: 14px 22px 14px !important;
+            border-radius: 18px !important;
+          }
+          .mailbox-card-header {
+            margin-bottom: 8px !important;
+          }
+          .mailbox-message-text {
+            font-size: 15.5px !important;
+            line-height: 1.5 !important;
+            min-height: 42px !important;
+            padding: 2px 0 !important;
+          }
+          .mailbox-author-text {
+            font-size: 14px !important;
+            margin-top: 4px !important;
+          }
+          .mailbox-footer {
+            margin-top: 10px !important;
+            padding-top: 8px !important;
+          }
+          .mailbox-charging-wrap {
+            transform: translate(-50%, -50%) scale(0.72) !important;
+          }
+          .mailbox-bg-svg {
+            display: none !important;
+          }
+        }
+
+        /* 3. MOBILE PORTRAIT (<= 480px) */
+        @media (max-width: 480px) {
+          .mailbox-modal-header {
+            top: clamp(18px, 3.5vh, 28px) !important;
+            padding: 0 12px !important;
+          }
+          .mailbox-modal-title {
+            font-size: 19px !important;
+            line-height: 1.25 !important;
+          }
+          .mailbox-modal-subtitle {
+            font-size: 11.5px !important;
+            margin-top: 4px !important;
+          }
+          .mailbox-card {
+            top: 52% !important;
+            width: calc(100vw - 32px) !important;
+            max-width: 390px !important;
+            max-height: 80dvh !important;
+            overflow-y: auto !important;
+            padding: 20px 18px 16px !important;
+            border-radius: 20px !important;
+          }
+          .mailbox-card .x {
+            right: 14px !important;
+            top: 14px !important;
+          }
+          .mailbox-card-header {
+            margin-bottom: 12px !important;
+            gap: 6px !important;
+          }
+          .mailbox-message-text {
+            font-size: 17px !important;
+            line-height: 1.6 !important;
+            min-height: 60px !important;
+          }
+          .mailbox-author-text {
+            font-size: 15px !important;
+            margin-top: 8px !important;
+          }
+          .mailbox-footer {
+            margin-top: 14px !important;
+            padding-top: 12px !important;
+            flex-wrap: wrap !important;
+            gap: 8px !important;
+          }
+          .mailbox-footer button {
+            padding: 7px 12px !important;
+            font-size: 12px !important;
+          }
+          .mailbox-charging-wrap {
+            transform: translate(-50%, -50%) scale(0.82) !important;
+          }
+          .mailbox-bg-svg {
+            transform: translateX(-50%) scale(0.65) !important;
+            top: 410px !important;
+          }
+        }
       `}</style>
 
       {/* Scrim Overlay */}
@@ -456,22 +670,11 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
       />
 
       {/* Header Title */}
-      <div
-        className="abs"
-        style={{
-          left: 0,
-          right: 0,
-          top: '46px',
-          textAlign: 'center',
-          zIndex: 85,
-          color: '#F6E9DD',
-          pointerEvents: 'none',
-        }}
-      >
-        <div className="serif" style={{ fontSize: '32px', fontWeight: 700, letterSpacing: '0.02em' }}>
+      <div className="mailbox-modal-header">
+        <div className="serif mailbox-modal-title">
           {language === 'en' ? 'What do you need to hear today?' : 'Hôm nay bạn cần nghe điều gì?'}
         </div>
-        <div className="muted" style={{ fontSize: '14px', marginTop: '6px', color: 'rgba(246, 233, 221, 0.82)' }}>
+        <div className="muted mailbox-modal-subtitle">
           {language === 'en'
             ? '✦ Drawing from 3 mysterious orbs (Courage · Healing · Facing Fear) ✦'
             : '✦ Đang triệu hồi 3 thông điệp bí ẩn (Can đảm · Chữa lành · Sợ hãi) ✦'}
@@ -480,8 +683,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
 
       {/* Background Mailbox Glow & Silhouette */}
       <svg
-        className="abs"
-        style={{ left: '50%', transform: 'translateX(-50%)', top: '480px', zIndex: 82, pointerEvents: 'none' }}
+        className="mailbox-bg-svg"
         width="500"
         height="380"
         viewBox="0 0 500 380"
@@ -504,19 +706,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
 
       {/* ================= GACHA PHASE 1: 3 BONG BÓNG NỔ TUẦN TỰ ================= */}
       {gachaPhase === 'charging' && (
-        <div
-          style={{
-            position: 'fixed',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 95,
-            pointerEvents: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
+        <div className="mailbox-charging-wrap">
           {/* Hào quang nền xoay nhẹ nhàng đồng điệu màu bảo tàng */}
           <div
             style={{
@@ -536,6 +726,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
             style={{
               position: 'relative',
               width: '380px',
+              maxWidth: '92vw',
               height: '160px',
               display: 'flex',
               justifyContent: 'center',
@@ -711,20 +902,11 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
       {/* ================= GACHA PHASE 3: REVEALED CARD ================= */}
       {gachaPhase === 'revealed' && (
         <div
-          className="panel gacha-card-container"
+          className="mailbox-card gacha-card-container"
           style={{
-            position: 'fixed',
-            left: '50%',
-            top: '52%',
-            transform: 'translate(-50%, -50%)',
-            zIndex: 90,
-            width: '580px',
-            maxWidth: '92vw',
-            padding: '30px 38px 24px',
             background: currentTheme.bg,
             border: currentTheme.border,
             boxShadow: currentTheme.glow,
-            borderRadius: '24px',
             transition: 'box-shadow 0.4s ease, border-color 0.4s ease',
           }}
         >
@@ -749,7 +931,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
 
           {/* Gacha Category Header Banner with Outline Icon */}
           <div
-            className="row between"
+            className="row between mailbox-card-header"
             style={{
               marginBottom: '16px',
               alignItems: 'center',
@@ -813,26 +995,16 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
           ) : (
             <>
               <div
-                className="book"
+                className="book mailbox-message-text"
                 style={{
-                  fontSize: '22.5px',
-                  lineHeight: 1.7,
                   color: 'var(--ink)',
-                  minHeight: '85px',
-                  padding: '8px 4px',
                 }}
               >
                 “{localize(drawnData, 'message')}”
               </div>
 
               <div
-                className="hand"
-                style={{
-                  textAlign: 'right',
-                  fontSize: '19px',
-                  color: 'var(--ink2)',
-                  marginTop: '10px',
-                }}
+                className="hand mailbox-author-text"
               >
                 — {drawnData?.author_name || (language === 'en' ? 'Anonymous' : 'Người gửi ẩn danh')}
               </div>
@@ -841,13 +1013,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
 
           {/* Action Footer */}
           <div
-            className="row between"
-            style={{
-              marginTop: '20px',
-              borderTop: '1px solid var(--line)',
-              paddingTop: '16px',
-              alignItems: 'center',
-            }}
+            className="row between mailbox-footer"
           >
             {/* Gacha Pull Action Button */}
             <button

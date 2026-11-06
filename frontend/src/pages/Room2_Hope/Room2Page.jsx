@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TopNav } from '../../components/layout/TopNav';
+import { CustomFilterDropdown } from '../../components/common/CustomFilterDropdown';
 import { Icon } from '../../components/common/Icons';
 import { MOCK_LANTERN_LETTERS } from '../../data/mockData';
 import { LanternSky } from './LanternSky';
@@ -381,7 +382,8 @@ export function Room2Page({
 
       {/* Filter Chips & Action */}
       <div className="chips-row">
-        <div className="chips">
+        {/* Desktop Chips */}
+        <div className="chips desktop-only-chips">
           {filterMapping.map(({ label, value }) => (
             <span
               key={value}
@@ -405,9 +407,27 @@ export function Room2Page({
           )}
         </div>
 
+        {/* Mobile/Tablet Dropdown (customized with same format as desktop .chip.glass.on) */}
+        <div className="mobile-filter-wrapper">
+          <CustomFilterDropdown
+            options={filterMapping.map(({ label, value }) => ({
+              label,
+              value,
+            }))}
+            value={activeFilter}
+            onChange={(val) => {
+              if (val === 'mine') {
+                guardAction(() => setActiveFilter('mine'), 'xem lồng đèn của tôi');
+              } else {
+                setActiveFilter(val);
+              }
+            }}
+          />
+        </div>
+
         <button
           type="button"
-          className="btn main"
+          className="btn main r2-btn-release"
           onClick={() => {
             guardAction(() => setShowReleaseModal(true), 'thả lồng đèn lên bầu trời');
           }}

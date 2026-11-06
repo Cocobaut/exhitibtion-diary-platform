@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { TopNav } from '../../components/layout/TopNav';
+import { CustomFilterDropdown } from '../../components/common/CustomFilterDropdown';
 import { WishTree } from './WishTree';
 import { ReadLeafModal } from './ReadLeafModal';
 import { HangLeafModal } from './HangLeafModal';
@@ -331,7 +332,7 @@ export function Room3Page({
     : CATEGORY_MAP.CL;
 
   return (
-    <div className="stage w-full h-full max-h-screen overflow-hidden relative flex flex-col justify-between select-none">
+    <div className="stage room3-stage w-full h-full max-h-screen overflow-hidden relative flex flex-col justify-between select-none">
       {/* Full-Screen Ambient Starfield Twinkling In Place */}
       <StarrySky />
 
@@ -349,7 +350,8 @@ export function Room3Page({
 
         {/* Filter Chips & Action Row */}
         <div className="chips-row">
-          <div className="chips no-scrollbar" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          {/* Desktop Chips */}
+          <div className="chips desktop-only-chips no-scrollbar" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <span
               className={`chip glass ${!filterCategory && !filterMine ? 'on' : ''}`}
               onClick={() => {
@@ -404,7 +406,36 @@ export function Room3Page({
             )}
           </div>
 
-          <div className="row" style={{ gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+          {/* Mobile/Tablet Dropdown (customized with same format as desktop .chip.glass.on) */}
+          <div className="mobile-filter-wrapper">
+            <CustomFilterDropdown
+              options={[
+                { value: 'all', label: language === 'en' ? 'All wishes' : 'Tất cả' },
+                { value: 'KL', label: language === 'en' ? 'Encouragement' : 'Khích lệ', dotColor: CATEGORY_MAP.KL?.color },
+                { value: 'CL', label: language === 'en' ? 'Healing' : 'Chữa lành', dotColor: CATEGORY_MAP.CL?.color },
+                { value: 'BO', label: language === 'en' ? 'Gratitude' : 'Biết ơn', dotColor: CATEGORY_MAP.BO?.color },
+                { value: 'GN', label: language === 'en' ? 'Perspective' : 'Góc nhìn', dotColor: CATEGORY_MAP.GN?.color },
+                { value: 'mine', label: language === 'en' ? 'My wishes' : 'Của tôi' },
+              ]}
+              value={filterMine ? 'mine' : (filterCategory || 'all')}
+              onChange={(val) => {
+                if (val === 'mine') {
+                  guardAction(() => {
+                    setFilterMine(true);
+                    setFilterCategory(null);
+                  }, 'xem thông điệp của tôi');
+                } else if (val === 'all') {
+                  setFilterMine(false);
+                  setFilterCategory(null);
+                } else {
+                  setFilterMine(false);
+                  setFilterCategory(val);
+                }
+              }}
+            />
+          </div>
+
+          <div className="row r3-action-buttons" style={{ gap: '10px', alignItems: 'center', flexShrink: 0 }}>
             {/* Chức năng rút lá (draw wish) với icon viền rỗng nằm ngang với hang message */}
             <button
               type="button"
@@ -479,6 +510,7 @@ export function Room3Page({
 
       {/* Center Tree Viewport Container strictly confined below header and above soil */}
       <div
+        className="room3-tree-container"
         style={{
           position: 'absolute',
           left: 0,

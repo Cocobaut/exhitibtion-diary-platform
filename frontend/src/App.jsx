@@ -4,6 +4,7 @@ import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { GuestGuardProvider } from './context/GuestGuardContext';
 import { Sidebar } from './components/layout/Sidebar';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { ThemeDropdown } from './components/overlays/ThemeDropdown';
 import { NotificationDropdown } from './components/overlays/NotificationDropdown';
 import { MailboxModal } from './components/overlays/MailboxModal';
@@ -117,6 +118,24 @@ function MainApp() {
               }}
               isAdmin={isAdmin}
               user={user}
+            />
+          )}
+
+          {/* Mobile Bottom Navigation Bar (< 768px) */}
+          {currentRoute !== 'login' && (
+            <MobileBottomNav
+              currentRoute={currentRoute}
+              onNavigate={(route) => {
+                setCurrentRoute(route);
+                setIsMailboxOpen(false);
+                setIsNotificationsOpen(false);
+                setIsThemeModalOpen(false);
+              }}
+              isAdmin={isAdmin}
+              user={user}
+              onOpenMailbox={() => setIsMailboxOpen(true)}
+              onOpenNotifications={() => setIsNotificationsOpen(true)}
+              onOpenThemeModal={() => setIsThemeModalOpen(true)}
             />
           )}
 

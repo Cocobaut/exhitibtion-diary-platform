@@ -40,6 +40,14 @@ export const DICTIONARY = {
     // Main Lobby
     lobby_greeting_guest: 'Chào bạn, hôm nay bạn muốn ghé đâu?',
     lobby_greeting_user: 'Chào {name}, hôm nay bạn muốn ghé đâu?',
+    lobby_greeting_compact_guest: 'Chào bạn',
+    lobby_greeting_compact_user: 'Chào {name}',
+    lobby_bubble_spaces: 'Khám phá các phòng',
+    lobby_bubble_title: 'Các không gian',
+    lobby_bubble_hint: 'Chạm để di chuyển',
+    lobby_mailbox_title: 'Hòm thư cảm xúc',
+    lobby_mailbox_desc: 'Rút một thông điệp từ hòm thư',
+    lobby_diary_desc: 'Lưu giữ những dòng tâm sự',
     lobby_quote:
       '“The Name of Feeling Museum là dự án bảo tàng kỹ thuật số dành cho cộng đồng, nơi người trẻ có thể chia sẻ và nhìn lại những trải nghiệm thất bại của bản thân. Thay vì tôn vinh thành công, bảo tàng biến những câu chuyện thất bại thành các tác phẩm nghệ thuật, khuyến khích sự chiêm nghiệm.\n”',
     lobby_room01_badge: 'PHÒNG 01',
@@ -133,7 +141,7 @@ export const DICTIONARY = {
     // Admin
     admin_title: 'Không gian Quản trị',
     admin_online_team: 'Ban Quản trị online',
-    admin_tab_r1: 'Triển lãm Hành trình',
+    admin_tab_r1: 'Phòng 1',
     admin_tab_r2: 'Phòng 2',
     admin_tab_r3: 'Phòng 3',
     admin_tab_diary: 'Nhật ký',
@@ -199,6 +207,14 @@ export const DICTIONARY = {
     // Main Lobby
     lobby_greeting_guest: 'Hello friend, where would you like to visit today?',
     lobby_greeting_user: 'Hello {name}, where would you like to visit today?',
+    lobby_greeting_compact_guest: 'Hello friend',
+    lobby_greeting_compact_user: 'Hello {name}',
+    lobby_bubble_spaces: 'Explore Rooms',
+    lobby_bubble_title: 'Museum Spaces',
+    lobby_bubble_hint: 'Tap to navigate',
+    lobby_mailbox_title: 'Emotional Mailbox',
+    lobby_mailbox_desc: 'Draw a warm message',
+    lobby_diary_desc: 'Record personal reflections',
     lobby_quote:
       '“The Name of Feeling Museum is a digital community museum project where young people can share and reflect on their personal experiences of failure. Instead of celebrating success, the museum transforms stories of failure into works of art, encouraging deep contemplation.\n”',
     lobby_room01_badge: 'ROOM 01',
@@ -292,7 +308,7 @@ export const DICTIONARY = {
     // Admin
     admin_title: 'Admin Moderation Space',
     admin_online_team: 'Admin Team online',
-    admin_tab_r1: 'Journey Exhibition',
+    admin_tab_r1: 'Room 1',
     admin_tab_r2: 'Room 2',
     admin_tab_r3: 'Room 3',
     admin_tab_diary: 'Diaries',

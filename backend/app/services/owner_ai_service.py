@@ -73,10 +73,24 @@ class OwnerAiService:
             record.is_moderation_enabled = m.is_enabled
             if m.provider:
                 record.moderation_provider = m.provider
+                # Auto-align model and base_url if provider switched
+                if m.provider == "deepseek":
+                    if not m.model_name or m.model_name.startswith("gemini"):
+                        record.moderation_model_name = "deepseek-flash"
+                    if not m.base_url:
+                        record.moderation_base_url = "https://api.deepseek.com"
+                elif m.provider == "gemini":
+                    if not m.model_name or "deepseek" in m.model_name:
+                        record.moderation_model_name = "gemini-2.5-flash"
+                    record.moderation_base_url = None
             if m.model_name:
                 record.moderation_model_name = m.model_name
             if m.base_url is not None:
-                record.moderation_base_url = m.base_url
+                if m.base_url.strip():
+                    from app.core.security import validate_safe_base_url
+                    record.moderation_base_url = validate_safe_base_url(m.base_url)
+                else:
+                    record.moderation_base_url = None
             if m.api_key and m.api_key.strip():
                 # Encrypt and save key directly so owner is never blocked
                 record.moderation_encrypted_api_key = encrypt_aes_256(m.api_key.strip())
@@ -99,7 +113,11 @@ class OwnerAiService:
             if img.model_name:
                 record.image_model_name = img.model_name
             if img.base_url is not None:
-                record.image_base_url = img.base_url
+                if img.base_url.strip():
+                    from app.core.security import validate_safe_base_url
+                    record.image_base_url = validate_safe_base_url(img.base_url)
+                else:
+                    record.image_base_url = None
             if img.api_key and img.api_key.strip():
                 # Encrypt and save key directly so owner is never blocked
                 record.image_encrypted_api_key = encrypt_aes_256(img.api_key.strip())

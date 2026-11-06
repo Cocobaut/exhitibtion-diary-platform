@@ -3,6 +3,7 @@ import { Icon } from '../../components/common/Icons';
 import { adminDiaryService } from '../../services/adminDiaryService';
 import { aiCopilotService } from '../../services/aiCopilotService';
 import { AiModerationModal } from '../../components/Admin/AiModerationModal';
+import { extractModerationFields } from '../../utils/aiModerationParser';
 
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -19,6 +20,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
   const [isLoadingPending, setIsLoadingPending] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [totalPending, setTotalPending] = useState(0);
+  const [mobileView, setMobileView] = useState('queue'); // 'queue' | 'detail' for responsive screens
 
   // Form fields for editing/bilingual translation
   const [titleVi, setTitleVi] = useState('');
@@ -276,20 +278,40 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
     }
   };
 
-  const handleAcceptAiRewrite = (suggestedCleanContent) => {
-    if (suggestedCleanContent) {
-      if (currentItem?.original_language === 'en') {
-        setContentEn(suggestedCleanContent);
-      } else {
-        setContentVi(suggestedCleanContent);
-      }
-      if (triggerToast) {
-        triggerToast(
-          language === 'en'
-            ? 'Applied AI Copilot suggested rewrite to editor!'
-            : 'Đã đưa nội dung AI đề xuất vào khung biên tập.'
-        );
-      }
+  const handleAcceptAiRewrite = (suggestedCleanContent, moderationData) => {
+    const rawText = suggestedCleanContent || moderationData?.suggested_content || aiModerationData?.suggested_content || '';
+    if (!rawText && !moderationData && !aiModerationData) {
+      setAiModalOpen(false);
+      return;
+    }
+
+    const isOrigEn = currentItem?.original_language === 'en';
+    const fields = extractModerationFields(rawText, moderationData || aiModerationData, isOrigEn);
+
+    // Apply title if parsed
+    if (fields.titleVi) setTitleVi(fields.titleVi);
+    if (fields.titleEn) setTitleEn(fields.titleEn);
+
+    // Apply content
+    if (fields.contentVi) setContentVi(fields.contentVi);
+    if (fields.contentEn) setContentEn(fields.contentEn);
+
+    // Clean up corresponding validation errors
+    setValidationErrors((prev) => {
+      const next = { ...prev };
+      if (fields.titleVi) delete next.titleVi;
+      if (fields.titleEn) delete next.titleEn;
+      if (fields.contentVi) delete next.contentVi;
+      if (fields.contentEn) delete next.contentEn;
+      return next;
+    });
+
+    if (triggerToast) {
+      triggerToast(
+        language === 'en'
+          ? '✦ Applied AI suggestions into form fields!'
+          : '✦ Đã cập nhật đề xuất AI vào từng ô nội dung!'
+      );
     }
     setAiModalOpen(false);
   };
@@ -459,7 +481,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
         <>
           {/* Left Column: Pending List */}
           <div
-            className="abs box"
+            className={`abs box admin-queue-col ${mobileView === 'detail' ? 'mobile-hidden' : ''}`}
             style={{
               left: '32px',
               width: '270px',
@@ -498,7 +520,10 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                   return (
                     <div
                       key={item.id}
-                      onClick={() => setSelectedPendingIdx(idx)}
+                      onClick={() => {
+                        setSelectedPendingIdx(idx);
+                        setMobileView('detail');
+                      }}
                       style={{
                         padding: '14px',
                         borderRadius: '10px',
@@ -551,7 +576,7 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
           {/* Right Column: Review Details & Bilingual Editor */}
           {currentItem ? (
             <div
-              className="abs box"
+              className={`abs box admin-detail-col ${mobileView === 'queue' ? 'mobile-hidden' : ''}`}
               style={{
                 left: '318px',
                 right: '32px',
@@ -561,6 +586,17 @@ export function AdminDiaries({ onCountChange, triggerToast }) {
                 padding: '24px 28px',
               }}
             >
+              {/* Mobile Back to Queue Button */}
+              <div className="mobile-only-header" style={{ marginBottom: '14px' }}>
+                <button
+                  type="button"
+                  className="btn line sm"
+                  onClick={() => setMobileView('queue')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                >
+                  ← {language === 'en' ? 'Back to queue' : 'Quay lại danh sách chờ'}
+                </button>
+              </div>
               {/* Header Action Bar */}
               <div className="row between" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px', marginBottom: '20px', alignItems: 'center' }}>
                 <div className="row" style={{ gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>

@@ -1,4 +1,4 @@
-import React, { useId, useState, useRef, useMemo } from 'react';
+import React, { useId, useState, useEffect, useRef, useMemo } from 'react';
 import { rng, f } from '../../utils/rng';
 import { SYM, SYM_KEYS, MOCK_LANTERN_LETTERS } from '../../data/mockData';
 
@@ -309,15 +309,49 @@ export function LanternSky({
 }) {
   const compId = useId().replace(/:/g, '');
 
-  // Generate stars once
+  const [viewport, setViewport] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1364,
+    height: typeof window !== 'undefined' ? window.innerHeight : 900,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setViewport({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isCompact = viewport.width <= 1024;
+  const vbHeight = 900;
+  const vbWidth = isCompact
+    ? Math.max(360, Math.round(900 * (viewport.width / Math.max(300, viewport.height))))
+    : 1364;
+
+  // Door position tailored for responsive viewports
+  const doorCenterX = isCompact
+    ? Math.round(Math.min(vbWidth - 70, Math.max(110, vbWidth * 0.78)))
+    : 1180;
+
+  // Lantern size multiplier to preserve visual dimensions across portrait & landscape
+  const lanternScaleMultiplier = isCompact
+    ? (viewport.height < 520 ? Math.min(2.0, 750 / viewport.height) : 1)
+    : 1;
+
+  // Generate stars once across vbWidth
   const stars = useMemo(() => {
     const list = [];
-    for (let i = 0; i < 85; i++) {
+    const count = isCompact ? 50 : 85;
+    const maxX = isCompact ? vbWidth : 1364;
+    for (let i = 0; i < count; i++) {
       const rr = rng(i + 12);
       list.push(
         <circle
           key={`star_${i}`}
-          cx={f(rr() * 1364)}
+          cx={f(rr() * maxX)}
           cy={f(rr() * 440)}
           r={f(rr() * 1.35 + 0.3)}
           fill="#FFF1DC"
@@ -326,12 +360,14 @@ export function LanternSky({
       );
     }
     return list;
-  }, []);
+  }, [vbWidth, isCompact]);
 
   // Compute positioned lanterns combining active API items + ambient background
   const renderedLanterns = useMemo(() => {
     const items = [];
     const hasApiItems = Array.isArray(lanterns) && lanterns.length > 0;
+    const widthSpan = isCompact ? Math.max(100, vbWidth - 70) : 1264;
+    const minX = isCompact ? 35 : 50;
 
     if (hasApiItems) {
       // Map API lanterns into canvas positions
@@ -339,10 +375,14 @@ export function LanternSky({
         const seed = stringToSeed(item.id || `api_${idx}`);
         const r = rng(seed);
         const d = r();
-        const x = 50 + r() * 1264;
+        const x = minX + r() * widthSpan;
         const y = 160 + r() * 470;
 
-        if (isLanded && Math.abs(x - 682) < 280 && y > 350) return;
+        if (isLanded) {
+          const centerX = isCompact ? vbWidth * 0.5 : 682;
+          const exclusionZone = isCompact ? 200 : 280;
+          if (Math.abs(x - centerX) < exclusionZone && y > 350) return;
+        }
 
         const authorName = item.author_display_name || 'Người gửi ẩn danh';
         const titleText = `${item.title || 'Lồng đèn hy vọng'} — ${authorName} · Kéo xuống hoặc nhấn để đọc`;
@@ -356,7 +396,7 @@ export function LanternSky({
             key={item.id || `api_${idx}`}
             x={x}
             y={y}
-            sc={0.24 + d * 0.54}
+            sc={isCompact ? (0.24 + d * 0.54) * lanternScaleMultiplier : (0.24 + d * 0.54)}
             seed={seed}
             kind={item.symbol || 'star'}
             op={0.55 + d * 0.45}
@@ -371,14 +411,22 @@ export function LanternSky({
       });
     }
 
-    // Always ensure at least 48 lanterns for breathtaking visual depth
-    const ambientCount = Math.max(0, 48 - (hasApiItems ? lanterns.length : 0));
+    // Always ensure at least 48 lanterns for breathtaking visual depth on desktop
+    const ambientCount = Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0));
+    const ambientSpan = isCompact ? Math.max(100, vbWidth - 70) : 1284;
+    const ambientMinX = isCompact ? 30 : 40;
+
     for (let i = 0; i < ambientCount; i++) {
       const r = rng(600 + i);
       const d = r();
-      const x = 40 + r() * 1284;
+      const x = ambientMinX + r() * ambientSpan;
       const y = 170 + r() * 480;
-      if (isLanded && Math.abs(x - 682) < 280 && y > 350) continue;
+
+      if (isLanded) {
+        const centerX = isCompact ? vbWidth * 0.5 : 682;
+        const exclusionZone = isCompact ? 200 : 280;
+        if (Math.abs(x - centerX) < exclusionZone && y > 350) continue;
+      }
 
       const fallbackLetter =
         MOCK_LANTERN_LETTERS[(i % (MOCK_LANTERN_LETTERS.length - 1)) + 1];
@@ -392,7 +440,7 @@ export function LanternSky({
           key={`ambient_${i}`}
           x={x}
           y={y}
-          sc={0.18 + d * 0.5}
+          sc={isCompact ? (0.18 + d * 0.5) * lanternScaleMultiplier : (0.18 + d * 0.5)}
           seed={700 + i}
           op={0.4 + d * 0.5}
           isMine={false}
@@ -406,13 +454,19 @@ export function LanternSky({
     }
 
     return items;
-  }, [lanterns, isLanded, activeFilter, onOpenLandedModal]);
+  }, [lanterns, isLanded, activeFilter, onOpenLandedModal, vbWidth, isCompact, lanternScaleMultiplier]);
 
   const personalIsOpened = Boolean(personalLantern?.is_opened);
   const personalIsLocked = Boolean(personalLantern && !personalLantern.is_opened);
+  const personalX = isCompact ? Math.round(vbWidth * 0.72) : 1010;
 
   return (
-    <svg className="scene" viewBox="0 0 1364 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <svg
+      className="scene"
+      viewBox={isCompact ? `0 0 ${vbWidth} 900` : "0 0 1364 900"}
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+    >
       <defs>
         <linearGradient id={`dusk_${compId}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#2B1424" />
@@ -422,16 +476,16 @@ export function LanternSky({
         </linearGradient>
       </defs>
 
-      <rect width="1364" height="900" fill={`url(#dusk_${compId})`} />
+      <rect width={isCompact ? vbWidth : 1364} height="900" fill={`url(#dusk_${compId})`} />
       {stars}
       {renderedLanterns}
 
       {/* User's Own High-flying Personal Lantern */}
       {!isLanded && (
         <SingleLantern
-          x={1010}
+          x={personalX}
           y={215}
-          sc={0.96}
+          sc={isCompact ? 0.96 * lanternScaleMultiplier : 0.96}
           seed={4321}
           kind={personalLantern?.symbol || 'heart'}
           color="#FFF0D2"
@@ -452,16 +506,38 @@ export function LanternSky({
       )}
 
       {/* Ground and Pagoda silhouette with smooth curve */}
-      <path d="M0 780 Q 340 740 682 760 T 1364 750 L1364 900 L0 900 Z" fill="#3A1A1C" />
-      <path
-        d="M1130 780 L1130 690 Q1130 640 1180 636 Q1230 640 1230 690 L1230 780 Z"
-        fill="#2A1214"
-      />
-      <path
-        d="M1158 730 L1158 702 Q1158 682 1180 680 Q1202 682 1202 702 L1202 730 Z"
-        fill="#FFCF7A"
-        opacity="0.85"
-      />
+      {isCompact ? (
+        <>
+          <path
+            d={`M0 780 Q ${vbWidth * 0.25} 740 ${vbWidth * 0.5} 760 T ${vbWidth} 750 L${vbWidth} 900 L0 900 Z`}
+            fill="#3A1A1C"
+          />
+          {/* Pagoda Doorway Silhouette (always visible at bottom) */}
+          <path
+            d={`M${doorCenterX - 50} 780 L${doorCenterX - 50} 690 Q${doorCenterX - 50} 640 ${doorCenterX} 636 Q${doorCenterX + 50} 640 ${doorCenterX + 50} 690 L${doorCenterX + 50} 780 Z`}
+            fill="#2A1214"
+          />
+          {/* Pagoda Lit Arch Inner Window */}
+          <path
+            d={`M${doorCenterX - 22} 730 L${doorCenterX - 22} 702 Q${doorCenterX - 22} 682 ${doorCenterX} 680 Q${doorCenterX + 22} 682 ${doorCenterX + 22} 702 L${doorCenterX + 22} 730 Z`}
+            fill="#FFCF7A"
+            opacity="0.85"
+          />
+        </>
+      ) : (
+        <>
+          <path d="M0 780 Q 340 740 682 760 T 1364 750 L1364 900 L0 900 Z" fill="#3A1A1C" />
+          <path
+            d="M1130 780 L1130 690 Q1130 640 1180 636 Q1230 640 1230 690 L1230 780 Z"
+            fill="#2A1214"
+          />
+          <path
+            d="M1158 730 L1158 702 Q1158 682 1180 680 Q1202 682 1202 702 L1202 730 Z"
+            fill="#FFCF7A"
+            opacity="0.85"
+          />
+        </>
+      )}
     </svg>
   );
 }

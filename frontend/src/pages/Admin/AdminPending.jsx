@@ -4,6 +4,8 @@ import { Icon } from '../../components/common/Icons';
 import { adminRoomService } from '../../services/adminRoomService';
 import { aiCopilotService } from '../../services/aiCopilotService';
 import { AiModerationModal } from '../../components/Admin/AiModerationModal';
+import { AiImagePromptModal } from '../../components/Admin/AiImagePromptModal';
+import { extractModerationFields } from '../../utils/aiModerationParser';
 
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -56,9 +58,23 @@ export function AdminPending({
   // AI Copilot states
   const [isAnalyzingAi, setIsAnalyzingAi] = useState(false);
   const [isTranslatingAi, setIsTranslatingAi] = useState(false);
-  const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
+  const [imagePromptModalOpen, setImagePromptModalOpen] = useState(false);
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiModerationData, setAiModerationData] = useState(null);
+
+  // Responsive mode detection: Computer (> 1024px) vs Tablet Portrait / Mobile Landscape / Mobile Portrait (<= 1024px)
+  const [isComputerMode, setIsComputerMode] = useState(
+    typeof window !== 'undefined' ? window.innerWidth > 1024 : true
+  );
+  const [expandedIdx, setExpandedIdx] = useState(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsComputerMode(window.innerWidth > 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fileInputRef = useRef(null);
 
@@ -76,6 +92,7 @@ export function AdminPending({
         const items = data?.items || [];
         setPendingItems(items);
         setSelectedIdx(0);
+        setExpandedIdx(null);
       })
       .catch((err) => {
         console.warn('Could not load pending artworks from API:', err);
@@ -316,64 +333,60 @@ export function AdminPending({
     }
   };
 
-  const handleAcceptAiRewrite = (suggestedCleanContent) => {
-    if (suggestedCleanContent) {
-      if (currentItem?.original_language === 'en') {
-        setContentEn(suggestedCleanContent);
-      } else {
-        setContentVi(suggestedCleanContent);
-      }
+  const handleAcceptAiRewrite = (suggestedCleanContent, moderationData) => {
+    const rawText = suggestedCleanContent || moderationData?.suggested_content || aiModerationData?.suggested_content || '';
+    if (!rawText && !moderationData && !aiModerationData) {
+      setAiModalOpen(false);
+      return;
+    }
+
+    const isOrigEn = currentItem?.original_language === 'en';
+    const fields = extractModerationFields(rawText, moderationData || aiModerationData, isOrigEn);
+
+    // Update state fields with the parsed sections
+    if (fields.titleVi) setTitleVi(fields.titleVi);
+    if (fields.titleEn) setTitleEn(fields.titleEn);
+    if (fields.shortContentVi) setShortContentVi(fields.shortContentVi);
+    if (fields.shortContentEn) setShortContentEn(fields.shortContentEn);
+    if (fields.contentVi) setContentVi(fields.contentVi);
+    if (fields.contentEn) setContentEn(fields.contentEn);
+
+    // Clean up corresponding validation errors
+    setValidationErrors((prev) => {
+      const next = { ...prev };
+      if (fields.titleVi) delete next.titleVi;
+      if (fields.titleEn) delete next.titleEn;
+      if (fields.shortContentVi) delete next.shortContentVi;
+      if (fields.shortContentEn) delete next.shortContentEn;
+      if (fields.contentVi) delete next.contentVi;
+      if (fields.contentEn) delete next.contentEn;
+      return next;
+    });
+
+    if (triggerToast) {
+      triggerToast(
+        language === 'en'
+          ? '✦ Applied AI suggestions into form fields!'
+          : '✦ Đã cập nhật đề xuất AI vào từng ô nội dung!'
+      );
     }
     setAiModalOpen(false);
   };
 
-  const handleGenerateAiImage = async () => {
+  // Mở luồng tạo ảnh 2 bước: Nội dung chi tiết → Xác nhận prompt → Copy / Tạo ảnh bằng AI
+  const handleGenerateAiImage = () => {
     if (!currentItem) return;
-    setIsGeneratingAiImage(true);
     setErrorMessage('');
-    try {
-      const activeTitle = titleVi || titleEn;
-      const activeShort = shortContentVi || shortContentEn;
-      const activeContent = contentVi || contentEn;
-      const sourceContent = `${activeTitle}. ${activeShort}. ${activeContent}`;
-      const res = await aiCopilotService.generateArtImage({
-        art_id: currentItem.id,
-        source_content: sourceContent,
-        custom_prompt_addon:
-          roomId === 1
-            ? 'oil painting, expressive brushwork, reflective museum fine art'
-            : roomId === 2
-            ? 'hopeful vibrant art, digital illustration, museum quality'
-            : 'artistic conceptual digital painting, museum display',
-      });
-      const data = res?.data || res;
-      if (data?.image_url) {
-        setMediaUrl(data.image_url);
-        if (triggerToast) {
-          triggerToast(
-            language === 'en'
-              ? 'AI generated artwork image successfully.'
-              : 'Đã sinh tranh vẽ nghệ thuật bằng AI thành công.'
-          );
-        }
-      }
-    } catch (err) {
-      console.error('Lỗi khi sinh tranh vẽ AI:', err);
-      const errMsg =
-        err?.response?.data?.detail ||
-        err?.response?.data?.message ||
-        err?.message ||
-        (language === 'en'
-          ? 'Failed to generate image via AI. Please check Image Generation settings.'
-          : 'Chưa vẽ được tranh bằng AI. Hãy kiểm tra phần cấu hình sinh ảnh.');
-      if (triggerToast) {
-        triggerToast(`[AI Image] ${errMsg}`);
-      } else {
-        setErrorMessage(`[AI Image] ${errMsg}`);
-      }
-    } finally {
-      setIsGeneratingAiImage(false);
-    }
+    setImagePromptModalOpen(true);
+  };
+
+  const handleAiImageGenerated = (imageUrl) => {
+    setMediaUrl(imageUrl);
+    setValidationErrors((prev) => {
+      const next = { ...prev };
+      delete next.mediaUrl;
+      return next;
+    });
   };
 
   const handleApprove = async () => {
@@ -470,6 +483,7 @@ export function AdminPending({
 
       // Optimistically remove from list
       setPendingItems((prev) => prev.filter((it) => it.id !== currentItem.id));
+      setExpandedIdx(null);
       if (onApproveSuccess) {
         onApproveSuccess(approvedData);
       }
@@ -504,18 +518,702 @@ export function AdminPending({
     }
   };
 
+  // Reusable Moderation & Review Form (Desktop Right Column & Mobile/Tablet Inline Accordion)
+  const renderModerationForm = (isInline = false) => {
+    if (!currentItem) return null;
+
+    return (
+      <div
+        className={`admin-moderation-form ${isInline ? 'is-inline-form' : ''}`}
+        style={
+          isInline
+            ? {
+                padding: '16px',
+                background: 'var(--paper, #FDFBF7)',
+                color: 'var(--ink, #2C1B14)',
+                borderRadius: '12px',
+                border: '1.5px solid var(--gold, #E6C280)',
+                borderLeft: '5px solid var(--gold, #E6C280)',
+                marginTop: '10px',
+                marginBottom: '6px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+              }
+            : undefined
+        }
+        onClick={isInline ? (e) => e.stopPropagation() : undefined}
+      >
+        {/* Header Status + Collapse/Action Buttons */}
+        <div
+          className="row between"
+          style={{
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '10px',
+            marginBottom: '14px',
+            paddingBottom: isInline ? '10px' : undefined,
+            borderBottom: isInline ? '1px solid var(--line)' : undefined,
+          }}
+        >
+          <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
+            <span className="badge b-wait">PENDING</span>
+            <span className="muted" style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Icon name="eye" size={13} />
+              {language === 'en'
+                ? `${user?.nickname || 'You'} are editing this submission`
+                : `${user?.nickname || 'Bạn'} đang biên tập bài này`}
+            </span>
+          </div>
+
+          <div className="row" style={{ gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {isInline && (
+              <button
+                type="button"
+                className="btn ghost sm"
+                onClick={() => setExpandedIdx(null)}
+                style={{ color: 'var(--acc)', fontWeight: 600 }}
+              >
+                ▲ {language === 'en' ? 'Collapse' : 'Thu gọn'}
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn line sm"
+              onClick={handleAnalyzeWithAi}
+              disabled={isAnalyzingAi || isApproving}
+              style={{
+                borderColor: '#d97706',
+                color: '#b45309',
+                fontWeight: 600,
+                background: isAnalyzingAi ? 'rgba(245, 158, 11, 0.08)' : 'transparent',
+              }}
+              title={language === 'en' ? 'Ask AI to review and suggest wording' : 'Nhờ AI xem bài và gợi ý cách viết'}
+            >
+              {isAnalyzingAi
+                ? (language === 'en' ? 'AI Analyzing...' : 'AI đang phân tích...')
+                : (language === 'en' ? 'AI Copilot' : 'Phân tích bằng AI')}
+            </button>
+            <button
+              type="button"
+              className="btn line sm"
+              onClick={handleTranslateWithAi}
+              disabled={isAnalyzingAi || isTranslatingAi || isApproving}
+              style={{
+                borderColor: '#0284c7',
+                color: '#0369a1',
+                fontWeight: 600,
+                background: isTranslatingAi ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
+              }}
+              title={language === 'en' ? 'Translate to English using AI' : 'Dịch sang tiếng Anh bằng AI'}
+            >
+              {isTranslatingAi
+                ? (language === 'en' ? 'AI Translating...' : 'AI đang dịch...')
+                : (language === 'en' ? '✦ Translate to EN with AI' : '✦ Dịch sang tiếng Anh bằng AI')}
+            </button>
+            <button
+              type="button"
+              className="btn danger sm"
+              onClick={() => onOpenRejectModal && onOpenRejectModal(currentItem)}
+              disabled={isApproving}
+            >
+              <Icon name="x" size={15} /> {t('admin_btn_reject')}
+            </button>
+            <button
+              type="button"
+              className="btn main sm"
+              onClick={handleApprove}
+              disabled={isApproving}
+            >
+              <Icon name="check" size={15} />{' '}
+              {isApproving
+                ? (language === 'en' ? 'Approving...' : 'Đang duyệt...')
+                : (language === 'en' ? 'Approve & Exhibit' : 'Phê duyệt & trưng bày')}
+            </button>
+          </div>
+        </div>
+
+        {/* Validation Warning Banner if required fields are missing */}
+        {Object.values(validationErrors).some(Boolean) && (
+          <div
+            style={{
+              marginTop: '12px',
+              marginBottom: '14px',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              background: 'rgba(239, 68, 68, 0.08)',
+              border: '1px solid #ef4444',
+              color: '#b91c1c',
+              fontSize: '13px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+            }}
+          >
+            <Icon name="x" size={18} />
+            <div>
+              <strong>
+                {language === 'en'
+                  ? '⚠️ Missing required fields:'
+                  : '⚠️ Ban quản trị phải điền đầy đủ các ô còn thiếu trước khi công khai:'}
+              </strong>
+              <span style={{ marginLeft: '6px' }}>
+                {language === 'en'
+                  ? 'All fields marked with (*) are required. You can click "AI Translate" to quickly complete English.'
+                  : 'Tất cả các ô có dấu (*) không được để trống. Hãy bấm "Dịch AI" để tự động hoàn thiện tiếng Anh.'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isInline ? '1fr' : '1fr 340px',
+            gap: isInline ? '20px' : '26px',
+            marginTop: '16px',
+          }}
+        >
+          {/* Editor fields */}
+          <div>
+            {/* Author pseudonym */}
+            <div style={{ marginBottom: '14px' }}>
+              <div className="fieldl">
+                {language === 'en' ? 'Author Pseudonym / Pen Name' : 'Bút danh / Tên hiển thị tác giả'}{' '}
+                <span style={{ color: '#ef4444' }}>*</span>
+              </div>
+              <input
+                className="inp"
+                style={{
+                  borderColor: validationErrors.authorDisplayName ? '#ef4444' : undefined,
+                }}
+                placeholder={language === 'en' ? 'Author display name...' : 'Bút danh hiển thị tác giả...'}
+                value={authorDisplayName}
+                onChange={(e) => {
+                  setAuthorDisplayName(e.target.value);
+                  if (validationErrors.authorDisplayName) {
+                    setValidationErrors((prev) => {
+                      const next = { ...prev };
+                      delete next.authorDisplayName;
+                      return next;
+                    });
+                  }
+                }}
+                maxLength={100}
+              />
+              {validationErrors.authorDisplayName && (
+                <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                  {validationErrors.authorDisplayName}
+                </div>
+              )}
+            </div>
+
+            {/* Bilingual Title Fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: isInline ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div>
+                <div className="fieldl">
+                  {language === 'en' ? 'Title (Vietnamese)' : 'Tiêu đề Tiếng Việt (VN)'}{' '}
+                  <span style={{ color: '#ef4444' }}>*</span>
+                </div>
+                <input
+                  className="inp"
+                  style={{
+                    borderColor: validationErrors.titleVi ? '#ef4444' : undefined,
+                  }}
+                  placeholder={language === 'en' ? 'Vietnamese title...' : 'Tiêu đề tiếng Việt...'}
+                  value={titleVi}
+                  onChange={(e) => {
+                    setTitleVi(e.target.value);
+                    if (validationErrors.titleVi) {
+                      setValidationErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.titleVi;
+                        return next;
+                      });
+                    }
+                  }}
+                  maxLength={150}
+                />
+                {validationErrors.titleVi && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {validationErrors.titleVi}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="fieldl">
+                  {language === 'en' ? 'Title (English)' : 'Tiêu đề Tiếng Anh (EN)'}{' '}
+                  <span style={{ color: '#ef4444' }}>*</span>
+                </div>
+                <input
+                  className="inp"
+                  style={{
+                    borderColor: validationErrors.titleEn ? '#ef4444' : undefined,
+                  }}
+                  placeholder={language === 'en' ? 'English title...' : 'Tiêu đề tiếng Anh...'}
+                  value={titleEn}
+                  onChange={(e) => {
+                    setTitleEn(e.target.value);
+                    if (validationErrors.titleEn) {
+                      setValidationErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.titleEn;
+                        return next;
+                      });
+                    }
+                  }}
+                  maxLength={150}
+                />
+                {validationErrors.titleEn && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {validationErrors.titleEn}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bilingual Short Content / Card Summary Fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: isInline ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div>
+                <div className="fieldl">
+                  {language === 'en' ? 'Short Content (Vietnamese)' : 'Tóm tắt Tiếng Việt (VN)'}{' '}
+                  <span style={{ color: '#ef4444' }}>*</span> <span>{shortContentVi.length} / 140</span>
+                </div>
+                <input
+                  className="inp"
+                  style={{
+                    borderColor: validationErrors.shortContentVi ? '#ef4444' : undefined,
+                  }}
+                  placeholder={language === 'en' ? 'Short summary in Vietnamese...' : 'Tóm tắt ngắn tiếng Việt...'}
+                  value={shortContentVi}
+                  onChange={(e) => {
+                    setShortContentVi(e.target.value);
+                    if (validationErrors.shortContentVi) {
+                      setValidationErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.shortContentVi;
+                        return next;
+                      });
+                    }
+                  }}
+                  maxLength={140}
+                />
+                {validationErrors.shortContentVi && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {validationErrors.shortContentVi}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="fieldl">
+                  {language === 'en' ? 'Short Content (English)' : 'Tóm tắt Tiếng Anh (EN)'}{' '}
+                  <span style={{ color: '#ef4444' }}>*</span> <span>{shortContentEn.length} / 140</span>
+                </div>
+                <input
+                  className="inp"
+                  style={{
+                    borderColor: validationErrors.shortContentEn ? '#ef4444' : undefined,
+                  }}
+                  placeholder={language === 'en' ? 'Short summary in English...' : 'Tóm tắt ngắn tiếng Anh...'}
+                  value={shortContentEn}
+                  onChange={(e) => {
+                    setShortContentEn(e.target.value);
+                    if (validationErrors.shortContentEn) {
+                      setValidationErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.shortContentEn;
+                        return next;
+                      });
+                    }
+                  }}
+                  maxLength={140}
+                />
+                {validationErrors.shortContentEn && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {validationErrors.shortContentEn}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bilingual Full Content Fields */}
+            <div style={{ display: 'grid', gridTemplateColumns: isInline ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+              <div>
+                <div className="fieldl">
+                  {language === 'en' ? 'Content (Vietnamese)' : 'Nội dung Tiếng Việt (VN)'}{' '}
+                  <span style={{ color: '#ef4444' }}>*</span>
+                </div>
+                <textarea
+                  className="inp area"
+                  style={{
+                    minHeight: isInline ? '140px' : '220px',
+                    fontSize: '14px',
+                    lineHeight: 1.6,
+                    fontFamily: 'var(--sans)',
+                    borderColor: validationErrors.contentVi ? '#ef4444' : undefined,
+                  }}
+                  placeholder={language === 'en' ? 'Full story in Vietnamese...' : 'Nội dung câu chuyện tiếng Việt...'}
+                  value={contentVi}
+                  onChange={(e) => {
+                    setContentVi(e.target.value);
+                    if (validationErrors.contentVi) {
+                      setValidationErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.contentVi;
+                        return next;
+                      });
+                    }
+                  }}
+                />
+                {validationErrors.contentVi && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {validationErrors.contentVi}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div className="fieldl">
+                  {language === 'en' ? 'Content (English)' : 'Nội dung Tiếng Anh (EN)'}{' '}
+                  <span style={{ color: '#ef4444' }}>*</span>
+                </div>
+                <textarea
+                  className="inp area"
+                  style={{
+                    minHeight: isInline ? '140px' : '220px',
+                    fontSize: '14px',
+                    lineHeight: 1.6,
+                    fontFamily: 'var(--sans)',
+                    borderColor: validationErrors.contentEn ? '#ef4444' : undefined,
+                  }}
+                  placeholder={language === 'en' ? 'Full story in English...' : 'Nội dung câu chuyện tiếng Anh...'}
+                  value={contentEn}
+                  onChange={(e) => {
+                    setContentEn(e.target.value);
+                    if (validationErrors.contentEn) {
+                      setValidationErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.contentEn;
+                        return next;
+                      });
+                    }
+                  }}
+                />
+                {validationErrors.contentEn && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {validationErrors.contentEn}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Room 1 Specifics: Quote */}
+            {roomId === 1 && (
+              <div style={{ marginBottom: '14px' }}>
+                <div className="fieldl">
+                  {language === 'en' ? 'Artistic Quote (Room 1 · Journey)' : 'Trích dẫn nghệ thuật (Triển lãm Hành trình)'}{' '}
+                  <span style={{ color: '#ef4444' }}>*</span>
+                </div>
+                <input
+                  className="inp"
+                  style={{
+                    borderColor: validationErrors.quote ? '#ef4444' : undefined,
+                  }}
+                  value={quote}
+                  onChange={(e) => {
+                    setQuote(e.target.value);
+                    if (validationErrors.quote) {
+                      setValidationErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.quote;
+                        return next;
+                      });
+                    }
+                  }}
+                  placeholder={language === 'en' ? '“A reflective quote...”' : '“Một câu nói lắng đọng...”'}
+                />
+                {validationErrors.quote && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {validationErrors.quote}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Room 2 Specifics: Target Date & Visibility */}
+            {roomId === 2 && (
+              <div style={{ display: 'grid', gridTemplateColumns: isInline ? 'repeat(auto-fit, minmax(220px, 1fr))' : '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Descending Date / Target Date (Room 2)' : 'Ngày mở thư / hạ cánh (Phòng 2)'}{' '}
+                    <span style={{ color: '#ef4444' }}>*</span>
+                  </div>
+                  <input
+                    type="datetime-local"
+                    className="inp"
+                    style={{
+                      borderColor: validationErrors.targetDate ? '#ef4444' : undefined,
+                    }}
+                    value={targetDate}
+                    onChange={(e) => {
+                      setTargetDate(e.target.value);
+                      if (validationErrors.targetDate) {
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.targetDate;
+                          return next;
+                        });
+                      }
+                    }}
+                  />
+                  {validationErrors.targetDate && (
+                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                      {validationErrors.targetDate}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="fieldl">
+                    {language === 'en' ? 'Visibility (Room 2)' : 'Chế độ hiển thị (Phòng 2)'}{' '}
+                    <span style={{ color: '#ef4444' }}>*</span>
+                  </div>
+                  <select
+                    className="inp"
+                    value={visibility}
+                    onChange={(e) => setVisibility(e.target.value)}
+                  >
+                    <option value="PUBLIC">
+                      {language === 'en' ? 'PUBLIC (Lantern flies on community sky)' : 'PUBLIC (Lồng đèn bay trên bầu trời công khai)'}
+                    </option>
+                    <option value="PRIVATE">
+                      {language === 'en' ? 'PRIVATE (Landed in private capsule)' : 'PRIVATE (Hạ cánh vào hộp thư riêng tư)'}
+                    </option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Room 3 Specifics: Leaf Category & Color */}
+            {roomId === 3 && (
+              <div style={{ marginBottom: '14px' }}>
+                <div className="fieldl">
+                  {language === 'en' ? 'Leaf Message Category (Room 3)' : 'Danh mục thông điệp (Phòng 3)'}{' '}
+                  <span style={{ color: '#ef4444' }}>*</span>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <select
+                    className="inp"
+                    style={{
+                      flex: 1,
+                      borderColor: validationErrors.tagCategory ? '#ef4444' : undefined,
+                    }}
+                    value={tagCategory}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTagCategory(val);
+                      const match = LEAF_CATEGORIES.find((c) => c.key === val);
+                      if (match) setColorCode(match.color);
+                      if (validationErrors.tagCategory) {
+                        setValidationErrors((prev) => {
+                          const next = { ...prev };
+                          delete next.tagCategory;
+                          return next;
+                        });
+                      }
+                    }}
+                  >
+                    {LEAF_CATEGORIES.map((c) => (
+                      <option key={c.key} value={c.key}>
+                        {language === 'en' ? c.labelEn : c.labelVi}
+                      </option>
+                    ))}
+                  </select>
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: colorCode,
+                      border: '2px solid rgba(0,0,0,0.15)',
+                      flexShrink: 0,
+                    }}
+                    title={language === 'en' ? `Leaf color: ${colorCode}` : `Màu lá: ${colorCode}`}
+                  />
+                </div>
+                {validationErrors.tagCategory && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {validationErrors.tagCategory}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Painting & Wall preview */}
+          <div>
+            <div className="fieldl">
+              {language === 'en' ? 'Illustration' : 'Tranh minh họa'}{' '}
+              {roomId === 1 && (
+                <span style={{ color: 'var(--acc)' }}>{language === 'en' ? 'Required in Room 1 (Journey)' : 'Bắt buộc ở Triển lãm Hành trình'}</span>
+              )}
+            </div>
+
+            <div
+              style={{
+                height: isInline ? '180px' : '210px',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                border: validationErrors.mediaUrl ? '2px solid #ef4444' : '1px solid var(--line)',
+                background: '#F0EBE0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {mediaUrl ? (
+                <img
+                  src={mediaUrl}
+                  alt={language === 'en' ? 'Illustration' : 'Tranh minh họa'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <Painting seed={77} kind="door" />
+              )}
+            </div>
+
+            <div className="row" style={{ gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="btn line sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploadingImage || imagePromptModalOpen}
+              >
+                <Icon name="upload" size={15} />{' '}
+                {isUploadingImage
+                  ? (language === 'en' ? 'Uploading...' : 'Đang tải...')
+                  : (language === 'en' ? 'Upload different image' : 'Tải ảnh khác')}
+              </button>
+              <button
+                type="button"
+                className="btn line sm"
+                onClick={handleGenerateAiImage}
+                disabled={imagePromptModalOpen || isUploadingImage}
+                style={{
+                  borderColor: '#8b5cf6',
+                  color: '#6d28d9',
+                  fontWeight: 500,
+                }}
+                title={language === 'en' ? 'Review content, build a prompt, then copy it or let AI draw' : 'Rà soát nội dung, soạn prompt rồi Copy hoặc nhờ AI vẽ tranh'}
+              >
+                {language === 'en' ? 'AI Generate Image' : 'Tạo ảnh bằng AI'}
+              </button>
+            </div>
+            {validationErrors.mediaUrl && (
+              <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '6px' }}>
+                {validationErrors.mediaUrl}
+              </div>
+            )}
+
+            <div className="fieldl" style={{ marginTop: '16px' }}>
+              {language === 'en' ? 'Wall preview' : 'Xem trước trên tường'}
+            </div>
+            <div
+              style={{
+                background: 'var(--wall)',
+                borderRadius: '12px',
+                padding: '16px 20px',
+              }}
+            >
+              <article
+                className="work"
+                style={{
+                  transform: 'scale(.94)',
+                  transformOrigin: 'top center',
+                  margin: '0 auto',
+                }}
+              >
+                <div className="art" style={{ height: '120px', overflow: 'hidden' }}>
+                  {mediaUrl ? (
+                    <img
+                      src={mediaUrl}
+                      alt="Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <Painting seed={77} kind="door" />
+                  )}
+                </div>
+                <div className="cap">
+                  <h4>{(language === 'en' ? (titleEn || titleVi) : (titleVi || titleEn)) || (language === 'en' ? 'Artwork Title' : 'Tiêu đề tác phẩm')}</h4>
+                  <p style={{ height: 'auto' }}>{(language === 'en' ? (shortContentEn || shortContentVi) : (shortContentVi || shortContentEn)) || (language === 'en' ? 'Story summary...' : 'Tóm tắt câu chuyện...')}</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        {/* Submission Metadata Footer */}
+        <div
+          style={{
+            marginTop: '20px',
+            paddingTop: '12px',
+            borderTop: '1px solid var(--line)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '10px',
+            fontSize: '13px',
+          }}
+          className="muted"
+        >
+          <div>
+            {language === 'en' ? (
+              <>
+                Submitted at <b>{formatTime(currentItem.created_at)}</b>
+                {currentItem.author?.username && (
+                  <> · <b>@{currentItem.author.username}</b></>
+                )}{' '}
+                · pen name &ldquo;<b>{currentItem.author_display_name || 'Author'}</b>&rdquo;
+              </>
+            ) : (
+              <>
+                Gửi lúc <b>{formatTime(currentItem.created_at)}</b>
+                {currentItem.author?.username && (
+                  <> · <b>@{currentItem.author.username}</b></>
+                )}{' '}
+                · bút danh &ldquo;<b>{currentItem.author_display_name || 'Tác giả'}</b>&rdquo;
+              </>
+            )}
+          </div>
+          {currentItem.id && (
+            <div style={{ fontSize: '12px' }}>
+              ID: <span style={{ fontFamily: 'monospace' }}>#{currentItem.id}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Left Queue Box */}
       <div
-        className="abs box"
-        style={{
-          left: '32px',
-          top: '192px',
-          width: '270px',
-          bottom: '26px',
-          overflowY: 'auto',
-        }}
+        className={`box admin-queue-col ${isComputerMode ? 'abs' : 'mobile-queue-col'}`}
+        style={
+          isComputerMode
+            ? {
+                left: '32px',
+                top: '192px',
+                width: '270px',
+                bottom: '26px',
+                overflowY: 'auto',
+              }
+            : {
+                position: 'relative',
+                width: '100%',
+                marginTop: '14px',
+                overflowY: 'visible',
+              }
+        }
       >
         <div
           className="row between"
@@ -545,725 +1243,135 @@ export function AdminPending({
 
         {pendingItems.map((item, idx) => {
           const isSelected = selectedIdx === idx;
+          const isExpanded = !isComputerMode && expandedIdx === idx;
           const authorDisplay =
             item.author_display_name || item.author?.username || (language === 'en' ? 'Anonymous' : 'Ẩn danh');
           const authorUser = item.author?.username ? `@${item.author.username}` : '';
 
           return (
-            <div
-              key={item.id || idx}
-              className={`qrow ${isSelected ? 'sel' : ''}`}
-              onClick={() => setSelectedIdx(idx)}
-              style={{ cursor: 'pointer', padding: '12px 14px' }}
-            >
-              <div className="row between" style={{ alignItems: 'center', marginBottom: '4px' }}>
-                <span className="muted" style={{ fontSize: '11.5px' }}>
-                  {formatTime(item.created_at)}
-                </span>
-                {item.locked_by ? (
-                  <span className="badge b-priv" style={{ fontSize: '10.5px' }}>
-                    <Icon name="eye" size={11} /> {item.locked_by}
+            <React.Fragment key={item.id || idx}>
+              <div
+                className={`qrow ${isSelected ? 'sel' : ''}`}
+                onClick={() => {
+                  if (!isComputerMode) {
+                    if (expandedIdx === idx) {
+                      setExpandedIdx(null);
+                    } else {
+                      setSelectedIdx(idx);
+                      setExpandedIdx(idx);
+                    }
+                  } else {
+                    setSelectedIdx(idx);
+                  }
+                }}
+                style={{ cursor: 'pointer', padding: '12px 14px' }}
+              >
+                <div className="row between" style={{ alignItems: 'center', marginBottom: '4px' }}>
+                  <span className="muted" style={{ fontSize: '11.5px' }}>
+                    {formatTime(item.created_at)}
                   </span>
-                ) : (
-                  <span className="badge b-wait" style={{ fontSize: '10.5px' }}>{t('admin_seg_pending')}</span>
+                  {item.locked_by ? (
+                    <span className="badge b-priv" style={{ fontSize: '10.5px' }}>
+                      <Icon name="eye" size={11} /> {item.locked_by}
+                    </span>
+                  ) : (
+                    <span className="badge b-wait" style={{ fontSize: '10.5px' }}>{t('admin_seg_pending')}</span>
+                  )}
+                </div>
+                <b
+                  style={{
+                    fontSize: '14px',
+                    margin: '2px 0 3px',
+                    display: 'block',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  title={original(item, 'title') || item.title}
+                >
+                  {original(item, 'title') || item.title}
+                </b>
+                <div
+                  className="muted"
+                  style={{
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {authorDisplay} {authorUser && `· ${authorUser}`}
+                </div>
+
+                {/* Hint icon / indicator on Tablet Portrait & Mobile */}
+                {!isComputerMode && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      alignItems: 'center',
+                      marginTop: '6px',
+                      fontSize: '11.5px',
+                      color: isExpanded ? 'var(--gold, #C99A3B)' : 'var(--acc, #A85A32)',
+                      fontWeight: 500,
+                    }}
+                  >
+                    {isExpanded ? (
+                      <span>▲ {language === 'en' ? 'Collapse edit form' : 'Thu gọn form biên tập'}</span>
+                    ) : (
+                      <span>▼ {language === 'en' ? 'Click to review & edit' : 'Bấm để biên tập & phê duyệt'}</span>
+                    )}
+                  </div>
                 )}
               </div>
-              <b
-                style={{
-                  fontSize: '14px',
-                  margin: '2px 0 3px',
-                  display: 'block',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-                title={original(item, 'title') || item.title}
-              >
-                {original(item, 'title') || item.title}
-              </b>
-              <div
-                className="muted"
-                style={{
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {authorDisplay} {authorUser && `· ${authorUser}`}
-              </div>
-            </div>
+
+              {/* ON TABLET & MOBILE: Inline Edit & Moderation Form displayed right beneath this item! */}
+              {!isComputerMode && isExpanded && (
+                <div className="admin-pending-inline-wrapper" style={{ padding: '0 4px 10px' }}>
+                  {renderModerationForm(true)}
+                </div>
+              )}
+            </React.Fragment>
           );
         })}
       </div>
 
-      {/* Right Review & Moderation Box */}
-      {currentItem ? (
-        <div
-          className="abs box"
-          style={{
-            left: '318px',
-            right: '32px',
-            top: '192px',
-            bottom: '26px',
-            padding: '22px 26px',
-            overflowY: 'auto',
-          }}
-        >
-          <div className="row between" style={{ alignItems: 'center' }}>
-            <div className="row" style={{ gap: '8px', alignItems: 'center' }}>
-              <span className="badge b-wait">PENDING</span>
-              <span className="muted" style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Icon name="eye" size={13} />
-                {language === 'en'
-                  ? `${user?.nickname || 'You'} are editing this submission`
-                  : `${user?.nickname || 'Bạn'} đang biên tập bài này`}
-              </span>
-            </div>
-
-            <div className="row" style={{ gap: '8px' }}>
-              <button
-                type="button"
-                className="btn line"
-                onClick={handleAnalyzeWithAi}
-                disabled={isAnalyzingAi || isApproving}
-                style={{
-                  borderColor: '#d97706',
-                  color: '#b45309',
-                  fontWeight: 600,
-                  background: isAnalyzingAi ? 'rgba(245, 158, 11, 0.08)' : 'transparent',
-                }}
-                title={language === 'en' ? 'Ask AI to review and suggest wording' : 'Nhờ AI xem bài và gợi ý cách viết'}
-              >
-                {isAnalyzingAi
-                  ? (language === 'en' ? 'AI Analyzing...' : 'AI đang phân tích...')
-                  : (language === 'en' ? 'AI Copilot' : 'Phân tích bằng AI')}
-              </button>
-              <button
-                type="button"
-                className="btn line"
-                onClick={handleTranslateWithAi}
-                disabled={isAnalyzingAi || isTranslatingAi || isApproving}
-                style={{
-                  borderColor: '#0284c7',
-                  color: '#0369a1',
-                  fontWeight: 600,
-                  background: isTranslatingAi ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
-                }}
-                title={language === 'en' ? 'Translate to English using AI' : 'Dịch sang tiếng Anh bằng AI'}
-              >
-                {isTranslatingAi
-                  ? (language === 'en' ? 'AI Translating...' : 'AI đang dịch...')
-                  : (language === 'en' ? '✦ Translate to EN with AI' : '✦ Dịch sang tiếng Anh bằng AI')}
-              </button>
-              <button
-                type="button"
-                className="btn danger"
-                onClick={() => onOpenRejectModal && onOpenRejectModal(currentItem)}
-                disabled={isApproving}
-              >
-                <Icon name="x" size={16} /> {t('admin_btn_reject')}
-              </button>
-              <button
-                type="button"
-                className="btn main"
-                onClick={handleApprove}
-                disabled={isApproving}
-              >
-                <Icon name="check" size={16} />{' '}
-                {isApproving
-                  ? (language === 'en' ? 'Approving...' : 'Đang duyệt...')
-                  : (language === 'en' ? 'Approve & Exhibit' : 'Phê duyệt & trưng bày')}
-              </button>
-            </div>
-          </div>
-
-          {/* Validation Warning Banner if required fields are missing */}
-          {Object.values(validationErrors).some(Boolean) && (
-            <div
-              style={{
-                marginTop: '16px',
-                padding: '12px 16px',
-                borderRadius: '8px',
-                background: 'rgba(239, 68, 68, 0.08)',
-                border: '1px solid #ef4444',
-                color: '#b91c1c',
-                fontSize: '13px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-              }}
-            >
-              <Icon name="x" size={18} />
-              <div>
-                <strong>
-                  {language === 'en'
-                    ? '⚠️ Missing required fields:'
-                    : '⚠️ Ban quản trị phải điền đầy đủ các ô còn thiếu trước khi công khai:'}
-                </strong>
-                <span style={{ marginLeft: '6px' }}>
-                  {language === 'en'
-                    ? 'All fields marked with (*) are required. You can click "AI Translate" to quickly complete English.'
-                    : 'Tất cả các ô có dấu (*) không được để trống. Hãy bấm "Dịch AI" để tự động hoàn thiện tiếng Anh.'}
-                </span>
-              </div>
-            </div>
-          )}
-
+      {/* Right Review & Moderation Box (Desktop computer mode only) */}
+      {isComputerMode && (
+        currentItem ? (
           <div
+            className="abs box admin-detail-col desktop-only-col"
             style={{
+              left: '318px',
+              right: '32px',
+              top: '192px',
+              bottom: '26px',
+              padding: '22px 26px',
+              overflowY: 'auto',
+            }}
+          >
+            {renderModerationForm(false)}
+          </div>
+        ) : (
+          <div
+            className="abs box desktop-only-col"
+            style={{
+              left: '318px',
+              right: '32px',
+              top: '192px',
+              bottom: '26px',
               display: 'grid',
-              gridTemplateColumns: '1fr 340px',
-              gap: '26px',
-              marginTop: '16px',
+              placeItems: 'center',
+              color: 'var(--muted)',
             }}
           >
-            {/* Editor fields */}
             <div>
-              {/* Author pseudonym */}
-              <div style={{ marginBottom: '14px' }}>
-                <div className="fieldl">
-                  {language === 'en' ? 'Author Pseudonym / Pen Name' : 'Bút danh / Tên hiển thị tác giả'}{' '}
-                  <span style={{ color: '#ef4444' }}>*</span>
-                </div>
-                <input
-                  className="inp"
-                  style={{
-                    borderColor: validationErrors.authorDisplayName ? '#ef4444' : undefined,
-                  }}
-                  placeholder={language === 'en' ? 'Author display name...' : 'Bút danh hiển thị tác giả...'}
-                  value={authorDisplayName}
-                  onChange={(e) => {
-                    setAuthorDisplayName(e.target.value);
-                    if (validationErrors.authorDisplayName) {
-                      setValidationErrors((prev) => {
-                        const next = { ...prev };
-                        delete next.authorDisplayName;
-                        return next;
-                      });
-                    }
-                  }}
-                  maxLength={100}
-                />
-                {validationErrors.authorDisplayName && (
-                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                    {validationErrors.authorDisplayName}
-                  </div>
-                )}
-              </div>
-
-              {/* Bilingual Title Fields */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <div className="fieldl">
-                    {language === 'en' ? 'Title (Vietnamese)' : 'Tiêu đề Tiếng Việt (VN)'}{' '}
-                    <span style={{ color: '#ef4444' }}>*</span>
-                  </div>
-                  <input
-                    className="inp"
-                    style={{
-                      borderColor: validationErrors.titleVi ? '#ef4444' : undefined,
-                    }}
-                    placeholder={language === 'en' ? 'Vietnamese title...' : 'Tiêu đề tiếng Việt...'}
-                    value={titleVi}
-                    onChange={(e) => {
-                      setTitleVi(e.target.value);
-                      if (validationErrors.titleVi) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.titleVi;
-                          return next;
-                        });
-                      }
-                    }}
-                    maxLength={150}
-                  />
-                  {validationErrors.titleVi && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                      {validationErrors.titleVi}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="fieldl">
-                    {language === 'en' ? 'Title (English)' : 'Tiêu đề Tiếng Anh (EN)'}{' '}
-                    <span style={{ color: '#ef4444' }}>*</span>
-                  </div>
-                  <input
-                    className="inp"
-                    style={{
-                      borderColor: validationErrors.titleEn ? '#ef4444' : undefined,
-                    }}
-                    placeholder={language === 'en' ? 'English title...' : 'Tiêu đề tiếng Anh...'}
-                    value={titleEn}
-                    onChange={(e) => {
-                      setTitleEn(e.target.value);
-                      if (validationErrors.titleEn) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.titleEn;
-                          return next;
-                        });
-                      }
-                    }}
-                    maxLength={150}
-                  />
-                  {validationErrors.titleEn && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                      {validationErrors.titleEn}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Bilingual Short Content / Card Summary Fields */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <div className="fieldl">
-                    {language === 'en' ? 'Short Content (Vietnamese)' : 'Tóm tắt Tiếng Việt (VN)'}{' '}
-                    <span style={{ color: '#ef4444' }}>*</span> <span>{shortContentVi.length} / 140</span>
-                  </div>
-                  <input
-                    className="inp"
-                    style={{
-                      borderColor: validationErrors.shortContentVi ? '#ef4444' : undefined,
-                    }}
-                    placeholder={language === 'en' ? 'Short summary in Vietnamese...' : 'Tóm tắt ngắn tiếng Việt...'}
-                    value={shortContentVi}
-                    onChange={(e) => {
-                      setShortContentVi(e.target.value);
-                      if (validationErrors.shortContentVi) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.shortContentVi;
-                          return next;
-                        });
-                      }
-                    }}
-                    maxLength={140}
-                  />
-                  {validationErrors.shortContentVi && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                      {validationErrors.shortContentVi}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="fieldl">
-                    {language === 'en' ? 'Short Content (English)' : 'Tóm tắt Tiếng Anh (EN)'}{' '}
-                    <span style={{ color: '#ef4444' }}>*</span> <span>{shortContentEn.length} / 140</span>
-                  </div>
-                  <input
-                    className="inp"
-                    style={{
-                      borderColor: validationErrors.shortContentEn ? '#ef4444' : undefined,
-                    }}
-                    placeholder={language === 'en' ? 'Short summary in English...' : 'Tóm tắt ngắn tiếng Anh...'}
-                    value={shortContentEn}
-                    onChange={(e) => {
-                      setShortContentEn(e.target.value);
-                      if (validationErrors.shortContentEn) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.shortContentEn;
-                          return next;
-                        });
-                      }
-                    }}
-                    maxLength={140}
-                  />
-                  {validationErrors.shortContentEn && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                      {validationErrors.shortContentEn}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Bilingual Full Content Fields */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <div className="fieldl">
-                    {language === 'en' ? 'Content (Vietnamese)' : 'Nội dung Tiếng Việt (VN)'}{' '}
-                    <span style={{ color: '#ef4444' }}>*</span>
-                  </div>
-                  <textarea
-                    className="inp area"
-                    style={{
-                      minHeight: '220px',
-                      fontSize: '14.5px',
-                      lineHeight: 1.6,
-                      fontFamily: 'var(--sans)',
-                      borderColor: validationErrors.contentVi ? '#ef4444' : undefined,
-                    }}
-                    placeholder={language === 'en' ? 'Full story in Vietnamese...' : 'Nội dung câu chuyện tiếng Việt...'}
-                    value={contentVi}
-                    onChange={(e) => {
-                      setContentVi(e.target.value);
-                      if (validationErrors.contentVi) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.contentVi;
-                          return next;
-                        });
-                      }
-                    }}
-                  />
-                  {validationErrors.contentVi && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                      {validationErrors.contentVi}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <div className="fieldl">
-                    {language === 'en' ? 'Content (English)' : 'Nội dung Tiếng Anh (EN)'}{' '}
-                    <span style={{ color: '#ef4444' }}>*</span>
-                  </div>
-                  <textarea
-                    className="inp area"
-                    style={{
-                      minHeight: '220px',
-                      fontSize: '14.5px',
-                      lineHeight: 1.6,
-                      fontFamily: 'var(--sans)',
-                      borderColor: validationErrors.contentEn ? '#ef4444' : undefined,
-                    }}
-                    placeholder={language === 'en' ? 'Full story in English...' : 'Nội dung câu chuyện tiếng Anh...'}
-                    value={contentEn}
-                    onChange={(e) => {
-                      setContentEn(e.target.value);
-                      if (validationErrors.contentEn) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.contentEn;
-                          return next;
-                        });
-                      }
-                    }}
-                  />
-                  {validationErrors.contentEn && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                      {validationErrors.contentEn}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Room 1 Specifics: Quote */}
-              {roomId === 1 && (
-                <div style={{ marginBottom: '14px' }}>
-                  <div className="fieldl">
-                    {language === 'en' ? 'Artistic Quote (Room 1 · Journey)' : 'Trích dẫn nghệ thuật (Triển lãm Hành trình)'}{' '}
-                    <span style={{ color: '#ef4444' }}>*</span>
-                  </div>
-                  <input
-                    className="inp"
-                    style={{
-                      borderColor: validationErrors.quote ? '#ef4444' : undefined,
-                    }}
-                    value={quote}
-                    onChange={(e) => {
-                      setQuote(e.target.value);
-                      if (validationErrors.quote) {
-                        setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.quote;
-                          return next;
-                        });
-                      }
-                    }}
-                    placeholder={language === 'en' ? '“A reflective quote...”' : '“Một câu nói lắng đọng...”'}
-                  />
-                  {validationErrors.quote && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                      {validationErrors.quote}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Room 2 Specifics: Target Date & Visibility */}
-              {roomId === 2 && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                  <div>
-                    <div className="fieldl">
-                      {language === 'en' ? 'Descending Date / Target Date (Room 2)' : 'Ngày mở thư / hạ cánh (Phòng 2)'}{' '}
-                      <span style={{ color: '#ef4444' }}>*</span>
-                    </div>
-                    <input
-                      type="datetime-local"
-                      className="inp"
-                      style={{
-                        borderColor: validationErrors.targetDate ? '#ef4444' : undefined,
-                      }}
-                      value={targetDate}
-                      onChange={(e) => {
-                        setTargetDate(e.target.value);
-                        if (validationErrors.targetDate) {
-                          setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.targetDate;
-                          return next;
-                        });
-                        }
-                      }}
-                    />
-                    {validationErrors.targetDate && (
-                      <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                        {validationErrors.targetDate}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <div className="fieldl">
-                      {language === 'en' ? 'Visibility (Room 2)' : 'Chế độ hiển thị (Phòng 2)'}{' '}
-                      <span style={{ color: '#ef4444' }}>*</span>
-                    </div>
-                    <select
-                      className="inp"
-                      value={visibility}
-                      onChange={(e) => setVisibility(e.target.value)}
-                    >
-                      <option value="PUBLIC">
-                        {language === 'en' ? 'PUBLIC (Lantern flies on community sky)' : 'PUBLIC (Lồng đèn bay trên bầu trời công khai)'}
-                      </option>
-                      <option value="PRIVATE">
-                        {language === 'en' ? 'PRIVATE (Landed in private capsule)' : 'PRIVATE (Hạ cánh vào hộp thư riêng tư)'}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* Room 3 Specifics: Leaf Category & Color */}
-              {roomId === 3 && (
-                <div style={{ marginBottom: '14px' }}>
-                  <div className="fieldl">
-                    {language === 'en' ? 'Leaf Message Category (Room 3)' : 'Danh mục thông điệp (Phòng 3)'}{' '}
-                    <span style={{ color: '#ef4444' }}>*</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <select
-                      className="inp"
-                      style={{
-                        flex: 1,
-                        borderColor: validationErrors.tagCategory ? '#ef4444' : undefined,
-                      }}
-                      value={tagCategory}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setTagCategory(val);
-                        const match = LEAF_CATEGORIES.find((c) => c.key === val);
-                        if (match) setColorCode(match.color);
-                        if (validationErrors.tagCategory) {
-                          setValidationErrors((prev) => {
-                          const next = { ...prev };
-                          delete next.tagCategory;
-                          return next;
-                        });
-                        }
-                      }}
-                    >
-                      {LEAF_CATEGORIES.map((c) => (
-                        <option key={c.key} value={c.key}>
-                          {language === 'en' ? c.labelEn : c.labelVi}
-                        </option>
-                      ))}
-                    </select>
-                    <div
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        backgroundColor: colorCode,
-                        border: '2px solid rgba(0,0,0,0.15)',
-                        flexShrink: 0,
-                      }}
-                      title={language === 'en' ? `Leaf color: ${colorCode}` : `Màu lá: ${colorCode}`}
-                    />
-                  </div>
-                  {validationErrors.tagCategory && (
-                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
-                      {validationErrors.tagCategory}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Painting & Wall preview */}
-            <div>
-              <div className="fieldl">
-                {language === 'en' ? 'Illustration' : 'Tranh minh họa'}{' '}
-                {roomId === 1 && (
-                  <span style={{ color: 'var(--acc)' }}>{language === 'en' ? 'Required in Room 1 (Journey)' : 'Bắt buộc ở Triển lãm Hành trình'}</span>
-                )}
-              </div>
-
-              <div
-                style={{
-                  height: '210px',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  border: validationErrors.mediaUrl ? '2px solid #ef4444' : '1px solid var(--line)',
-                  background: '#F0EBE0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {mediaUrl ? (
-                  <img
-                    src={mediaUrl}
-                    alt={language === 'en' ? 'Illustration' : 'Tranh minh họa'}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                ) : (
-                  <Painting seed={77} kind="door" />
-                )}
-              </div>
-
-              <div className="row" style={{ gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="btn line sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingImage || isGeneratingAiImage}
-                >
-                  <Icon name="upload" size={15} />{' '}
-                  {isUploadingImage
-                    ? (language === 'en' ? 'Uploading...' : 'Đang tải...')
-                    : (language === 'en' ? 'Upload different image' : 'Tải ảnh khác')}
-                </button>
-                <button
-                  type="button"
-                  className="btn line sm"
-                  onClick={handleGenerateAiImage}
-                  disabled={isGeneratingAiImage || isUploadingImage}
-                  style={{
-                    borderColor: '#8b5cf6',
-                    color: '#6d28d9',
-                    fontWeight: 500,
-                  }}
-                  title={language === 'en' ? 'Let AI draw an illustration from the story' : 'Nhờ AI vẽ tranh từ câu chuyện'}
-                >
-                  {isGeneratingAiImage
-                    ? (language === 'en' ? 'Generating Art...' : 'Đang vẽ tranh AI...')
-                    : (language === 'en' ? 'AI Generate Image' : 'Sinh ảnh bằng AI')}
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  style={{ display: 'none' }}
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={handleImageUpload}
-                />
-              </div>
-              {validationErrors.mediaUrl && (
-                <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '6px' }}>
-                  {validationErrors.mediaUrl}
-                </div>
-              )}
-
-              <div className="fieldl" style={{ marginTop: '18px' }}>
-                {language === 'en' ? 'Wall preview' : 'Xem trước trên tường'}
-              </div>
-              <div
-                style={{
-                  background: 'var(--wall)',
-                  borderRadius: '12px',
-                  padding: '16px 20px',
-                }}
-              >
-                <article
-                  className="work"
-                  style={{
-                    transform: 'scale(.94)',
-                    transformOrigin: 'top center',
-                    margin: '0 auto',
-                  }}
-                >
-                  <div className="art" style={{ height: '120px', overflow: 'hidden' }}>
-                    {mediaUrl ? (
-                      <img
-                        src={mediaUrl}
-                        alt="Preview"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    ) : (
-                      <Painting seed={77} kind="door" />
-                    )}
-                  </div>
-                  <div className="cap">
-                    <h4>{(language === 'en' ? (titleEn || titleVi) : (titleVi || titleEn)) || (language === 'en' ? 'Artwork Title' : 'Tiêu đề tác phẩm')}</h4>
-                    <p style={{ height: 'auto' }}>{(language === 'en' ? (shortContentEn || shortContentVi) : (shortContentVi || shortContentEn)) || (language === 'en' ? 'Story summary...' : 'Tóm tắt câu chuyện...')}</p>
-                  </div>
-                </article>
-              </div>
+              {language === 'en'
+                ? 'Select an artwork from the left queue to begin moderation'
+                : 'Chọn một tác phẩm từ hàng đợi bên trái để bắt đầu kiểm duyệt'}
             </div>
           </div>
-
-          {/* Submission Metadata Footer */}
-          <div
-            style={{
-              marginTop: '22px',
-              paddingTop: '14px',
-              borderTop: '1px solid var(--line)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '10px',
-              fontSize: '13px',
-            }}
-            className="muted"
-          >
-            <div>
-              {language === 'en' ? (
-                <>
-                  Submitted at <b>{formatTime(currentItem.created_at)}</b>
-                  {currentItem.author?.username && (
-                    <> · <b>@{currentItem.author.username}</b></>
-                  )}{' '}
-                  · pen name &ldquo;<b>{currentItem.author_display_name || 'Author'}</b>&rdquo;
-                </>
-              ) : (
-                <>
-                  Gửi lúc <b>{formatTime(currentItem.created_at)}</b>
-                  {currentItem.author?.username && (
-                    <> · <b>@{currentItem.author.username}</b></>
-                  )}{' '}
-                  · bút danh &ldquo;<b>{currentItem.author_display_name || 'Tác giả'}</b>&rdquo;
-                </>
-              )}
-            </div>
-            {currentItem.id && (
-              <div style={{ fontSize: '12px' }}>
-                ID: <span style={{ fontFamily: 'monospace' }}>#{currentItem.id}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      ) : (
-        <div
-          className="abs box"
-          style={{
-            left: '318px',
-            right: '32px',
-            top: '192px',
-            bottom: '26px',
-            display: 'grid',
-            placeItems: 'center',
-            color: 'var(--muted)',
-          }}
-        >
-          <div>
-            {language === 'en'
-              ? 'Select an artwork from the left queue to begin moderation'
-              : 'Chọn một tác phẩm từ hàng đợi bên trái để bắt đầu kiểm duyệt'}
-          </div>
-        </div>
+        )
       )}
 
       {/* AI Moderation Analysis & Rewrite Modal */}
@@ -1273,6 +1381,24 @@ export function AdminPending({
         data={aiModerationData}
         onAccept={handleAcceptAiRewrite}
         originalContent={contentVi || contentEn || currentItem?.content || ''}
+      />
+
+      {/* AI Image: 2-step prompt builder (content form → confirm prompt → Copy / Generate) */}
+      <AiImagePromptModal
+        isOpen={imagePromptModalOpen}
+        onClose={() => setImagePromptModalOpen(false)}
+        artId={currentItem?.id}
+        roomId={roomId}
+        initialFields={{
+          title_vi: titleVi,
+          title_en: titleEn,
+          short_content_vi: shortContentVi,
+          short_content_en: shortContentEn,
+          content_vi: contentVi,
+          content_en: contentEn,
+        }}
+        onImageGenerated={handleAiImageGenerated}
+        triggerToast={triggerToast}
       />
     </>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TopNav } from '../../components/layout/TopNav';
+import { CustomFilterDropdown } from '../../components/common/CustomFilterDropdown';
 import { Icon } from '../../components/common/Icons';
 import { NotebookDustMotes } from './NotebookDustMotes';
 import { notebookService } from '../../services/notebookService';
@@ -32,6 +33,7 @@ export function NotebookPage({
   const [serverLoaded, setServerLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [readingItem, setReadingItem] = useState(null);
+  const [expandedNotebookId, setExpandedNotebookId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
   const searchTimerRef = useRef(null);
@@ -185,7 +187,8 @@ export function NotebookPage({
 
       {/* Filter Chips */}
       <div className="chips-row">
-        <div className="chips" style={{ flexWrap: 'wrap', gap: '8px' }}>
+        {/* Desktop Chips */}
+        <div className="chips desktop-only-chips" style={{ flexWrap: 'wrap', gap: '8px' }}>
           <span
             className={`chip glass ${filter === 'all' ? 'on' : ''}`}
             onClick={() => setFilter('all')}
@@ -227,6 +230,25 @@ export function NotebookPage({
             </span>
           )}
         </div>
+
+        {/* Mobile/Tablet Dropdown (customized with same format as desktop .chip.glass.on) */}
+        <div className="mobile-filter-wrapper">
+          <CustomFilterDropdown
+            options={[
+              { value: 'all', label: language === 'en' ? 'All' : 'Tất cả' },
+              { value: 'mailbox', label: language === 'en' ? 'Mailbox' : 'Hòm thư', icon: 'sparkle' },
+              { value: 'room1', label: language === 'en' ? 'Room 1' : 'Phòng 1', icon: 'r1' },
+              { value: 'lantern', label: language === 'en' ? 'Room 2' : 'Phòng 2', icon: 'r2' },
+              { value: 'room3', label: language === 'en' ? 'Room 3' : 'Phòng 3', icon: 'r3' },
+            ]}
+            value={filter}
+            onChange={(val) => setFilter(val)}
+          />
+        </div>
+
+        <div className="notebook-counter muted" style={{ fontSize: '13px', flexShrink: 0 }}>
+          {displayItems.length} {language === 'en' ? 'items' : 'mục'}
+        </div>
       </div>
 
       {/* Notebook Cards Container */}
@@ -267,123 +289,150 @@ export function NotebookPage({
               gap: '20px',
             }}
           >
-            {displayItems.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => setReadingItem(item)}
-                className="notebook-polaroid-card"
-                style={{
-                  background: 'var(--paper)',
-                  color: 'var(--ink)',
-                  borderRadius: '16px',
-                  padding: '22px 24px 18px',
-                  boxShadow: '0 12px 30px rgba(0,0,0,.25)',
-                  border: '1px solid var(--line)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  position: 'relative',
-                  cursor: 'pointer',
-                  transform: 'none',
-                }}
-              >
-                {/* Header: Source badge & Date */}
-                <div className="row between" style={{ marginBottom: '12px' }}>
-                  <span className={`badge ${item.badgeClass || 'b-ok'}`}>
-                    <Icon name={item.icon || 'sparkle'} size={13} />
-                    {item.sourceLabel || (item.source === 'mailbox' ? (language === 'en' ? 'Mailbox' : 'Hòm thư') : (language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2'))}
-                  </span>
-                  <span className="muted" style={{ fontSize: '12.5px' }}>
-                    {item.savedAt}
-                  </span>
-                </div>
+            {displayItems.map((item) => {
+              const isExpanded = expandedNotebookId === item.id;
 
-                {/* Optional Letter Title */}
-                {(item.title || item.title_en || item.title_vi) && (
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => {
+                    if (window.innerWidth <= 1024) {
+                      setExpandedNotebookId((prev) => (prev === item.id ? null : item.id));
+                    } else {
+                      setReadingItem(item);
+                    }
+                  }}
+                  className={`notebook-polaroid-card ${isExpanded ? 'notebook-card-expanded' : ''}`}
+                  style={{
+                    background: 'var(--paper)',
+                    color: 'var(--ink)',
+                    borderRadius: '16px',
+                    padding: '22px 24px 18px',
+                    boxShadow: isExpanded ? '0 16px 36px rgba(0,0,0,.35)' : '0 12px 30px rgba(0,0,0,.25)',
+                    border: isExpanded ? '1px solid var(--gold, #E6C280)' : '1px solid var(--line)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transform: 'none',
+                    transition: 'all 0.25s ease',
+                  }}
+                >
+                  {/* Header: Source badge & Date */}
+                  <div className="row between" style={{ marginBottom: '12px' }}>
+                    <span className={`badge ${item.badgeClass || 'b-ok'}`}>
+                      <Icon name={item.icon || 'sparkle'} size={13} />
+                      {item.sourceLabel || (item.source === 'mailbox' ? (language === 'en' ? 'Mailbox' : 'Hòm thư') : (language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2'))}
+                    </span>
+                    <span className="muted" style={{ fontSize: '12.5px' }}>
+                      {item.savedAt}
+                    </span>
+                  </div>
+
+                  {/* Optional Letter Title */}
+                  {(item.title || item.title_en || item.title_vi) && (
+                    <div
+                      className="book"
+                      style={{
+                        fontStyle: 'italic',
+                        color: 'var(--acc)',
+                        fontSize: '19px',
+                        fontWeight: 600,
+                        marginBottom: '8px',
+                      }}
+                    >
+                      {itemText(item, 'title')}
+                    </div>
+                  )}
+
+                  {/* Optional Artwork Media preview */}
+                  {item.media_url && (
+                    <div
+                      style={{
+                        width: '100%',
+                        height: isExpanded ? '240px' : '130px',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
+                        marginBottom: '10px',
+                        background: '#1A1210',
+                        transition: 'height 0.25s ease',
+                      }}
+                    >
+                      <img
+                        src={item.media_url}
+                        alt={item.title || 'Artwork'}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+
+                  {/* Content */}
                   <div
                     className="book"
                     style={{
-                      fontStyle: 'italic',
-                      color: 'var(--acc)',
-                      fontSize: '19px',
-                      fontWeight: 600,
-                      marginBottom: '8px',
+                      fontSize: '15.5px',
+                      lineHeight: 1.7,
+                      flex: 1,
+                      marginBottom: '14px',
+                      whiteSpace: 'pre-line',
+                      overflow: isExpanded ? 'visible' : 'hidden',
+                      display: isExpanded ? 'block' : '-webkit-box',
+                      WebkitLineClamp: isExpanded ? 'unset' : 5,
+                      WebkitBoxOrient: 'vertical',
                     }}
                   >
-                    {itemText(item, 'title')}
+                    {itemText(item, 'content')}
                   </div>
-                )}
 
-                {/* Optional Artwork Media preview */}
-                {item.media_url && (
+                  {/* Author & Footer Actions */}
                   <div
+                    className="row between"
                     style={{
-                      width: '100%',
-                      height: '130px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      marginBottom: '10px',
-                      background: '#1A1210',
+                      borderTop: '1px solid var(--line)',
+                      paddingTop: '12px',
+                      marginTop: 'auto',
                     }}
                   >
-                    <img
-                      src={item.media_url}
-                      alt={item.title || 'Artwork'}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      loading="lazy"
-                    />
+                    <span className="hand" style={{ fontSize: '18px', color: '#5C341F' }}>
+                      - {item.author}
+                    </span>
+
+                    <div className="row" style={{ gap: '8px' }}>
+                      {isExpanded && (
+                        <button
+                          type="button"
+                          className="btn glass sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedNotebookId(null);
+                          }}
+                        >
+                          {language === 'en' ? 'Close' : 'Thu gọn'}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className="btn ghost sm"
+                        title="Bỏ lưu khỏi sổ tay"
+                        onClick={(e) => handleRemove(e, item)}
+                        style={{
+                          color: 'var(--ink2)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '12.5px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Icon name="x" size={14} /> Bỏ lưu
+                      </button>
+                    </div>
                   </div>
-                )}
-
-                {/* Content */}
-                <div
-                  className="book"
-                  style={{
-                    fontSize: '15.5px',
-                    lineHeight: 1.7,
-                    flex: 1,
-                    marginBottom: '14px',
-                    whiteSpace: 'pre-line',
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 5,
-                    WebkitBoxOrient: 'vertical',
-                  }}
-                >
-                  {itemText(item, 'content')}
                 </div>
-
-                {/* Author & Footer Actions */}
-                <div
-                  className="row between"
-                  style={{
-                    borderTop: '1px solid var(--line)',
-                    paddingTop: '12px',
-                    marginTop: 'auto',
-                  }}
-                >
-                  <span className="hand" style={{ fontSize: '18px', color: '#5C341F' }}>
-                    - {item.author}
-                  </span>
-
-                  <button
-                    type="button"
-                    className="btn ghost sm"
-                    title="Bỏ lưu khỏi sổ tay"
-                    onClick={(e) => handleRemove(e, item)}
-                    style={{
-                      color: 'var(--ink2)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '12.5px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <Icon name="x" size={14} /> Bỏ lưu
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

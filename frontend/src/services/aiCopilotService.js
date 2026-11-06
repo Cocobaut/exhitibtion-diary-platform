@@ -14,19 +14,29 @@ export const aiCopilotService = {
       art_id,
       target_room,
       content,
-    });
+    }, { timeout: 60000 });
   },
 
   /**
    * Sinh ảnh minh họa nghệ thuật từ cảm xúc bài viết
    * @param {Object} data - { art_id, source_content, custom_prompt_addon }
    */
-  generateArtImage: async ({ art_id, source_content, custom_prompt_addon }) => {
+  generateArtImage: async ({ art_id, source_content, custom_prompt_addon, final_prompt }) => {
     return await apiClient.post("/admin/ai/generate-image", {
       art_id,
-      source_content,
+      source_content: source_content || "",
       custom_prompt_addon,
-    });
+      final_prompt: final_prompt || null,
+    }, { timeout: 60000 });
+  },
+
+  /**
+   * Soạn prompt tạo ảnh hoàn chỉnh (VI/EN) từ form nội dung chi tiết đã được Admin/Owner chỉnh sửa.
+   * Backend chỉ sắp xếp lại câu chữ + thêm từ đệm, không bịa thêm chi tiết.
+   * @param {Object} data - { art_id, target_room, title_vi, title_en, short_content_vi, short_content_en, content_vi, content_en }
+   */
+  buildImagePrompt: async (payload) => {
+    return await apiClient.post("/admin/ai/build-image-prompt", payload, { timeout: 60000 });
   },
 
   /**
@@ -40,7 +50,7 @@ export const aiCopilotService = {
       title: title || null,
       short_content: short_content || null,
       content: content || null,
-    });
+    }, { timeout: 60000 });
   },
 
   // ==========================================

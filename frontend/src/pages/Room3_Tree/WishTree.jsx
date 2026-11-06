@@ -48,6 +48,32 @@ export const WishTree = forwardRef(function WishTree(
   const [fallingParticles, setFallingParticles] = useState([]);
   const [fallingDrawnLeaf, setFallingDrawnLeaf] = useState(null);
 
+  // Responsive mode detection: Desktop (> 1024px) vs Compact (Tablet Portrait, Mobile Landscape, Mobile Portrait <= 1024px)
+  const [screenMode, setScreenMode] = useState(() => {
+    if (typeof window === 'undefined') return { isComputer: true, isLandscape: false };
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const isLand = w > h && (h <= 520 || w <= 896);
+    return {
+      isComputer: w > 1024 && !isLand,
+      isLandscape: isLand,
+    };
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const isLand = w > h && (h <= 520 || w <= 896);
+      setScreenMode({
+        isComputer: w > 1024 && !isLand,
+        isLandscape: isLand,
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const nextParticleId = useRef(1);
 
   // Coordinates for balanced tree with prominent trunk & roots
@@ -292,6 +318,8 @@ export const WishTree = forwardRef(function WishTree(
           }}
         >
           <title>{`${item.title} — ${item.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ')}`}</title>
+          {/* Expanded Touch Target for iPad & Mobile Touch Ergonomics */}
+          <circle r="26" fill="transparent" style={{ pointerEvents: 'all' }} />
           {/* Main Leaf Body with hover zoom */}
           <path
             className="transition-transform duration-200 hover:scale-125"
@@ -320,40 +348,92 @@ export const WishTree = forwardRef(function WishTree(
 
   // Sturdy root buttresses resting safely on the ground line
   const roots = (
-    <g>
+    <g className="tree-roots-group">
       {/* Ground shadow beneath trunk */}
-      <ellipse cx={cx} cy={base + 4} rx="240" ry="10" fill="#000" opacity="0.32" />
+      <ellipse
+        cx={cx}
+        cy={base + 4}
+        rx={!screenMode.isComputer ? (screenMode.isLandscape ? 460 : 355) : 240}
+        ry="12"
+        fill="#000"
+        opacity={!screenMode.isComputer ? 0.42 : 0.32}
+      />
 
-      {/* Primary root flares */}
+      {/* Primary root flares extending out to base boundaries */}
       <path
-        d={`M${cx - 20} ${base - 8} Q${cx - 65} ${base + 2} ${cx - 130} ${base + 5}`}
+        d={
+          !screenMode.isComputer
+            ? screenMode.isLandscape
+              ? `M${cx - 24} ${base - 10} Q${cx - 260} ${base + 2} 145 ${base + 5}`
+              : `M${cx - 24} ${base - 10} Q${cx - 160} ${base + 2} 248 ${base + 5}`
+            : `M${cx - 20} ${base - 8} Q${cx - 65} ${base + 2} ${cx - 130} ${base + 5}`
+        }
         stroke="#4A3326"
-        strokeWidth="18"
+        strokeWidth={!screenMode.isComputer ? 24 : 18}
         strokeLinecap="round"
         fill="none"
       />
       <path
-        d={`M${cx + 18} ${base - 8} Q${cx + 65} ${base + 2} ${cx + 130} ${base + 5}`}
+        d={
+          !screenMode.isComputer
+            ? screenMode.isLandscape
+              ? `M${cx + 22} ${base - 10} Q${cx + 260} ${base + 2} 1055 ${base + 5}`
+              : `M${cx + 22} ${base - 10} Q${cx + 160} ${base + 2} 952 ${base + 5}`
+            : `M${cx + 18} ${base - 8} Q${cx + 65} ${base + 2} ${cx + 130} ${base + 5}`
+        }
         stroke="#4A3326"
-        strokeWidth="18"
+        strokeWidth={!screenMode.isComputer ? 24 : 18}
         strokeLinecap="round"
         fill="none"
       />
+
       {/* Secondary roots extending into the dark earth */}
       <path
-        d={`M${cx - 10} ${base - 4} Q${cx - 40} ${base + 3} ${cx - 75} ${base + 5}`}
+        d={
+          !screenMode.isComputer
+            ? screenMode.isLandscape
+              ? `M${cx - 14} ${base - 5} Q${cx - 140} ${base + 3} 340 ${base + 5}`
+              : `M${cx - 14} ${base - 5} Q${cx - 100} ${base + 3} 390 ${base + 5}`
+            : `M${cx - 10} ${base - 4} Q${cx - 40} ${base + 3} ${cx - 75} ${base + 5}`
+        }
         stroke="#5A3E2E"
-        strokeWidth="10"
+        strokeWidth={!screenMode.isComputer ? 15 : 10}
         strokeLinecap="round"
         fill="none"
       />
       <path
-        d={`M${cx + 10} ${base - 4} Q${cx + 40} ${base + 3} ${cx + 75} ${base + 5}`}
+        d={
+          !screenMode.isComputer
+            ? screenMode.isLandscape
+              ? `M${cx + 14} ${base - 5} Q${cx + 140} ${base + 3} 860 ${base + 5}`
+              : `M${cx + 14} ${base - 5} Q${cx + 100} ${base + 3} 810 ${base + 5}`
+            : `M${cx + 10} ${base - 4} Q${cx + 40} ${base + 3} ${cx + 75} ${base + 5}`
+        }
         stroke="#5A3E2E"
-        strokeWidth="10"
+        strokeWidth={!screenMode.isComputer ? 15 : 10}
         strokeLinecap="round"
         fill="none"
       />
+
+      {/* Tertiary roots anchoring into deep soil on compact view */}
+      {!screenMode.isComputer && (
+        <>
+          <path
+            d={`M${cx - 8} ${base - 2} Q${cx - 50} ${base + 4} ${cx - 95} ${base + 5}`}
+            stroke="#3E291E"
+            strokeWidth="11"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <path
+            d={`M${cx + 8} ${base - 2} Q${cx + 50} ${base + 4} ${cx + 95} ${base + 5}`}
+            stroke="#3E291E"
+            strokeWidth="11"
+            strokeLinecap="round"
+            fill="none"
+          />
+        </>
+      )}
     </g>
   );
 
@@ -371,6 +451,7 @@ export const WishTree = forwardRef(function WishTree(
 
   return (
     <div
+      className="wish-tree-wrapper"
       style={{
         position: 'relative',
         width: '100%',
@@ -420,17 +501,27 @@ export const WishTree = forwardRef(function WishTree(
 
       {/* Main Tree SVG Element: fits snugly and shows full trunk & base */}
       <svg
-        className={isShaking ? 'tree-shaking' : ''}
+        className={`wish-tree-svg ${isShaking ? 'tree-shaking' : ''}`}
         onClick={(e) => {
           // Touching or clicking on the tree triggers the draw wish leaf fall experience
           if (!isShaking && !fallingDrawnLeaf) {
             triggerDrawSuccess();
           }
         }}
-        viewBox="0 0 1200 620"
-        preserveAspectRatio="xMidYMax meet"
+        viewBox={
+          !screenMode.isComputer
+            ? screenMode.isLandscape
+              ? '135 90 930 515'
+              : '240 70 720 535'
+            : '0 0 1200 620'
+        }
+        preserveAspectRatio={
+          !screenMode.isComputer && screenMode.isLandscape
+            ? 'xMidYMax slice'
+            : 'xMidYMax meet'
+        }
         style={{
-          width: 'auto',
+          width: !screenMode.isComputer ? '100%' : 'auto',
           maxWidth: '100%',
           height: '100%',
           maxHeight: '100%',

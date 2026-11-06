@@ -37,6 +37,12 @@ class ModerateArtData(BaseModel):
     suggested_content: str = Field(
         description="Bản viết lại trung tính, giữ nguyên cấu trúc/ý nghĩa gốc, không hallucinate"
     )
+    suggested_title_vi: Optional[str] = None
+    suggested_title_en: Optional[str] = None
+    suggested_short_content_vi: Optional[str] = None
+    suggested_short_content_en: Optional[str] = None
+    suggested_content_vi: Optional[str] = None
+    suggested_content_en: Optional[str] = None
 
 
 # ==============================================================================
@@ -45,10 +51,18 @@ class ModerateArtData(BaseModel):
 
 class GenerateArtImageRequest(BaseModel):
     art_id: str = Field(description="ID bài viết")
-    source_content: str = Field(description="Nội dung nguồn (gốc hoặc bản gợi ý của AI)")
+    source_content: str = Field(default="", description="Nội dung nguồn (gốc hoặc bản gợi ý của AI)")
     custom_prompt_addon: Optional[str] = Field(
         default=None,
         description="Tùy chọn phong cách bổ sung (ví dụ: 'watercolor, warm melancholic light')"
+    )
+    final_prompt: Optional[str] = Field(
+        default=None,
+        max_length=4000,
+        description=(
+            "Prompt cuối cùng đã được Admin/Owner xác nhận ở form 'Xác nhận nội dung ảnh'. "
+            "Nếu có, hệ thống gửi nguyên văn prompt này tới API sinh ảnh, không tự thêm/bớt nội dung."
+        ),
     )
 
 
@@ -58,6 +72,36 @@ class GenerateArtImageData(BaseModel):
     visual_prompt: str = Field(description="Visual prompt được LLM trích xuất để tạo ảnh")
     width: int = Field(default=1024)
     height: int = Field(default=1024)
+    is_fallback_art: bool = Field(
+        default=False,
+        description="True nếu API sinh ảnh lỗi và hệ thống dùng ảnh SVG minh họa dự phòng",
+    )
+
+
+class BuildImagePromptRequest(BaseModel):
+    """Form 1 – nội dung chi tiết (song ngữ) mà Admin/Owner đã rà soát trước khi soạn prompt."""
+    art_id: str = Field(description="ID bài viết")
+    target_room: Literal["room1", "room2", "room3", "diaries"] = Field(default="room1")
+    title_vi: Optional[str] = Field(default=None, max_length=500)
+    title_en: Optional[str] = Field(default=None, max_length=500)
+    short_content_vi: Optional[str] = Field(default=None, max_length=2000)
+    short_content_en: Optional[str] = Field(default=None, max_length=2000)
+    content_vi: Optional[str] = Field(default=None, max_length=10000)
+    content_en: Optional[str] = Field(default=None, max_length=10000)
+
+
+class BuildImagePromptData(BaseModel):
+    """Form 2 – prompt hoàn chỉnh để Admin/Owner xác nhận, copy hoặc gửi đi sinh ảnh."""
+    art_id: str
+    prompt_vi: str = Field(description="Prompt hoàn chỉnh tiếng Việt (dùng được ngay với Gemini cá nhân)")
+    prompt_en: str = Field(description="Prompt hoàn chỉnh tiếng Anh (tối ưu cho model sinh ảnh)")
+    model_used: Optional[str] = Field(default=None, description="Model LLM đã soạn prompt (None nếu dùng mẫu)")
+    is_template_fallback: bool = Field(
+        default=False,
+        description="True nếu LLM không khả dụng và prompt được ghép bằng mẫu cố định (vẫn không hallucinate)",
+    )
+    image_gen_available: bool = Field(description="API sinh ảnh đã được Owner cấu hình và đang bật hay chưa")
+    image_gen_unavailable_reason: Optional[str] = Field(default=None)
 
 
 # ==============================================================================

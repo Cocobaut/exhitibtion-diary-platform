@@ -13,25 +13,64 @@ export function ThemeDropdown({ isOpen, onClose }) {
 
   return (
     <>
-      <div className="scrim" style={{ background: 'transparent' }} onClick={onClose} />
+      {/* Backdrop Scrim */}
       <div
-        className="abs"
+        className="scrim"
         style={{
-          right: '150px',
-          top: '78px',
-          width: '380px',
-          zIndex: 32,
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(22, 14, 11, 0.62)',
+          backdropFilter: 'blur(5px)',
+          WebkitBackdropFilter: 'blur(5px)',
+          zIndex: 1000,
+        }}
+        onClick={onClose}
+      />
+
+      {/* Centered Theme Modal Panel */}
+      <div
+        className="panel custom-scrollbar theme-modal-panel"
+        style={{
+          position: 'fixed',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 1001,
+          width: 'min(420px, 90vw)',
+          maxHeight: 'min(88dvh, 520px)',
+          overflowY: 'auto',
           background: 'var(--paper)',
           color: 'var(--ink)',
-          borderRadius: '16px',
-          boxShadow: '0 24px 60px rgba(0,0,0,.4)',
-          padding: '16px 16px 10px',
+          borderRadius: '20px',
+          border: '1.5px solid var(--gold, #E6C280)',
+          boxShadow: '0 25px 70px rgba(0, 0, 0, 0.5)',
+          padding: '24px 22px 16px',
+          boxSizing: 'border-box',
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <b className="serif" style={{ fontSize: '22px' }}>
-          {language === 'en' ? 'Color Themes' : 'Bảng màu'}
-        </b>
-        <div className="muted" style={{ fontSize: '13px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+          <b className="serif" style={{ fontSize: '22px', color: 'var(--ink)' }}>
+            {language === 'en' ? 'Color Themes' : 'Bảng màu'}
+          </b>
+          <span
+            className="x"
+            onClick={onClose}
+            role="button"
+            tabIndex={0}
+            style={{
+              cursor: 'pointer',
+              fontSize: '22px',
+              color: 'var(--ink2)',
+              lineHeight: 1,
+              padding: '2px 6px',
+              userSelect: 'none',
+            }}
+          >
+            ×
+          </span>
+        </div>
+        <div className="muted" style={{ fontSize: '13px', marginBottom: '14px' }}>
           {language === 'en'
             ? 'Saved to your account, applied across all exhibition rooms.'
             : 'Lưu theo tài khoản, áp dụng cho mọi phòng.'}
@@ -56,13 +95,14 @@ export function ThemeDropdown({ isOpen, onClose }) {
                 onClose && onClose();
               }}
               style={{
-                padding: '10px',
+                padding: '10px 12px',
                 borderRadius: '12px',
                 gap: '12px',
                 cursor: 'pointer',
-                marginBottom: '6px',
-                background: isSelected ? '#FFF6E8' : 'transparent',
-                outline: isSelected ? '2px solid var(--acc)' : 'none',
+                marginBottom: '8px',
+                background: isSelected ? 'rgba(230, 194, 128, 0.18)' : 'transparent',
+                outline: isSelected ? '2px solid var(--acc)' : '1px solid rgba(0, 0, 0, 0.08)',
+                transition: 'all 0.18s ease',
               }}
             >
               <span
@@ -70,8 +110,8 @@ export function ThemeDropdown({ isOpen, onClose }) {
                   display: 'flex',
                   borderRadius: '8px',
                   overflow: 'hidden',
-                  width: '110px',
-                  height: '30px',
+                  width: '95px',
+                  height: '28px',
                   flex: 'none',
                   border: '1px solid var(--line)',
                 }}
@@ -82,10 +122,10 @@ export function ThemeDropdown({ isOpen, onClose }) {
               </span>
 
               <span style={{ flex: 1 }}>
-                <b style={{ fontSize: '15px' }}>
+                <b style={{ fontSize: '14.5px', color: 'var(--ink)' }}>
                   {language === 'en' ? (th.name_en || th.name) : (th.name_vi || th.name)}
                 </b>
-                <div className="muted" style={{ fontSize: '12.5px' }}>
+                <div className="muted" style={{ fontSize: '12px', lineHeight: 1.3 }}>
                   {language === 'en' ? (th.desc_en || th.desc) : (th.desc_vi || th.desc)}
                 </div>
               </span>

@@ -308,7 +308,7 @@ export function AiModerationModal({ isOpen, onClose, data, onAccept }) {
           <button
             type="button"
             className="btn main"
-            onClick={() => onAccept && onAccept(suggested_content)}
+            onClick={() => onAccept && onAccept(suggested_content, data)}
             style={{
               padding: '8px 22px',
               fontSize: '14px',

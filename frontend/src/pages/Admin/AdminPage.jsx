@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Icon } from '../../components/common/Icons';
+import { CustomFilterDropdown } from '../../components/common/CustomFilterDropdown';
 import { AdminPending } from './AdminPending';
 import { AdminLive } from './AdminLive';
 import { AdminCapsules } from './AdminCapsules';
 import { AdminStudio } from './AdminStudio';
 import { AdminAuditLog } from './AdminAuditLog';
 import { AdminRejectModal } from './AdminRejectModal';
+import { AdminPresenceIndicator } from '../../components/Admin/AdminPresenceIndicator';
 import { adminRoomService } from '../../services/adminRoomService';
 import { adminCapsuleService } from '../../services/adminCapsuleService';
 import { useAuth } from '../../context/AuthContext';
@@ -149,7 +151,7 @@ export function AdminPage({ onOpenNotifications, onOpenThemeModal }) {
       )}
 
       {/* Top Header */}
-      <div className="abs" style={{ left: '32px', right: '32px', top: '22px' }}>
+      <div className="abs admin-top-header" style={{ left: '32px', right: '32px', top: '22px' }}>
         <div className="row between" style={{ alignItems: 'flex-start' }}>
           <div>
             <div
@@ -168,8 +170,11 @@ export function AdminPage({ onOpenNotifications, onOpenThemeModal }) {
           </div>
 
           <div className="row" style={{ gap: '14px', alignItems: 'center' }}>
-            {/* Language Switcher */}
-            <div className="lang glass" style={{ cursor: 'pointer', userSelect: 'none' }}>
+            {/* Live Admin Team Presence Indicator */}
+            <AdminPresenceIndicator />
+
+            {/* Language Switcher (Desktop only >= 1025px, hidden on tablet & mobile) */}
+            <div className="lang glass desktop-only-btn admin-lang-btn" style={{ cursor: 'pointer', userSelect: 'none' }}>
               <b
                 className={language === 'vi' ? 'on' : ''}
                 onClick={() => setLanguage('vi')}
@@ -186,10 +191,10 @@ export function AdminPage({ onOpenNotifications, onOpenThemeModal }) {
               </b>
             </div>
 
-            {/* Theme Palette Switcher */}
+            {/* Theme Palette Switcher (Desktop only >= 1025px, hidden on tablet & mobile) */}
             <button
               type="button"
-              className="iconbtn glass"
+              className="iconbtn glass desktop-only-btn admin-theme-btn"
               style={{ cursor: 'pointer' }}
               title={language === 'en' ? 'Color theme' : 'Bảng màu nền'}
               onClick={onOpenThemeModal}
@@ -210,8 +215,8 @@ export function AdminPage({ onOpenNotifications, onOpenThemeModal }) {
           </div>
         </div>
 
-        {/* Global Tabs Navigation */}
-        <div className="tabs" style={{ marginTop: '14px' }}>
+        {/* Global Tabs Navigation (Desktop >= 1025px) */}
+        <div className="tabs desktop-only-chips" style={{ marginTop: '14px' }}>
           {tabs.map((t, i) => (
             <span
               key={i}
@@ -225,11 +230,49 @@ export function AdminPage({ onOpenNotifications, onOpenThemeModal }) {
             </span>
           ))}
         </div>
+
+        {/* 3 Viewports: Tablet Portrait, Mobile Landscape, Mobile Portrait (<= 1024px) */}
+        {/* Button list dropdown chứa Room 1, Room 2, Room 3, mặc định là Room 1 */}
+        <div className="mobile-filter-wrapper admin-tabs-filter-wrapper" style={{ marginTop: '14px' }}>
+          <CustomFilterDropdown
+            options={[
+              {
+                value: 0,
+                label: `${t('admin_tab_r1')}${roomPendingCounts[1] > 0 ? ` (${roomPendingCounts[1]})` : ''}`,
+              },
+              {
+                value: 1,
+                label: `${t('admin_tab_r2')}${roomPendingCounts[2] > 0 ? ` (${roomPendingCounts[2]})` : ''}`,
+              },
+              {
+                value: 2,
+                label: `${t('admin_tab_r3')}${roomPendingCounts[3] > 0 ? ` (${roomPendingCounts[3]})` : ''}`,
+              },
+              {
+                value: 3,
+                label: `${t('admin_tab_capsules')}${capsuleCount > 0 ? ` (${capsuleCount})` : ''}`,
+              },
+              {
+                value: 4,
+                label: t('admin_tab_studio'),
+              },
+              {
+                value: 5,
+                label: t('admin_tab_audit'),
+              },
+            ]}
+            value={activeTab}
+            onChange={(val) => {
+              setActiveTab(Number(val));
+              setStatusSegment(0);
+            }}
+          />
+        </div>
       </div>
 
       {/* Subtab Segment Switcher (for Exhibition Room tabs only) */}
       {isRoomTab && (
-        <div className="abs" style={{ left: '32px', top: '142px' }}>
+        <div className="abs admin-subtab-segment" style={{ left: '32px', top: '142px' }}>
           <div className="seg">
             <span
               className={statusSegment === 0 ? 'on' : ''}

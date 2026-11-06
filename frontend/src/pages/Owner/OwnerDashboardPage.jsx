@@ -6,6 +6,7 @@ import { ownerService } from '../../services/ownerService';
 import { adminStudioService } from '../../services/adminStudioService';
 import { aiCopilotService } from '../../services/aiCopilotService';
 import { UserRoleManagementModal } from './UserRoleManagementModal';
+import { CustomFilterDropdown } from '../../components/common/CustomFilterDropdown';
 
 export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThemeModal }) {
   const { user, isOwner } = useAuth();
@@ -256,8 +257,27 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
   const handleDiscoverModels = async (taskType) => {
     const isMod = taskType === 'moderation';
     const keyToTest = isMod || useSameAiKey ? modApiKey.trim() : imgApiKey.trim();
-    const provider = isMod ? modProvider : imgProvider;
-    const baseUrl = isMod ? modBaseUrl.trim() : imgBaseUrl.trim();
+    let provider = isMod ? modProvider : imgProvider;
+    let baseUrl = isMod ? modBaseUrl.trim() : imgBaseUrl.trim();
+
+    // Auto-detect provider if key is clearly for a different provider
+    if (keyToTest.startsWith('sk-') && provider === 'gemini') {
+      if (keyToTest.length === 35 || keyToTest.toLowerCase().includes('deepseek')) {
+        provider = 'deepseek';
+        baseUrl = baseUrl || 'https://api.deepseek.com';
+        if (isMod) {
+          setModProvider('deepseek');
+          setModBaseUrl(baseUrl);
+        } else {
+          setImgProvider('deepseek');
+          setImgBaseUrl(baseUrl);
+        }
+      } else {
+        provider = 'openai';
+        if (isMod) setModProvider('openai');
+        else setImgProvider('openai');
+      }
+    }
 
     if (!keyToTest && !(isMod || useSameAiKey ? aiSettings?.moderation?.is_key_configured : aiSettings?.image_generation?.is_key_configured)) {
       triggerToast(
@@ -659,10 +679,10 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
           </div>
 
           <div className="row" style={{ gap: '12px', alignItems: 'center' }}>
-            {/* Theme Palette Switcher */}
+            {/* Theme Palette Switcher: Ẩn trên tablet portrait, mobile landscape, mobile portrait (đã có trong Function drawer) */}
             <button
               type="button"
-              className="iconbtn glass"
+              className="iconbtn glass owner-theme-btn desktop-only-btn"
               style={{ cursor: 'pointer' }}
               title={language === 'en' ? 'Color theme' : 'Bảng màu nền'}
               onClick={onOpenThemeModal}
@@ -733,7 +753,8 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
         </div>
 
         {/* Segment Switcher */}
-        <div className="seg" style={{ marginTop: '4px' }}>
+        {/* Desktop View (> 1024px): Hiển thị đầy đủ thanh tab như cũ */}
+        <div className="seg desktop-only-chips" style={{ marginTop: '16px' }}>
           <span
             className={activeSegment === 0 ? 'on' : ''}
             onClick={() => setActiveSegment(0)}
@@ -759,6 +780,36 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
             {language === 'en' ? 'AI Copilot Engine' : 'Cấu hình AI'}
           </span>
         </div>
+
+        {/* 3 Viewports: Tablet Portrait, Mobile Landscape, Mobile Portrait (<= 1024px) */}
+        {/* Chuyển qua thành button list dropdown giống Room 1, mặc định là Users & Admins Directory */}
+        <div className="mobile-filter-wrapper owner-segment-filter-wrapper" style={{ marginTop: '16px' }}>
+          <CustomFilterDropdown
+            options={[
+              {
+                value: 0,
+                label: language === 'en' ? 'Users & Admins Directory' : 'Người dùng và quản trị viên',
+                icon: 'users',
+              },
+              {
+                value: 1,
+                label: language === 'en' ? 'Account Deletion Requests' : 'Yêu cầu xóa tài khoản',
+                icon: 'trash',
+              },
+              {
+                value: 2,
+                label: language === 'en' ? 'System-wide Audit Logs' : 'Nhật ký hệ thống',
+                icon: 'clock',
+              },
+              {
+                value: 3,
+                label: language === 'en' ? 'AI Copilot Engine' : 'Cấu hình AI',
+              },
+            ]}
+            value={activeSegment}
+            onChange={(val) => setActiveSegment(Number(val))}
+          />
+        </div>
       </div>
 
       {/* SEGMENT 0: USER & ADMIN MANAGEMENT */}
@@ -767,7 +818,7 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
           {/* Filters Bar */}
           <div className="row between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
             <div className="row" style={{ gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div className="search" style={{ width: '280px', background: 'var(--paper)' }}>
+              <div className="search" style={{ width: 'min(280px, 100%)', background: 'var(--paper)' }}>
                 <input
                   type="text"
                   placeholder={language === 'en' ? 'Search by username, email, name...' : 'Tìm theo tên đăng nhập, email, biệt danh...'}
@@ -822,8 +873,8 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
             )}
           </div>
 
-          {/* Users Table */}
-          <div style={{ width: '100%' }}>
+          {/* Users Table - Desktop Mode (> 1024px) */}
+          <div className="desktop-only-users-table" style={{ width: '100%', overflowX: 'auto' }}>
             <table className="at" style={{ width: '100%' }}>
               <thead>
                 <tr>
@@ -978,6 +1029,192 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
             </table>
           </div>
 
+          {/* Mobile & Tablet Users List (3 viewports: tablet portrait, mobile landscape, mobile portrait <= 1024px) */}
+          {/* Phần Action đối với mỗi user nằm phía dưới thay vì nằm bên phải */}
+          <div className="mobile-only-users-list">
+            {users.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
+                {language === 'en' ? 'No users matching the filters found' : 'Không tìm thấy người dùng nào phù hợp với bộ lọc'}
+              </div>
+            ) : (
+              users.map((u) => {
+                const roleStr = String(u.role || 'USER').toUpperCase();
+                const isCurrentSelf = u.id === user?.id;
+
+                return (
+                  <div
+                    key={u.id}
+                    className="user-card-item"
+                    style={{
+                      background: 'var(--paper)',
+                      border: '1px solid var(--line)',
+                      borderRadius: '14px',
+                      padding: '14px 16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {/* Top Row: Avatar + Name + Badges */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <div
+                          style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            background: roleStr === 'OWNER' ? '#B57424' : roleStr === 'ADMIN' ? 'var(--acc)' : 'var(--line)',
+                            color: '#fff',
+                            display: 'grid',
+                            placeItems: 'center',
+                            fontWeight: 600,
+                            fontSize: '14px',
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            (u.nickname || u.username || 'U')[0].toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--ink)' }}>
+                            {u.nickname || u.username} {isCurrentSelf && <small className="muted">({language === 'en' ? 'You' : 'Bạn'})</small>}
+                          </div>
+                          <div className="muted" style={{ fontSize: '12px' }}>@{u.username}</div>
+                        </div>
+                      </div>
+
+                      {/* Role & Status Badges */}
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                        <span
+                          className={`badge ${
+                            roleStr === 'OWNER' ? 'b-wait' : roleStr === 'ADMIN' ? 'b-blue' : 'b-priv'
+                          }`}
+                          style={{
+                            fontWeight: 700,
+                            letterSpacing: '.05em',
+                            fontSize: '11px',
+                            background: roleStr === 'OWNER' ? '#B57424' : undefined,
+                            color: roleStr === 'OWNER' ? '#fff' : undefined,
+                          }}
+                        >
+                          {roleStr === 'OWNER'
+                            ? (language === 'en' ? 'Owner' : 'Chủ sở hữu')
+                            : roleStr === 'ADMIN'
+                              ? (language === 'en' ? 'Admin' : 'Quản trị viên')
+                              : (language === 'en' ? 'User' : 'Người dùng')}
+                        </span>
+
+                        {u.is_active ? (
+                          <span className="badge b-ok" style={{ fontSize: '11px' }}>
+                            {language === 'en' ? 'ACTIVE' : 'HOẠT ĐỘNG'}
+                          </span>
+                        ) : (
+                          <span className="badge" style={{ background: '#8E2A22', color: '#fff', fontSize: '11px' }}>
+                            {language === 'en' ? 'LOCKED' : 'BỊ KHÓA'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Middle Info: Email & Joined Date */}
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '12px',
+                        color: 'var(--ink2)',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                        borderTop: '1px dashed var(--line)',
+                        paddingTop: '8px',
+                      }}
+                    >
+                      <span style={{ overflowWrap: 'anywhere' }}>✉ {u.email}</span>
+                      <span className="muted">
+                        {language === 'en' ? 'Joined:' : 'Ngày tạo:'} {formatDate(u.created_at)}
+                      </span>
+                    </div>
+
+                    {/* Bottom: Action Buttons Placed Underneath */}
+                    <div
+                      className="user-card-actions"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        flexWrap: 'wrap',
+                        borderTop: '1px solid var(--line)',
+                        paddingTop: '10px',
+                        marginTop: '2px',
+                      }}
+                    >
+                      {/* Xem chi tiết */}
+                      <button
+                        type="button"
+                        className="btn line sm"
+                        onClick={() => handleOpenUserDetail(u)}
+                        title={language === 'en' ? 'View activity details' : 'Xem chi tiết hoạt động'}
+                        style={{ padding: '6px 10px', fontSize: '12px', flex: '1 1 auto', textAlign: 'center' }}
+                      >
+                        {language === 'en' ? 'Details' : 'Chi tiết'}
+                      </button>
+
+                      {/* Đổi vai trò */}
+                      <button
+                        type="button"
+                        className="btn line sm"
+                        onClick={() => setSelectedUserForRole(u)}
+                        disabled={isCurrentSelf || roleStr === 'OWNER'}
+                        title={
+                          isCurrentSelf
+                            ? (language === 'en' ? 'Cannot change own role' : 'Không thể tự đổi vai trò của mình')
+                            : (language === 'en' ? 'Promote / Demote role' : 'Thăng cấp / Hạ cấp vai trò')
+                        }
+                        style={{ padding: '6px 10px', fontSize: '12px', flex: '1 1 auto', textAlign: 'center' }}
+                      >
+                        {language === 'en' ? 'Change Role' : 'Đổi vai trò'}
+                      </button>
+
+                      {/* Khóa / Mở khóa */}
+                      <button
+                        type="button"
+                        className={`btn line sm ${u.is_active ? 'danger' : ''}`}
+                        onClick={() => handleToggleUserStatus(u)}
+                        disabled={isCurrentSelf || roleStr === 'OWNER'}
+                        title={
+                          u.is_active
+                            ? (language === 'en' ? 'Lock account' : 'Khóa tài khoản')
+                            : (language === 'en' ? 'Unlock account' : 'Mở khóa tài khoản')
+                        }
+                        style={{ padding: '6px 10px', fontSize: '12px', flex: '1 1 auto', textAlign: 'center' }}
+                      >
+                        {u.is_active ? (language === 'en' ? 'Lock' : 'Khóa') : (language === 'en' ? 'Unlock' : 'Mở')}
+                      </button>
+
+                      {/* Xóa vĩnh viễn (Hard delete) */}
+                      <button
+                        type="button"
+                        className="btn line sm danger"
+                        onClick={() => setDeletingUser(u)}
+                        disabled={isCurrentSelf || roleStr === 'OWNER'}
+                        title={language === 'en' ? 'Permanently delete user from system' : 'Xóa vĩnh viễn tài khoản khỏi hệ thống'}
+                        style={{ padding: '6px 10px', fontSize: '12px', flex: '1 1 auto', textAlign: 'center' }}
+                      >
+                        {language === 'en' ? 'Delete' : 'Xóa'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
           {/* Pagination bar */}
           <div className="row between" style={{ marginTop: '16px', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <span className="muted" style={{ fontSize: '13px' }}>
@@ -1116,7 +1353,8 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
             )}
           </div>
 
-          <div style={{ width: '100%' }}>
+          {/* Audit Logs Table - Desktop Mode (> 1024px) */}
+          <div className="desktop-only-audit-table" style={{ width: '100%', overflowX: 'auto' }}>
             <table className="at" style={{ width: '100%' }}>
               <thead>
                 <tr>
@@ -1155,6 +1393,94 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile & Tablet Audit Logs List (3 viewports: tablet portrait, mobile landscape, mobile portrait <= 1024px) */}
+          {/* Phần TARGET và AUDIT DETAILS nằm ở dưới thay vì nằm bên phải */}
+          <div className="mobile-only-audit-list">
+            {auditLogs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px', color: 'var(--muted)' }}>
+                {language === 'en' ? 'No audit logs recorded yet' : 'Chưa có nhật ký nào'}
+              </div>
+            ) : (
+              auditLogs.map((log, i) => (
+                <div
+                  key={i}
+                  className="audit-card-item"
+                  style={{
+                    background: 'var(--paper)',
+                    border: '1px solid var(--line)',
+                    borderRadius: '14px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {/* Top Row: By Admin / System + Time + Action + Room */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <b style={{ fontSize: '13.5px', color: 'var(--ink)' }}>
+                        {log.created_by_admin?.nickname || log.admin_name || (language === 'en' ? 'System' : 'Hệ thống')}
+                      </b>
+                      <span className="muted" style={{ fontSize: '12px' }}>
+                        {formatDate(log.performed_at)}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="badge b-priv" style={{ fontSize: '11px' }}>
+                        {log.action_type}
+                      </span>
+                      <span className="badge" style={{ fontSize: '10.5px', background: 'rgba(230, 194, 128, 0.2)', color: 'var(--ink)' }}>
+                        {log.room_code
+                          ? (log.room_id === 1
+                              ? (language === 'en' ? 'Room 1' : 'Phòng 1')
+                              : `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id}`)
+                          : (language === 'en' ? 'System' : 'Hệ thống')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Bottom: TARGET Section (Nằm ở dưới thay vì nằm bên phải) */}
+                  <div
+                    style={{
+                      borderTop: '1px solid var(--line)',
+                      paddingTop: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px',
+                    }}
+                  >
+                    <span className="muted" style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+                      {language === 'en' ? 'Artwork / Target' : 'Tác phẩm / Đối tượng'}
+                    </span>
+                    <span style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--ink)', overflowWrap: 'anywhere' }}>
+                      {log.artwork_title || `${language === 'en' ? 'Target' : 'Đối tượng'} #${log.artwork_id || ''}`}
+                    </span>
+                  </div>
+
+                  {/* Bottom: AUDIT DETAILS Section (Nằm ở dưới thay vì nằm bên phải) */}
+                  <div
+                    style={{
+                      borderTop: '1px dashed var(--line)',
+                      paddingTop: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '2px',
+                    }}
+                  >
+                    <span className="muted" style={{ fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+                      {language === 'en' ? 'Audit Details' : 'Chi tiết'}
+                    </span>
+                    <span className="muted" style={{ fontSize: '12.5px', lineHeight: 1.5, overflowWrap: 'anywhere', color: 'var(--ink2)' }}>
+                      {log.details || log.note || '—'}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -1325,8 +1651,13 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
                   baseUrl: modBaseUrl, setBaseUrl: setModBaseUrl,
                   model: modModel, setModel: setModModel,
                   models: modDiscoveredModels,
-                  providers: [['gemini', 'Google Gemini'], ['openai', 'OpenAI'], ['custom', language === 'en' ? 'Other (OpenAI-compatible)' : 'Khác (tương thích OpenAI)']],
-                  placeholder: 'gemini-2.5-flash',
+                  providers: [
+                    ['gemini', 'Google Gemini'],
+                    ['deepseek', 'DeepSeek (api.deepseek.com)'],
+                    ['openai', 'OpenAI'],
+                    ['custom', language === 'en' ? 'Other (OpenAI-compatible)' : 'Khác (tương thích OpenAI)'],
+                  ],
+                  placeholder: modProvider === 'deepseek' ? 'deepseek-chat' : 'gemini-2.5-flash',
                 },
                 {
                   key: 'image_generation',
@@ -1335,15 +1666,30 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
                   baseUrl: imgBaseUrl, setBaseUrl: setImgBaseUrl,
                   model: imgModel, setModel: setImgModel,
                   models: imgDiscoveredModels,
-                  providers: [['gemini', 'Google Gemini'], ['openai', 'OpenAI'], ['custom', language === 'en' ? 'Other (OpenAI-compatible)' : 'Khác (tương thích OpenAI)']],
-                  placeholder: 'imagen-3.0-generate-002',
+                  providers: [
+                    ['gemini', 'Google Gemini'],
+                    ['fal', 'Fal.ai (FLUX.1)'],
+                    ['openai', 'OpenAI (DALL·E)'],
+                    ['custom', language === 'en' ? 'Other (OpenAI-compatible)' : 'Khác (tương thích OpenAI)'],
+                  ],
+                  placeholder: imgProvider === 'fal' ? 'fal-ai/flux/schnell' : 'imagen-3.0-generate-002',
                 },
               ].map((svc) => (
                 <div key={svc.key}>
                   <div style={{ fontWeight: 600, marginBottom: '10px' }}>{svc.title}</div>
 
                   <div className="fieldl">{language === 'en' ? 'Provider' : 'Nhà cung cấp'}</div>
-                  <select className="inp" value={svc.provider} onChange={(e) => svc.setProvider(e.target.value)}>
+                  <select
+                    className="inp"
+                    value={svc.provider}
+                    onChange={(e) => {
+                      const nextP = e.target.value;
+                      svc.setProvider(nextP);
+                      if (nextP === 'deepseek' && !svc.baseUrl) {
+                        svc.setBaseUrl('https://api.deepseek.com');
+                      }
+                    }}
+                  >
                     {svc.providers.map(([v, label]) => (
                       <option key={v} value={v}>{label}</option>
                     ))}

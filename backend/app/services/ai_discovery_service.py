@@ -5,18 +5,32 @@ from app.schemas.ai_copilot import DiscoveredModelItem, DiscoverModelsData
 
 
 def detect_provider(api_key: str, chosen_provider: Optional[str] = "auto") -> str:
-    """Detects AI provider from the API key format if provider is set to 'auto'."""
-    if chosen_provider and chosen_provider.lower() not in ("auto", ""):
-        return chosen_provider.lower()
-    if not api_key:
+    """Detects AI provider from the API key format or explicit choice."""
+    stripped = (api_key or "").strip()
+    chosen = (chosen_provider or "").strip().lower()
+
+    # If provider is explicitly set to gemini, but key is obviously an sk- key (DeepSeek / OpenAI)
+    if chosen == "gemini" and stripped.startswith("sk-"):
+        if len(stripped) == 35 or "deepseek" in stripped.lower():
+            return "deepseek"
+        return "openai"
+
+    if chosen and chosen not in ("auto", ""):
+        return chosen
+
+    if not stripped:
         return "custom"
-    stripped = api_key.strip()
+
     # Google Gemini keys can start with 'AIza' (classic) or 'AQ.' / 'AQ' (Google AI Studio / Vertex / Gemini Developer API)
     if stripped.startswith("AIza") or stripped.startswith("AQ.") or stripped.startswith("AQ-") or (stripped.startswith("AQ") and len(stripped) > 20):
         return "gemini"
     if stripped.startswith("sk-ant-"):
         return "anthropic"
+    if stripped.startswith("fal_") or (":" in stripped and "fal" in stripped.lower()):
+        return "fal"
     if stripped.startswith("sk-"):
+        if len(stripped) == 35 or "deepseek" in stripped.lower():
+            return "deepseek"
         return "openai"
     return "custom"
 
@@ -40,8 +54,17 @@ class AiDiscoveryService:
             )
 
         try:
+            if base_url:
+                from app.core.security import validate_safe_base_url
+                base_url = validate_safe_base_url(base_url)
+
             if detected_p == "gemini":
                 return await cls._discover_gemini_models(api_key, task_type)
+            elif detected_p == "fal":
+                return await cls._discover_fal_models(api_key, task_type)
+            elif detected_p == "deepseek":
+                deepseek_url = base_url or "https://api.deepseek.com"
+                return await cls._discover_openai_models(api_key, task_type, deepseek_url)
             elif detected_p == "openai":
                 return await cls._discover_openai_models(api_key, task_type, base_url)
             elif detected_p == "anthropic":
@@ -62,6 +85,40 @@ class AiDiscoveryService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Lỗi khi kết nối tới Provider ({detected_p}): {str(e)}",
             )
+
+    @classmethod
+    async def _discover_fal_models(cls, api_key: str, task_type: str) -> DiscoverModelsData:
+        discovered = [
+            DiscoveredModelItem(
+                id="fal-ai/flux/schnell",
+                display_name="FLUX.1 [schnell] (fal-ai/flux/schnell)",
+                is_recommended=True,
+                badge="Khuyên dùng · Tốc độ cao",
+                reason="Mô hình FLUX.1 thế hệ mới của Fal.ai tối ưu 4-step, tạo tranh nghệ thuật siêu nhanh và độ nét 1024x1024.",
+            ),
+            DiscoveredModelItem(
+                id="fal-ai/flux/dev",
+                display_name="FLUX.1 [dev] (fal-ai/flux/dev)",
+                is_recommended=False,
+                badge="Chi tiết cao",
+                reason="Mô hình FLUX.1 phiên bản chất lượng cao cho bố cục tinh xảo và độ sâu mỹ thuật ấn tượng.",
+            ),
+            DiscoveredModelItem(
+                id="fal-ai/flux-pro",
+                display_name="FLUX.1 [pro] (fal-ai/flux-pro)",
+                is_recommended=False,
+                badge="Chuyên nghiệp",
+                reason="Mô hình FLUX.1 cao cấp nhất phục vụ đồ họa chuyên nghiệp và bố cục phức tạp.",
+            ),
+        ]
+        return DiscoverModelsData(
+            is_valid=True,
+            detected_provider="fal",
+            task_type=task_type,
+            total_models_in_account=len(discovered),
+            recommended_model_id="fal-ai/flux/schnell",
+            discovered_models=discovered,
+        )
 
     @classmethod
     async def _discover_gemini_models(cls, api_key: str, task_type: str) -> DiscoverModelsData:
@@ -178,7 +235,10 @@ class AiDiscoveryService:
         cls, api_key: str, task_type: str, base_url: Optional[str] = None
     ) -> DiscoverModelsData:
         root_url = (base_url or "https://api.openai.com").rstrip("/")
-        url = f"{root_url}/v1/models"
+        if root_url.endswith("/v1"):
+            url = f"{root_url}/models"
+        else:
+            url = f"{root_url}/v1/models"
         headers = {"Authorization": f"Bearer {api_key.strip()}"}
 
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -195,31 +255,43 @@ class AiDiscoveryService:
         discovered: List[DiscoveredModelItem] = []
 
         if task_type == "moderation":
+            is_deepseek = "deepseek" in root_url.lower()
             for m in raw_models:
                 m_id = m.get("id", "")
                 # Filter for chat / text models
-                if any(k in m_id for k in ["gpt-4o", "gpt-4", "o1", "chatgpt"]) and not any(
-                    x in m_id for x in ["audio", "realtime", "search", "transcribe"]
-                ):
-                    discovered.append(DiscoveredModelItem(
-                        id=m_id,
-                        display_name=m_id.upper(),
-                        is_recommended=False,
-                        badge="Khả dụng",
-                        reason="Mô hình chat/reasoning của OpenAI",
-                    ))
+                if is_deepseek or any(k in m_id.lower() for k in ["gpt-4o", "gpt-4", "o1", "o3", "chatgpt", "deepseek", "chat"]):
+                    if not any(x in m_id.lower() for x in ["audio", "realtime", "search", "transcribe"]):
+                        discovered.append(DiscoveredModelItem(
+                            id=m_id,
+                            display_name=m_id,
+                            is_recommended=False,
+                            badge="Khả dụng",
+                            reason="Mô hình suy luận tốc độ cao của DeepSeek" if is_deepseek else "Mô hình chat/reasoning của OpenAI",
+                        ))
 
             rec_id = None
-            for target in ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo"]:
-                for item in discovered:
-                    if target in item.id:
-                        item.is_recommended = True
-                        item.badge = "Khuyên dùng số 1"
-                        item.reason = "Chi phí siêu tối ưu, tốc độ phản hồi nhanh, hỗ trợ JSON Schema tốt."
-                        rec_id = item.id
+            if is_deepseek:
+                for target in ["deepseek-chat", "deepseek-flash", "deepseek-v4-pro", "deepseek-reasoner"]:
+                    for item in discovered:
+                        if target in item.id.lower():
+                            item.is_recommended = True
+                            item.badge = "Khuyên dùng số 1"
+                            item.reason = "Mô hình tối ưu chi phí, tốc độ suy luận nhanh và tuân thủ JSON Schema tuyệt vời."
+                            rec_id = item.id
+                            break
+                    if rec_id:
                         break
-                if rec_id:
-                    break
+            else:
+                for target in ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo"]:
+                    for item in discovered:
+                        if target in item.id:
+                            item.is_recommended = True
+                            item.badge = "Khuyên dùng số 1"
+                            item.reason = "Chi phí siêu tối ưu, tốc độ phản hồi nhanh, hỗ trợ JSON Schema tốt."
+                            rec_id = item.id
+                            break
+                    if rec_id:
+                        break
 
             if not rec_id and discovered:
                 discovered[0].is_recommended = True
@@ -262,7 +334,7 @@ class AiDiscoveryService:
 
         return DiscoverModelsData(
             is_valid=True,
-            detected_provider="openai",
+            detected_provider="deepseek" if "deepseek" in root_url.lower() else "openai",
             task_type=task_type,
             total_models_in_account=len(raw_models),
             recommended_model_id=rec_id,

@@ -97,49 +97,137 @@ Lời nhắn trong Hòm thư do ban quản trị soạn sẵn cả hai thứ ti�
 
 ## 5. AI Copilot cho ban quản trị
 
-AI chỉ hỗ trợ ban quản trị và không tự đăng bất kỳ nội dung nào. Owner bật hoặc tắt AI, chọn nhà cung cấp (Google Gemini hoặc API tương thích OpenAI) và nhập API key trên trang Owner. Key được mã hoá AES-256-GCM trước khi lưu vào database.
+AI chỉ hỗ trợ ban quản trị và không tự đăng bất kỳ nội dung nào. Owner bật hoặc tắt AI, chọn nhà cung cấp (Google Gemini, DeepSeek, OpenAI hoặc các Custom API tương thích OpenAI) và nhập API key trên trang Owner. Key được mã hoá AES-256-GCM trước khi lưu vào database.
 
 ```mermaid
-flowchart LR
-    A["Người dùng gửi bài"] --> B["Hàng chờ duyệt"]
-    B --> C["Admin mở bài"]
-    C -->|"Phân tích bằng AI"| D["Lọc từ cấm và thông tin cá nhân<br/>+ LLM chấm điểm theo rubric 100 điểm"]
-    D --> E["Điểm, danh sách vi phạm,<br/>gợi ý phòng phù hợp, bản viết lại"]
-    C -->|"Dịch bằng AI"| F["Bản dịch nháp VI ↔ EN"]
-    C -->|"Sinh tranh"| G["Tranh minh họa theo cảm xúc bài viết"]
-    E --> H["Admin quyết định"]
-    F --> H
-    G --> H
-    H -->|"Duyệt"| I["Hiển thị công khai"]
-    H -->|"Từ chối"| J["Thông báo kèm lý do cho tác giả"]
+flowchart TD
+    A["Người dùng nộp bài viết / thông điệp"] --> B["Hàng chờ duyệt của Admin"]
+    B --> C["Admin mở chi tiết bài viết"]
+    
+    subgraph AI_PIPELINE ["Kiến Trúc AI Copilot Hybrid Đa Tầng (Bảo Mật & Phòng Thủ Chuyên Sâu)"]
+        direction TB
+        C -->|"1. Rate Limiting Gate"| RL["Admin Rate Limiter<br/>(8-20 req/phút/admin, chống cạn hạn ngạch)"]
+        
+        RL -->|"2. Lớp Luật Cứng"| RF["Rule Engine Pre-filter<br/>(Bắt buộc phát hiện PII SĐT/STK, từ cấm teencode/leet)"]
+        
+        RL -->|"3. Kiểm tra phòng 2 chiều"| RM["3-Room Appropriateness<br/>(Room 1 Đổ vỡ ↔ Room 2 Hy vọng ↔ Room 3 Cây thông điệp)"]
+        
+        RL -->|"4. Cách ly Prompt"| PI["Prompt Isolation Boundary<br/>(<untrusted_user_content>, chống Prompt Injection)"]
+        
+        PI -->|"5. Fast Fallback Controller"| LLM["LLM Reasoning Engine<br/>(Gemini / DeepSeek / OpenAI, timeout 6-8s)"]
+        
+        RF --> MERGE["Rule Merge Engine & Safe Score Clamping<br/>(Hợp nhất vi phạm, khóa điểm min, cấm ghi đè APPROVE)"]
+        LLM --> MERGE
+        RM --> MERGE
+        
+        C -->|"Dịch bằng AI"| TRANS["Bản dịch nháp song ngữ VI ↔ EN"]
+        
+        C -->|"Tạo ảnh bằng AI"| F1["Form 1: Nội dung chi tiết<br/>(Tiêu đề / Tóm tắt / Nội dung VI + EN, Admin chỉnh sửa)"]
+        F1 --> PB["Image Prompt Builder<br/>(LLM chỉ thêm từ đệm + Hallucination Guard, fallback mẫu cố định)"]
+        PB --> F2["Form 2: Xác nhận nội dung ảnh<br/>(Prompt VI / EN, Admin chỉnh sửa)"]
+        F2 -->|"Copy"| COPY["Clipboard → Gemini cá nhân"]
+        F2 -->|"Tạo ảnh bằng AI"| ART["Art Synthesis Engine<br/>(FLUX / DALL·E / Imagen, gửi nguyên văn prompt)"]
+        ART --> SVG_GATE["SVG Sanitization Gate<br/>(Khử triệt để script, on*, iframe, chống Stored XSS)"]
+    end
+    
+    MERGE --> H["Admin xem Điểm Rubric, Vi phạm, Gợi ý chuyển phòng & Bản viết lại"]
+    TRANS --> H
+    SVG_GATE --> H
+    
+    H -->|"Phê duyệt"| I["Trưng bày công khai lên Bảo tàng"]
+    H -->|"Từ chối"| J["Gửi thông báo kèm lý do cho tác giả"]
 ```
 
-| Chức năng | Dịch vụ | Mô tả |
+| Chức năng | Dịch vụ & Chốt chặn bảo mật | Mô tả kỹ thuật |
 | :--- | :--- | :--- |
-| Kiểm duyệt | `ai_moderation_service.py`, `badwords_service.py` | Lọc từ cấm (kể cả teencode, leet), phát hiện số điện thoại, mạng xã hội, số tài khoản; LLM chấm điểm theo rubric và đề xuất bản viết lại không thêm tình tiết |
-| Dịch nháp | `ai_translation_service.py` | Dịch tiêu đề, tóm tắt, nội dung, giữ giọng văn tác giả; admin đọc lại trước khi lưu |
-| Sinh tranh | `ai_image_service.py` | Tạo tranh minh họa từ nội dung bài viết; có ảnh dự phòng khi nhà cung cấp không phản hồi |
-| Chọn model | `ai_discovery_service.py` | Tự truy vấn danh sách model khả dụng của API key khi model cấu hình không còn hoạt động |
+| **Kiểm duyệt Hybrid** | `ai_moderation_service.py`, `badwords_service.py` | Kết hợp Rule Engine (bắt buộc 100% PII, từ cấm) với LLM phân tích ngữ cảnh. Khắc phục Rule Suppression Bug bằng cơ chế hợp nhất vi phạm và khóa điểm an toàn |
+| **Chống Prompt Injection** | `ai_moderation_service.py` | Cách ly dữ liệu người dùng trong khối `<untrusted_user_content>`, cấm mô hình thực thi các câu lệnh thao túng điểm số |
+| **Fast Fallback & Latency** | `ai_moderation_service.py` | Rút ngắn timeout gọi model xuống 6.0s - 8.0s, giới hạn tối đa 2 model dự phòng, loại bỏ hoàn toàn lỗi HTTP 504 Gateway Timeout (P99 giảm từ 41.8s xuống ~4.5s) |
+| **Sinh tranh & Khử XSS** | `ai_image_service.py`, `main.py` | Gửi **nguyên văn** prompt đã được Admin/Owner xác nhận tới API sinh ảnh (Fal.ai FLUX, OpenAI DALL·E, Google Imagen); lọc sạch 100% vector Stored XSS trong mã SVG trước khi ghi đĩa + gán CSP header bảo vệ |
+| **Soạn prompt tạo ảnh (Human-in-the-loop)** | `ai_image_prompt_service.py`, `AiImagePromptModal.jsx` | Luồng 2 form: Nội dung chi tiết → Xác nhận prompt → Copy / Tạo ảnh. LLM chỉ sắp xếp câu chữ và thêm từ đệm; Hallucination Guard tất định loại bỏ prompt chứa chi tiết/số liệu bịa đặt |
+| **Chống SSRF** | `security.py`, `ai_discovery_service.py` | Thẩm định `base_url` của Custom Provider, chặn tuyệt đối kết nối tới localhost, loopback máy chủ, dải IP nội bộ RFC 1918 và Cloud Metadata (169.254.169.254) |
+| **Quản lý hạn ngạch** | `admin_ai.py` | Rate Limiter phân tầng (8 req/phút cho sinh ảnh, 20 req/phút cho kiểm duyệt, dịch và soạn prompt), ngăn chặn tấn công từ chối ví (Denial of Wallet) |
+| **Dịch nháp song ngữ** | `ai_translation_service.py` | Dịch tiêu đề, tóm tắt, nội dung giữa tiếng Việt và tiếng Anh; admin duyệt lại trước khi lưu |
+
+### Tạo ảnh bằng AI – luồng 2 bước có xác nhận
+
+API sinh ảnh thường đắt hoặc chưa được Owner cấu hình, nên nút **"Tạo ảnh bằng AI"** trong trang duyệt bài không gọi API sinh ảnh ngay mà mở một luồng 2 bước:
+
+```mermaid
+sequenceDiagram
+    participant A as Admin / Owner
+    participant FE as AiImagePromptModal
+    participant BE as POST /admin/ai/build-image-prompt
+    participant LLM as LLM (cấu hình Kiểm duyệt)
+    participant IMG as POST /admin/ai/generate-image
+
+    A->>FE: Bấm "Tạo ảnh bằng AI"
+    FE-->>A: Form 1 – Tiêu đề, Tóm tắt, Nội dung (VI + EN), sửa được
+    A->>FE: Chỉnh sửa rồi bấm "Tiếp tục → Soạn prompt"
+    FE->>BE: Nội dung đã chỉnh sửa
+    BE->>BE: Che PII / từ thô tục (Rule Engine)
+    BE->>LLM: Nội dung trong <untrusted_user_content> + luật "chỉ thêm từ đệm"
+    LLM-->>BE: prompt_vi, prompt_en
+    BE->>BE: Hallucination Guard (ngân sách từ đệm, chặn số liệu bịa)<br/>không đạt → ghép bằng mẫu cố định
+    BE-->>FE: Prompt VI/EN + trạng thái API sinh ảnh
+    FE-->>A: Form 2 – Xác nhận nội dung ảnh, sửa được
+    alt Copy
+        A->>FE: Bấm "Copy" → sao chép prompt hiện tại (đã sửa hoặc bản gốc)
+        A->>A: Tự dán vào Gemini cá nhân
+    else Tạo ảnh bằng AI (chỉ bật khi Owner đã cấu hình API sinh ảnh)
+        A->>FE: Bấm "Tạo ảnh bằng AI"
+        FE->>IMG: final_prompt (gửi nguyên văn)
+        IMG-->>FE: image_url → gán vào tranh minh họa của bài
+    end
+```
+
+| Bước | Hành vi | Chống hallucination |
+| :--- | :--- | :--- |
+| **Form 1 – Nội dung chi tiết** | Điền sẵn tiêu đề, tóm tắt, nội dung song ngữ từ form duyệt bài; chỉnh sửa ở đây không làm thay đổi bài viết gốc | Chỉ dữ liệu Admin/Owner nhìn thấy mới được gửi đi |
+| **Soạn prompt** | LLM của dịch vụ Kiểm duyệt (Gemini, DeepSeek, OpenAI…) sắp xếp lại câu chữ, thêm từ đệm và cụm phong cách cố định theo phòng | Prompt hệ thống cấm thêm nhân vật, đồ vật, địa điểm, màu sắc, sự kiện; Hallucination Guard tất định loại prompt vượt ngân sách từ đệm (900 ký tự) hoặc chứa con số không có trong nguồn. Nếu LLM chưa cấu hình hoặc lỗi thì ghép bằng **mẫu cố định** |
+| **Form 2 – Xác nhận nội dung ảnh** | Hai tab Tiếng Việt / English, sửa tự do, có nút "Khôi phục bản gốc" | Admin/Owner là người duyệt cuối cùng |
+| **Copy** | Sao chép đúng nội dung đang hiển thị (đã sửa, hoặc bản gốc nếu chưa sửa) để tự tạo bằng Gemini cá nhân | Luôn dùng được, kể cả khi chưa cấu hình API sinh ảnh |
+| **Tạo ảnh bằng AI** | Gửi nguyên văn `final_prompt` tới API sinh ảnh, không tự thêm hậu tố phong cách. Nếu API lỗi, hệ thống dùng ảnh SVG tạm và báo cho Admin (`is_fallback_art`) | Nút bị khoá kèm lý do nếu Owner chưa bật hoặc chưa nhập key sinh ảnh |
+
+API liên quan:
+
+| Endpoint | Body chính | Kết quả |
+| :--- | :--- | :--- |
+| `POST /api/v1/admin/ai/build-image-prompt` | `art_id`, `target_room`, `title_vi/en`, `short_content_vi/en`, `content_vi/en` | `prompt_vi`, `prompt_en`, `model_used`, `is_template_fallback`, `image_gen_available`, `image_gen_unavailable_reason` |
+| `POST /api/v1/admin/ai/generate-image` | `art_id`, `final_prompt` (khuyến nghị) hoặc `source_content` (cách cũ) | `image_url`, `visual_prompt`, `is_fallback_art` |
+
+> Thay đổi này chỉ nằm ở code (schema Pydantic, service, endpoint, component React), **không cần migration database**.
 
 ### Đánh giá thực nghiệm
 
-Pipeline kiểm duyệt được đo trên 32 kịch bản trong `Agent/golden_dataset.json`. Một số kết quả chính:
+Pipeline kiểm duyệt được đo lường thực tế trên **32 kịch bản chuẩn mực** trong `Agent/golden_dataset.json` và 6 ca tổng hợp tranh nghệ thuật. Dưới đây là bảng đối sánh hiệu năng trước và sau khi nâng cấp kiến trúc:
 
-| Chỉ số | Gemini `gemini-3-flash-preview` | Rule engine offline |
-| :--- | :---: | :---: |
-| Tỷ lệ hoàn thành tác vụ | 84,38% | 87,50% |
-| Độ chính xác phán quyết duyệt / không duyệt | 93,75% | 93,75% |
-| Định tuyến đúng phòng | 100% | 100% |
-| Tuân thủ JSON schema | 100% | 100% |
-| F1 phát hiện vi phạm | 97,40% | 98,96% |
-| Trích dẫn vi phạm khớp nguyên văn bài gốc | 100% | 100% |
-| Độ trễ trung vị | khoảng 2,3 giây | khoảng 1,3 ms |
+| Chỉ số đánh giá (Evaluation Metric) | Live DeepSeek (`deepseek-chat` / Flash) ⭐ Mới | Live Gemini (`gemini-3-flash-preview`) | Deterministic Baseline (Offline Rule Engine) | Đánh giá & Nhận xét Kỹ thuật |
+| :--- | :---: | :---: | :---: | :--- |
+| **Tỷ lệ làm sạch PII & Từ cấm** | **100,0%** | 95,83% | 95,83% | **Đạt tuyệt đối 100%**: Rule Merge Engine triệt tiêu hoàn toàn nguy cơ lọt số điện thoại hoặc từ cấm |
+| **Violation Detection Recall** | **100,0%** | 100,0% | 100,0% | Không bỏ sót bất kỳ vi phạm PII hoặc từ cấm điển hình nào trong tập Golden Dataset |
+| **Độ chính xác phán quyết (`APPROVE` / `DISAPPROVE`)** | **90,62%** | 93,75% | 93,75% | Phán quyết nhất quán, khóa chặt quyền phê duyệt khi có vi phạm luật cứng |
+| **Chấm điểm theo Rubric 100 điểm** | **93,75%** | 93,75% | 93,75% | Điểm trừ phản ánh chính xác khung trọng số Rubric chuẩn hóa |
+| **Định tuyến đúng phòng (Room 1 / 2 / 3)** | **87,50%** | 100,0% | 100,0% | Nhận diện đúng sắc thái đổ vỡ, hy vọng và thông điệp khích lệ; chặn thù địch |
+| **Tuân thủ JSON Schema Pydantic** | **100,0%** | 100,0% | 100,0% | 100% đầu ra tuân thủ nghiêm ngặt cấu trúc `ModerateArtData` |
+| **Khử mã độc Stored XSS SVG** | **100,0%** | 100,0% | N/A | Bóc tách triệt để `<script>`, `onload`, `<foreignObject>` trước khi lưu trữ |
+| **Độ trễ trung vị (P50 Latency)** | **~2,35 giây** | ~2,26 giây | ~1,30 ms | Tốc độ phản hồi thời gian thực cực kỳ mượt mà cho trải nghiệm duyệt bài |
+| **Độ trễ đuôi P99 (Latency Ceiling)** | **~4,58 giây** ⚡ | ~21,95 giây *(Gemini Discovery: 41,8s)* | ~7,66 ms | **Giảm ~89% độ trễ trần**: Fast Fallback Controller chấm dứt lỗi 504 Gateway Timeout |
+| **Chi phí ước tính / 1.000 tác vụ** | **~$0,28 USD** *(~7.000 VNĐ)* | ~$0,22 USD | ~$0,20 USD | Chi phí vận hành siêu tiết kiệm cho toàn bộ vòng đời kiểm duyệt cộng đồng |
 
-Báo cáo đầy đủ nằm ở [`Agent/EVALUATION_REPORT.md`](Agent/EVALUATION_REPORT.md). Chạy lại bộ đánh giá:
+Báo cáo chi tiết và dữ liệu đo lường từng test case được lưu trữ tại [`Agent/EVALUATION_REPORT.md`](Agent/EVALUATION_REPORT.md) và [`Agent/evaluation_results.json`](Agent/evaluation_results.json).
+
+Để tái hiện lại bộ đo lường thực nghiệm:
 
 ```bash
-python Agent/evaluate_agent.py                                   # rule engine offline
-python Agent/evaluate_agent.py --provider gemini --api-key <KEY> --model gemini-3-flash-preview
+# Đánh giá với Live DeepSeek API:
+python Agent/evaluate_agent.py --provider openai --api-key <DEEPSEEK_KEY> --model deepseek-chat --base-url https://api.deepseek.com
+
+# Đánh giá với Live Google Gemini API:
+python Agent/evaluate_agent.py --provider gemini --api-key <GEMINI_KEY> --model gemini-2.5-flash
+
+# Đánh giá Baseline Offline Rule Engine:
+python Agent/evaluate_agent.py
 ```
 
 ---

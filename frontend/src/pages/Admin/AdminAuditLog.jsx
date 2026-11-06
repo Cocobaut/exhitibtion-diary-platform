@@ -9,6 +9,19 @@ export function AdminAuditLog({ triggerToast }) {
   const [totalLogs, setTotalLogs] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Responsive mode detection: Computer (> 1024px) vs Tablet Portrait / Mobile Landscape / Mobile Portrait (<= 1024px)
+  const [isComputerMode, setIsComputerMode] = useState(
+    typeof window !== 'undefined' ? window.innerWidth > 1024 : true
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsComputerMode(window.innerWidth > 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Filters
   const [filterAction, setFilterAction] = useState('ALL');
   const [filterRoom, setFilterRoom] = useState('ALL');
@@ -159,80 +172,142 @@ export function AdminAuditLog({ triggerToast }) {
 
   return (
     <div
-      className="abs box"
-      style={{
-        left: '32px',
-        right: '32px',
-        top: '142px',
-        bottom: '26px',
-        overflowY: 'auto',
-        padding: '24px 28px',
-      }}
+      className={`admin-audit-log-container ${isComputerMode ? 'abs box' : 'box'}`}
+      style={
+        isComputerMode
+          ? {
+              left: '32px',
+              right: '32px',
+              top: '142px',
+              bottom: '26px',
+              overflowY: 'auto',
+              padding: '24px 28px',
+            }
+          : {
+              position: 'relative',
+              width: '100%',
+              marginTop: '10px',
+              overflowY: 'visible',
+              padding: '16px 14px 40px',
+              boxSizing: 'border-box',
+            }
+      }
     >
       {/* Top Header & Filters */}
-      <div className="row between" style={{ borderBottom: '1px solid var(--line)', paddingBottom: '16px', marginBottom: '18px', alignItems: 'center' }}>
+      <div
+        className="row between"
+        style={{
+          borderBottom: '1px solid var(--line)',
+          paddingBottom: '16px',
+          marginBottom: '18px',
+          alignItems: isComputerMode ? 'center' : 'flex-start',
+          flexDirection: isComputerMode ? 'row' : 'column',
+          gap: '12px',
+        }}
+      >
         <div>
           <div style={{ fontSize: '11px', letterSpacing: '.18em', fontWeight: 600, color: 'var(--acc)', textTransform: 'uppercase' }}>
             {language === 'en' ? 'SYSTEM AUDIT TRAIL' : 'NHẬT KÝ KIỂM TOÁN HỆ THỐNG'}
           </div>
-          <h2 className="serif" style={{ fontSize: '24px', margin: '4px 0 0', fontWeight: 600 }}>
+          <h2 className="serif" style={{ fontSize: isComputerMode ? '24px' : '20px', margin: '4px 0 0', fontWeight: 600 }}>
             {language === 'en' ? 'Administrative Operations History' : 'Lịch sử thao tác quản trị'}
           </h2>
         </div>
 
-        <div className="row" style={{ gap: '10px' }}>
+        <div style={{ width: isComputerMode ? 'auto' : '100%' }}>
           <button
             type="button"
             className="btn line sm"
             onClick={() => setUserModalOpen(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              width: isComputerMode ? 'auto' : '100%',
+              maxWidth: '100%',
+              padding: '8px 14px',
+              fontSize: '13px',
+              boxSizing: 'border-box',
+            }}
           >
-            {language === 'en' ? 'Moderate Violating User' : 'Xử lý người dùng vi phạm'}
+            <Icon name="shield" size={14} />
+            <span>{language === 'en' ? 'Moderate Violating User' : 'Xử lý người dùng vi phạm'}</span>
           </button>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="row between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-        <div className="row" style={{ gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span className="muted" style={{ fontSize: '13px' }}>
-            {language === 'en' ? 'Action:' : 'Hành động:'}
-          </span>
-          <select
-            className="inp"
-            style={{ width: '220px', padding: '6px 10px', fontSize: '13px' }}
-            value={filterAction}
-            onChange={(e) => {
-              setFilterAction(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="ALL">{language === 'en' ? 'All actions' : 'Tất cả hành động'}</option>
-            <option value="APPROVE">{language === 'en' ? 'Approve (APPROVE)' : 'Phê duyệt'}</option>
-            <option value="REJECT">{language === 'en' ? 'Reject (REJECT)' : 'Từ chối (REJECT)'}</option>
-            <option value="ARCHIVE">{language === 'en' ? 'Archive (ARCHIVE)' : 'Lưu trữ'}</option>
-            <option value="CREATE_DIRECT">{language === 'en' ? 'Studio Publish (CREATE_DIRECT)' : 'Xuất bản từ Studio'}</option>
-            <option value="APPROVE_AND_UPLOAD_MEDIA">{language === 'en' ? 'Approve & Upload Media' : 'Duyệt & Tải ảnh'}</option>
-            <option value="REQUEST_DELETE_USER">{language === 'en' ? 'Request Delete User' : 'Yêu cầu xóa tài khoản'}</option>
-          </select>
+      <div
+        className="row between"
+        style={{
+          marginBottom: '16px',
+          flexWrap: 'wrap',
+          gap: '10px',
+          alignItems: 'center',
+        }}
+      >
+        <div
+          className="row"
+          style={{
+            gap: '10px',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            width: isComputerMode ? 'auto' : '100%',
+          }}
+        >
+          <div className="row" style={{ gap: '8px', alignItems: 'center', flex: isComputerMode ? '0 0 auto' : '1 1 200px' }}>
+            <span className="muted" style={{ fontSize: '13px', whiteSpace: 'nowrap' }}>
+              {language === 'en' ? 'Action:' : 'Hành động:'}
+            </span>
+            <select
+              className="inp"
+              style={{
+                width: isComputerMode ? '220px' : '100%',
+                flex: 1,
+                padding: '6px 10px',
+                fontSize: '13px',
+              }}
+              value={filterAction}
+              onChange={(e) => {
+                setFilterAction(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="ALL">{language === 'en' ? 'All actions' : 'Tất cả hành động'}</option>
+              <option value="APPROVE">{language === 'en' ? 'Approve (APPROVE)' : 'Phê duyệt'}</option>
+              <option value="REJECT">{language === 'en' ? 'Reject (REJECT)' : 'Từ chối (REJECT)'}</option>
+              <option value="ARCHIVE">{language === 'en' ? 'Archive (ARCHIVE)' : 'Lưu trữ'}</option>
+              <option value="CREATE_DIRECT">{language === 'en' ? 'Studio Publish (CREATE_DIRECT)' : 'Xuất bản từ Studio'}</option>
+              <option value="APPROVE_AND_UPLOAD_MEDIA">{language === 'en' ? 'Approve & Upload Media' : 'Duyệt & Tải ảnh'}</option>
+              <option value="REQUEST_DELETE_USER">{language === 'en' ? 'Request Delete User' : 'Yêu cầu xóa tài khoản'}</option>
+            </select>
+          </div>
 
-          <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
-            {language === 'en' ? 'Room:' : 'Phòng:'}
-          </span>
-          <select
-            className="inp"
-            style={{ width: '190px', padding: '6px 10px', fontSize: '13px' }}
-            value={filterRoom}
-            onChange={(e) => {
-              setFilterRoom(e.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="ALL">{language === 'en' ? 'All rooms' : 'Tất cả phòng'}</option>
-            <option value="1">{language === 'en' ? 'Room 1 · Journey' : 'Phòng 1 · Triển lãm Hành trình'}</option>
-            <option value="2">{language === 'en' ? 'Room 2' : 'Phòng 2'}</option>
-            <option value="3">{language === 'en' ? 'Room 3' : 'Phòng 3'}</option>
-          </select>
+          <div className="row" style={{ gap: '8px', alignItems: 'center', flex: isComputerMode ? '0 0 auto' : '1 1 180px' }}>
+            <span className="muted" style={{ fontSize: '13px', marginLeft: isComputerMode ? '6px' : '0', whiteSpace: 'nowrap' }}>
+              {language === 'en' ? 'Room:' : 'Phòng:'}
+            </span>
+            <select
+              className="inp"
+              style={{
+                width: isComputerMode ? '190px' : '100%',
+                flex: 1,
+                padding: '6px 10px',
+                fontSize: '13px',
+              }}
+              value={filterRoom}
+              onChange={(e) => {
+                setFilterRoom(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="ALL">{language === 'en' ? 'All rooms' : 'Tất cả phòng'}</option>
+              <option value="1">{language === 'en' ? 'Room 1 · Journey' : 'Phòng 1 · Triển lãm Hành trình'}</option>
+              <option value="2">{language === 'en' ? 'Room 2' : 'Phòng 2'}</option>
+              <option value="3">{language === 'en' ? 'Room 3' : 'Phòng 3'}</option>
+            </select>
+          </div>
         </div>
 
         {isLoading && (
@@ -242,27 +317,93 @@ export function AdminAuditLog({ triggerToast }) {
         )}
       </div>
 
-      {/* Audit Log Table */}
-      <table className="at">
-        <thead>
-          <tr>
-            <th style={{ width: '150px' }}>{language === 'en' ? 'Timestamp' : 'Thời gian'}</th>
-            <th style={{ width: '170px' }}>{language === 'en' ? 'Administrator' : 'Quản trị viên'}</th>
-            <th style={{ width: '150px' }}>{language === 'en' ? 'Action' : 'Hành động'}</th>
-            <th style={{ width: '140px' }}>{language === 'en' ? 'Context / Room' : 'Không gian'}</th>
-            <th>{language === 'en' ? 'Artwork / Target' : 'Tác phẩm / Đối tượng'}</th>
-            <th>{language === 'en' ? 'Audit Notes & Details' : 'Ghi chú & Chi tiết kiểm toán'}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {logs.length === 0 ? (
+      {/* Desktop View (> 1024px): Full 6-column Table */}
+      {isComputerMode ? (
+        <table className="at desktop-only-audit-table">
+          <thead>
             <tr>
-              <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-                {language === 'en'
-                  ? 'No audit records matching the filters found'
-                  : 'Không tìm thấy bản ghi nhật ký kiểm toán nào'}
-              </td>
+              <th style={{ width: '150px' }}>{language === 'en' ? 'Timestamp' : 'Thời gian'}</th>
+              <th style={{ width: '170px' }}>{language === 'en' ? 'Administrator' : 'Quản trị viên'}</th>
+              <th style={{ width: '150px' }}>{language === 'en' ? 'Action' : 'Hành động'}</th>
+              <th style={{ width: '140px' }}>{language === 'en' ? 'Context / Room' : 'Không gian'}</th>
+              <th>{language === 'en' ? 'Artwork / Target' : 'Tác phẩm / Đối tượng'}</th>
+              <th>{language === 'en' ? 'Audit Notes & Details' : 'Ghi chú & Chi tiết kiểm toán'}</th>
             </tr>
+          </thead>
+          <tbody>
+            {logs.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
+                  {language === 'en'
+                    ? 'No audit records matching the filters found'
+                    : 'Không tìm thấy bản ghi nhật ký kiểm toán nào'}
+                </td>
+              </tr>
+            ) : (
+              logs.map((log) => {
+                const meta = actionMap[log.action_type] || {
+                  label: log.action_type,
+                  badgeClass: 'b-priv',
+                };
+                const adminName =
+                  log.created_by_admin?.nickname ||
+                  log.created_by_admin?.username ||
+                  log.admin_name ||
+                  (language === 'en' ? 'System' : 'Hệ thống');
+
+                return (
+                  <tr key={log.log_id || log.id}>
+                    <td className="muted" style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>
+                      {formatDate(log.performed_at || log.created_at)}
+                    </td>
+                    <td>
+                      <b>{adminName}</b>
+                    </td>
+                    <td>
+                      <span className={`badge ${meta.badgeClass}`} style={{ fontSize: '11px' }}>
+                        {meta.label}
+                      </span>
+                    </td>
+                    <td className="muted" style={{ fontSize: '13px' }}>
+                      {log.room_code
+                        ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id} (${log.room_code})`
+                        : log.room_id
+                        ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id}`
+                        : (language === 'en' ? 'System-wide' : 'Toàn hệ thống')}
+                    </td>
+                    <td style={{ maxWidth: '240px' }}>
+                      <div style={{ fontWeight: 600, fontSize: '13.5px' }}>
+                        {log.artwork_title || `${language === 'en' ? 'Target' : 'Tác phẩm'} #${log.artwork_id || log.target_id || ''}`}
+                      </div>
+                    </td>
+                    <td className="muted" style={{ fontSize: '13px', lineHeight: 1.4 }}>
+                      {log.details || log.summary || log.note || '—'}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      ) : (
+        /* Tablet Portrait / Mobile Landscape / Mobile Portrait View (<= 1024px):
+           Phần Không gian, Tác phẩm/đối tượng và Ghi chú & chi tiết kiểm toán nằm ở phía dưới thay vì bên phải */
+        <div className="mobile-only-audit-list" style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
+          {logs.length === 0 ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '40px 20px',
+                color: 'var(--muted)',
+                background: 'var(--paper)',
+                borderRadius: '10px',
+                border: '1px solid var(--line)',
+              }}
+            >
+              {language === 'en'
+                ? 'No audit records matching the filters found'
+                : 'Không tìm thấy bản ghi nhật ký kiểm toán nào'}
+            </div>
           ) : (
             logs.map((log) => {
               const meta = actionMap[log.action_type] || {
@@ -275,72 +416,154 @@ export function AdminAuditLog({ triggerToast }) {
                 log.admin_name ||
                 (language === 'en' ? 'System' : 'Hệ thống');
 
+              const roomText = log.room_code
+                ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id} (${log.room_code})`
+                : log.room_id
+                ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id}`
+                : (language === 'en' ? 'System-wide' : 'Toàn hệ thống');
+
+              const targetText =
+                log.artwork_title ||
+                (log.artwork_id || log.target_id
+                  ? `${language === 'en' ? 'Target' : 'Tác phẩm'} #${log.artwork_id || log.target_id}`
+                  : '—');
+
+              const detailsText = log.details || log.summary || log.note || '—';
+
               return (
-                <tr key={log.log_id || log.id}>
-                  <td className="muted" style={{ fontSize: '12.5px', whiteSpace: 'nowrap' }}>
-                    {formatDate(log.performed_at || log.created_at)}
-                  </td>
-                  <td>
-                    <b>{adminName}</b>
-                  </td>
-                  <td>
-                    <span className={`badge ${meta.badgeClass}`} style={{ fontSize: '11px' }}>
-                      {meta.label}
-                    </span>
-                  </td>
-                  <td className="muted" style={{ fontSize: '13px' }}>
-                    {log.room_code
-                      ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id} (${log.room_code})`
-                      : log.room_id
-                      ? `${language === 'en' ? 'Room' : 'Phòng'} ${log.room_id}`
-                      : (language === 'en' ? 'System-wide' : 'Toàn hệ thống')}
-                  </td>
-                  <td style={{ maxWidth: '240px' }}>
-                    <div style={{ fontWeight: 600, fontSize: '13.5px' }}>
-                      {log.artwork_title || `${language === 'en' ? 'Target' : 'Tác phẩm'} #${log.artwork_id || log.target_id || ''}`}
+                <div
+                  key={log.log_id || log.id}
+                  className="admin-audit-card"
+                  style={{
+                    background: 'var(--paper)',
+                    border: '1.5px solid var(--line)',
+                    borderRadius: '10px',
+                    padding: '16px 18px',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.06)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  {/* Top Row: Admin Name, Action Badge, and Timestamp */}
+                  <div
+                    className="row between"
+                    style={{
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '8px',
+                      borderBottom: '1px solid var(--line)',
+                      paddingBottom: '10px',
+                    }}
+                  >
+                    <div className="row" style={{ gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--ink)' }}>
+                        {adminName}
+                      </span>
+                      <span className={`badge ${meta.badgeClass}`} style={{ fontSize: '11px', padding: '3px 8px' }}>
+                        {meta.label}
+                      </span>
                     </div>
-                  </td>
-                  <td className="muted" style={{ fontSize: '13px', lineHeight: 1.4 }}>
-                    {log.details || log.summary || log.note || '—'}
-                  </td>
-                </tr>
+                    <span className="muted" style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                      {formatDate(log.performed_at || log.created_at)}
+                    </span>
+                  </div>
+
+                  {/* Below Row 1: Không gian (Context / Room) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <div style={{ fontSize: '11px', letterSpacing: '.08em', fontWeight: 600, color: 'var(--onw2, #888)', textTransform: 'uppercase' }}>
+                      {language === 'en' ? 'Context / Room:' : 'Không gian:'}
+                    </div>
+                    <div style={{ fontSize: '13.5px', color: 'var(--ink)', fontWeight: 500 }}>
+                      {roomText}
+                    </div>
+                  </div>
+
+                  {/* Below Row 2: Tác phẩm / Đối tượng (Artwork / Target) */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <div style={{ fontSize: '11px', letterSpacing: '.08em', fontWeight: 600, color: 'var(--onw2, #888)', textTransform: 'uppercase' }}>
+                      {language === 'en' ? 'Artwork / Target:' : 'Tác phẩm / Đối tượng:'}
+                    </div>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--acc, #8A2D24)' }}>
+                      {targetText}
+                    </div>
+                  </div>
+
+                  {/* Below Row 3: Ghi chú & Chi tiết kiểm toán (Audit Notes & Details) */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      background: 'rgba(0,0,0,0.03)',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(0,0,0,0.05)',
+                    }}
+                  >
+                    <div style={{ fontSize: '11px', letterSpacing: '.08em', fontWeight: 600, color: 'var(--onw2, #888)', textTransform: 'uppercase' }}>
+                      {language === 'en' ? 'Audit Notes & Details:' : 'Ghi chú & Chi tiết kiểm toán:'}
+                    </div>
+                    <div className="muted" style={{ fontSize: '13px', lineHeight: 1.5, wordBreak: 'break-word' }}>
+                      {detailsText}
+                    </div>
+                  </div>
+                </div>
               );
             })
           )}
-        </tbody>
-      </table>
+        </div>
+      )}
 
       {/* USER MANAGEMENT MODAL */}
       {userModalOpen && (
         <>
           <div className="scrim" onClick={() => setUserModalOpen(false)} />
-          <div className="panel" style={{ width: '600px', boxShadow: '0 25px 70px rgba(0,0,0,0.5)' }}>
+          <div
+            className="panel"
+            style={{
+              width: isComputerMode ? '580px' : 'min(580px, 94vw)',
+              maxWidth: '94vw',
+              maxHeight: '88vh',
+              overflowY: 'auto',
+              padding: isComputerMode ? '24px 28px' : '20px 16px',
+              boxShadow: '0 25px 70px rgba(0,0,0,0.5)',
+              boxSizing: 'border-box',
+            }}
+          >
             <span className="x" onClick={() => setUserModalOpen(false)} role="button" tabIndex={0}>
               &times;
             </span>
 
-            <h2 className="serif" style={{ fontSize: '24px', fontWeight: 600 }}>
-              {language === 'en' ? 'Account Enforcement & Moderation' : 'Xử lý tài khoản người dùng vi phạm'}
+            <h2 className="serif" style={{ fontSize: isComputerMode ? '22px' : '18px', fontWeight: 600, margin: '0 0 4px', paddingRight: '28px' }}>
+              {language === 'en' ? 'Account Enforcement & Moderation' : 'Xử lý người dùng vi phạm'}
             </h2>
-            <div className="sub">
+            <div className="sub" style={{ fontSize: isComputerMode ? '13px' : '12px', marginBottom: '14px', lineHeight: 1.4 }}>
               {language === 'en'
                 ? 'Admins can directly lock violating accounts. To permanently purge data, submit an authenticated deletion request to the Owner.'
                 : 'Quản trị viên có thể khóa tài khoản vi phạm. Muốn xóa vĩnh viễn thì gửi yêu cầu lên Chủ sở hữu.'}
             </div>
 
             {/* Segment Switcher */}
-            <div className="seg" style={{ marginBottom: '18px' }}>
+            <div className="seg" style={{ marginBottom: '18px', width: '100%', display: 'flex' }}>
               <span
                 className={userModalTab === 'LOCK' ? 'on' : ''}
                 onClick={() => setUserModalTab('LOCK')}
+                style={{ flex: 1, textAlign: 'center', fontSize: isComputerMode ? '13px' : '12px', padding: '8px 4px', whiteSpace: 'nowrap' }}
               >
-                {language === 'en' ? 'Lock / Unlock Account' : 'Khóa / Mở khóa tài khoản'}
+                {language === 'en'
+                  ? (isComputerMode ? 'Lock / Unlock Account' : 'Lock / Unlock')
+                  : (isComputerMode ? 'Khóa / Mở khóa tài khoản' : 'Khóa / Mở khóa')}
               </span>
               <span
                 className={userModalTab === 'REQUEST_DELETE' ? 'on' : ''}
                 onClick={() => setUserModalTab('REQUEST_DELETE')}
+                style={{ flex: 1, textAlign: 'center', fontSize: isComputerMode ? '13px' : '12px', padding: '8px 4px', whiteSpace: 'nowrap' }}
               >
-                {language === 'en' ? 'Request Deletion to Owner' : 'Gửi yêu cầu xóa lên Chủ sở hữu'}
+                {language === 'en'
+                  ? (isComputerMode ? 'Request Deletion to Owner' : 'Request Delete')
+                  : (isComputerMode ? 'Gửi yêu cầu xóa lên Chủ sở hữu' : 'Yêu cầu xóa')}
               </span>
             </div>
 
@@ -362,7 +585,7 @@ export function AdminAuditLog({ triggerToast }) {
                     {language === 'en' ? 'Target Status' : 'Trạng thái áp dụng'}
                   </div>
                   <div className="row" style={{ gap: '14px', flexWrap: 'wrap' }}>
-                    <label className="row" style={{ gap: '6px', cursor: 'pointer', fontSize: '14px' }}>
+                    <label className="row" style={{ gap: '6px', cursor: 'pointer', fontSize: isComputerMode ? '14px' : '13px' }}>
                       <input
                         type="radio"
                         name="lockStatus"
@@ -371,7 +594,7 @@ export function AdminAuditLog({ triggerToast }) {
                       />
                       <span>{language === 'en' ? 'Lock account (Block access)' : 'Khóa tài khoản (Chặn truy cập)'}</span>
                     </label>
-                    <label className="row" style={{ gap: '6px', cursor: 'pointer', fontSize: '14px' }}>
+                    <label className="row" style={{ gap: '6px', cursor: 'pointer', fontSize: isComputerMode ? '14px' : '13px' }}>
                       <input
                         type="radio"
                         name="lockStatus"
@@ -389,10 +612,10 @@ export function AdminAuditLog({ triggerToast }) {
                       background: 'rgba(217, 119, 6, 0.1)',
                       border: '1px solid #D97706',
                       borderRadius: '8px',
-                      padding: '10px 14px',
+                      padding: '10px 12px',
                       color: '#92400E',
-                      fontSize: '13px',
-                      lineHeight: 1.5,
+                      fontSize: '12.5px',
+                      lineHeight: 1.45,
                       marginBottom: '14px',
                     }}
                   >
@@ -402,7 +625,7 @@ export function AdminAuditLog({ triggerToast }) {
                       : 'Nhập chính xác tên đăng nhập và email để hệ thống đối chiếu trước khi chuyển lên Chủ sở hữu.'}
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isComputerMode ? '1fr 1fr' : '1fr', gap: '12px' }}>
                     <div>
                       <div className="fieldl">{language === 'en' ? 'Username' : 'Tên đăng nhập'}</div>
                       <input
@@ -443,17 +666,18 @@ export function AdminAuditLog({ triggerToast }) {
               </div>
               <textarea
                 className="inp area"
-                style={{ minHeight: '90px', fontSize: '14px', fontFamily: 'var(--sans)' }}
+                style={{ minHeight: '80px', fontSize: '13.5px', fontFamily: 'var(--sans)' }}
                 value={actionReason}
                 onChange={(e) => setActionReason(e.target.value)}
                 placeholder={language === 'en' ? 'Specify policy violations and context...' : 'Ghi rõ lý do và hành vi vi phạm...'}
                 required
               />
 
-              <div className="row" style={{ justifyContent: 'flex-end', marginTop: '22px', gap: '10px' }}>
+              <div className="row" style={{ justifyContent: 'flex-end', marginTop: '20px', gap: '10px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   className="btn ghost"
+                  style={{ flex: isComputerMode ? 'none' : '1 1 90px' }}
                   onClick={() => setUserModalOpen(false)}
                   disabled={isSubmittingUserAction}
                 >
@@ -462,7 +686,10 @@ export function AdminAuditLog({ triggerToast }) {
                 <button
                   type="submit"
                   className="btn main"
-                  style={{ background: userModalTab === 'LOCK' && !lockStatus ? '#8E2A22' : 'var(--acc)' }}
+                  style={{
+                    flex: isComputerMode ? 'none' : '1 1 180px',
+                    background: userModalTab === 'LOCK' && !lockStatus ? '#8E2A22' : 'var(--acc)',
+                  }}
                   disabled={isSubmittingUserAction}
                 >
                   {isSubmittingUserAction
