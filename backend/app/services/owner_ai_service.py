@@ -11,6 +11,10 @@ from app.schemas.ai_copilot import (
 )
 from app.services.ai_discovery_service import AiDiscoveryService
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class OwnerAiService:
 
@@ -102,7 +106,7 @@ class OwnerAiService:
                         base_url=m.base_url or record.moderation_base_url,
                     )
                 except Exception as ex:
-                    print(f"[OwnerAiService] Moderation key saved. Model discovery note: {ex}")
+                    logger.info(f"[OwnerAiService] Moderation key saved. Model discovery note: {ex}")
 
         # Update Image Generation
         if payload.image_generation:
@@ -129,7 +133,7 @@ class OwnerAiService:
                         base_url=img.base_url or record.image_base_url,
                     )
                 except Exception as ex:
-                    print(f"[OwnerAiService] Image key saved. Model discovery note: {ex}")
+                    logger.info(f"[OwnerAiService] Image key saved. Model discovery note: {ex}")
 
         record.updated_by_user_id = owner.id
         await db.commit()

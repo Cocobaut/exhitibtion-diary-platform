@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.core.crypto import decrypt_aes_256
+from app.core.security import validate_safe_base_url
 from app.services.owner_ai_service import OwnerAiService
 
 
@@ -35,7 +36,8 @@ async def require_moderation_guard(
         "provider": setting.moderation_provider,
         "api_key": api_key,
         "model_name": setting.moderation_model_name,
-        "base_url": setting.moderation_base_url,
+        # Kiểm tra lại ngay lúc gọi: tên miền có thể đã bị trỏ sang IP nội bộ sau khi lưu (DNS rebinding)
+        "base_url": validate_safe_base_url(setting.moderation_base_url) if setting.moderation_base_url else None,
     }
 
 
@@ -68,5 +70,6 @@ async def require_image_gen_guard(
         "provider": setting.image_provider,
         "api_key": api_key,
         "model_name": setting.image_model_name,
-        "base_url": setting.image_base_url,
+        # Kiểm tra lại ngay lúc gọi: tên miền có thể đã bị trỏ sang IP nội bộ sau khi lưu (DNS rebinding)
+        "base_url": validate_safe_base_url(setting.image_base_url) if setting.image_base_url else None,
     }

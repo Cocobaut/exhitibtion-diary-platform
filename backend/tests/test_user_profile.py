@@ -299,6 +299,24 @@ def test_06_change_password_flows():
             })
             assert old_login.status_code == 401
 
+            # 6. Đổi mật khẩu bằng token thật: token cũ (mọi thiết bị) hết hiệu lực, token mới trả về dùng được
+            real_headers = {"Authorization": f"Bearer {login_res.json()['body']['access_token']}"}
+            other_device = await client.post("/api/v1/auth/login", json={
+                "account": "hoanghon_01", "password": "BrandNewPassword789@"
+            })
+            other_headers = {"Authorization": f"Bearer {other_device.json()['body']['access_token']}"}
+            res6 = await client.put(
+                "/api/v1/users/me/password",
+                headers=real_headers,
+                json={"current_password": "BrandNewPassword789@", "new_password": "ThirdPassword2026@"}
+            )
+            assert res6.status_code == 200
+            new_token = res6.json()["data"]["access_token"]
+            assert (await client.get("/api/v1/users/me", headers=real_headers)).status_code == 401
+            assert (await client.get("/api/v1/users/me", headers=other_headers)).status_code == 401
+            new_headers = {"Authorization": f"Bearer {new_token}"}
+            assert (await client.get("/api/v1/users/me", headers=new_headers)).status_code == 200
+
     asyncio.run(run())
 
 
@@ -387,6 +405,47 @@ def test_09_patch_theme_preference():
                 json={"theme_preference": "neon_punk"}
             )
             assert bad_res.status_code in (400, 422)
+
+    asyncio.run(run())
+
+
+
+def test_10_avatar_url_cannot_delete_other_files():
+    """Test 10: Đặt avatar_url trỏ vào file người khác rồi upload avatar mới không được xoá file đó;
+    avatar_url có "../", http:// hoặc javascript: bị từ chối."""
+    from pathlib import Path as _Path
+    from app.core.config import settings as _settings
+
+    async def run():
+        async with setup_test_context() as (client, session, auth_headers, user):
+            for bad in ["/static/../app/main.py", "/static/avatars/..%2F..%2Fx", "javascript:alert(1)", "http://evil.example/p.png"]:
+                res = await client.patch("/api/v1/users/me", headers=auth_headers, json={"avatar_url": bad})
+                if bad == "/static/avatars/..%2F..%2Fx":
+                    continue  # chuỗi đã mã hoá không chứa "..", chỉ cần không xoá được file (kiểm tra bên dưới)
+                assert res.status_code in (400, 422), (bad, res.status_code)
+
+            victim = _Path(_settings.UPLOAD_DIR) / "artworks" / "victim-artwork-test.jpg"
+            victim.parent.mkdir(parents=True, exist_ok=True)
+            victim.write_bytes(b"\xff\xd8\xff" + b"0" * 32)
+            try:
+                res = await client.patch(
+                    "/api/v1/users/me", headers=auth_headers,
+                    json={"avatar_url": "/static/artworks/victim-artwork-test.jpg"},
+                )
+                assert res.status_code == 200
+                files = {"file": ("avatar.png", b"\x89PNG\r\n\x1a\n" + b"0" * 64, "image/png")}
+                up = await client.post("/api/v1/users/me/avatar", headers=auth_headers, files=files)
+                assert up.status_code == 200
+                assert victim.exists(), "Upload avatar không được xoá file của người khác"
+
+                # Avatar cũ của chính người dùng thì vẫn được dọn
+                own_old = _Path(_settings.UPLOAD_DIR) / up.json()["data"]["avatar_url"].removeprefix("/static/")
+                up2 = await client.post("/api/v1/users/me/avatar", headers=auth_headers, files=files)
+                assert up2.status_code == 200
+                assert not own_old.exists()
+                (_Path(_settings.UPLOAD_DIR) / up2.json()["data"]["avatar_url"].removeprefix("/static/")).unlink(missing_ok=True)
+            finally:
+                victim.unlink(missing_ok=True)
 
     asyncio.run(run())
 

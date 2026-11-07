@@ -8,6 +8,10 @@ from email.utils import formataddr
 
 from app.core.config import settings
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def _send_smtp(msg: EmailMessage) -> None:
     context = ssl.create_default_context()
@@ -32,7 +36,7 @@ async def send_email(to: str, subject: str, body: str) -> None:
     msg.set_content(body)
 
     if settings.EMAIL_BACKEND != "smtp":
-        print(f"[Email:console] To: {to}\nSubject: {subject}\n\n{body}\n")
+        logger.info(f"[Email:console] To: {to}\nSubject: {subject}\n\n{body}\n")
         return
 
     await asyncio.to_thread(_send_smtp, msg)

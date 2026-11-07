@@ -197,10 +197,18 @@ export function AccountSettingsModal({ isOpen, onClose }) {
     setIsUpdatingPassword(true);
 
     try {
-      await userService.changePassword({
+      const res = await userService.changePassword({
         current_password: currentPassword,
         new_password: newPassword,
       });
+      // Đổi mật khẩu làm mọi token cũ hết hiệu lực; lưu token mới để phiên này vẫn đăng nhập
+      if (res?.access_token) {
+        try {
+          localStorage.setItem('access_token', res.access_token);
+        } catch {
+          // bỏ qua
+        }
+      }
 
       setIsUpdatingPassword(false);
       setCurrentPassword('');

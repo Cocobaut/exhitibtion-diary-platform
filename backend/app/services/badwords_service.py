@@ -4,6 +4,10 @@ import re
 from typing import Any, Dict, List, Tuple
 from app.schemas.ai_copilot import ViolationDetail
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # Regex Patterns for PII
 VIETNAMESE_PHONE_REGEX = re.compile(
     r"(?:\+84|0)(?:3[2-9]|5[2689]|7[06-9]|8[1-9]|9[0-9])[0-9]{7}\b"
@@ -55,7 +59,7 @@ class BadWordsService:
             cls._lookup_cache = lookup
             cls._is_loaded = True
         except Exception as e:
-            print(f"Warning: Failed to load badwords seed: {e}")
+            logger.warning(f"Warning: Failed to load badwords seed: {e}")
 
     @classmethod
     def detect_violations(cls, text: str) -> List[ViolationDetail]:
