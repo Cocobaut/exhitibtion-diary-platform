@@ -141,6 +141,7 @@ export function NotebookPage({
   // 2. Kết hợp thông minh giữa serverItems và notebookItems:
   // Luôn bảo toàn các mục người dùng đã lưu trong local storage mà server chưa có hoặc không lưu (ví dụ mock, offline).
   const useServer = Boolean(user && serverLoaded && !serverError);
+  const waitingForServer = Boolean(user && !serverLoaded && !serverError && (notebookItems || []).length === 0);
   const activeItems = React.useMemo(() => {
     if (!serverLoaded) {
       return notebookItems || [];
