@@ -170,7 +170,7 @@ class Room2Service:
             .order_by(Artwork.created_at.desc())
             .limit(limit)
         )
-        rows = (await db.execute(stmt)).scalars().all()
+        rows = (await db.execute(stmt)).scalars().unique().all()
 
         items = []
         for art in rows:
@@ -363,7 +363,7 @@ class Room2Service:
             .where(*conditions)
             .order_by(Artwork.target_date.desc(), Artwork.created_at.desc())
         )
-        rows = (await db.execute(stmt)).scalars().all()
+        rows = (await db.execute(stmt)).scalars().unique().all()
 
         items = []
         for art in rows:

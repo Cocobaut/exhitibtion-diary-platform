@@ -140,16 +140,10 @@ export function SingleLantern({
 
   const currentScale = sc * (
     isDragging
-      ? 1.28
+      ? 1.25
       : isHovered
-      ? 1.22
-      : isSearchActive && isSearchMatch
-      ? 1.34
-      : isCrimsonTheme
-      ? 1.08
-      : isMatch
-      ? 1
-      : 0.94
+      ? 1.18
+      : 1
   );
   const currentY = y + dragOffset;
 
@@ -415,10 +409,16 @@ export function LanternSky({
         if (!isLanded && personalLantern) {
           const itemIdStr = item.id ? String(item.id) : null;
           const itemArtIdStr = item.artwork_id ? String(item.artwork_id) : null;
-          if (
+          const matchesId = (
             (personalIdStr && (itemIdStr === personalIdStr || itemArtIdStr === personalIdStr)) ||
             (personalArtIdStr && (itemIdStr === personalArtIdStr || itemArtIdStr === personalArtIdStr))
-          ) {
+          );
+          const matchesContent = Boolean(
+            personalLantern.title &&
+            item.title === personalLantern.title &&
+            (item.is_mine || item.isMine)
+          );
+          if (matchesId || matchesContent) {
             return;
           }
         }
@@ -438,7 +438,7 @@ export function LanternSky({
         const authorName = item.author_display_name || 'Người gửi ẩn danh';
         const titleText = `${item.title || 'Lồng đèn hy vọng'} — ${authorName} · Kéo xuống hoặc nhấn để đọc`;
 
-        const isMine = Boolean(item.is_mine || item.isMine || activeFilter === 'mine');
+        const isMine = Boolean(item.is_mine || item.isMine);
         const isOpened = Boolean(item.is_opened || item.status === 'OPENED' || item.statusNote?.includes('đã mở'));
         const isLocked = Boolean(item.status === 'LOCKED' || item.status === 'WAITING' || (item.remaining_seconds && item.remaining_seconds > 0) || !item.is_opened);
 
@@ -468,11 +468,8 @@ export function LanternSky({
       });
     }
 
-    // Giữ hiệu ứng bầu trời rực rỡ ở tab All khi không tìm kiếm (tối thiểu 48 lồng đèn).
-    // Riêng ở tab "mine" (Lồng đèn của tôi), TUYỆT ĐỐI không chèn ambient lồng đèn giả để chỉ hiển thị lồng đèn của chính mình.
-    const ambientCount = (activeFilter === 'mine' || !showAmbient)
-      ? 0
-      : Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0));
+    // Luôn giữ tối thiểu 48 lồng đèn trên bầu trời đêm để không bị giật hay đổi vị trí khi tìm kiếm / chuyển tab
+    const ambientCount = Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0));
     const ambientSpan = isCompact ? Math.max(100, vbWidth - 70) : 1284;
     const ambientMinX = isCompact ? 30 : 40;
 
@@ -519,20 +516,7 @@ export function LanternSky({
       );
     }
 
-    // Ensure matched search lanterns are placed on top in SVG order
-    if (isSearchActive) {
-      const normal = [];
-      const matched = [];
-      items.forEach((elem) => {
-        if (elem.props.isSearchMatch) {
-          matched.push(elem);
-        } else {
-          normal.push(elem);
-        }
-      });
-      return [...normal, ...matched];
-    }
-
+    // Giữ nguyên thứ tự tuyệt đối của các lồng đèn trên canvas, không đảo vị trí khi tìm kiếm
     return items;
   }, [
     lanterns,

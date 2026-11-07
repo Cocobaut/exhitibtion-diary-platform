@@ -339,20 +339,6 @@ export function LanternLandedModal({
           <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)' }}>
             {language === 'en' ? 'Opening...' : 'Đang mở thư...'}
           </div>
-        ) : lockedUntil && !currentLetter.isMine && !currentLetter.is_mine ? (
-          <div className="book" style={{ fontSize: '16px', lineHeight: 1.85, color: '#3A2016' }}>
-            <div style={{ fontWeight: 600, marginBottom: '8px' }}>
-              {'🔒 '}
-              {language === 'en'
-                ? `This letter has not landed yet. It opens on ${formatUnlockDate(lockedUntil, 'en')}.`
-                : `Lồng đèn này chưa tới ngày hạ cánh. Bức thư sẽ mở vào ${formatUnlockDate(lockedUntil, 'vi')}.`}
-            </div>
-            {original(currentLetter, 'short_content') && (
-              <div style={{ fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
-                {original(currentLetter, 'short_content')}
-              </div>
-            )}
-          </div>
         ) : (
           <div
             className="book"
@@ -363,26 +349,12 @@ export function LanternLandedModal({
               color: '#3A2016',
             }}
           >
-            {(currentLetter.isMine || currentLetter.is_mine) && lockedUntil && (
-              <div
-                style={{
-                  fontSize: '13px',
-                  color: '#8A532B',
-                  background: 'rgba(212, 175, 55, 0.15)',
-                  border: '1px solid rgba(212, 175, 55, 0.35)',
-                  borderRadius: '8px',
-                  padding: '6px 12px',
-                  marginBottom: '12px',
-                  fontStyle: 'italic',
-                }}
-              >
-                {language === 'en'
-                  ? `✦ Your lantern letter (Scheduled to land on ${formatUnlockDate(lockedUntil, 'en')}) · Only you can preview this ✦`
-                  : `✦ Lồng đèn của bạn (Dự kiến hạ cánh vào ${formatUnlockDate(lockedUntil, 'vi')}) · Bạn có thể đọc trước bức thư này ✦`}
-              </div>
-            )}
             <HighlightText
-              text={letter ? tr.text('content') : (original(currentLetter, 'content') || currentLetter.content)}
+              text={
+                letter
+                  ? (tr.text('content') || tr.text('short_content'))
+                  : (original(currentLetter, 'content') || currentLetter.content || original(currentLetter, 'short_content') || currentLetter.short_content)
+              }
               query={searchQuery}
             />
           </div>

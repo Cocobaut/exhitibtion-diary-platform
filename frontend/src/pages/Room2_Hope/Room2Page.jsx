@@ -118,18 +118,12 @@ export function Room2Page({
     }
   }, [isGuest, user]);
 
-  // Load base lanterns based on active filter
+  // Load base lanterns (luôn tải toàn bộ danh sách để bầu trời đêm luôn đầy đặn)
   const loadLanterns = useCallback(async () => {
-    if (activeFilter === 'mine' && (isGuest || !user)) {
-      setLanterns([]);
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
     try {
       const res = await room2Service.getLanterns({
-        filter: activeFilter,
+        filter: 'all',
         limit: 60,
       });
       const data = res?.data || res;
@@ -156,7 +150,7 @@ export function Room2Page({
     } finally {
       setIsLoading(false);
     }
-  }, [activeFilter, isGuest, user, language, checkReadyToFall]);
+  }, [isGuest, user, language, checkReadyToFall]);
 
   // Handle dynamic search matching without removing other lanterns from sky
   useEffect(() => {
@@ -230,6 +224,12 @@ export function Room2Page({
       isMounted = false;
     };
   }, [debouncedSearch, activeFilter, lanterns, personalLantern]);
+
+  const myLanternsCount = useMemo(() => {
+    const fromList = lanterns.filter((it) => it.is_mine || it.isMine).length;
+    const hasPersonal = Boolean(personalLantern && !lanterns.some((it) => String(it.id) === String(personalLantern.id)));
+    return fromList + (hasPersonal ? 1 : 0);
+  }, [lanterns, personalLantern]);
 
   // Initial load
   useEffect(() => {
@@ -365,7 +365,7 @@ export function Room2Page({
         isSearchActive={isSearchActive}
         searchQuery={debouncedSearch}
         onOpenLandedModal={handleOpenLantern}
-        showAmbient={!debouncedSearch}
+        showAmbient={true}
       />
 
       {/* Top Header */}
@@ -478,10 +478,10 @@ export function Room2Page({
           )}
           {!isLoading && !debouncedSearch && activeFilter === 'mine' && (
             <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
-              {lanterns.length > 0
+              {myLanternsCount > 0
                 ? (language === 'en'
-                  ? `${lanterns.length} lantern${lanterns.length > 1 ? 's' : ''}`
-                  : `${lanterns.length} lồng đèn của bạn`)
+                  ? `${myLanternsCount} lantern${myLanternsCount > 1 ? 's' : ''}`
+                  : `${myLanternsCount} lồng đèn của bạn`)
                 : (language === 'en'
                   ? 'Bạn chưa có lồng đèn nào'
                   : 'Bạn chưa có lồng đèn nào')}
