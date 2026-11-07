@@ -239,6 +239,7 @@ python Agent/evaluate_agent.py
 - Quên mật khẩu dùng link một lần gửi qua email, hết hạn sau 15 phút. API không trả token và không tiết lộ tài khoản nào tồn tại.
 - Giới hạn số lần đăng nhập sai, yêu cầu email đặt lại mật khẩu, đăng ký tài khoản, viết nhật ký và tải ảnh.
 - Giới hạn tần suất gửi tác phẩm.
+- Lồng đèn Phòng 2 chưa tới ngày hạ cánh: chỉ tác giả đọc được nội dung; người khác chỉ thấy tiêu đề và tóm tắt, không tìm được theo nội dung thư.
 - Ảnh đính kèm chỉ nhận file đã tải lên (`/static/...`) hoặc link `https://`; người dùng chỉ xoá được file của chính mình.
 - Địa chỉ máy chủ AI tuỳ chỉnh bị chặn nếu trỏ vào mạng nội bộ (IPv4, IPv6), kiểm tra lại mỗi lần gọi.
 - Production gửi kèm Content-Security-Policy, HSTS, X-Frame-Options và Permissions-Policy.

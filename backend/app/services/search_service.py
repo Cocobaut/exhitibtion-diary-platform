@@ -24,6 +24,22 @@ class SearchService:
         return f"%{escaped}%"
 
     @staticmethod
+    def non_content_match(db: AsyncSession, q: str):
+        """Điều kiện: từ khoá khớp tiêu đề, tóm tắt hoặc tên tác giả (bỏ qua nội dung thư)."""
+        pattern = SearchService._like_pattern(q.strip())
+        columns = [
+            Artwork.title, Artwork.title_vi, Artwork.title_en,
+            Artwork.short_content, Artwork.short_content_vi, Artwork.short_content_en,
+            Artwork.author_display_name,
+        ]
+        if SearchService._is_postgres(db):
+            return or_(*[
+                func.unaccent(func.lower(func.coalesce(col, ""))).like(func.unaccent(func.lower(pattern)))
+                for col in columns
+            ])
+        return or_(*[col.ilike(pattern, escape="\\") for col in columns])
+
+    @staticmethod
     def _strip_accents(s: str) -> str:
         s = s.replace("đ", "d").replace("Đ", "D")
         return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")

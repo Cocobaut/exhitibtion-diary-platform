@@ -12,6 +12,7 @@ from app.models.message_capsule import MessageCapsule
 from app.models.user import User
 from app.models.user_capsule_draw import UserCapsuleDraw
 from app.models.user_saved_artwork import UserSavedArtwork
+from app.services.room2_service import is_lantern_unlocked
 from app.schemas.notebook import (
     NotebookCounts,
     NotebookItem,
@@ -129,6 +130,11 @@ class NotebookService:
                 ic = "r2"
                 prefix_id = "nb_lt_"
 
+            content = art.content or art.short_content
+            # Lồng đèn của người khác chưa tới ngày hạ cánh: chỉ giữ tóm tắt, không lộ nội dung thư
+            if art.room_id == ROOM_HOPE and art.user_id != user_id and not is_lantern_unlocked(art.target_date):
+                content = art.short_content
+
             items_all.append({
                 "id": f"{prefix_id}{sa.id}",
                 "source": item_src,
@@ -138,7 +144,7 @@ class NotebookService:
                 "badge_class": badge_cls,
                 "icon": ic,
                 "title": art.title,
-                "content": art.content or art.short_content,
+                "content": content,
                 "short_content": art.short_content,
                 "author": author_name,
                 "symbol": art.color_code or art.tag_category or "heart",
