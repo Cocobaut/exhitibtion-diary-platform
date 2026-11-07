@@ -443,6 +443,7 @@ export function Room1Page({
                 key={work.id || idx}
                 artwork={work}
                 index={idx}
+                searchQuery={search}
                 onClick={() => {
                   if (work.status !== 'PENDING' && work.status !== 'REJECTED') {
                     setSelectedArtwork(work);
@@ -499,6 +500,7 @@ export function Room1Page({
       <ArtworkDetailModal
         isOpen={Boolean(selectedArtwork)}
         artwork={selectedArtwork}
+        searchQuery={search}
         onClose={() => setSelectedArtwork(null)}
         onReactionUpdated={handleReactionUpdated}
         onSaveToNotebook={onSaveToNotebook}

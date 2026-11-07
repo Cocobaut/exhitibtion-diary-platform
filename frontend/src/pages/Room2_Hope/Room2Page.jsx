@@ -206,6 +206,9 @@ export function Room2Page({
           matchesSearchQuery(it.content, q) ||
           matchesSearchQuery(it.content_vi, q) ||
           matchesSearchQuery(it.content_en, q) ||
+          matchesSearchQuery(it.short_content, q) ||
+          matchesSearchQuery(it.short_content_vi, q) ||
+          matchesSearchQuery(it.short_content_en, q) ||
           matchesSearchQuery(it.author, q) ||
           matchesSearchQuery(it.author_vi, q) ||
           matchesSearchQuery(it.author_en, q) ||
@@ -213,6 +216,7 @@ export function Room2Page({
 
         if (isMatch && it.id !== undefined && it.id !== null) {
           matched.add(String(it.id));
+          if (it.artwork_id) matched.add(String(it.artwork_id));
         }
       });
 

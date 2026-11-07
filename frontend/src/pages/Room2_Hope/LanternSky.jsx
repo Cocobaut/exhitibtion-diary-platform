@@ -427,7 +427,7 @@ export function LanternSky({
         const isLocked = Boolean(item.status === 'LOCKED' || item.status === 'WAITING' || (item.remaining_seconds && item.remaining_seconds > 0) || !item.is_opened);
 
         const isSearchMatch = isSearchActive && item.id
-          ? (matchedLanternIds?.has ? matchedLanternIds.has(String(item.id)) : false)
+          ? (matchedLanternIds?.has ? (matchedLanternIds.has(String(item.id)) || (item.artwork_id && matchedLanternIds.has(String(item.artwork_id)))) : false)
           : false;
 
         items.push(
@@ -452,8 +452,8 @@ export function LanternSky({
       });
     }
 
-    // Always ensure at least 48 lanterns for breathtaking visual depth on desktop
-    const ambientCount = showAmbient ? Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0)) : 0;
+    // Always ensure at least 48 lanterns for breathtaking visual depth on desktop (never delete other lanterns during search)
+    const ambientCount = Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0));
     const ambientSpan = isCompact ? Math.max(100, vbWidth - 70) : 1284;
     const ambientMinX = isCompact ? 30 : 40;
 
@@ -537,7 +537,7 @@ export function LanternSky({
     isSearchActive &&
     activePersonalId &&
     matchedLanternIds?.has &&
-    matchedLanternIds.has(String(activePersonalId))
+    (matchedLanternIds.has(String(activePersonalId)) || (personalLantern?.artwork_id && matchedLanternIds.has(String(personalLantern.artwork_id))))
   );
 
   return (

@@ -16,6 +16,7 @@ export function ArtworkDetailModal({
   onReactionUpdated,
   onSaveToNotebook,
   notebookItems = [],
+  searchQuery = '',
 }) {
   const { isAuthenticated } = useAuth();
   const { guardAction } = useGuestGuard();
@@ -164,9 +165,9 @@ export function ArtworkDetailModal({
     }
   };
 
-  const title = tr.text('title') || original(artwork, 'title') || artwork.t || (language === 'en' ? 'Artwork' : 'Tác phẩm');
+  const title = artwork.highlight?.title || tr.text('title') || original(artwork, 'title') || artwork.t || (language === 'en' ? 'Artwork' : 'Tác phẩm');
   const author = detail?.author_display_name || artwork.author_display_name || artwork.a || (artwork.is_anonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : (language === 'en' ? 'Author' : 'Tác giả'));
-  const story = tr.text('content') || tr.text('short_content') || original(artwork, 'content') || original(artwork, 'short_content') || artwork.story || artwork.s || '';
+  const story = artwork.highlight?.content || artwork.highlight?.short_content || tr.text('content') || tr.text('short_content') || original(artwork, 'content') || original(artwork, 'short_content') || artwork.story || artwork.s || '';
   const viewCount = detail?.view_count !== undefined ? detail.view_count : (artwork.view_count || artwork.v || 0);
 
   const reactionTypes = ['HEART', 'HUG', 'SYMPATHY'];
@@ -253,7 +254,7 @@ export function ArtworkDetailModal({
           </div>
 
           <h2 style={{ fontSize: '34px', marginTop: '6px', color: 'var(--ink)' }}>
-            <HighlightText text={title} />
+            <HighlightText text={title} query={searchQuery} />
           </h2>
 
           <div className="row muted" style={{ gap: '14px', margin: '4px 0 16px' }}>
@@ -278,7 +279,7 @@ export function ArtworkDetailModal({
               color: 'var(--ink)',
             }}
           >
-            {isLoading ? (language === 'en' ? 'Loading...' : 'Đang tải...') : <HighlightText text={story} />}
+            {isLoading ? (language === 'en' ? 'Loading...' : 'Đang tải...') : <HighlightText text={story} query={searchQuery} />}
           </div>
           <TranslationToggle
             hasTranslation={tr.hasTranslation}

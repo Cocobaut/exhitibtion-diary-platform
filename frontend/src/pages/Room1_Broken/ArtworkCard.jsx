@@ -5,12 +5,12 @@ import { Icon } from '../../components/common/Icons';
 import { useLanguage } from '../../context/LanguageContext';
 import { HighlightText } from '../../components/common/HighlightText';
 
-export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
+export function ArtworkCard({ artwork, index, onClick, onSelectReaction, searchQuery = '' }) {
   const [isHovered, setIsHovered] = useState(false);
   const { original, language } = useLanguage();
 
-  const title = original(artwork, 'title') || artwork.t || (language === 'en' ? 'Untitled' : 'Chưa có tiêu đề');
-  const summary = original(artwork, 'short_content') || artwork.summary || artwork.s || '';
+  const title = artwork.highlight?.title || original(artwork, 'title') || artwork.t || (language === 'en' ? 'Untitled' : 'Chưa có tiêu đề');
+  const summary = artwork.highlight?.short_content || artwork.highlight?.summary || original(artwork, 'short_content') || artwork.summary || artwork.s || '';
   const author = artwork.author_display_name || artwork.a || (artwork.is_anonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : (language === 'en' ? 'Author' : 'Tác giả'));
   const viewCount = artwork.view_count !== undefined ? artwork.view_count : (artwork.v || 0);
 
@@ -46,8 +46,8 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
           </div>
         </div>
         <div className="cap">
-          <h4><HighlightText text={title} /></h4>
-          <p><HighlightText text={summary} /></p>
+          <h4><HighlightText text={title} query={searchQuery} /></h4>
+          <p><HighlightText text={summary} query={searchQuery} /></p>
           <div className="meta">
             <span className="badge b-wait">
               <Icon name="clock" size={13} /> {language === 'en' ? 'Being prepared' : 'Đang được chuẩn bị'}
@@ -71,7 +71,7 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
           <Painting seed={900 + (index || 0)} kind="rain" />
         </div>
         <div className="cap">
-          <h4><HighlightText text={title} /></h4>
+          <h4><HighlightText text={title} query={searchQuery} /></h4>
           <p>
             {language === 'en' ? 'Reason: ' : 'Lý do: '}
             {artwork.rejection_reason || artwork.reason || (language === 'en' ? 'Story does not meet museum guidelines.' : 'câu chuyện chưa phù hợp với tiêu chuẩn bảo tàng.')}
@@ -109,8 +109,8 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
       </div>
 
       <div className="cap">
-        <h4><HighlightText text={title} /></h4>
-        <p><HighlightText text={summary} /></p>
+        <h4><HighlightText text={title} query={searchQuery} /></h4>
+        <p><HighlightText text={summary} query={searchQuery} /></p>
         <div className="meta">
           <span className="by">{author}</span>
           <span className="row" style={{ gap: '12px' }}>

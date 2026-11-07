@@ -36,9 +36,9 @@ def is_lantern_unlocked(target_date: Optional[datetime], now: Optional[datetime]
 
 
 def can_read_lantern(artwork: Artwork, current_user: Optional[User], now: Optional[datetime] = None) -> bool:
-    """Trước ngày hạ cánh không ai đọc được nội dung thư, kể cả tác giả; chỉ thấy tiêu đề và tóm tắt.
-    (current_user giữ lại để sau này đổi luật, ví dụ cho tác giả xem trước, chỉ cần sửa ở đây.)
-    """
+    """Tác giả luôn có quyền đọc thư của chính mình; người khác phải chờ tới ngày hạ cánh."""
+    if current_user and artwork.user_id == current_user.id:
+        return True
     return is_lantern_unlocked(artwork.target_date, now)
 
 
@@ -561,12 +561,20 @@ class Room2Service:
             extra_conditions.append(public_cond)
 
         now = datetime.now(timezone.utc)
-        # Thư chưa hạ cánh chỉ được tìm theo tiêu đề, tóm tắt, tác giả (không dò được nội dung thư)
-        extra_conditions.append(or_(
-            Artwork.target_date.is_(None),
-            Artwork.target_date <= now,
-            SearchService.non_content_match(db, clean_q),
-        ))
+        # Thư chưa hạ cánh chỉ được tìm theo tiêu đề, tóm tắt, tác giả (không dò được nội dung thư), trừ tác giả
+        if current_user:
+            extra_conditions.append(or_(
+                Artwork.target_date.is_(None),
+                Artwork.target_date <= now,
+                Artwork.user_id == current_user.id,
+                SearchService.non_content_match(db, clean_q),
+            ))
+        else:
+            extra_conditions.append(or_(
+                Artwork.target_date.is_(None),
+                Artwork.target_date <= now,
+                SearchService.non_content_match(db, clean_q),
+            ))
 
         if filter_type == "mine" and current_user:
             extra_conditions.append(Artwork.user_id == current_user.id)
@@ -593,9 +601,9 @@ class Room2Service:
 
             hl = item.get("highlight", {})
             is_mine = bool(current_user and item.get("user_id") == current_user.id)
-            can_read = is_unlockable
-            # Thư chưa hạ cánh: không lộ nội dung trong highlight
-            if not is_unlockable:
+            can_read = is_unlockable or is_mine
+            # Thư chưa hạ cánh: không lộ nội dung trong highlight nếu không phải tác giả
+            if not is_unlockable and not is_mine:
                 hl = {k: v for k, v in hl.items() if k != "content"}
 
             formatted_items.append({
@@ -771,6 +779,15 @@ class Room2Service:
             "lantern": {
                 "id": str(lantern.id),
                 "title": lantern.title,
+                "title_vi": lantern.title_vi,
+                "title_en": lantern.title_en,
+                "content": lantern.content,
+                "content_vi": lantern.content_vi,
+                "content_en": lantern.content_en,
+                "short_content": lantern.short_content,
+                "short_content_vi": lantern.short_content_vi,
+                "short_content_en": lantern.short_content_en,
+                "author_display_name": lantern.author_display_name,
                 "target_date": serialize_utc_datetime(lantern.target_date),
                 "remaining_seconds": rem_sec,
                 "days": days,
@@ -778,6 +795,8 @@ class Room2Service:
                 "minutes": minutes,
                 "seconds": seconds,
                 "is_opened": lantern.is_opened,
+                "is_mine": True,
+                "can_read": True,
                 "symbol": lantern.tag_category or "heart",
             }
         }
