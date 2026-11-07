@@ -174,7 +174,7 @@ export function ArtworkDetailModal({
     <>
       <div className="scrim" onClick={onClose} />
       <div
-        className="panel"
+        className="panel artwork-detail-panel"
         style={{
           width: '1060px',
           maxWidth: '94vw',
@@ -185,8 +185,14 @@ export function ArtworkDetailModal({
           gridTemplateColumns: '480px 1fr',
         }}
       >
+        {/* Nút đóng gắn với khung modal (trên điện thoại luôn nổi ở góc, không trôi theo nội dung) */}
+        <span className="x artwork-detail-close" onClick={onClose} role="button" tabIndex={0} aria-label="Đóng">
+          <Icon name="x" size={22} />
+        </span>
+
         {/* Left: Large Framed Painting */}
         <div
+          className="artwork-detail-frame-wrap"
           style={{
             background: '#2B211D',
             padding: '24px',
@@ -196,6 +202,7 @@ export function ArtworkDetailModal({
           }}
         >
           <div
+            className="artwork-detail-frame"
             style={{
               width: '420px',
               maxWidth: '100%',
@@ -223,6 +230,7 @@ export function ArtworkDetailModal({
 
         {/* Right: Story & Details */}
         <div
+          className="artwork-detail-body"
           style={{
             padding: '30px 36px 26px',
             position: 'relative',
@@ -231,10 +239,6 @@ export function ArtworkDetailModal({
             overflowY: 'auto',
           }}
         >
-          <span className="x" onClick={onClose} role="button" tabIndex={0}>
-            <Icon name="x" size={22} />
-          </span>
-
           <div
             style={{
               fontFamily: 'var(--serif)',
@@ -299,7 +303,7 @@ export function ArtworkDetailModal({
           {/* Reactions bar & Save to notebook */}
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: '16px', marginTop: '20px' }}>
             <div className="row between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <div className="rxbar" style={{ display: 'flex', gap: '8px' }}>
+              <div className="rxbar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {reactionTypes.map((type) => (
                   <ReactionButton
                     key={type}

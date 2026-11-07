@@ -407,6 +407,8 @@ export function LanternLandedModal({
             marginTop: '18px',
             borderTop: '1px solid var(--line)',
             paddingTop: '14px',
+            flexWrap: 'wrap',
+            gap: '10px',
           }}
         >
           <button
