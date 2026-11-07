@@ -404,9 +404,25 @@ export function LanternSky({
     const widthSpan = isCompact ? Math.max(100, vbWidth - 70) : 1264;
     const minX = isCompact ? 35 : 50;
 
+    const personalIdStr = personalLantern?.id ? String(personalLantern.id) : null;
+    const personalArtIdStr = personalLantern?.artwork_id ? String(personalLantern.artwork_id) : null;
+
     if (hasApiItems) {
       // Map API lanterns into canvas positions
       lanterns.forEach((item, idx) => {
+        // Tránh nhân bản lồng đèn: Bỏ qua lồng đèn cá nhân của chính mình nếu nó đã được vẽ tách biệt
+        // ở vị trí bay cao đặc quyền (personalX, 215)
+        if (!isLanded && personalLantern) {
+          const itemIdStr = item.id ? String(item.id) : null;
+          const itemArtIdStr = item.artwork_id ? String(item.artwork_id) : null;
+          if (
+            (personalIdStr && (itemIdStr === personalIdStr || itemArtIdStr === personalIdStr)) ||
+            (personalArtIdStr && (itemIdStr === personalArtIdStr || itemArtIdStr === personalArtIdStr))
+          ) {
+            return;
+          }
+        }
+
         const seed = stringToSeed(item.id || `api_${idx}`);
         const r = rng(seed);
         const d = r();
@@ -452,8 +468,11 @@ export function LanternSky({
       });
     }
 
-    // Always ensure at least 48 lanterns for breathtaking visual depth on desktop (never delete other lanterns during search)
-    const ambientCount = Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0));
+    // Giữ hiệu ứng bầu trời rực rỡ ở tab All khi không tìm kiếm (tối thiểu 48 lồng đèn).
+    // Riêng ở tab "mine" (Lồng đèn của tôi), TUYỆT ĐỐI không chèn ambient lồng đèn giả để chỉ hiển thị lồng đèn của chính mình.
+    const ambientCount = (activeFilter === 'mine' || !showAmbient)
+      ? 0
+      : Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0));
     const ambientSpan = isCompact ? Math.max(100, vbWidth - 70) : 1284;
     const ambientMinX = isCompact ? 30 : 40;
 
@@ -517,6 +536,7 @@ export function LanternSky({
     return items;
   }, [
     lanterns,
+    personalLantern,
     isLanded,
     activeFilter,
     matchedLanternIds,

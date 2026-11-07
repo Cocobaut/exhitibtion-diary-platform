@@ -476,6 +476,17 @@ export function Room2Page({
               {language === 'en' ? 'Loading...' : 'Đang tải...'}
             </span>
           )}
+          {!isLoading && !debouncedSearch && activeFilter === 'mine' && (
+            <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
+              {lanterns.length > 0
+                ? (language === 'en'
+                  ? `${lanterns.length} lantern${lanterns.length > 1 ? 's' : ''}`
+                  : `${lanterns.length} lồng đèn của bạn`)
+                : (language === 'en'
+                  ? 'Bạn chưa có lồng đèn nào'
+                  : 'Bạn chưa có lồng đèn nào')}
+            </span>
+          )}
           {!isLoading && debouncedSearch && searchHits !== null && (
             <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
               {searchHits > 0
