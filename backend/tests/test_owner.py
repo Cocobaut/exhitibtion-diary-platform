@@ -377,5 +377,16 @@ async def run_all_tests():
             print("================ ALL PLAN 13 OWNER TESTS PASSED 100% ================\n")
 
 
+
+async def test_owner_scenario():
+    """Cho pytest chạy toàn bộ kịch bản (file này vẫn chạy được bằng `python tests/test_owner.py`)."""
+    # File này gắn DB test ở cấp module, nên gắn lại để không dùng nhầm DB của file khác
+    app.dependency_overrides[get_db] = override_get_db
+    try:
+        await run_all_tests()
+    finally:
+        app.dependency_overrides.clear()
+
+
 if __name__ == "__main__":
     asyncio.run(run_all_tests())

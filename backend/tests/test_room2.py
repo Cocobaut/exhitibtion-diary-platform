@@ -356,9 +356,16 @@ async def run_tests():
             fall_guest = await client.get("/api/v1/rooms/2/artworks/ready-to-fall")
             assert fall_guest.status_code == 401
 
-            # User 1 call before opening art1 (art1 has target_date in past, user_id=user1, status=APPROVED, is_opened=False)
-            fall_u1 = await client.get(
+            # art1 (của user1, đã đến hạn) đã tự hạ cánh khi user1 xem danh sách ở Test 1,
+            # nên không còn trong danh sách "chưa mở" mà nằm trong include_opened=true
+            fall_u1_unopened = await client.get(
                 "/api/v1/rooms/2/artworks/ready-to-fall",
+                headers={"Authorization": f"Bearer {token1}"}
+            )
+            assert fall_u1_unopened.status_code == 200
+            assert fall_u1_unopened.json()["data"]["items"] == []
+            fall_u1 = await client.get(
+                "/api/v1/rooms/2/artworks/ready-to-fall?include_opened=true",
                 headers={"Authorization": f"Bearer {token1}"}
             )
             assert fall_u1.status_code == 200
@@ -706,6 +713,15 @@ async def run_tests():
             print("✓ Test 14: Rút ngẫu nhiên một lồng đèn đã mở thành công")
 
     print("\n ALL 14 TESTS FOR PLAN 06 PASSED PERFECTLY! \n")
+
+
+
+async def test_room2_scenario():
+    """Cho pytest chạy toàn bộ kịch bản (file này vẫn chạy được bằng `python tests/test_room2.py`)."""
+    try:
+        await run_tests()
+    finally:
+        app.dependency_overrides.clear()
 
 
 if __name__ == "__main__":

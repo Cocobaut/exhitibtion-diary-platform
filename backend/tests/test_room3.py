@@ -28,6 +28,7 @@ from app.models.notification import Notification
 from app.models.revoked_token import RevokedToken
 from app.models.room import Room
 from app.models.user import User, UserRole
+from app.models.user_saved_artwork import UserSavedArtwork
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -50,7 +51,7 @@ TestingSessionLocal = async_sessionmaker(
 async def setup_test_context():
     """Sets up SQLite tables and seeds test users, rooms, and Room 3 artworks."""
     async with test_engine.begin() as conn:
-        for m in [User, RevokedToken, Room, Artwork, ArtworkInteraction, Notification]:
+        for m in [User, RevokedToken, Room, Artwork, ArtworkInteraction, Notification, UserSavedArtwork]:
             await conn.run_sync(m.__table__.create)
 
     async with TestingSessionLocal() as session:
@@ -165,7 +166,7 @@ async def setup_test_context():
         yield context_data
     finally:
         async with test_engine.begin() as conn:
-            for m in [Notification, ArtworkInteraction, Artwork, Room, RevokedToken, User]:
+            for m in [UserSavedArtwork, Notification, ArtworkInteraction, Artwork, Room, RevokedToken, User]:
                 await conn.run_sync(m.__table__.drop)
 
 
@@ -438,6 +439,15 @@ async def run_tests():
             print("✓ Test 8: 7.6 Lấy tất cả loại lá, màu sắc và tổng số lượng dải thông điệp trên Cây cộng đồng thành công")
 
     print("\n ALL 8 TESTS FOR PLAN 07 PASSED PERFECTLY! \n")
+
+
+
+async def test_room3_scenario():
+    """Cho pytest chạy toàn bộ kịch bản (file này vẫn chạy được bằng `python tests/test_room3.py`)."""
+    try:
+        await run_tests()
+    finally:
+        app.dependency_overrides.clear()
 
 
 if __name__ == "__main__":
