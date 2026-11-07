@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_db, get_optional_user
 from app.core.exceptions import AppException
+from app.core.rate_limit import diary_create_limiter, enforce_limit, upload_limiter
 from app.core.responses import ok
 from app.models.user import User
 from app.schemas.diary import (
@@ -171,6 +172,7 @@ async def upload_media(
     current_user: User = Depends(get_current_user),
 ):
     """Tải lên tối đa 5 hình ảnh đính kèm (PNG, JPEG, WEBP; tối đa 5MB mỗi ảnh)."""
+    enforce_limit(upload_limiter, str(current_user.id), "Bạn tải ảnh quá nhiều. Hãy thử lại sau ít phút.")
     urls = await DiaryService.upload_media(files)
     return ok(data={"urls": urls})
 
@@ -314,6 +316,7 @@ async def create_diary(
     current_user: User = Depends(get_current_user),
 ):
     """Tạo nhật ký mới (is_public=False: tự duyệt; is_public=True: chờ duyệt để lên Tab Cộng đồng)."""
+    enforce_limit(diary_create_limiter, str(current_user.id), "Bạn viết quá nhanh. Hãy nghỉ một chút rồi viết tiếp nhé.")
     msg, data = await DiaryService.create_diary(
         db,
         request=request,

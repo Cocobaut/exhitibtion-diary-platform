@@ -52,83 +52,87 @@ export const pathToRoute = (pathname) => {
   return 'home';
 };
 
+// Các trang của ứng dụng; mỗi trang có một mục trong lịch sử trình duyệt dạng "#/<route>"
+const ROUTES = ['home', 'r1', 'r2', 'r3', 'diary', 'notebook', 'admin', 'owner', 'login', 'profile'];
+
+const hasStoredSession = () => {
+  try {
+    return Boolean(localStorage.getItem('access_token') || localStorage.getItem('is_guest') === 'true');
+  } catch {
+    return false;
+  }
+};
+
+const routeFromHash = () => {
+  const match = window.location.hash.match(/^#\/([\w-]+)/);
+  if (match && ROUTES.includes(match[1])) return match[1];
+  const fromPath = pathToRoute(window.location.pathname);
+  if (fromPath && fromPath !== 'home') return fromPath;
+  return null;
+};
+
+// Giữ nguyên query (ví dụ ?reset_token=...) và chỉ đổi phần hash
+const urlForRoute = (route) => `${window.location.pathname}${window.location.search}#/${route}`;
+
 function MainApp() {
   const { theme, setTheme } = useTheme();
-  const { user, isAdmin, isGuest, login } = useAuth();
+  const { user, isAdmin, isOwner, isGuest, login } = useAuth();
   // Tải lại trang thì giữ phiên đăng nhập và trang đang xem; chưa đăng nhập thì vào trang đăng nhập
   const [currentRoute, setCurrentRoute] = useState(() => {
     try {
-      const hasSession = localStorage.getItem('access_token') || localStorage.getItem('is_guest') === 'true';
-      if (!hasSession || window.location.search.includes('reset_token=')) return 'login';
-      const pathRoute = pathToRoute(window.location.pathname);
-      if (pathRoute && pathRoute !== 'home') return pathRoute;
-      return sessionStorage.getItem('museum_route') || pathRoute || 'home';
+      if (!hasStoredSession() || window.location.search.includes('reset_token=')) return 'login';
+      const fromUrl = routeFromHash();
+      if (fromUrl && fromUrl !== 'login') return fromUrl;
+      return sessionStorage.getItem('museum_route') || 'home';
     } catch {
       return 'login';
     }
   });
+  const routeRef = React.useRef(currentRoute);
 
   const [notificationTarget, setNotificationTarget] = useState(null);
   const [isMailboxOpen, setIsMailboxOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
 
-  // Điều hướng nội bộ và đồng bộ với HTML5 History API
-  const navigate = useCallback((targetRoute, options = {}) => {
-    if (!targetRoute) return;
-    const { replace = false } = options;
+  // Chuyển trang và ghi vào lịch sử để nút Back / cử chỉ vuốt quay về đúng trang trước
+  const navigate = React.useCallback((route, { replace = false } = {}) => {
+    if (!ROUTES.includes(route)) return;
 
     // Đóng toàn bộ modals/dropdowns khi chuyển trang
     setIsMailboxOpen(false);
     setIsNotificationsOpen(false);
     setIsThemeModalOpen(false);
 
-    setCurrentRoute((prevRoute) => {
-      if (prevRoute === targetRoute && !replace) {
-        return prevRoute;
-      }
-
-      const targetPath = ROUTE_PATH_MAP[targetRoute] || '/';
-      try {
-        if (replace) {
-          window.history.replaceState({ route: targetRoute }, '', targetPath);
-        } else {
-          window.history.pushState({ route: targetRoute }, '', targetPath);
-        }
-      } catch (err) {
-        console.warn('Lỗi cập nhật window.history:', err);
-      }
-
-      try {
-        if (targetRoute !== 'login') {
-          sessionStorage.setItem('museum_route', targetRoute);
-        }
-      } catch {
-        // bỏ qua
-      }
-
-      return targetRoute;
-    });
-  }, []);
-
-  // Khởi tạo trạng thái ban đầu cho entry đầu tiên trong lịch sử trình duyệt
-  useEffect(() => {
     try {
-      const currentPath = ROUTE_PATH_MAP[currentRoute] || '/';
-      const search = window.location.search || '';
-      const hash = window.location.hash || '';
-      const fullUrl = currentPath + search + hash;
-
-      if (!window.history.state || window.history.state.route !== currentRoute) {
-        window.history.replaceState({ route: currentRoute }, '', fullUrl);
+      // Trang đăng nhập không cần quay lại được, nên chỉ thay thế mục hiện tại
+      if (replace || route === 'login') {
+        window.history.replaceState({ route }, '', urlForRoute(route));
+      } else if (routeRef.current !== route) {
+        window.history.pushState({ route }, '', urlForRoute(route));
       }
-    } catch (err) {
-      console.warn('Lỗi khởi tạo history state:', err);
+    } catch {
+      // trình duyệt chặn history API thì vẫn chuyển trang bình thường
     }
+    try {
+      if (route !== 'login') {
+        sessionStorage.setItem('museum_route', route);
+      }
+    } catch {
+      // bỏ qua
+    }
+    routeRef.current = route;
+    setCurrentRoute(route);
   }, []);
 
-  // Lắng nghe sự kiện popstate (nút Back/Forward của trình duyệt, chuột Back, cử chỉ touchpad, Alt+Left)
-  useEffect(() => {
+  // Ghi trang đầu tiên vào lịch sử và lắng nghe Back / Forward
+  React.useEffect(() => {
+    try {
+      window.history.replaceState({ route: routeRef.current }, '', urlForRoute(routeRef.current));
+    } catch {
+      // bỏ qua
+    }
+
     const handlePopState = (event) => {
       // Đóng toàn bộ popup/dropdowns khi quay lại
       setIsMailboxOpen(false);
@@ -136,36 +140,40 @@ function MainApp() {
       setIsThemeModalOpen(false);
       setNotificationTarget(null);
 
-      let targetRoute = event.state?.route;
-      if (!targetRoute) {
-        targetRoute = pathToRoute(window.location.pathname);
+      let route = event.state?.route || routeFromHash() || 'home';
+      const loggedIn = hasStoredSession();
+      if (!loggedIn && route !== 'login') {
+        route = 'login';
+      } else if (route === 'login' && loggedIn) {
+        // Đã đăng nhập thì quay lại trang đăng nhập cũ sẽ về sảnh
+        route = 'home';
+      } else if (isGuest && ['diary', 'notebook', 'admin', 'owner', 'profile'].includes(route)) {
+        route = 'home';
       }
 
-      const hasSession = localStorage.getItem('access_token') || localStorage.getItem('is_guest') === 'true';
-      if (!hasSession && targetRoute !== 'login') {
-        targetRoute = 'login';
-      } else if (isGuest && (targetRoute === 'diary' || targetRoute === 'notebook' || targetRoute === 'admin' || targetRoute === 'owner' || targetRoute === 'profile')) {
-        targetRoute = 'home';
+      if (route !== (event.state?.route || routeFromHash())) {
+        try {
+          window.history.replaceState({ route }, '', urlForRoute(route));
+        } catch {
+          // bỏ qua
+        }
       }
-
-      setCurrentRoute(targetRoute);
-
       try {
-        if (targetRoute !== 'login') {
-          sessionStorage.setItem('museum_route', targetRoute);
+        if (route !== 'login') {
+          sessionStorage.setItem('museum_route', route);
         }
       } catch {
         // bỏ qua
       }
+      routeRef.current = route;
+      setCurrentRoute(route);
     };
 
     window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
+    return () => window.removeEventListener('popstate', handlePopState);
   }, [isGuest]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     try {
       if (currentRoute !== 'login') sessionStorage.setItem('museum_route', currentRoute);
     } catch {
@@ -173,12 +181,15 @@ function MainApp() {
     }
   }, [currentRoute]);
 
-  // Bảo vệ route: Khách vãng lai không được truy cập các trang đòi hỏi tài khoản
-  useEffect(() => {
-    if (isGuest && (currentRoute === 'diary' || currentRoute === 'notebook' || currentRoute === 'admin' || currentRoute === 'owner' || currentRoute === 'profile')) {
+  // Trang quản trị chỉ dành cho đúng vai trò (gõ tay "#/admin" hoặc bấm Back cũng không vào được)
+  React.useEffect(() => {
+    const guestBlocked = isGuest && ['diary', 'notebook', 'admin', 'owner', 'profile'].includes(currentRoute);
+    const adminBlocked = currentRoute === 'admin' && user && !isAdmin;
+    const ownerBlocked = currentRoute === 'owner' && user && !isOwner;
+    if (guestBlocked || adminBlocked || ownerBlocked) {
       navigate('home', { replace: true });
     }
-  }, [isGuest, currentRoute, navigate]);
+  }, [isGuest, isAdmin, isOwner, user, currentRoute, navigate]);
 
   // Sổ tay lưu cục bộ theo từng tài khoản; tài khoản mới bắt đầu với sổ tay trống
   const notebookKey = user?.id ? `museum_notebook_${user.id}` : 'museum_notebook_guest';
@@ -240,6 +251,12 @@ function MainApp() {
       persistNotebook(updated);
       return updated;
     });
+  };
+
+  // Server là nguồn chính: mỗi lần tải sổ tay thành công thì thay bản lưu cục bộ bằng dữ liệu server
+  const handleSyncNotebook = (items) => {
+    setNotebookItems(items);
+    persistNotebook(items);
   };
 
   return (
@@ -328,6 +345,7 @@ function MainApp() {
               <NotebookPage
                 notebookItems={notebookItems}
                 onRemoveItem={handleRemoveFromNotebook}
+                onSyncItems={handleSyncNotebook}
                 onOpenNotifications={() => setIsNotificationsOpen(true)}
                 onOpenThemeModal={() => setIsThemeModalOpen(true)}
               />

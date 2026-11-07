@@ -10,7 +10,8 @@ DEV_SECRET_KEY = "super-secret-development-key-change-in-production-exhibition-d
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Project Exhibition & Diary Platform API"
     API_V1_STR: str = "/api/v1"
-    DEBUG: bool = True
+    # Mặc định tắt: quên đặt biến môi trường thì không lộ /docs và không chạy được với SECRET_KEY mặc định
+    DEBUG: bool = False
 
     # CORS
     BACKEND_CORS_ORIGINS: Annotated[List[str], NoDecode] = [
@@ -36,6 +37,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     JWT_EXPIRE_SECONDS: int = 86400  # 24 hours as specified in API spec
     PASSWORD_RESET_EXPIRE_MINUTES: int = 15
+    # Khoá riêng để mã hoá API key AI (khuyên đặt khác SECRET_KEY). Để trống thì dùng SECRET_KEY như trước.
+    AI_ENCRYPTION_KEY: str = ""
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/exhibition_diary_db"

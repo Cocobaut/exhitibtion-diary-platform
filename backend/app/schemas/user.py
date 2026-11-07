@@ -3,6 +3,8 @@ from typing import Optional
 import uuid
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
+from app.core.validators import validate_media_url
+
 
 def serialize_utc_datetime(dt: datetime) -> str:
     """Format datetime as ISO-8601 UTC with 'Z' suffix."""
@@ -78,11 +80,7 @@ class UserProfilePatch(BaseModel):
         stripped = v.strip()
         if not stripped:
             return None
-        if not stripped.startswith(("http://", "https://", "/static/")):
-            raise ValueError("avatar_url phải là URL hợp lệ (http://, https:// hoặc /static/)")
-        if len(stripped) > 2048:
-            raise ValueError("avatar_url không được vượt quá 2048 ký tự")
-        return stripped
+        return validate_media_url(stripped, field="avatar_url")
 
     @field_validator("theme_preference")
     @classmethod
@@ -125,9 +123,16 @@ class ChangePasswordIn(BaseModel):
     new_password: str = Field(..., min_length=1, description="Mật khẩu mới")
 
 
+class ChangePasswordData(BaseModel):
+    # Token mới thay cho token cũ (token cũ hết hiệu lực khi mật khẩu đổi)
+    access_token: str
+    token_type: str = "Bearer"
+
+
 class ChangePasswordResponse(BaseModel):
     success: bool = True
     message: str = "Đổi mật khẩu thành công"
+    data: Optional[ChangePasswordData] = None
 
 
 # =====================================================================

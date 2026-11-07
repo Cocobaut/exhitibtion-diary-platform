@@ -104,6 +104,8 @@ apiClient.interceptors.response.use(
         errorCode: data?.error_code || 'UNKNOWN_ERROR',
         message: data?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.',
         details: data?.details || null,
+        // Dữ liệu kèm theo lỗi (ví dụ target_date khi lồng đèn còn khoá)
+        data: data?.data ?? null,
       });
     }
 

@@ -10,6 +10,10 @@ from app.schemas.ai_copilot import (
 )
 from app.services.badwords_service import BadWordsService
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 def parse_moderation_sections(text: str) -> Dict[str, Optional[str]]:
     """Tách các phân đoạn tiêu đề, tóm tắt, nội dung (VI/EN) từ văn bản đề xuất nếu có nhãn."""
@@ -142,7 +146,7 @@ class AiModerationService:
                 effective_base = base_url or ("https://api.deepseek.com" if provider == "deepseek" else None)
                 llm_data = await cls._call_openai(req, api_key, model_name, effective_base)
         except Exception as e:
-            print(f"Warning: LLM moderation call failed, using rule engine fallback: {e}")
+            logger.warning(f"Warning: LLM moderation call failed, using rule engine fallback: {e}")
 
         # 4. Integrate LLM with Rule Engine (Never suppress rule violations!)
         if llm_data:
@@ -335,13 +339,13 @@ class AiModerationService:
                                     if lines and lines[-1].strip() == "```":
                                         lines = lines[:-1]
                                     clean_text = "\n".join(lines).strip()
-                                print(f"[AI Copilot Moderation] Google Gemini ({m}) responded successfully!")
+                                logger.info(f"[AI Copilot Moderation] Google Gemini ({m}) responded successfully!")
                                 return json.loads(clean_text)
                     else:
                         err_snippet = resp.text[:250].replace("\n", " ")
-                        print(f"[AI Copilot Moderation] Configured model '{m}' returned HTTP {resp.status_code} ({err_snippet}), discovering available models for this key dynamically...")
+                        logger.info(f"[AI Copilot Moderation] Configured model '{m}' returned HTTP {resp.status_code} ({err_snippet}), discovering available models for this key dynamically...")
                 except Exception as ex:
-                    print(f"[AI Copilot Moderation] Error calling {m}: {ex}")
+                    logger.warning(f"[AI Copilot Moderation] Error calling {m}: {ex}")
 
             # 2. Dynamic discovery fallback: max 2 fallback models, fast 6s timeout to prevent latency spikes
             try:
@@ -388,12 +392,12 @@ class AiModerationService:
                                                 lines = lines[:-1]
                                             clean_text = "\n".join(lines).strip()
                                         if clean_text and clean_text.startswith("{"):
-                                            print(f"[AI Copilot Moderation] Dynamic model '{dyn_m}' from connected key responded successfully!")
+                                            logger.info(f"[AI Copilot Moderation] Dynamic model '{dyn_m}' from connected key responded successfully!")
                                             return json.loads(clean_text)
                         except Exception as ex:
-                            print(f"[AI Copilot Moderation] Error calling dynamic model {dyn_m}: {ex}")
+                            logger.warning(f"[AI Copilot Moderation] Error calling dynamic model {dyn_m}: {ex}")
             except Exception as ex:
-                print(f"[AI Copilot Moderation] Dynamic model discovery failed: {ex}")
+                logger.warning(f"[AI Copilot Moderation] Dynamic model discovery failed: {ex}")
 
         return None
 
@@ -450,8 +454,8 @@ class AiModerationService:
                         data = resp.json()
                         text = data["choices"][0]["message"]["content"]
                         return json.loads(text)
-                    print(f"[AI Moderation OpenAI] Model '{target_model}' returned HTTP {resp.status_code}: {resp.text[:120]}")
+                    logger.info(f"[AI Moderation OpenAI] Model '{target_model}' returned HTTP {resp.status_code}: {resp.text[:120]}")
                 except Exception as ex:
-                    print(f"[AI Moderation OpenAI] Error calling '{target_model}': {ex}")
+                    logger.warning(f"[AI Moderation OpenAI] Error calling '{target_model}': {ex}")
                     continue
         return None

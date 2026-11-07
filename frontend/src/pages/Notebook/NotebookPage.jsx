@@ -34,6 +34,7 @@ function getSourceIcon(item) {
 export function NotebookPage({
   notebookItems = [],
   onRemoveItem,
+  onSyncItems,
   onOpenNotifications,
   onOpenThemeModal,
 }) {
@@ -48,6 +49,10 @@ export function NotebookPage({
   const [serverItems, setServerItems] = useState([]);
   // true khi API sổ tay đã phản hồi (kể cả rỗng hoặc lỗi)
   const [serverLoaded, setServerLoaded] = useState(false);
+  // true khi không gọi được API: lúc đó mới dùng bản lưu cục bộ
+  const [serverError, setServerError] = useState(false);
+  const syncItemsRef = useRef(onSyncItems);
+  syncItemsRef.current = onSyncItems;
   const [isLoading, setIsLoading] = useState(false);
   const [readingItem, setReadingItem] = useState(null);
   const [expandedNotebookId, setExpandedNotebookId] = useState(null);
@@ -116,10 +121,13 @@ export function NotebookPage({
           media_url: it.media_url,
         }));
         setServerItems(mapped);
+        setServerLoaded(true);
+        setServerError(false);
       }
       setServerLoaded(true);
     } catch (err) {
       console.warn('Could not load unified notebook from API, using local storage:', err);
+      setServerError(true);
       setServerLoaded(true);
     } finally {
       setIsLoading(false);
@@ -132,6 +140,7 @@ export function NotebookPage({
 
   // 2. Kết hợp thông minh giữa serverItems và notebookItems:
   // Luôn bảo toàn các mục người dùng đã lưu trong local storage mà server chưa có hoặc không lưu (ví dụ mock, offline).
+  const useServer = Boolean(user && serverLoaded && !serverError);
   const activeItems = React.useMemo(() => {
     if (!serverLoaded) {
       return notebookItems || [];
@@ -184,6 +193,7 @@ export function NotebookPage({
   const handleRemove = async (e, item) => {
     e.stopPropagation();
 
+    const previousServerItems = serverItems;
     // 1. Gỡ bỏ tức thì trên giao diện và local storage
     if (onRemoveItem) {
       onRemoveItem(item);
@@ -198,8 +208,20 @@ export function NotebookPage({
       await notebookService.removeNotebookItem(item);
     } catch (err) {
       console.warn('Backend unsave failed:', err);
+      if (useServer) {
+        setServerItems(previousServerItems);
+        triggerToast(
+          language === 'en'
+            ? 'Could not remove this item. Please try again.'
+            : 'Chưa gỡ được mục này. Bạn thử lại nhé.'
+        );
+        return;
+      }
     }
 
+    if (onRemoveItem) {
+      onRemoveItem(item.id);
+    }
     triggerToast(language === 'en' ? 'Removed from notebook' : 'Đã gỡ mục này khỏi sổ tay');
   };
 
@@ -322,7 +344,11 @@ export function NotebookPage({
           padding: '0 clamp(24px, 4vw, 48px) 44px',
         }}
       >
-        {displayItems.length === 0 ? (
+        {waitingForServer ? (
+          <div className="muted" style={{ textAlign: 'center', padding: '60px 20px', fontSize: '15px' }}>
+            {language === 'en' ? 'Loading your notebook…' : 'Đang tải sổ tay…'}
+          </div>
+        ) : displayItems.length === 0 ? (
           <div
             style={{
               textAlign: 'center',

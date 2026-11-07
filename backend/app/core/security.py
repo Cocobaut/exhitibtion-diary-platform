@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone
 import re
 from typing import Any, Optional, Union
+import hashlib
+import hmac
 import uuid
 import bcrypt
 import jwt
@@ -54,10 +56,21 @@ def validate_password_strength(password: str) -> None:
         )
 
 
+def password_fingerprint(password_hash: str) -> str:
+    """Dấu vân tay ngắn của password_hash đặt trong JWT.
+    Đổi hoặc đặt lại mật khẩu thì dấu này đổi theo, nên mọi token cũ hết hiệu lực.
+    Dùng HMAC để payload JWT (ai cũng đọc được) không lộ gì về hash mật khẩu.
+    """
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"), password_hash.encode("utf-8"), hashlib.sha256
+    ).hexdigest()[:24]
+
+
 def create_access_token(
     subject: Union[str, Any],
     role: str = "USER",
-    expires_delta: Optional[timedelta] = None
+    expires_delta: Optional[timedelta] = None,
+    password_hash: Optional[str] = None,
 ) -> str:
     """Create JWT access token with subject (UUID str), role, jti, and expiration."""
     now = datetime.now(timezone.utc)
@@ -73,6 +86,8 @@ def create_access_token(
         "iat": int(now.timestamp()),
         "exp": int(expire.timestamp())
     }
+    if password_hash:
+        to_encode["pwd"] = password_fingerprint(password_hash)
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
@@ -120,29 +135,35 @@ def validate_safe_base_url(url: Optional[str]) -> str:
         )
 
     # Direct loopback / localhost block
-    if hostname.lower() in ("localhost", "127.0.0.1", "::1", "0.0.0.0"):
+    if hostname.lower() in ("localhost", "127.0.0.1", "::1", "0.0.0.0") or hostname.lower().endswith(".localhost"):
         raise AppException(
             status_code=400,
             error_code="SSRF_LOCAL_HOST_BLOCKED",
             message="Từ chối kết nối tới localhost hoặc loopback máy chủ nội bộ.",
         )
 
-    # Resolve IP and verify against private/metadata IP spaces
+    # Phân giải MỌI địa chỉ (IPv4 lẫn IPv6) của tên miền; chỉ cần một địa chỉ nội bộ là chặn
     try:
-        ip_str = socket.gethostbyname(hostname)
-        ip = ipaddress.ip_address(ip_str)
-        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-            raise AppException(
-                status_code=400,
-                error_code="SSRF_PRIVATE_IP_BLOCKED",
-                message=f"Địa chỉ đích ({ip_str}) thuộc mạng nội bộ hoặc dải địa chỉ bị hạn chế (SSRF Protection).",
-            )
-    except socket.gaierror:
+        infos = socket.getaddrinfo(hostname, parsed.port or None, proto=socket.IPPROTO_TCP)
+    except (socket.gaierror, UnicodeError):
         raise AppException(
             status_code=400,
             error_code="SSRF_DNS_RESOLVE_FAILED",
             message=f"Không thể phân giải tên miền: '{hostname}'. Vui lòng kiểm tra lại địa chỉ máy chủ.",
         )
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0].split("%", 1)[0])
+        if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+            ip = ip.ipv4_mapped
+        if (
+            ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved
+            or ip.is_multicast or ip.is_unspecified or not ip.is_global
+        ):
+            raise AppException(
+                status_code=400,
+                error_code="SSRF_PRIVATE_IP_BLOCKED",
+                message=f"Địa chỉ đích ({ip}) thuộc mạng nội bộ hoặc dải địa chỉ bị hạn chế (SSRF Protection).",
+            )
 
     return cleaned.rstrip("/")
 

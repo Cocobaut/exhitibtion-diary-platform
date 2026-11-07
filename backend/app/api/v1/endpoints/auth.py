@@ -8,13 +8,14 @@ from app.core.exceptions import AppException
 from app.core.rate_limit import (
     login_account_limiter,
     login_ip_limiter,
+    enforce_limit,
+    register_ip_limiter,
     reset_email_limiter,
     reset_ip_limiter,
 )
 from app.models.user import User
 from app.schemas.auth import (
     ForgotPasswordRequest,
-    ForgotPasswordResponse,
     LoginRequest,
     LoginResponse,
     LoginResponseData,
@@ -28,6 +29,11 @@ from app.schemas.auth import (
 from app.services.auth_service import AuthService
 
 router = APIRouter()
+
+FORGOT_PASSWORD_MESSAGE = (
+    "Nếu thông tin khớp với một tài khoản, chúng tôi đã gửi link đặt lại mật khẩu tới email đó. "
+    "Link hết hạn sau ít phút."
+)
 
 
 def _client_ip(request: Request) -> str:
@@ -43,11 +49,17 @@ def _client_ip(request: Request) -> str:
 )
 async def register(
     req: RegisterRequest,
+    request: Request,
     db: AsyncSession = Depends(deps.get_db),
 ) -> RegisterResponse:
     """1.1 Đăng ký tài khoản người dùng mới (vai trò mặc định: USER).
     Trả về payload trong khóa `body`.
     """
+    enforce_limit(
+        register_ip_limiter,
+        _client_ip(request),
+        "Bạn đã tạo quá nhiều tài khoản trong thời gian ngắn. Hãy thử lại sau.",
+    )
     user = await AuthService.register(db, req=req)
     return RegisterResponse(
         success=True,
@@ -100,16 +112,18 @@ async def login(
 
 @router.post(
     "/forgot-password",
-    response_model=ForgotPasswordResponse,
+    response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
-    summary="Xác thực tên đăng nhập và email để tạo mã đặt lại mật khẩu"
+    summary="Gửi link đặt lại mật khẩu tới email đã đăng ký"
 )
 async def forgot_password(
     req: ForgotPasswordRequest,
     request: Request,
     db: AsyncSession = Depends(deps.get_db),
-) -> ForgotPasswordResponse:
-    """1.3 Xác thực username + email trong cơ sở dữ liệu. Nếu khớp, trả về reset_token để đổi mật khẩu."""
+) -> MessageResponse:
+    """1.3 Nếu username + email khớp một tài khoản, gửi link đặt lại mật khẩu tới email đó.
+    Luôn trả cùng một thông báo để không lộ tài khoản nào tồn tại.
+    """
     ip = _client_ip(request)
     if reset_ip_limiter.is_blocked(ip) or reset_email_limiter.is_blocked(req.email):
         raise AppException(
@@ -119,11 +133,10 @@ async def forgot_password(
         )
     reset_ip_limiter.hit(ip)
     reset_email_limiter.hit(req.email)
-    token = await AuthService.verify_and_create_reset_token(db, username=req.username, email=req.email)
-    return ForgotPasswordResponse(
+    await AuthService.request_password_reset(db, username=req.username, email=req.email)
+    return MessageResponse(
         success=True,
-        message="Xác thực thông tin tài khoản thành công",
-        reset_token=token
+        message=FORGOT_PASSWORD_MESSAGE,
     )
 
 

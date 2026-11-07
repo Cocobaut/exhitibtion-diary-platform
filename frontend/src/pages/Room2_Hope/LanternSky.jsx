@@ -339,6 +339,8 @@ export function LanternSky({
   isSearchActive = false,
   searchQuery = '',
   onOpenLandedModal,
+  // Khi đang tìm kiếm thì tắt lồng đèn trang trí để chỉ còn kết quả thật
+  showAmbient = true,
 }) {
   const compId = useId().replace(/:/g, '');
 
@@ -451,7 +453,7 @@ export function LanternSky({
     }
 
     // Always ensure at least 48 lanterns for breathtaking visual depth on desktop
-    const ambientCount = Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0));
+    const ambientCount = showAmbient ? Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0)) : 0;
     const ambientSpan = isCompact ? Math.max(100, vbWidth - 70) : 1284;
     const ambientMinX = isCompact ? 30 : 40;
 
@@ -523,6 +525,7 @@ export function LanternSky({
     vbWidth,
     isCompact,
     lanternScaleMultiplier,
+    showAmbient,
   ]);
 
   const personalIsOpened = Boolean(personalLantern?.is_opened);

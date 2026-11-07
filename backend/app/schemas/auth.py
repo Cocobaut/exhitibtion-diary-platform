@@ -72,12 +72,6 @@ class ForgotPasswordRequest(BaseModel):
         return stripped
 
 
-class ForgotPasswordResponse(BaseModel):
-    success: bool = True
-    message: str = "Xác thực thông tin tài khoản thành công"
-    reset_token: str
-
-
 class ResetPasswordRequest(BaseModel):
     token: str = Field(..., min_length=20, max_length=200)
     new_password: str = Field(..., min_length=1, max_length=128)

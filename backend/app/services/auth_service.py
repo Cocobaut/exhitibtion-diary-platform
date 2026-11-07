@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+import logging
 import hashlib
 import secrets
 from typing import Optional, Tuple
@@ -20,6 +21,8 @@ from app.models.revoked_token import RevokedToken
 from app.models.user import User, UserRole
 from app.schemas.auth import LoginRequest, RegisterRequest, ResetPasswordRequest
 from app.services.email_service import send_email
+
+logger = logging.getLogger(__name__)
 
 
 class AuthService:
@@ -123,7 +126,7 @@ class AuthService:
                 message="Tài khoản của bạn đang bị khóa"
             )
 
-        access_token = create_access_token(subject=user.id, role=user.role)
+        access_token = create_access_token(subject=user.id, role=user.role, password_hash=user.password_hash)
 
         if user.role in (UserRole.ADMIN.value, "ADMIN"):
             message = "Đăng nhập quyền quản trị viên thành công"
@@ -139,9 +142,10 @@ class AuthService:
         return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
     @staticmethod
-    async def verify_and_create_reset_token(db: AsyncSession, username: str, email: str) -> str:
-        """Xác thực username và email thuộc về cùng một tài khoản đang hoạt động (USER, ADMIN, OWNER).
-        Nếu đúng thì tạo reset_token một lần dùng và trả về trực tiếp (không gửi email).
+    async def request_password_reset(db: AsyncSession, username: str, email: str) -> None:
+        """Gửi link đặt lại mật khẩu tới email nếu username và email thuộc cùng một tài khoản đang hoạt động.
+        Không trả token qua API và không cho biết tài khoản có tồn tại hay không:
+        chỉ người giữ hộp thư mới đổi được mật khẩu.
         """
         user = await db.scalar(
             select(User).where(
@@ -149,45 +153,11 @@ class AuthService:
                 func.lower(User.email) == email.strip().lower(),
             )
         )
-        if not user:
-            raise AppException(
-                status_code=400,
-                error_code="INVALID_CREDENTIALS",
-                message="Tên đăng nhập hoặc email không chính xác"
-            )
-
-        if not user.is_active:
-            raise AppException(
-                status_code=403,
-                error_code="ACCOUNT_LOCKED",
-                message="Tài khoản của bạn đang bị khóa"
-            )
-
-        now = datetime.now(timezone.utc)
-        # Mỗi lần chỉ một link/token còn hiệu lực cho tài khoản này
-        await db.execute(
-            delete(PasswordResetToken).where(
-                PasswordResetToken.user_id == user.id,
-                PasswordResetToken.used_at.is_(None),
-            )
-        )
-        token = secrets.token_urlsafe(32)
-        db.add(PasswordResetToken(
-            user_id=user.id,
-            token_hash=AuthService._hash_reset_token(token),
-            expires_at=now + timedelta(minutes=settings.PASSWORD_RESET_EXPIRE_MINUTES),
-        ))
-        await db.commit()
-        return token
-
-    @staticmethod
-    async def request_password_reset(db: AsyncSession, email: str) -> None:
-        """Gửi link đặt lại mật khẩu nếu email thuộc một tài khoản đang hoạt động (legacy flow)."""
-        user = await db.scalar(select(User).where(func.lower(User.email) == email.lower()))
         if not user or not user.is_active:
             return
 
         now = datetime.now(timezone.utc)
+        # Mỗi lần chỉ một link còn hiệu lực cho tài khoản này
         await db.execute(
             delete(PasswordResetToken).where(
                 PasswordResetToken.user_id == user.id,
@@ -204,17 +174,21 @@ class AuthService:
 
         sep = "&" if "?" in settings.FRONTEND_RESET_URL else "?"
         link = f"{settings.FRONTEND_RESET_URL}{sep}reset_token={token}"
-        await send_email(
-            to=user.email,
-            subject="Đặt lại mật khẩu - Bảo Tàng Gọi Tên Cảm Xúc",
-            body=(
-                f"Chào {user.nickname or user.username},\n\n"
-                "Có người vừa yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n"
-                f"Bấm vào link sau để đặt mật khẩu mới (hết hạn sau {settings.PASSWORD_RESET_EXPIRE_MINUTES} phút):\n\n"
-                f"{link}\n\n"
-                "Nếu không phải bạn yêu cầu, hãy bỏ qua email này. Mật khẩu hiện tại vẫn giữ nguyên.\n"
-            ),
-        )
+        try:
+            await send_email(
+                to=user.email,
+                subject="Đặt lại mật khẩu - Bảo Tàng Gọi Tên Cảm Xúc",
+                body=(
+                    f"Chào {user.nickname or user.username},\n\n"
+                    "Có người vừa yêu cầu đặt lại mật khẩu cho tài khoản của bạn.\n"
+                    f"Bấm vào link sau để đặt mật khẩu mới (hết hạn sau {settings.PASSWORD_RESET_EXPIRE_MINUTES} phút):\n\n"
+                    f"{link}\n\n"
+                    "Nếu không phải bạn yêu cầu, hãy bỏ qua email này. Mật khẩu hiện tại vẫn giữ nguyên.\n"
+                ),
+            )
+        except Exception:
+            # Lỗi SMTP không được làm lộ việc tài khoản tồn tại; ghi log để quản trị kiểm tra cấu hình
+            logger.exception("Không gửi được email đặt lại mật khẩu")
 
     @staticmethod
     async def reset_password(db: AsyncSession, req: ResetPasswordRequest) -> None:

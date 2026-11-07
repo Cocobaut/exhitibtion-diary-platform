@@ -20,6 +20,46 @@ from app.services.reaction_service import ReactionService
 from app.services.search_service import SearchService
 
 
+CONTENT_FIELDS = ("content", "content_vi", "content_en")
+
+
+def _as_utc(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is not None and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def is_lantern_unlocked(target_date: Optional[datetime], now: Optional[datetime] = None) -> bool:
+    """Lồng đèn đã tới ngày hạ cánh (hoặc không hẹn ngày)."""
+    target = _as_utc(target_date)
+    return target is None or target <= (now or datetime.now(timezone.utc))
+
+
+def can_read_lantern(artwork: Artwork, current_user: Optional[User], now: Optional[datetime] = None) -> bool:
+    """Trước ngày hạ cánh không ai đọc được nội dung thư, kể cả tác giả; chỉ thấy tiêu đề và tóm tắt.
+    (current_user giữ lại để sau này đổi luật, ví dụ cho tác giả xem trước, chỉ cần sửa ở đây.)
+    """
+    return is_lantern_unlocked(artwork.target_date, now)
+
+
+def hide_locked_content(data: Dict[str, Any]) -> Dict[str, Any]:
+    for field in CONTENT_FIELDS:
+        if field in data:
+            data[field] = None
+    return data
+
+
+def lantern_locked_error(target_date: Optional[datetime]) -> AppException:
+    target = _as_utc(target_date)
+    when = target.strftime("%d/%m/%Y %H:%M UTC") if target else ""
+    return AppException(
+        status_code=423,
+        error_code="LANTERN_LOCKED",
+        message=f"Lồng đèn này chưa tới ngày hạ cánh. Bức thư sẽ mở vào {when}.",
+        data={"target_date": serialize_utc_datetime(target)} if target else None,
+    )
+
+
 class Room2Service:
     @staticmethod
     def get_visible_conditions(current_user: Optional[User] = None) -> List[Any]:
@@ -169,9 +209,13 @@ class Room2Service:
                 "is_unlockable": is_unlockable,
                 "remaining_seconds": rem_secs,
                 "is_opened": art.is_opened,
+                "symbol": art.tag_category or "star",
                 "media_url": art.media_url,
                 "created_at": art.created_at,
+                "can_read": can_read_lantern(art, current_user, now),
             })
+            if not items[-1]["can_read"]:
+                hide_locked_content(items[-1])
 
         return {
             "items": items,
@@ -192,8 +236,8 @@ class Room2Service:
         2. Permission check:
            - PUBLIC: must be APPROVED.
            - PRIVATE: must have token and user_id = current_user.id (otherwise 401 / 404).
-        3. No time lock restriction: Users can open/drop any lantern in visible set at will.
-        4. Unlock: is_opened = True, view_count + 1.
+        3. Time lock: trước target_date không ai đọc được, kể cả tác giả (423 LANTERN_LOCKED).
+        4. Unlock (đã tới ngày): is_opened = True, view_count + 1.
         """
         stmt = (
             select(Artwork)
@@ -234,6 +278,10 @@ class Room2Service:
         if target and target.tzinfo is None:
             target = target.replace(tzinfo=timezone.utc)
 
+        now = datetime.now(timezone.utc)
+        if not can_read_lantern(artwork, current_user, now):
+            raise lantern_locked_error(target)
+
         # Atomic increment view_count and mark is_opened
         upd_stmt = (
             update(Artwork)
@@ -253,6 +301,11 @@ class Room2Service:
             artwork.view_count = new_view_count
             await db.flush()
 
+        message = "Lồng đèn đã hạ cánh. Chúc mừng bạn đã chạm tới bức thư tương lai!"
+        return message, Room2Service._open_payload(artwork, target, new_view_count, is_opened=True)
+
+    @staticmethod
+    def _open_payload(artwork: Artwork, target: Optional[datetime], view_count: int, *, is_opened: bool) -> Dict[str, Any]:
         author_name = ArtworkQueryService.get_author_display_name(artwork)
         lang = artwork.original_language or "vi"
         title_vi = artwork.title_vi or (artwork.title if lang == "vi" else None)
@@ -261,9 +314,7 @@ class Room2Service:
         short_en = artwork.short_content_en or (artwork.short_content if lang == "en" else None)
         content_vi = artwork.content_vi or (artwork.content if lang == "vi" else None)
         content_en = artwork.content_en or (artwork.content if lang == "en" else None)
-
-        message = "Lồng đèn đã hạ cánh. Chúc mừng bạn đã chạm tới bức thư tương lai!"
-        data = {
+        return {
             "id": artwork.id,
             "original_language": lang,
             "title": artwork.title,
@@ -279,11 +330,10 @@ class Room2Service:
             "media_url": artwork.media_url,
             "visibility": artwork.visibility,
             "target_date": target,
-            "is_opened": True,
-            "view_count": new_view_count,
+            "is_opened": is_opened,
+            "view_count": view_count,
             "created_at": artwork.created_at,
         }
-        return message, data
 
     @staticmethod
     async def get_ready_to_fall_lanterns(
@@ -346,6 +396,7 @@ class Room2Service:
                 "status": art.status,
                 "target_date": target,
                 "is_opened": art.is_opened,
+                "symbol": art.tag_category or "star",
                 "media_url": art.media_url,
                 "created_at": art.created_at,
             })
@@ -413,6 +464,7 @@ class Room2Service:
             status=status_val,
             is_opened=False,
             media_url=None,
+            tag_category=request.symbol or "star",
         )
         db.add(new_lantern)
         await db.flush()
@@ -509,6 +561,13 @@ class Room2Service:
             extra_conditions.append(public_cond)
 
         now = datetime.now(timezone.utc)
+        # Thư chưa hạ cánh chỉ được tìm theo tiêu đề, tóm tắt, tác giả (không dò được nội dung thư)
+        extra_conditions.append(or_(
+            Artwork.target_date.is_(None),
+            Artwork.target_date <= now,
+            SearchService.non_content_match(db, clean_q),
+        ))
+
         if filter_type == "mine" and current_user:
             extra_conditions.append(Artwork.user_id == current_user.id)
         elif filter_type == "opened":
@@ -533,7 +592,9 @@ class Room2Service:
             is_unlockable = (target is None or target <= now)
 
             hl = item.get("highlight", {})
-            # Spec requirement: Do not include 'content' in highlight if lantern is locked!
+            is_mine = bool(current_user and item.get("user_id") == current_user.id)
+            can_read = is_unlockable
+            # Thư chưa hạ cánh: không lộ nội dung trong highlight
             if not is_unlockable:
                 hl = {k: v for k, v in hl.items() if k != "content"}
 
@@ -552,9 +613,15 @@ class Room2Service:
                 "visibility": item.get("visibility", "PUBLIC"),
                 "is_opened": item.get("is_opened", False),
                 "is_unlockable": is_unlockable,
+                "remaining_seconds": 0 if is_unlockable else int((target - now).total_seconds()),
+                "is_mine": is_mine,
+                "can_read": can_read,
+                "symbol": item.get("tag_category") or "star",
                 "target_date": target,
                 "highlight": hl,
             })
+            if not can_read:
+                hide_locked_content(formatted_items[-1])
 
         return {
             "items": formatted_items,
@@ -729,6 +796,7 @@ class Room2Service:
                 Artwork.is_opened.is_(True),
                 Artwork.visibility == "PUBLIC",
                 Artwork.status == "APPROVED",
+                or_(Artwork.target_date.is_(None), Artwork.target_date <= datetime.now(timezone.utc)),
             )
             .order_by(func.random())
             .limit(1)
@@ -804,7 +872,15 @@ class Room2Service:
                 message="Không tìm thấy lồng đèn"
             )
 
-        if lantern.visibility == "PRIVATE" and (not current_user or lantern.user_id != current_user.id):
+        is_author = bool(current_user and lantern.user_id == current_user.id)
+        if lantern.visibility == "PRIVATE" and not is_author:
+            raise AppException(
+                status_code=404,
+                error_code="ARTWORK_NOT_FOUND",
+                message="Không tìm thấy lồng đèn"
+            )
+        # Lồng đèn công khai chưa duyệt chỉ tác giả xem được
+        if lantern.visibility == "PUBLIC" and lantern.status != "APPROVED" and not is_author:
             raise AppException(
                 status_code=404,
                 error_code="ARTWORK_NOT_FOUND",
@@ -831,7 +907,7 @@ class Room2Service:
             )
             is_saved = bool(check_saved)
 
-        return {
+        data = {
             "id": str(lantern.id),
             "original_language": lantern.original_language,
             "title": lantern.title,
@@ -854,7 +930,11 @@ class Room2Service:
             "my_reaction": my_rx,
             "is_saved": is_saved,
             "created_at": serialize_utc_datetime(lantern.created_at),
+            "can_read": can_read_lantern(lantern, current_user),
         }
+        if not data["can_read"]:
+            hide_locked_content(data)
+        return data
 
     @staticmethod
     async def toggle_reaction(

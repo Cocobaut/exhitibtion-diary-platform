@@ -8,6 +8,10 @@ import httpx
 from app.core.config import settings
 from app.schemas.ai_copilot import GenerateArtImageData, GenerateArtImageRequest
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class AiImageService:
 
@@ -39,7 +43,7 @@ class AiImageService:
             elif provider == "gemini":
                 image_bytes = await cls._generate_gemini_imagen(visual_prompt, api_key, model_name)
         except Exception as e:
-            print(f"Warning: Upstream image generation error ({e}), using fallback art renderer.")
+            logger.warning(f"Warning: Upstream image generation error ({e}), using fallback art renderer.")
 
         # 3. Save to local storage
         upload_dir = Path(settings.UPLOAD_DIR) / "artworks" / "ai_generated"
@@ -66,7 +70,7 @@ class AiImageService:
                     sanitized_text = cls.sanitize_svg(svg_text)
                     image_bytes = sanitized_text.encode("utf-8")
                 except Exception as ex:
-                    print(f"Warning: Failed to sanitize SVG: {ex}")
+                    logger.warning(f"Warning: Failed to sanitize SVG: {ex}")
             with open(file_path, "wb") as f:
                 f.write(image_bytes)
         else:
@@ -132,13 +136,18 @@ class AiImageService:
                 images = data.get("images", [])
                 if images and "url" in images[0]:
                     img_url = images[0]["url"]
+                    # URL ảnh do bên ngoài trả về: chỉ tải từ https và địa chỉ công khai
+                    from app.core.security import validate_safe_base_url
+                    if not str(img_url).lower().startswith("https://"):
+                        raise ValueError("Fal.ai trả về URL ảnh không phải https")
+                    validate_safe_base_url(img_url)
                     img_resp = await client.get(img_url, timeout=30.0)
                     if img_resp.status_code == 200:
-                        print(f"[AI Image Service] Fal.ai FLUX ({endpoint}) synthesized image successfully!")
+                        logger.info(f"[AI Image Service] Fal.ai FLUX ({endpoint}) synthesized image successfully!")
                         return img_resp.content
             else:
                 err_text = resp.text[:250].replace("\n", " ")
-                print(f"[AI Image Service] Fal.ai returned HTTP {resp.status_code}: {err_text}")
+                logger.info(f"[AI Image Service] Fal.ai returned HTTP {resp.status_code}: {err_text}")
         return None
 
     @classmethod
@@ -181,7 +190,7 @@ class AiImageService:
                     predictions = data.get("predictions", [])
                     if predictions and "bytesBase64Encoded" in predictions[0]:
                         b64 = predictions[0]["bytesBase64Encoded"]
-                        print("[AI Copilot Image] Successfully generated raster image via Google Imagen 3.")
+                        logger.info("[AI Copilot Image] Successfully generated raster image via Google Imagen 3.")
                         return base64.b64decode(b64)
         except Exception:
             pass
@@ -226,10 +235,10 @@ class AiImageService:
                             if match:
                                 raw_svg = match.group(1).strip()
                                 sanitized_svg = cls.sanitize_svg(raw_svg)
-                                print(f"[AI Copilot Image] Real Gemini AI ({m}) successfully synthesized artwork illustration!")
+                                logger.info(f"[AI Copilot Image] Real Gemini AI ({m}) successfully synthesized artwork illustration!")
                                 return sanitized_svg.encode("utf-8")
                 except Exception as ex:
-                    print(f"[AI Copilot Image] Error generating art with {m}: {ex}")
+                    logger.warning(f"[AI Copilot Image] Error generating art with {m}: {ex}")
         return None
 
     @classmethod

@@ -11,6 +11,10 @@ import httpx
 from app.core.exceptions import AppException
 from app.schemas.ai_copilot import TranslateContentData, TranslateContentRequest
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 LANG_NAMES = {"vi": "Vietnamese", "en": "English"}
 
 # Model dự phòng khi model Owner cấu hình không còn khả dụng với key này
@@ -93,10 +97,10 @@ class AiTranslationService:
                 try:
                     resp = await client.post(url, json=payload)
                 except httpx.HTTPError as ex:
-                    print(f"[AI Translation] Error calling {m}: {ex}")
+                    logger.warning(f"[AI Translation] Error calling {m}: {ex}")
                     continue
                 if resp.status_code != 200:
-                    print(f"[AI Translation] Model '{m}' returned HTTP {resp.status_code}")
+                    logger.info(f"[AI Translation] Model '{m}' returned HTTP {resp.status_code}")
                     continue
                 candidates = resp.json().get("candidates", [])
                 parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
@@ -143,8 +147,8 @@ class AiTranslationService:
                         data = cls._parse_json(resp.json()["choices"][0]["message"]["content"])
                         if data is not None:
                             return (data, target_model)
-                    print(f"[AI Translation] Model '{target_model}' returned HTTP {resp.status_code}")
+                    logger.info(f"[AI Translation] Model '{target_model}' returned HTTP {resp.status_code}")
                 except Exception as ex:
-                    print(f"[AI Translation] Error calling {target_model}: {ex}")
+                    logger.warning(f"[AI Translation] Error calling {target_model}: {ex}")
                     continue
         return None, None

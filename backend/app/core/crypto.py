@@ -10,9 +10,22 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from app.core.config import settings
 
 
+def _derive(secret: str) -> bytes:
+    return hashlib.sha256(secret.encode("utf-8")).digest()
+
+
 def _get_derived_key() -> bytes:
-    """Derive a 32-byte key from the SECRET_KEY using SHA-256."""
-    return hashlib.sha256(settings.SECRET_KEY.encode("utf-8")).digest()
+    """Khoá dùng để mã hoá: AI_ENCRYPTION_KEY nếu có, không thì SECRET_KEY."""
+    return _derive(settings.AI_ENCRYPTION_KEY or settings.SECRET_KEY)
+
+
+def _candidate_keys() -> list:
+    """Khoá thử khi giải mã: khoá hiện tại, rồi SECRET_KEY cho dữ liệu mã hoá trước khi có AI_ENCRYPTION_KEY."""
+    keys = [_get_derived_key()]
+    legacy = _derive(settings.SECRET_KEY)
+    if legacy not in keys:
+        keys.append(legacy)
+    return keys
 
 
 def encrypt_aes_256(plain_text: Optional[str]) -> Optional[str]:
@@ -38,12 +51,14 @@ def decrypt_aes_256(encrypted_text: Optional[str]) -> Optional[str]:
             return None
         nonce = raw_data[:12]
         ciphertext = raw_data[12:]
-        key = _get_derived_key()
-        aesgcm = AESGCM(key)
-        decrypted_bytes = aesgcm.decrypt(nonce, ciphertext, None)
-        return decrypted_bytes.decode("utf-8")
     except Exception:
         return None
+    for key in _candidate_keys():
+        try:
+            return AESGCM(key).decrypt(nonce, ciphertext, None).decode("utf-8")
+        except Exception:
+            continue
+    return None
 
 
 def mask_api_key(api_key: Optional[str]) -> str:

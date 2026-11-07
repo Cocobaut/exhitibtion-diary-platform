@@ -141,18 +141,28 @@ class StorageService:
             await file.seek(0)
 
     @staticmethod
-    def delete(file_url: str) -> bool:
-        """Optional delete local file given public URL."""
+    def delete(file_url: str, folder: str, owner_prefix: Optional[str] = None) -> bool:
+        """Xoá file trong uploads/<folder> từ URL công khai của nó.
+
+        Chỉ xoá khi đường dẫn sau khi resolve vẫn nằm trong uploads/<folder> (chặn "../")
+        và, nếu có owner_prefix, tên file phải bắt đầu bằng prefix đó (chặn xoá file của người khác).
+        """
         try:
             # Nhận cả "/static/..." lẫn link tuyệt đối cũ "https://<domain>/static/..."
             marker = "/static/"
             idx = file_url.find(marker)
-            if idx != -1 and (idx == 0 or file_url.startswith(("http://", "https://"))):
-                rel_path = file_url[idx + len(marker):]
-                target_path = Path(settings.UPLOAD_DIR) / rel_path
-                if target_path.exists():
-                    target_path.unlink()
-                    return True
+            if idx == -1 or not (idx == 0 or file_url.startswith(("http://", "https://"))):
+                return False
+            rel_path = file_url[idx + len(marker):].split("?", 1)[0].split("#", 1)[0]
+            base_dir = (Path(settings.UPLOAD_DIR) / folder).resolve()
+            target_path = (Path(settings.UPLOAD_DIR) / rel_path).resolve()
+            if target_path.parent != base_dir:
+                return False
+            if owner_prefix and not target_path.name.startswith(owner_prefix):
+                return False
+            if target_path.is_file():
+                target_path.unlink()
+                return True
         except Exception:
             pass
         return False

@@ -32,6 +32,8 @@ export function Room2Page({
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  // Số kết quả của lần tìm gần nhất (null khi không tìm)
+  const [searchHits, setSearchHits] = useState(null);
 
   const [lanterns, setLanterns] = useState([]);
   const [matchedLanternIds, setMatchedLanternIds] = useState(new Set());
@@ -161,6 +163,7 @@ export function Room2Page({
     const q = debouncedSearch.trim();
     if (!q) {
       setMatchedLanternIds(new Set());
+      setSearchHits(null);
       return;
     }
 
@@ -215,6 +218,7 @@ export function Room2Page({
 
       if (isMounted) {
         setMatchedLanternIds(matched);
+        setSearchHits(matched.size);
       }
     })();
 
@@ -357,6 +361,7 @@ export function Room2Page({
         isSearchActive={isSearchActive}
         searchQuery={debouncedSearch}
         onOpenLandedModal={handleOpenLantern}
+        showAmbient={!debouncedSearch}
       />
 
       {/* Top Header */}
@@ -465,6 +470,17 @@ export function Room2Page({
           {isLoading && (
             <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
               {language === 'en' ? 'Loading...' : 'Đang tải...'}
+            </span>
+          )}
+          {!isLoading && debouncedSearch && searchHits !== null && (
+            <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
+              {searchHits > 0
+                ? (language === 'en'
+                  ? `${searchHits} lantern(s) match "${debouncedSearch}"`
+                  : `Tìm thấy ${searchHits} lồng đèn khớp "${debouncedSearch}"`)
+                : (language === 'en'
+                  ? `No lantern matches "${debouncedSearch}"`
+                  : `Không có lồng đèn nào khớp "${debouncedSearch}"`)}
             </span>
           )}
         </div>

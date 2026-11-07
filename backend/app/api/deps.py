@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import AsyncSessionLocal
 from app.core.exceptions import AppException
-from app.core.security import decode_token
+from app.core.security import decode_token, password_fingerprint
 from app.models.user import User, UserRole
 from app.models.revoked_token import RevokedToken
 
@@ -26,6 +26,15 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+
+def _password_still_valid(payload: dict, user: User) -> bool:
+    """Token mang dấu vân tay mật khẩu lúc phát hành; khác dấu hiện tại nghĩa là mật khẩu đã đổi."""
+    fingerprint = payload.get("pwd")
+    if fingerprint is None:
+        # Token phát hành trước khi có claim này (hết hạn tối đa sau 24h)
+        return True
+    return fingerprint == password_fingerprint(user.password_hash)
 
 
 async def get_current_user(
@@ -95,6 +104,13 @@ async def get_current_user(
             message="Người dùng không tồn tại"
         )
 
+    if not _password_still_valid(payload, user):
+        raise AppException(
+            status_code=401,
+            error_code="UNAUTHORIZED",
+            message="Mật khẩu đã thay đổi, vui lòng đăng nhập lại"
+        )
+
     if not user.is_active:
         raise AppException(
             status_code=403,
@@ -136,7 +152,7 @@ async def get_optional_user(
 
         user_id = uuid.UUID(user_id_str)
         user = await db.get(User, user_id)
-        if not user or not user.is_active:
+        if not user or not user.is_active or not _password_still_valid(payload, user):
             return None
 
         return user

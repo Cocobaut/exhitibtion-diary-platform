@@ -5,6 +5,10 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 from app.core.exceptions import AppException
+from app.core.validators import validate_media_urls
+
+# Giới hạn độ dài nội dung nhật ký để chặn bài khổng lồ làm phình DB
+MAX_DIARY_CONTENT_LENGTH = 20000
 
 
 def serialize_utc_datetime(dt: Optional[datetime]) -> Optional[str]:
@@ -123,6 +127,22 @@ class CreateDiaryRequest(BaseModel):
             )
         return clean_v
 
+    @field_validator("content")
+    @classmethod
+    def validate_content_length(cls, v: str) -> str:
+        if len(v) > MAX_DIARY_CONTENT_LENGTH:
+            raise AppException(
+                status_code=400,
+                error_code="VALIDATION_ERROR",
+                message=f"Nội dung nhật ký tối đa {MAX_DIARY_CONTENT_LENGTH} ký tự"
+            )
+        return v
+
+    @field_validator("media_urls")
+    @classmethod
+    def validate_media(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        return validate_media_urls(v)
+
 
 class CreateDiaryResponseData(BaseModel):
     id: uuid.UUID
@@ -153,6 +173,22 @@ class UpdateDiaryRequest(BaseModel):
     media_urls: Optional[List[str]] = None
     is_public: Optional[bool] = None
     is_encrypted: Optional[bool] = None
+
+    @field_validator("media_urls")
+    @classmethod
+    def validate_media(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        return validate_media_urls(v)
+
+    @field_validator("content")
+    @classmethod
+    def validate_content_length(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and len(v) > MAX_DIARY_CONTENT_LENGTH:
+            raise AppException(
+                status_code=400,
+                error_code="VALIDATION_ERROR",
+                message=f"Nội dung nhật ký tối đa {MAX_DIARY_CONTENT_LENGTH} ký tự"
+            )
+        return v
 
     @field_validator("content")
     @classmethod

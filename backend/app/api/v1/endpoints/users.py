@@ -2,10 +2,13 @@ from fastapi import APIRouter, Depends, File, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api import deps
+from app.core.rate_limit import enforce_limit, upload_limiter
+from app.core.security import create_access_token
 from app.models.user import User
 from app.schemas.user import (
     AvatarOut,
     AvatarResponse,
+    ChangePasswordData,
     ChangePasswordIn,
     ChangePasswordResponse,
     UserMeOut,
@@ -76,9 +79,17 @@ async def change_password(
         user=current_user,
         data=data
     )
+    # Token đang dùng hết hiệu lực vì mật khẩu đã đổi (mọi thiết bị khác cũng bị đăng xuất);
+    # cấp token mới để phiên hiện tại tiếp tục
+    new_token = create_access_token(
+        subject=current_user.id,
+        role=current_user.role,
+        password_hash=current_user.password_hash,
+    )
     return ChangePasswordResponse(
         success=True,
-        message="Đổi mật khẩu thành công"
+        message="Đổi mật khẩu thành công",
+        data=ChangePasswordData(access_token=new_token),
     )
 
 
@@ -94,6 +105,7 @@ async def upload_avatar(
     db: AsyncSession = Depends(deps.get_db),
 ) -> AvatarResponse:
     """2.4 Tải lên ảnh đại diện và lưu trực tiếp URL vào tài khoản."""
+    enforce_limit(upload_limiter, str(current_user.id), "Bạn tải ảnh quá nhiều. Hãy thử lại sau ít phút.")
     avatar_url = await UserService.upload_avatar(
         db=db,
         user=current_user,

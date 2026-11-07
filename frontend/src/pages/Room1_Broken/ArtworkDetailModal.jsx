@@ -25,6 +25,12 @@ export function ArtworkDetailModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  // Lỗi khi lưu: hiện tạm trên nút thay vì giả vờ đã lưu trong máy
+  const [saveError, setSaveError] = useState('');
+  const showSaveError = (msg) => {
+    setSaveError(msg);
+    setTimeout(() => setSaveError(''), 3500);
+  };
   const [currentReaction, setCurrentReaction] = useState(null);
   const [reactionsMap, setReactionsMap] = useState({
     HEART: 0,
@@ -118,6 +124,10 @@ export function ArtworkDetailModal({
     const artId = detail?.id || artwork?.id;
 
     try {
+      // Mục không có trên server (ví dụ lồng đèn minh hoạ) thì không lưu được vào sổ tay
+      if (!(artId)) {
+        throw new Error('NOT_SAVABLE');
+      }
       if (artId) {
         if (willSave) {
           await room1Service.saveArtworkToNotebook(artId);
@@ -144,23 +154,11 @@ export function ArtworkDetailModal({
       }
     } catch (err) {
       console.error('Error toggling notebook save for Room 1 artwork:', err);
-      // Fallback local state
-      setIsSaved(willSave);
-      if (willSave && onSaveToNotebook) {
-        onSaveToNotebook({
-          id: artId ? `nb_r1_${artId}` : `nb_r1_${Date.now()}`,
-          artwork_id: artId,
-          source: 'room1',
-          sourceLabel: language === 'en' ? 'Artwork · Room 1' : 'Tác phẩm · Phòng 1',
-          badgeClass: 'b-ok',
-          icon: 'r1',
-          title: title || 'Tác phẩm Phòng 1',
-          content: story || '',
-          author: author || 'Tác giả',
-          media_url: detail?.media_url || artwork.media_url || artwork.image_url,
-          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
-        });
-      }
+      showSaveError(
+        err?.message === 'NOT_SAVABLE'
+          ? (language === 'en' ? 'This item cannot be saved' : 'Mục minh hoạ, không lưu được')
+          : (language === 'en' ? 'Could not save, try again' : 'Chưa lưu được, thử lại nhé')
+      );
     } finally {
       setSaveLoading(false);
     }
@@ -177,7 +175,7 @@ export function ArtworkDetailModal({
     <>
       <div className="scrim" onClick={onClose} />
       <div
-        className="panel"
+        className="panel artwork-detail-panel"
         style={{
           width: '1060px',
           maxWidth: '94vw',
@@ -188,8 +186,14 @@ export function ArtworkDetailModal({
           gridTemplateColumns: '480px 1fr',
         }}
       >
+        {/* Nút đóng gắn với khung modal (trên điện thoại luôn nổi ở góc, không trôi theo nội dung) */}
+        <span className="x artwork-detail-close" onClick={onClose} role="button" tabIndex={0} aria-label="Đóng">
+          <Icon name="x" size={22} />
+        </span>
+
         {/* Left: Large Framed Painting */}
         <div
+          className="artwork-detail-frame-wrap"
           style={{
             background: '#2B211D',
             padding: '24px',
@@ -199,6 +203,7 @@ export function ArtworkDetailModal({
           }}
         >
           <div
+            className="artwork-detail-frame"
             style={{
               width: '420px',
               maxWidth: '100%',
@@ -226,6 +231,7 @@ export function ArtworkDetailModal({
 
         {/* Right: Story & Details */}
         <div
+          className="artwork-detail-body"
           style={{
             padding: '30px 36px 26px',
             position: 'relative',
@@ -234,10 +240,6 @@ export function ArtworkDetailModal({
             overflowY: 'auto',
           }}
         >
-          <span className="x" onClick={onClose} role="button" tabIndex={0}>
-            <Icon name="x" size={22} />
-          </span>
-
           <div
             style={{
               fontFamily: 'var(--serif)',
@@ -302,7 +304,7 @@ export function ArtworkDetailModal({
           {/* Reactions bar & Save to notebook */}
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: '16px', marginTop: '20px' }}>
             <div className="row between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <div className="rxbar" style={{ display: 'flex', gap: '8px' }}>
+              <div className="rxbar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {reactionTypes.map((type) => (
                   <ReactionButton
                     key={type}
@@ -333,6 +335,8 @@ export function ArtworkDetailModal({
                 <Icon name={isSaved ? 'check' : 'bookmark'} size={15} />
                 {saveLoading
                   ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+                  : saveError
+                  ? saveError
                   : isSaved
                   ? (language === 'en' ? 'Saved to notebook' : 'Đã lưu vào sổ tay')
                   : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}

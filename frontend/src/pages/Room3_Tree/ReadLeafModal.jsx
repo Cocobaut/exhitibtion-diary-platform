@@ -30,6 +30,12 @@ export function ReadLeafModal({
   const [hasHearted, setHasHearted] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  // Lỗi khi lưu: hiện tạm trên nút thay vì giả vờ đã lưu trong máy
+  const [saveError, setSaveError] = useState('');
+  const showSaveError = (msg) => {
+    setSaveError(msg);
+    setTimeout(() => setSaveError(''), 3500);
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [isTogglingEnergy, setIsTogglingEnergy] = useState(false);
   const [isTogglingHeart, setIsTogglingHeart] = useState(false);
@@ -211,6 +217,10 @@ export function ReadLeafModal({
     const leafId = currentLeaf?.id;
 
     try {
+      // Mục không có trên server (ví dụ lồng đèn minh hoạ) thì không lưu được vào sổ tay
+      if (!(leafId)) {
+        throw new Error('NOT_SAVABLE');
+      }
       if (leafId) {
         if (willSave) {
           await room3Service.saveLeafToNotebook(leafId);
@@ -237,22 +247,11 @@ export function ReadLeafModal({
       }
     } catch (err) {
       console.error('Error toggling notebook save for leaf:', err);
-      setIsSaved(willSave);
-      if (willSave && onSaveToNotebook) {
-        onSaveToNotebook({
-          id: leafId ? `nb_r3_${leafId}` : `nb_r3_${Date.now()}`,
-          artwork_id: leafId,
-          source: 'room3',
-          sourceLabel: language === 'en' ? 'Wish Leaf · Room 3' : 'Chiếc lá nguyện ước · Phòng 3',
-          badgeClass: 'b-wait',
-          icon: 'r3',
-          title: original(currentLeaf, 'title') || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên'),
-          content: original(currentLeaf, 'content') || original(currentLeaf, 'short_content') || '',
-          author: currentLeaf.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ'),
-          symbol: leafColor,
-          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
-        });
-      }
+      showSaveError(
+        err?.message === 'NOT_SAVABLE'
+          ? (language === 'en' ? 'This item cannot be saved' : 'Mục minh hoạ, không lưu được')
+          : (language === 'en' ? 'Could not save, try again' : 'Chưa lưu được, thử lại nhé')
+      );
     } finally {
       setSaveLoading(false);
     }
@@ -392,6 +391,8 @@ export function ReadLeafModal({
             <Icon name={isSaved ? 'check' : 'bookmark'} size={15} />
             {saveLoading
               ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+              : saveError
+              ? saveError
               : isSaved
               ? (language === 'en' ? 'Saved to notebook' : 'Đã lưu vào sổ tay')
               : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}
