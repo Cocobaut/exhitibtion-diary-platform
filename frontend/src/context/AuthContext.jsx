@@ -3,30 +3,74 @@ import { userService } from '../services/userService';
 
 const AuthContext = createContext(null);
 
-const STORAGE_KEYS = {
+export const SESSION_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 giờ tính bằng mili-giây
+
+export const STORAGE_KEYS = {
   TOKEN: 'access_token',
   USER_INFO: 'user_info',
+  LOGIN_TIME: 'auth_login_time',
+  IS_GUEST: 'is_guest',
 };
 
 /**
- * Đọc thông tin user từ localStorage một cách an toàn
+ * Kiểm tra xem phiên đăng nhập hiện tại đã vượt quá thời hạn 24 giờ hay chưa
+ */
+export function isSessionExpired() {
+  try {
+    const loginTime = sessionStorage.getItem(STORAGE_KEYS.LOGIN_TIME);
+    if (!loginTime) return false;
+    const elapsed = Date.now() - Number(loginTime);
+    return elapsed >= SESSION_MAX_AGE_MS || elapsed < 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Xóa toàn bộ dữ liệu xác thực trong sessionStorage (và dọn dẹp localStorage cũ)
+ */
+export function clearAuthStorage() {
+  try {
+    sessionStorage.removeItem(STORAGE_KEYS.TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.USER_INFO);
+    sessionStorage.removeItem(STORAGE_KEYS.LOGIN_TIME);
+    sessionStorage.removeItem(STORAGE_KEYS.IS_GUEST);
+    // Dọn dẹp cả token cũ trong localStorage (nếu có từ phiên bản trước)
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+    localStorage.removeItem(STORAGE_KEYS.IS_GUEST);
+  } catch (err) {
+    console.warn('Lỗi khi xoá dữ liệu xác thực:', err);
+  }
+}
+
+/**
+ * Đọc thông tin user từ sessionStorage một cách an toàn (tự động out nếu quá 24h)
  */
 function getInitialUser() {
   try {
-    const savedUser = localStorage.getItem(STORAGE_KEYS.USER_INFO);
+    if (isSessionExpired()) {
+      clearAuthStorage();
+      return null;
+    }
+    const savedUser = sessionStorage.getItem(STORAGE_KEYS.USER_INFO);
     return savedUser ? JSON.parse(savedUser) : null;
   } catch (err) {
-    console.error('Không thể parse user_info từ localStorage:', err);
+    console.error('Không thể parse user_info từ sessionStorage:', err);
     return null;
   }
 }
 
 /**
- * Đọc token từ localStorage một cách an toàn
+ * Đọc token từ sessionStorage một cách an toàn (tự động out nếu quá 24h)
  */
 function getInitialToken() {
   try {
-    return localStorage.getItem(STORAGE_KEYS.TOKEN) || null;
+    if (isSessionExpired()) {
+      clearAuthStorage();
+      return null;
+    }
+    return sessionStorage.getItem(STORAGE_KEYS.TOKEN) || null;
   } catch {
     return null;
   }
@@ -38,7 +82,14 @@ export function AuthProvider({ children }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGuest, setIsGuest] = useState(() => {
     try {
-      return localStorage.getItem('is_guest') === 'true' && !localStorage.getItem(STORAGE_KEYS.TOKEN);
+      if (isSessionExpired()) {
+        clearAuthStorage();
+        return false;
+      }
+      return (
+        sessionStorage.getItem(STORAGE_KEYS.IS_GUEST) === 'true' &&
+        !sessionStorage.getItem(STORAGE_KEYS.TOKEN)
+      );
     } catch {
       return false;
     }
@@ -46,52 +97,55 @@ export function AuthProvider({ children }) {
 
   // Chuyển sang chế độ Khách vãng lai
   const enterGuestMode = useCallback(() => {
+    clearAuthStorage();
     try {
-      localStorage.removeItem(STORAGE_KEYS.TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.USER_INFO);
-      localStorage.setItem('is_guest', 'true');
+      sessionStorage.setItem(STORAGE_KEYS.IS_GUEST, 'true');
+      sessionStorage.setItem(STORAGE_KEYS.LOGIN_TIME, String(Date.now()));
     } catch (err) {
-      console.warn('Lỗi khi lưu guest mode vào localStorage:', err);
+      console.warn('Lỗi khi lưu guest mode vào sessionStorage:', err);
     }
     setToken(null);
     setUser(null);
     setIsGuest(true);
   }, []);
 
-  // Đăng xuất và dọn dẹp bộ nhớ cục bộ
+  // Đăng xuất và dọn dẹp bộ nhớ phiên
   const logout = useCallback(() => {
-    try {
-      localStorage.removeItem(STORAGE_KEYS.TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.USER_INFO);
-      localStorage.removeItem('is_guest');
-    } catch (err) {
-      console.warn('Lỗi khi xoá dữ liệu xác thực từ localStorage:', err);
-    }
+    clearAuthStorage();
     setToken(null);
     setUser(null);
     setIsGuest(false);
   }, []);
 
-  // Đăng nhập thành công: lưu token & user vào state và localStorage
+  // Đăng nhập thành công: lưu token & user vào state và sessionStorage (gắn mốc thời gian 24h)
   const login = useCallback((authPayload) => {
     if (!authPayload) return;
 
     try {
-      localStorage.removeItem('is_guest');
+      sessionStorage.removeItem(STORAGE_KEYS.IS_GUEST);
+      localStorage.removeItem(STORAGE_KEYS.IS_GUEST);
     } catch {}
     setIsGuest(false);
 
     // Hỗ trợ cả { access_token, user } hoặc { token, user } hoặc payload phẳng
     const accessToken = authPayload.access_token || authPayload.token;
     const userData = authPayload.user || authPayload;
+    const nowStr = String(Date.now());
 
     if (accessToken) {
-      localStorage.setItem(STORAGE_KEYS.TOKEN, accessToken);
+      sessionStorage.setItem(STORAGE_KEYS.TOKEN, accessToken);
+      sessionStorage.setItem(STORAGE_KEYS.LOGIN_TIME, nowStr);
+      try {
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      } catch {}
       setToken(accessToken);
     }
 
     if (userData && typeof userData === 'object') {
-      localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(userData));
+      sessionStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(userData));
+      try {
+        localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+      } catch {}
       setUser(userData);
     }
   }, []);
@@ -102,12 +156,12 @@ export function AuthProvider({ children }) {
       const nextUser = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
       try {
         if (nextUser) {
-          localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(nextUser));
+          sessionStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(nextUser));
         } else {
-          localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+          sessionStorage.removeItem(STORAGE_KEYS.USER_INFO);
         }
       } catch (err) {
-        console.error('Lỗi khi cập nhật user_info vào localStorage:', err);
+        console.error('Lỗi khi cập nhật user_info vào sessionStorage:', err);
       }
       return nextUser;
     });
@@ -115,7 +169,7 @@ export function AuthProvider({ children }) {
 
   // Đồng bộ thông tin hồ sơ mới nhất từ máy chủ (GET /users/me)
   const refreshProfile = useCallback(async () => {
-    const currentToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    const currentToken = sessionStorage.getItem(STORAGE_KEYS.TOKEN);
     if (!currentToken) return null;
 
     try {
@@ -124,7 +178,7 @@ export function AuthProvider({ children }) {
         setUser((prev) => {
           const merged = { ...prev, ...profile };
           try {
-            localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(merged));
+            sessionStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(merged));
           } catch {
             // ignore
           }
@@ -137,6 +191,52 @@ export function AuthProvider({ children }) {
     }
     return null;
   }, []);
+
+  // Dọn dẹp dữ liệu đăng nhập cũ còn sót lại trong localStorage của các phiên bản trước
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(STORAGE_KEYS.TOKEN)) {
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      }
+      if (localStorage.getItem(STORAGE_KEYS.USER_INFO)) {
+        localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+      }
+      if (localStorage.getItem(STORAGE_KEYS.IS_GUEST)) {
+        localStorage.removeItem(STORAGE_KEYS.IS_GUEST);
+      }
+    } catch {}
+  }, []);
+
+  // Tự động kiểm tra thời hạn 24 giờ:
+  // Nếu treo tab quá 24h hoặc mở lại máy/app sau 24h -> Tự động out
+  useEffect(() => {
+    const checkExpiration = () => {
+      if ((token || isGuest) && isSessionExpired()) {
+        console.warn('Phiên đăng nhập đã quá 24 giờ hoặc hết hạn. Tự động đăng xuất.');
+        logout();
+        window.dispatchEvent(new CustomEvent('auth:expired'));
+      }
+    };
+
+    // Kiểm tra định kỳ mỗi 30 giây khi tab đang mở
+    const interval = setInterval(checkExpiration, 30000);
+
+    // Kiểm tra ngay khi quay lại tab (mở máy lại, mở khóa điện thoại, chuyển tab)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkExpiration();
+      }
+    };
+
+    window.addEventListener('focus', checkExpiration);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', checkExpiration);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [token, isGuest, logout]);
 
   // Tự động đồng bộ profile khi khởi động nếu đã có token
   useEffect(() => {

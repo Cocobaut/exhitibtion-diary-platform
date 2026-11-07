@@ -57,7 +57,22 @@ const ROUTES = ['home', 'r1', 'r2', 'r3', 'diary', 'notebook', 'admin', 'owner',
 
 const hasStoredSession = () => {
   try {
-    return Boolean(localStorage.getItem('access_token') || localStorage.getItem('is_guest') === 'true');
+    // Kiểm tra thời hạn phiên (nếu quá 24h thì huỷ phiên)
+    const loginTime = sessionStorage.getItem('auth_login_time');
+    if (loginTime) {
+      const elapsed = Date.now() - Number(loginTime);
+      if (elapsed >= 24 * 60 * 60 * 1000 || elapsed < 0) {
+        sessionStorage.removeItem('access_token');
+        sessionStorage.removeItem('user_info');
+        sessionStorage.removeItem('auth_login_time');
+        sessionStorage.removeItem('is_guest');
+        return false;
+      }
+    }
+    return Boolean(
+      sessionStorage.getItem('access_token') ||
+      sessionStorage.getItem('is_guest') === 'true'
+    );
   } catch {
     return false;
   }
@@ -172,6 +187,20 @@ function MainApp() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [isGuest]);
+
+  // Tự động điều hướng về màn hình đăng nhập khi phiên làm việc kết thúc hoặc hết hạn 24 giờ
+  React.useEffect(() => {
+    const handleAuthEnd = () => {
+      navigate('login', { replace: true });
+    };
+
+    window.addEventListener('auth:expired', handleAuthEnd);
+    window.addEventListener('auth:unauthorized', handleAuthEnd);
+    return () => {
+      window.removeEventListener('auth:expired', handleAuthEnd);
+      window.removeEventListener('auth:unauthorized', handleAuthEnd);
+    };
+  }, [navigate]);
 
   React.useEffect(() => {
     try {

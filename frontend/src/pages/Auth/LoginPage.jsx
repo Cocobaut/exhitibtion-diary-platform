@@ -87,6 +87,13 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
             ? 'Your account has been locked. Please contact an administrator.'
             : 'Tài khoản đang bị khoá. Hãy liên hệ ban quản trị.'
         );
+      } else if (err.errorCode === 'TOO_MANY_ATTEMPTS' || err.status === 429) {
+        setErrorMsg(
+          err.message ||
+            (language === 'en'
+              ? 'Too many failed login attempts. Please wait 15 minutes before trying again.'
+              : 'Bạn đã thử sai quá nhiều lần. Hãy đợi 15 phút rồi thử lại.')
+        );
       } else {
         setErrorMsg(
           err.message ||

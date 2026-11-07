@@ -33,19 +33,19 @@ export const apiClient = axios.create({
 });
 
 /**
- * Request Interceptor: Tự động đính kèm Bearer Token nếu đã đăng nhập
+ * Request Interceptor: Tự động đính kèm Bearer Token nếu đã đăng nhập (ưu tiên sessionStorage theo phiên)
  */
 apiClient.interceptors.request.use(
   (config) => {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = sessionStorage.getItem('access_token') || localStorage.getItem('access_token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
       const lang = localStorage.getItem('museum_lang') || 'vi';
       config.headers['Accept-Language'] = lang;
     } catch (err) {
-      console.warn('Lỗi khi truy cập localStorage trong Request Interceptor:', err);
+      console.warn('Lỗi khi truy cập bộ nhớ trong Request Interceptor:', err);
     }
     return config;
   },
@@ -79,11 +79,18 @@ apiClient.interceptors.response.use(
       if (status === 401) {
         let hadToken = false;
         try {
-          hadToken = Boolean(localStorage.getItem('access_token'));
+          hadToken = Boolean(
+            sessionStorage.getItem('access_token') || localStorage.getItem('access_token')
+          );
+          sessionStorage.removeItem('access_token');
+          sessionStorage.removeItem('user_info');
+          sessionStorage.removeItem('auth_login_time');
+          sessionStorage.removeItem('is_guest');
           localStorage.removeItem('access_token');
           localStorage.removeItem('user_info');
+          localStorage.removeItem('is_guest');
         } catch (e) {
-          console.warn('Không thể xoá localStorage:', e);
+          console.warn('Không thể xoá dữ liệu xác thực:', e);
         }
 
         // Chỉ bắn event / điều hướng nếu người dùng trước đó đã đăng nhập (có token) nhưng bị hết hạn.
@@ -95,7 +102,9 @@ apiClient.interceptors.response.use(
           window.location.pathname !== '/login'
         ) {
           window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-          window.location.href = '/login';
+          if (window.location.hash && !window.location.hash.includes('#/login')) {
+            window.location.hash = '#/login';
+          }
         }
       }
 
