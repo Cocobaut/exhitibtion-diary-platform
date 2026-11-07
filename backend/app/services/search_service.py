@@ -18,6 +18,12 @@ class SearchService:
         return bind.dialect.name == "postgresql" if bind else True
 
     @staticmethod
+    def _like_pattern(q: str) -> str:
+        # Escape ký tự đại diện của LIKE để "%" hay "_" chỉ khớp đúng ký tự đó (escape mặc định của Postgres là "\\")
+        escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        return f"%{escaped}%"
+
+    @staticmethod
     def _strip_accents(s: str) -> str:
         s = s.replace("đ", "d").replace("Đ", "D")
         return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
@@ -132,7 +138,7 @@ class SearchService:
             )
             fts_match = fts_vector.op("@@")(fts_query)
 
-            pattern = f"%{clean_q}%"
+            pattern = SearchService._like_pattern(clean_q)
             unaccent_match = or_(
                 func.unaccent(func.lower(func.coalesce(Artwork.title, ""))).like(func.unaccent(func.lower(pattern))),
                 func.unaccent(func.lower(func.coalesce(Artwork.title_vi, ""))).like(func.unaccent(func.lower(pattern))),
@@ -222,7 +228,8 @@ class SearchService:
                 item_data = {
                     "id": art.id,
                     "room_id": art.room_id,
-                    "title": hl_dict.get("title", [art.title])[0] if "title" in hl_dict else art.title,
+                    "user_id": art.user_id,
+                    "title": art.title,  # bản tô sáng nằm trong highlight, title giữ nguyên văn
                     "title_vi": art.title_vi,
                     "title_en": art.title_en,
                     "author_display_name": ArtworkQueryService.get_author_display_name(art),
@@ -248,19 +255,19 @@ class SearchService:
 
         else:
             # Fallback for non-postgres (e.g. SQLite test environment)
-            pattern = f"%{clean_q}%"
+            pattern = SearchService._like_pattern(clean_q)
             conditions.append(
                 or_(
-                    Artwork.title.ilike(pattern),
-                    Artwork.title_vi.ilike(pattern),
-                    Artwork.title_en.ilike(pattern),
-                    Artwork.short_content.ilike(pattern),
-                    Artwork.short_content_vi.ilike(pattern),
-                    Artwork.short_content_en.ilike(pattern),
-                    Artwork.content.ilike(pattern),
-                    Artwork.content_vi.ilike(pattern),
-                    Artwork.content_en.ilike(pattern),
-                    Artwork.author_display_name.ilike(pattern),
+                    Artwork.title.ilike(pattern, escape="\\"),
+                    Artwork.title_vi.ilike(pattern, escape="\\"),
+                    Artwork.title_en.ilike(pattern, escape="\\"),
+                    Artwork.short_content.ilike(pattern, escape="\\"),
+                    Artwork.short_content_vi.ilike(pattern, escape="\\"),
+                    Artwork.short_content_en.ilike(pattern, escape="\\"),
+                    Artwork.content.ilike(pattern, escape="\\"),
+                    Artwork.content_vi.ilike(pattern, escape="\\"),
+                    Artwork.content_en.ilike(pattern, escape="\\"),
+                    Artwork.author_display_name.ilike(pattern, escape="\\"),
                 )
             )
             count_stmt = select(func.count(Artwork.id)).where(*conditions)
@@ -279,7 +286,6 @@ class SearchService:
             items = []
             for art in arts:
                 hl_dict: Dict[str, List[str]] = {}
-                display_title = art.title or ""
 
                 hl_t = (
                     SearchService._highlight_snippet(art.title, clean_q)
@@ -288,7 +294,6 @@ class SearchService:
                 )
                 if hl_t:
                     hl_dict["title"] = [hl_t]
-                    display_title = hl_t
 
                 hl_s = (
                     SearchService._highlight_snippet(art.short_content, clean_q)
@@ -313,7 +318,8 @@ class SearchService:
                 items.append({
                     "id": art.id,
                     "room_id": art.room_id,
-                    "title": display_title,
+                    "user_id": art.user_id,
+                    "title": art.title,
                     "title_vi": art.title_vi,
                     "title_en": art.title_en,
                     "author_display_name": ArtworkQueryService.get_author_display_name(art),
@@ -387,7 +393,7 @@ class SearchService:
             )
             fts_match = fts_vector.op("@@")(fts_query)
 
-            pattern = f"%{clean_q}%"
+            pattern = SearchService._like_pattern(clean_q)
             unaccent_match = or_(
                 func.unaccent(func.lower(func.coalesce(Diary.title, ""))).like(func.unaccent(func.lower(pattern))),
                 func.unaccent(func.lower(func.coalesce(Diary.title_vi, ""))).like(func.unaccent(func.lower(pattern))),
@@ -449,7 +455,7 @@ class SearchService:
 
                 items.append({
                     "id": diary.id,
-                    "title": hl_dict.get("title", [diary.title])[0] if "title" in hl_dict else diary.title,
+                    "title": diary.title,
                     "title_vi": diary.title_vi,
                     "title_en": diary.title_en,
                     "content": diary.content,
@@ -465,15 +471,15 @@ class SearchService:
             return items, total_hits
 
         else:
-            pattern = f"%{clean_q}%"
+            pattern = SearchService._like_pattern(clean_q)
             conditions.append(
                 or_(
-                    Diary.title.ilike(pattern),
-                    Diary.title_vi.ilike(pattern),
-                    Diary.title_en.ilike(pattern),
-                    Diary.content.ilike(pattern),
-                    Diary.content_vi.ilike(pattern),
-                    Diary.content_en.ilike(pattern),
+                    Diary.title.ilike(pattern, escape="\\"),
+                    Diary.title_vi.ilike(pattern, escape="\\"),
+                    Diary.title_en.ilike(pattern, escape="\\"),
+                    Diary.content.ilike(pattern, escape="\\"),
+                    Diary.content_vi.ilike(pattern, escape="\\"),
+                    Diary.content_en.ilike(pattern, escape="\\"),
                 )
             )
             count_stmt = select(func.count(Diary.id)).where(*conditions)
@@ -511,7 +517,7 @@ class SearchService:
 
                 items.append({
                     "id": d.id,
-                    "title": hl_dict.get("title", [d.title])[0] if "title" in hl_dict else d.title,
+                    "title": d.title,
                     "title_vi": d.title_vi,
                     "title_en": d.title_en,
                     "content": d.content,

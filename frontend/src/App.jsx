@@ -21,19 +21,89 @@ import { OwnerDashboardPage } from './pages/Owner/OwnerDashboardPage';
 import { LoginPage } from './pages/Auth/LoginPage';
 import { ProfilePage } from './pages/Profile/ProfilePage';
 
+// Các trang của ứng dụng; mỗi trang có một mục trong lịch sử trình duyệt dạng "#/<route>"
+const ROUTES = ['home', 'r1', 'r2', 'r3', 'diary', 'notebook', 'admin', 'owner', 'login', 'profile'];
+
+const hasStoredSession = () => {
+  try {
+    return Boolean(localStorage.getItem('access_token') || localStorage.getItem('is_guest') === 'true');
+  } catch {
+    return false;
+  }
+};
+
+const routeFromHash = () => {
+  const match = window.location.hash.match(/^#\/([\w-]+)/);
+  return match && ROUTES.includes(match[1]) ? match[1] : null;
+};
+
+// Giữ nguyên query (ví dụ ?reset_token=...) và chỉ đổi phần hash
+const urlForRoute = (route) => `${window.location.pathname}${window.location.search}#/${route}`;
+
 function MainApp() {
   const { theme, setTheme } = useTheme();
-  const { user, isAdmin, isGuest, login } = useAuth();
+  const { user, isAdmin, isOwner, isGuest, login } = useAuth();
   // Tải lại trang thì giữ phiên đăng nhập và trang đang xem; chưa đăng nhập thì vào trang đăng nhập
   const [currentRoute, setCurrentRoute] = useState(() => {
     try {
-      const hasSession = localStorage.getItem('access_token') || localStorage.getItem('is_guest') === 'true';
-      if (!hasSession || window.location.search.includes('reset_token=')) return 'login';
+      if (!hasStoredSession() || window.location.search.includes('reset_token=')) return 'login';
+      const fromUrl = routeFromHash();
+      if (fromUrl && fromUrl !== 'login') return fromUrl;
       return sessionStorage.getItem('museum_route') || 'home';
     } catch {
       return 'login';
     }
   });
+  const routeRef = React.useRef(currentRoute);
+
+  // Chuyển trang và ghi vào lịch sử để nút Back / cử chỉ vuốt quay về đúng trang trước
+  const navigate = React.useCallback((route, { replace = false } = {}) => {
+    if (!ROUTES.includes(route)) return;
+    try {
+      // Trang đăng nhập không cần quay lại được, nên chỉ thay thế mục hiện tại
+      if (replace || route === 'login') {
+        window.history.replaceState({ route }, '', urlForRoute(route));
+      } else if (routeRef.current !== route) {
+        window.history.pushState({ route }, '', urlForRoute(route));
+      }
+    } catch {
+      // trình duyệt chặn history API thì vẫn chuyển trang bình thường
+    }
+    routeRef.current = route;
+    setCurrentRoute(route);
+  }, []);
+
+  // Ghi trang đầu tiên vào lịch sử và lắng nghe Back / Forward
+  React.useEffect(() => {
+    try {
+      window.history.replaceState({ route: routeRef.current }, '', urlForRoute(routeRef.current));
+    } catch {
+      // bỏ qua
+    }
+
+    const handlePopState = (event) => {
+      let route = event.state?.route || routeFromHash() || 'home';
+      const loggedIn = hasStoredSession();
+      if (!loggedIn) {
+        route = 'login';
+      } else if (route === 'login') {
+        // Đã đăng nhập thì quay lại trang đăng nhập cũ sẽ về sảnh
+        route = 'home';
+      }
+      if (route !== (event.state?.route || routeFromHash())) {
+        try {
+          window.history.replaceState({ route }, '', urlForRoute(route));
+        } catch {
+          // bỏ qua
+        }
+      }
+      routeRef.current = route;
+      setCurrentRoute(route);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   React.useEffect(() => {
     try {
@@ -48,11 +118,15 @@ function MainApp() {
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
 
   // Bảo vệ route: Khách vãng lai không được truy cập các trang đòi hỏi tài khoản
+  // Trang quản trị chỉ dành cho đúng vai trò (gõ tay "#/admin" hoặc bấm Back cũng không vào được)
   React.useEffect(() => {
-    if (isGuest && (currentRoute === 'diary' || currentRoute === 'notebook' || currentRoute === 'admin' || currentRoute === 'owner' || currentRoute === 'profile')) {
-      setCurrentRoute('home');
+    const guestBlocked = isGuest && ['diary', 'notebook', 'admin', 'owner', 'profile'].includes(currentRoute);
+    const adminBlocked = currentRoute === 'admin' && user && !isAdmin;
+    const ownerBlocked = currentRoute === 'owner' && user && !isOwner;
+    if (guestBlocked || adminBlocked || ownerBlocked) {
+      navigate('home', { replace: true });
     }
-  }, [isGuest, currentRoute]);
+  }, [isGuest, isAdmin, isOwner, user, currentRoute, navigate]);
 
   // Sổ tay lưu cục bộ theo từng tài khoản; tài khoản mới bắt đầu với sổ tay trống
   const notebookKey = user?.id ? `museum_notebook_${user.id}` : null;
@@ -100,8 +174,14 @@ function MainApp() {
     });
   };
 
+  // Server là nguồn chính: mỗi lần tải sổ tay thành công thì thay bản lưu cục bộ bằng dữ liệu server
+  const handleSyncNotebook = (items) => {
+    setNotebookItems(items);
+    persistNotebook(items);
+  };
+
   return (
-    <GuestGuardProvider onNavigateToLogin={() => setCurrentRoute('login')}>
+    <GuestGuardProvider onNavigateToLogin={() => navigate('login')}>
       <div className="app-wrapper">
         {/* Main Museum Screen Viewport */}
         <div className="screen-container">
@@ -111,7 +191,7 @@ function MainApp() {
             <Sidebar
               currentRoute={currentRoute}
               onNavigate={(route) => {
-                setCurrentRoute(route);
+                navigate(route);
                 setIsMailboxOpen(false);
                 setIsNotificationsOpen(false);
                 setIsThemeModalOpen(false);
@@ -126,7 +206,7 @@ function MainApp() {
             <MobileBottomNav
               currentRoute={currentRoute}
               onNavigate={(route) => {
-                setCurrentRoute(route);
+                navigate(route);
                 setIsMailboxOpen(false);
                 setIsNotificationsOpen(false);
                 setIsThemeModalOpen(false);
@@ -142,7 +222,7 @@ function MainApp() {
           {/* Page Routing */}
           {currentRoute === 'home' && (
             <LobbyPage
-              onNavigate={setCurrentRoute}
+              onNavigate={navigate}
               onOpenMailbox={() => setIsMailboxOpen(true)}
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
@@ -162,7 +242,7 @@ function MainApp() {
 
           {currentRoute === 'r2' && (
             <Room2Page
-              onNavigate={setCurrentRoute}
+              onNavigate={navigate}
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
               onSaveToNotebook={handleSaveToNotebook}
@@ -195,6 +275,7 @@ function MainApp() {
             <NotebookPage
               notebookItems={notebookItems}
               onRemoveItem={handleRemoveFromNotebook}
+              onSyncItems={handleSyncNotebook}
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
             />
@@ -209,7 +290,7 @@ function MainApp() {
 
           {currentRoute === 'owner' && (
             <OwnerDashboardPage
-              onNavigate={setCurrentRoute}
+              onNavigate={navigate}
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
             />
@@ -219,15 +300,15 @@ function MainApp() {
             <LoginPage
               onLoginSuccess={(authData) => {
                 if (authData) login(authData);
-                setCurrentRoute('home');
+                navigate('home', { replace: true });
               }}
-              onExploreGuest={() => setCurrentRoute('home')}
+              onExploreGuest={() => navigate('home', { replace: true })}
             />
           )}
 
           {currentRoute === 'profile' && (
             <ProfilePage
-              onNavigate={setCurrentRoute}
+              onNavigate={navigate}
               onOpenNotifications={() => setIsNotificationsOpen(true)}
               onOpenThemeModal={() => setIsThemeModalOpen(true)}
             />
@@ -252,45 +333,45 @@ function MainApp() {
                 const r1Match = url.match(/^\/rooms\/1(?:\/artworks\/([^/?#]+))?/i);
                 if (r1Match) {
                   setNotificationTarget(r1Match[1] ? { room: 'r1', id: r1Match[1] } : null);
-                  setCurrentRoute('r1');
+                  navigate('r1');
                   return;
                 }
 
                 const r2Match = url.match(/^\/rooms\/2(?:\/artworks\/([^/?#]+))?/i);
                 if (r2Match) {
                   setNotificationTarget(r2Match[1] ? { room: 'r2', id: r2Match[1] } : null);
-                  setCurrentRoute('r2');
+                  navigate('r2');
                   return;
                 }
 
                 const r3Match = url.match(/^\/rooms\/3(?:\/artworks\/([^/?#]+))?/i);
                 if (r3Match) {
                   setNotificationTarget(r3Match[1] ? { room: 'r3', id: r3Match[1] } : null);
-                  setCurrentRoute('r3');
+                  navigate('r3');
                   return;
                 }
 
                 const diaryCommMatch = url.match(/^\/diaries\/community\/([^/?#]+)/i);
                 if (diaryCommMatch) {
                   setNotificationTarget({ room: 'diary', tab: 'community', id: diaryCommMatch[1] });
-                  setCurrentRoute('diary');
+                  navigate('diary');
                   return;
                 }
 
                 const diaryMeMatch = url.match(/^\/diaries(?:\/me\/([^/?#]+))?/i);
                 if (diaryMeMatch) {
                   setNotificationTarget({ room: 'diary', tab: 'personal', id: diaryMeMatch[1] || null });
-                  setCurrentRoute('diary');
+                  navigate('diary');
                   return;
                 }
 
                 if (url.startsWith('/owner')) {
-                  setCurrentRoute('owner');
+                  navigate('owner');
                   return;
                 }
 
                 if (url.startsWith('/admin')) {
-                  setCurrentRoute('admin');
+                  navigate('admin');
                   return;
                 }
               }
@@ -298,15 +379,15 @@ function MainApp() {
               // 2. Fallback to CTA text matching
               const text = (cta || '').toLowerCase();
               if (text.includes('phòng 1') || text.includes('room 1') || text.includes('tác phẩm')) {
-                setCurrentRoute('r1');
+                navigate('r1');
               } else if (text.includes('thư') || text.includes('lồng đèn') || text.includes('lantern')) {
-                setCurrentRoute('r2');
+                navigate('r2');
               } else if (text.includes('cây') || text.includes('tree')) {
-                setCurrentRoute('r3');
+                navigate('r3');
               } else if (text.includes('nhật ký') || text.includes('diary')) {
-                setCurrentRoute('diary');
+                navigate('diary');
               } else if (text.includes('quản lý') || text.includes('manage')) {
-                setCurrentRoute('owner');
+                navigate('owner');
               }
             }}
           />

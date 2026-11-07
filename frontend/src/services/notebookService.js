@@ -46,31 +46,17 @@ export const notebookService = {
     );
     const targetId = item.source_id || item.artwork_id || item.draw_id || item.id;
 
+    // Lỗi được ném ra để trang Sổ tay biết mà trả mục về chỗ cũ, không báo "đã gỡ" khi thật ra chưa gỡ
     if (source === 'mailbox') {
-      try {
-        return await capsuleService.toggleSaveDraw(targetId, false);
-      } catch (err) {
-        console.warn('Backend unsave capsule draw failed:', err);
-      }
-    } else if (source === 'lantern') {
-      try {
-        return await room2Service.unsaveLanternFromNotebook(targetId);
-      } catch (err) {
-        console.warn('Backend unsave lantern letter failed:', err);
-      }
-    } else if (source === 'room1') {
-      try {
-        return await room1Service.unsaveArtworkFromNotebook(targetId);
-      } catch (err) {
-        console.warn('Backend unsave room1 artwork failed:', err);
-      }
-    } else if (source === 'room3') {
-      try {
-        return await room3Service.unsaveLeafFromNotebook(targetId);
-      } catch (err) {
-        console.warn('Backend unsave room3 leaf failed:', err);
-      }
+      return await capsuleService.saveDraw(targetId, false);
     }
+    if (source === 'room1') {
+      return await room1Service.unsaveArtworkFromNotebook(targetId);
+    }
+    if (source === 'room3') {
+      return await room3Service.unsaveLeafFromNotebook(targetId);
+    }
+    return await room2Service.unsaveLanternFromNotebook(targetId);
   },
 };
 

@@ -169,6 +169,7 @@ class Room2Service:
                 "is_unlockable": is_unlockable,
                 "remaining_seconds": rem_secs,
                 "is_opened": art.is_opened,
+                "symbol": art.tag_category or "star",
                 "media_url": art.media_url,
                 "created_at": art.created_at,
             })
@@ -346,6 +347,7 @@ class Room2Service:
                 "status": art.status,
                 "target_date": target,
                 "is_opened": art.is_opened,
+                "symbol": art.tag_category or "star",
                 "media_url": art.media_url,
                 "created_at": art.created_at,
             })
@@ -413,6 +415,7 @@ class Room2Service:
             status=status_val,
             is_opened=False,
             media_url=None,
+            tag_category=request.symbol or "star",
         )
         db.add(new_lantern)
         await db.flush()
@@ -552,6 +555,9 @@ class Room2Service:
                 "visibility": item.get("visibility", "PUBLIC"),
                 "is_opened": item.get("is_opened", False),
                 "is_unlockable": is_unlockable,
+                "remaining_seconds": 0 if is_unlockable else int((target - now).total_seconds()),
+                "is_mine": bool(current_user and item.get("user_id") == current_user.id),
+                "symbol": item.get("tag_category") or "star",
                 "target_date": target,
                 "highlight": hl,
             })

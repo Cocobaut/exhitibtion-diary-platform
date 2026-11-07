@@ -110,6 +110,8 @@ class Room2CreateLanternRequest(BaseModel):
     target_date: datetime
     visibility: str
     is_anonymous: bool = False
+    # Hình lồng đèn người dùng chọn, lưu vào tag_category
+    symbol: Optional[str] = Field(None, pattern="^(star|heart|flower|spiral|wave)$")
 
     @field_validator("title")
     @classmethod

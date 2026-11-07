@@ -31,6 +31,8 @@ export function Room2Page({
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  // Số kết quả của lần tìm gần nhất (null khi không tìm)
+  const [searchHits, setSearchHits] = useState(null);
 
   const [lanterns, setLanterns] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,10 +86,9 @@ export function Room2Page({
         const data = res?.data || res;
         const items = data?.items || [];
         setLanterns(items);
-        if (data?.total !== undefined) {
-          setStats((prev) => ({ ...prev, total_lanterns: data.total }));
-        }
+        setSearchHits(data?.pagination?.total_hits ?? items.length);
       } else {
+        setSearchHits(null);
         const res = await room2Service.getLanterns({
           filter: activeFilter,
           limit: 60,
@@ -114,6 +115,12 @@ export function Room2Page({
       }
     } catch (err) {
       console.warn('Error loading lanterns from API, using fallback:', err);
+      if (debouncedSearch) {
+        // Không để lại kết quả cũ khiến người dùng tưởng ô tìm kiếm không chạy
+        setLanterns([]);
+        setSearchHits(0);
+        triggerToast(err?.message || (language === 'en' ? 'Search failed, please try again.' : 'Tìm kiếm chưa được, bạn thử lại nhé.'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -295,6 +302,7 @@ export function Room2Page({
         personalLantern={personalLantern}
         activeFilter={activeFilter}
         onOpenLandedModal={handleOpenLantern}
+        showAmbient={!debouncedSearch}
       />
 
       {/* Top Header */}
@@ -403,6 +411,17 @@ export function Room2Page({
           {isLoading && (
             <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
               {language === 'en' ? 'Loading...' : 'Đang tải...'}
+            </span>
+          )}
+          {!isLoading && debouncedSearch && searchHits !== null && (
+            <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
+              {searchHits > 0
+                ? (language === 'en'
+                  ? `${searchHits} lantern(s) match "${debouncedSearch}"`
+                  : `Tìm thấy ${searchHits} lồng đèn khớp "${debouncedSearch}"`)
+                : (language === 'en'
+                  ? `No lantern matches "${debouncedSearch}"`
+                  : `Không có lồng đèn nào khớp "${debouncedSearch}"`)}
             </span>
           )}
         </div>

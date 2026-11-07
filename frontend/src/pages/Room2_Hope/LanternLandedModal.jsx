@@ -24,6 +24,12 @@ export function LanternLandedModal({
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  // Lỗi khi lưu: hiện tạm trên nút thay vì giả vờ đã lưu trong máy
+  const [saveError, setSaveError] = useState('');
+  const showSaveError = (msg) => {
+    setSaveError(msg);
+    setTimeout(() => setSaveError(''), 3500);
+  };
   const [currentReaction, setCurrentReaction] = useState(null);
   const [reactionsMap, setReactionsMap] = useState({
     HEART: 0,
@@ -138,6 +144,10 @@ export function LanternLandedModal({
 
     const willSave = !isSaved;
     try {
+      // Mục không có trên server (ví dụ lồng đèn minh hoạ) thì không lưu được vào sổ tay
+      if (!(currentLetter?.id && isUuid(String(currentLetter.id)))) {
+        throw new Error('NOT_SAVABLE');
+      }
       if (currentLetter.id && isUuid(String(currentLetter.id))) {
         if (willSave) {
           await room2Service.saveLanternToNotebook(currentLetter.id);
@@ -164,23 +174,11 @@ export function LanternLandedModal({
       }
     } catch (err) {
       console.error('Error toggling notebook save:', err);
-      // Fallback local save even if backend save fails
-      setIsSaved(willSave);
-      if (willSave && onSaveToNotebook) {
-        onSaveToNotebook({
-          id: currentLetter.id ? `nb_lt_${currentLetter.id}` : `nb_lt_${Date.now()}`,
-          artwork_id: currentLetter.id,
-          source: 'lantern',
-          sourceLabel: language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2',
-          badgeClass: 'b-wait',
-          icon: 'r2',
-          title: currentLetter.title || (language === 'en' ? 'Lantern letter to future' : 'Lồng đèn gửi tương lai'),
-          content: currentLetter.content,
-          author: currentLetter.author_display_name || currentLetter.author || (language === 'en' ? 'Anonymous sender' : 'Người gửi ẩn danh'),
-          symbol: currentLetter.symbol || 'heart',
-          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
-        });
-      }
+      showSaveError(
+        err?.message === 'NOT_SAVABLE'
+          ? (language === 'en' ? 'This item cannot be saved' : 'Mục minh hoạ, không lưu được')
+          : (language === 'en' ? 'Could not save, try again' : 'Chưa lưu được, thử lại nhé')
+      );
     } finally {
       setSaveLoading(false);
     }
@@ -391,6 +389,8 @@ export function LanternLandedModal({
             <Icon name={isSaved ? 'check' : 'bookmark'} size={16} />
             {saveLoading
               ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+              : saveError
+              ? saveError
               : isSaved
               ? (language === 'en' ? 'Saved to notebook' : 'Đã lưu vào sổ tay')
               : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}

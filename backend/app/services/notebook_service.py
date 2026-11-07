@@ -124,7 +124,7 @@ class NotebookService:
             else:  # ROOM_HOPE
                 item_src = "lantern"
                 src_label = "Lồng đèn hạ xuống · Phòng 2"
-                cat_display = art.tag_category or "Hy vọng"
+                cat_display = "Hy vọng"  # tag_category của Phòng 2 là hình lồng đèn, không phải thể loại
                 badge_cls = "b-wait"
                 ic = "r2"
                 prefix_id = "nb_lt_"

@@ -476,10 +476,18 @@ async def run_tests():
                     "content": "Nội dung bức thư riêng tư gửi chính mình trong tương lai dài hơn ba mươi ký tự",
                     "target_date": target_iso,
                     "visibility": "PRIVATE",
+                    "symbol": "flower",
                 }
             )
             assert priv_create.status_code == 201
             priv_data = priv_create.json()["data"]
+            # Hình lồng đèn người dùng chọn phải được lưu và trả lại trong danh sách
+            mine_list = await client.get(
+                "/api/v1/rooms/2/artworks?filter=mine",
+                headers={"Authorization": f"Bearer {token1}"},
+            )
+            created_item = next(i for i in mine_list.json()["data"]["items"] if i["id"] == priv_data["id"])
+            assert created_item["symbol"] == "flower"
             assert priv_data["status"] == "APPROVED", "PRIVATE lanterns must be automatically APPROVED"
             assert priv_data["visibility"] == "PRIVATE"
             assert "content" in priv_data and priv_data["content"] is not None
@@ -525,12 +533,24 @@ async def run_tests():
             u1_hit_ids = {h["id"] for h in u1_hits}
             assert art4_id in u1_hit_ids, "User 1 must find their own private lantern"
             assert art5_id not in u1_hit_ids, "User 1 must NEVER find User 2's private lantern"
+            # Kết quả search cần is_mine để bộ lọc "Của tôi" hiển thị đúng, và title không chứa thẻ <em>
+            art4_hit_meta = next(h for h in u1_hits if h["id"] == art4_id)
+            assert art4_hit_meta["is_mine"] is True
+            assert "remaining_seconds" in art4_hit_meta
+            assert all("<em>" not in (h["title"] or "") for h in u1_hits)
             assert "content" in u1_hits[0]
             assert "short_content" in u1_hits[0]
 
             # Check that locked item (art4 is locked) does NOT include 'content' in highlight
             art4_hit = next(h for h in u1_hits if h["id"] == art4_id)
             assert "content" not in art4_hit["highlight"], "Locked lantern must not expose content in highlight"
+
+            # Ký tự đại diện của LIKE phải được hiểu đúng nghĩa đen, không khớp mọi lồng đèn
+            s_wild = await client.get("/api/v1/rooms/2/search?q=%25")
+            assert s_wild.status_code == 200
+            assert s_wild.json()["data"]["pagination"]["total_hits"] == 0
+            s_under = await client.get("/api/v1/rooms/2/search?q=_")
+            assert s_under.json()["data"]["pagination"]["total_hits"] == 0
 
             # Search for unlocked item (art1 "hôm qua") -> should include highlight without restriction
             s_unlocked = await client.get("/api/v1/rooms/2/search?q=hôm qua")

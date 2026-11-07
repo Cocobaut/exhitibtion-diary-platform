@@ -24,6 +24,12 @@ export function ArtworkDetailModal({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  // Lỗi khi lưu: hiện tạm trên nút thay vì giả vờ đã lưu trong máy
+  const [saveError, setSaveError] = useState('');
+  const showSaveError = (msg) => {
+    setSaveError(msg);
+    setTimeout(() => setSaveError(''), 3500);
+  };
   const [currentReaction, setCurrentReaction] = useState(null);
   const [reactionsMap, setReactionsMap] = useState({
     HEART: 0,
@@ -117,6 +123,10 @@ export function ArtworkDetailModal({
     const artId = detail?.id || artwork?.id;
 
     try {
+      // Mục không có trên server (ví dụ lồng đèn minh hoạ) thì không lưu được vào sổ tay
+      if (!(artId)) {
+        throw new Error('NOT_SAVABLE');
+      }
       if (artId) {
         if (willSave) {
           await room1Service.saveArtworkToNotebook(artId);
@@ -143,23 +153,11 @@ export function ArtworkDetailModal({
       }
     } catch (err) {
       console.error('Error toggling notebook save for Room 1 artwork:', err);
-      // Fallback local state
-      setIsSaved(willSave);
-      if (willSave && onSaveToNotebook) {
-        onSaveToNotebook({
-          id: artId ? `nb_r1_${artId}` : `nb_r1_${Date.now()}`,
-          artwork_id: artId,
-          source: 'room1',
-          sourceLabel: language === 'en' ? 'Artwork · Room 1' : 'Tác phẩm · Phòng 1',
-          badgeClass: 'b-ok',
-          icon: 'r1',
-          title: title || 'Tác phẩm Phòng 1',
-          content: story || '',
-          author: author || 'Tác giả',
-          media_url: detail?.media_url || artwork.media_url || artwork.image_url,
-          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
-        });
-      }
+      showSaveError(
+        err?.message === 'NOT_SAVABLE'
+          ? (language === 'en' ? 'This item cannot be saved' : 'Mục minh hoạ, không lưu được')
+          : (language === 'en' ? 'Could not save, try again' : 'Chưa lưu được, thử lại nhé')
+      );
     } finally {
       setSaveLoading(false);
     }
@@ -332,6 +330,8 @@ export function ArtworkDetailModal({
                 <Icon name={isSaved ? 'check' : 'bookmark'} size={15} />
                 {saveLoading
                   ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+                  : saveError
+                  ? saveError
                   : isSaved
                   ? (language === 'en' ? 'Saved to notebook' : 'Đã lưu vào sổ tay')
                   : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}
