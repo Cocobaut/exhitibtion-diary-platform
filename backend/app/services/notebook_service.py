@@ -131,8 +131,8 @@ class NotebookService:
                 prefix_id = "nb_lt_"
 
             content = art.content or art.short_content
-            # Lồng đèn của người khác chưa tới ngày hạ cánh: chỉ giữ tóm tắt, không lộ nội dung thư
-            if art.room_id == ROOM_HOPE and art.user_id != user_id and not is_lantern_unlocked(art.target_date):
+            # Lồng đèn chưa tới ngày hạ cánh (kể cả của chính mình): chỉ giữ tóm tắt, không lộ nội dung thư
+            if art.room_id == ROOM_HOPE and not is_lantern_unlocked(art.target_date):
                 content = art.short_content
 
             items_all.append({

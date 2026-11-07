@@ -438,18 +438,17 @@ async def run_tests():
             s_secret = (await client.get(f"/api/v1/rooms/2/search?q={secret_word}")).json()["data"]["items"]
             assert all(i["id"] != art2_id for i in s_secret)
 
-            # Tác giả vẫn đọc được thư của mình, nhưng lồng đèn chưa bị đánh dấu đã hạ cánh
-            own_detail = (await client.get(
-                f"/api/v1/rooms/2/artworks/{art2_id}", headers={"Authorization": f"Bearer {token1}"}
-            )).json()["data"]
-            assert own_detail["content"] is not None and own_detail["can_read"] is True
-            own_open = await client.post(
-                f"/api/v1/rooms/2/artworks/{art2_id}/open", headers={"Authorization": f"Bearer {token1}"}
-            )
-            assert own_open.status_code == 200
-            assert own_open.json()["data"]["content"] is not None
-            assert own_open.json()["data"]["is_opened"] is False
-            print("✓ Test 6: Lồng đèn chưa hạ cánh bị khoá với người khác (open 423, list/detail/search không lộ nội dung); tác giả vẫn đọc được")
+            # Khoá cả với tác giả: không đọc trước được thư của chính mình
+            own_headers = {"Authorization": f"Bearer {token1}"}
+            own_detail = (await client.get(f"/api/v1/rooms/2/artworks/{art2_id}", headers=own_headers)).json()["data"]
+            assert own_detail["content"] is None and own_detail["can_read"] is False
+            own_open = await client.post(f"/api/v1/rooms/2/artworks/{art2_id}/open", headers=own_headers)
+            assert own_open.status_code == 423
+            own_list = (await client.get("/api/v1/rooms/2/artworks?filter=mine", headers=own_headers)).json()["data"]["items"]
+            assert next(i for i in own_list if i["id"] == art2_id)["content"] is None
+            s_own = (await client.get(f"/api/v1/rooms/2/search?q={secret_word}", headers=own_headers)).json()["data"]["items"]
+            assert all(i["id"] != art2_id for i in s_own)
+            print("✓ Test 6: Lồng đèn chưa hạ cánh bị khoá với mọi người, kể cả tác giả (open 423, list/detail/search không lộ nội dung)")
 
             # -------------------------------------------------------------
             # TEST 7: Open PRIVATE không token -> 401; PRIVATE của người khác -> 404
@@ -466,14 +465,14 @@ async def run_tests():
             assert open_priv_other.status_code == 404
             assert open_priv_other.json()["error_code"] == "ARTWORK_NOT_FOUND"
 
-            # user 1 opens their own private lantern (art4, future target_date) -> 200 OK!
+            # user 1 mở lồng đèn riêng của mình nhưng chưa tới ngày (art4) -> 423, kể cả tác giả
             open_priv_own = await client.post(
                 f"/api/v1/rooms/2/artworks/{art4_id}/open",
                 headers={"Authorization": f"Bearer {token1}"}
             )
-            assert open_priv_own.status_code == 200
-            assert open_priv_own.json()["data"]["content"] is not None
-            print("✓ Test 7: Mở lồng đèn PRIVATE không token trả 401; người khác trả 404; chính chủ mở thành công 200")
+            assert open_priv_own.status_code == 423
+            assert open_priv_own.json()["error_code"] == "LANTERN_LOCKED"
+            print("✓ Test 7: Mở lồng đèn PRIVATE không token trả 401; người khác trả 404; chính chủ mở trước ngày hạ cánh cũng bị khoá 423")
 
             # -------------------------------------------------------------
             # TEST 8: Create PUBLIC -> PENDING + message PUBLIC; PRIVATE -> APPROVED + message PRIVATE

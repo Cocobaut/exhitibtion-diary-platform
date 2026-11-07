@@ -36,9 +36,9 @@ def is_lantern_unlocked(target_date: Optional[datetime], now: Optional[datetime]
 
 
 def can_read_lantern(artwork: Artwork, current_user: Optional[User], now: Optional[datetime] = None) -> bool:
-    """Trước ngày hạ cánh chỉ tác giả đọc được nội dung thư; người khác chỉ thấy tiêu đề và tóm tắt."""
-    if current_user is not None and artwork.user_id == current_user.id:
-        return True
+    """Trước ngày hạ cánh không ai đọc được nội dung thư, kể cả tác giả; chỉ thấy tiêu đề và tóm tắt.
+    (current_user giữ lại để sau này đổi luật, ví dụ cho tác giả xem trước, chỉ cần sửa ở đây.)
+    """
     return is_lantern_unlocked(artwork.target_date, now)
 
 
@@ -236,7 +236,7 @@ class Room2Service:
         2. Permission check:
            - PUBLIC: must be APPROVED.
            - PRIVATE: must have token and user_id = current_user.id (otherwise 401 / 404).
-        3. Time lock: trước target_date chỉ tác giả đọc được (không đánh dấu đã mở); người khác nhận 423 LANTERN_LOCKED.
+        3. Time lock: trước target_date không ai đọc được, kể cả tác giả (423 LANTERN_LOCKED).
         4. Unlock (đã tới ngày): is_opened = True, view_count + 1.
         """
         stmt = (
@@ -281,11 +281,6 @@ class Room2Service:
         now = datetime.now(timezone.utc)
         if not can_read_lantern(artwork, current_user, now):
             raise lantern_locked_error(target)
-
-        if not is_lantern_unlocked(target, now):
-            # Tác giả xem trước thư của mình: không đánh dấu đã hạ cánh, lồng đèn vẫn khoá với người khác
-            return "Lồng đèn của bạn chưa tới ngày hạ cánh. Chỉ mình bạn đọc được bức thư này.", \
-                Room2Service._open_payload(artwork, target, artwork.view_count, is_opened=artwork.is_opened)
 
         # Atomic increment view_count and mark is_opened
         upd_stmt = (
@@ -566,12 +561,12 @@ class Room2Service:
             extra_conditions.append(public_cond)
 
         now = datetime.now(timezone.utc)
-        # Thư chưa hạ cánh của người khác chỉ được tìm theo tiêu đề, tóm tắt, tác giả (không dò được nội dung thư)
-        readable_cond = [Artwork.target_date.is_(None), Artwork.target_date <= now,
-                         SearchService.non_content_match(db, clean_q)]
-        if current_user:
-            readable_cond.append(Artwork.user_id == current_user.id)
-        extra_conditions.append(or_(*readable_cond))
+        # Thư chưa hạ cánh chỉ được tìm theo tiêu đề, tóm tắt, tác giả (không dò được nội dung thư)
+        extra_conditions.append(or_(
+            Artwork.target_date.is_(None),
+            Artwork.target_date <= now,
+            SearchService.non_content_match(db, clean_q),
+        ))
 
         if filter_type == "mine" and current_user:
             extra_conditions.append(Artwork.user_id == current_user.id)
@@ -598,7 +593,7 @@ class Room2Service:
 
             hl = item.get("highlight", {})
             is_mine = bool(current_user and item.get("user_id") == current_user.id)
-            can_read = is_unlockable or is_mine
+            can_read = is_unlockable
             # Thư chưa hạ cánh: không lộ nội dung trong highlight
             if not is_unlockable:
                 hl = {k: v for k, v in hl.items() if k != "content"}
