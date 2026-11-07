@@ -141,7 +141,6 @@ export function NotebookPage({
   // 2. Kết hợp thông minh giữa serverItems và notebookItems:
   // Luôn bảo toàn các mục người dùng đã lưu trong local storage mà server chưa có hoặc không lưu (ví dụ mock, offline).
   const useServer = Boolean(user && serverLoaded && !serverError);
-  const waitingForServer = Boolean(user && !serverLoaded && !serverError && (notebookItems || []).length === 0);
   const activeItems = React.useMemo(() => {
     if (!serverLoaded) {
       return notebookItems || [];
@@ -345,28 +344,30 @@ export function NotebookPage({
           padding: '0 clamp(24px, 4vw, 48px) 44px',
         }}
       >
-        {waitingForServer ? (
-          <div className="muted" style={{ textAlign: 'center', padding: '60px 20px', fontSize: '15px' }}>
-            {language === 'en' ? 'Loading your notebook…' : 'Đang tải sổ tay…'}
-          </div>
-        ) : displayItems.length === 0 ? (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '60px 20px',
-              color: 'var(--onw2)',
-            }}
-          >
-            <div style={{ fontSize: '40px', color: 'var(--gold)', marginBottom: '12px' }}>✦</div>
-            <h3 style={{ fontFamily: 'var(--serif)', fontSize: '24px', color: 'var(--onw)' }}>
-              {language === 'en' ? 'Your notebook is empty' : 'Sổ tay còn trống'}
-            </h3>
-            <p className="book" style={{ maxWidth: '480px', margin: '0 auto', fontSize: '15px' }}>
-              {language === 'en'
-                ? 'When you find a message you like, tap "Save to notebook" to keep it here.'
-                : 'Gặp lời nhắn nào bạn thích, bấm "Lưu vào sổ tay" để giữ lại ở đây.'}
-            </p>
-          </div>
+        {displayItems.length === 0 ? (
+          isLoading ? (
+            <div className="muted" style={{ textAlign: 'center', padding: '60px 20px', fontSize: '15px' }}>
+              {language === 'en' ? 'Loading your notebook…' : 'Đang tải sổ tay…'}
+            </div>
+          ) : (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                color: 'var(--onw2)',
+              }}
+            >
+              <div style={{ fontSize: '40px', color: 'var(--gold)', marginBottom: '12px' }}>✦</div>
+              <h3 style={{ fontFamily: 'var(--serif)', fontSize: '24px', color: 'var(--onw)' }}>
+                {language === 'en' ? 'Your notebook is empty' : 'Sổ tay còn trống'}
+              </h3>
+              <p className="book" style={{ maxWidth: '480px', margin: '0 auto', fontSize: '15px' }}>
+                {language === 'en'
+                  ? 'When you find a message you like, tap "Save to notebook" to keep it here.'
+                  : 'Gặp lời nhắn nào bạn thích, bấm "Lưu vào sổ tay" để giữ lại ở đây.'}
+              </p>
+            </div>
+          )
         ) : (
           <div
             style={{
@@ -375,15 +376,16 @@ export function NotebookPage({
               gap: '20px',
             }}
           >
-            {displayItems.map((item) => {
-              const isExpanded = expandedNotebookId === item.id;
+            {displayItems.map((item, idx) => {
+              const itemKey = item.id || `nb_item_${idx}`;
+              const isExpanded = expandedNotebookId === (item.id || itemKey);
 
               return (
                 <div
-                  key={item.id}
+                  key={itemKey}
                   onClick={() => {
                     if (window.innerWidth <= 1024) {
-                      setExpandedNotebookId((prev) => (prev === item.id ? null : item.id));
+                      setExpandedNotebookId((prev) => (prev === (item.id || itemKey) ? null : (item.id || itemKey)));
                     } else {
                       setReadingItem(item);
                     }
@@ -411,7 +413,7 @@ export function NotebookPage({
                       {getSourceLabel(item, language)}
                     </span>
                     <span className="muted" style={{ fontSize: '12.5px' }}>
-                      {item.savedAt}
+                      {item.savedAt || formatSavedAt(item.saved_at, language)}
                     </span>
                   </div>
 

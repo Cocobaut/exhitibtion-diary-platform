@@ -62,6 +62,25 @@ export class ErrorBoundary extends React.Component {
             <p style={{ fontSize: '14px', color: '#E0D0C0', marginBottom: '24px', lineHeight: 1.6 }}>
               Không thể tải nội dung trang này. Bạn có thể nhấn nút bên dưới để quay lại Sảnh chính của bảo tàng.
             </p>
+            {this.state.error && (
+              <details
+                style={{
+                  marginBottom: '20px',
+                  textAlign: 'left',
+                  background: 'rgba(0,0,0,0.4)',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  color: '#FFB4A2',
+                  cursor: 'pointer',
+                }}
+              >
+                <summary style={{ outline: 'none', userSelect: 'none' }}>Chi tiết sự cố kỹ thuật</summary>
+                <pre style={{ whiteSpace: 'pre-wrap', marginTop: '8px', maxHeight: '140px', overflowY: 'auto' }}>
+                  {String(this.state.error?.message || this.state.error)}
+                </pre>
+              </details>
+            )}
             <button
               type="button"
               className="btn main"
