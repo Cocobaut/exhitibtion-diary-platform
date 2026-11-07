@@ -40,7 +40,7 @@ Bảo Tàng Gọi Tên Cảm Xúc mô phỏng một bảo tàng gồm một sả
 - Kể về một lần vấp ngã và nhận lại sự đồng cảm thay vì lời phán xét.
 - Viết thư cho chính mình, hẹn ngày mở trong tương lai.
 - Để lại lời động viên ngắn cho những người đang cần nghe.
-- Ghi nhật ký cảm xúc riêng tư, hoặc chọn chia sẻ với cộng đồng.
+- Ghi nhật ký cảm xúc riêng tư.
 
 Mọi nội dung công khai đều qua ban quản trị duyệt trước khi hiển thị. Khi phê duyệt, ban quản trị có thể dùng AI để chấm điểm an toàn, gợi ý bản viết lại và dịch nháp.
 
@@ -56,7 +56,7 @@ Giao diện hỗ trợ tiếng Việt và tiếng Anh. Khách chưa đăng nhậ
 | **Phòng 1 – Triển lãm Đổ vỡ** | Kể về một lần vấp ngã. Mỗi câu chuyện được ban quản trị vẽ tranh minh họa rồi treo lên tường | Thương, Ôm an ủi, Đồng cảm; lưu vào Sổ tay |
 | **Phòng 2 – Bầu trời Lồng đèn** | Viết thư cho tương lai và chọn ngày mở thư. Lồng đèn riêng tư bay lên ngay; lồng đèn công khai bay lên sau khi được duyệt | Mở thư khi đến hạn, gửi cảm xúc, lưu vào Sổ tay |
 | **Phòng 3 – Cây Thông điệp** | Treo lời động viên ngắn lên cây, chia theo 4 chủ đề: Khích lệ, Chữa lành, Biết ơn, Góc nhìn | Tiếp sức, Thương; lưu vào Sổ tay |
-| **Nhật ký** | Ghi nhật ký kèm tâm trạng (Bình yên, Trầm lắng, Biết ơn, Hy vọng, Mệt mỏi) và tối đa 5 ảnh. Có thể giữ riêng hoặc gửi duyệt để chia sẻ | Tab Bản thân và tab Cộng đồng |
+| **Nhật ký** | Ghi nhật ký riêng tư kèm tâm trạng (Bình yên, Trầm lắng, Biết ơn, Hy vọng, Mệt mỏi) và tối đa 5 ảnh | Tab Bản thân |
 | **Hòm thư** | Rút ngẫu nhiên một lời nhắn do ban quản trị soạn, theo chủ đề Can đảm, Chữa lành, Góc nhìn | Rút lời nhắn khác, lưu vào Sổ tay |
 | **Sổ tay** | Nơi lưu những tác phẩm, lá thư và lời nhắn người dùng muốn giữ lại | Lọc theo nguồn, tìm kiếm, bỏ lưu |
 
@@ -235,11 +235,14 @@ python Agent/evaluate_agent.py
 ## 6. Bảo mật
 
 - Mật khẩu băm bằng bcrypt và phải có chữ hoa, chữ thường, số, ký tự đặc biệt.
-- JWT có thể thu hồi khi đăng xuất.
-- Quên mật khẩu dùng link một lần gửi qua email, hết hạn sau 15 phút. Phản hồi không tiết lộ email nào đã đăng ký.
-- Giới hạn số lần đăng nhập sai và số lần yêu cầu email đặt lại mật khẩu.
+- JWT có thể thu hồi khi đăng xuất. Đổi hoặc đặt lại mật khẩu thì mọi phiên đăng nhập cũ hết hiệu lực.
+- Quên mật khẩu dùng link một lần gửi qua email, hết hạn sau 15 phút. API không trả token và không tiết lộ tài khoản nào tồn tại.
+- Giới hạn số lần đăng nhập sai, yêu cầu email đặt lại mật khẩu, đăng ký tài khoản, viết nhật ký và tải ảnh.
 - Giới hạn tần suất gửi tác phẩm.
-- Backend từ chối khởi động với `SECRET_KEY` mặc định khi `DEBUG=False`. Trang tài liệu API chỉ mở ở chế độ debug.
+- Ảnh đính kèm chỉ nhận file đã tải lên (`/static/...`) hoặc link `https://`; người dùng chỉ xoá được file của chính mình.
+- Địa chỉ máy chủ AI tuỳ chỉnh bị chặn nếu trỏ vào mạng nội bộ (IPv4, IPv6), kiểm tra lại mỗi lần gọi.
+- Production gửi kèm Content-Security-Policy, HSTS, X-Frame-Options và Permissions-Policy.
+- `DEBUG` mặc định là `False`. Backend từ chối khởi động với `SECRET_KEY` mặc định khi `DEBUG=False`. Trang tài liệu API chỉ mở ở chế độ debug.
 - Trên production chỉ reverse proxy (Caddy, HTTPS tự động) mở cổng ra ngoài. Database và backend nằm trong mạng nội bộ của Docker.
 
 ---
@@ -386,8 +389,9 @@ Docker Compose đọc file `.env` ở thư mục gốc. Mẫu cho dev nằm ở 
 
 | Biến | Bắt buộc | Mô tả |
 | :--- | :---: | :--- |
-| `SECRET_KEY` | Có | Ký JWT và mã hoá API key AI. Tạo bằng `openssl rand -hex 32`, giữ cố định |
-| `DEBUG` | Không | `True` để bật trang tài liệu API. Production luôn là `False` |
+| `SECRET_KEY` | Có | Ký JWT (và mã hoá API key AI nếu không đặt `AI_ENCRYPTION_KEY`). Tạo bằng `openssl rand -hex 32`, giữ cố định |
+| `AI_ENCRYPTION_KEY` | Không | Khoá riêng để mã hoá API key AI. Tạo bằng `openssl rand -hex 32`, giữ cố định |
+| `DEBUG` | Không | Mặc định `False`. Đặt `True` khi dev để bật trang tài liệu API và dùng được `SECRET_KEY` mặc định |
 | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Có | Thông tin database |
 | `DOMAIN` | Production | Tên miền, không kèm `https://` |
 | `ACME_EMAIL` | Production | Email nhận thông báo chứng chỉ HTTPS |

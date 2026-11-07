@@ -85,8 +85,9 @@ git clone https://github.com/Cocobaut/exhitibtion-diary-platform.git
 cd exhitibtion-diary-platform
 cp .env.production.example .env
 
-# Tạo sẵn 2 chuỗi bí mật để dán vào .env
+# Tạo sẵn 3 chuỗi bí mật để dán vào .env
 echo "SECRET_KEY=$(openssl rand -hex 32)"
+echo "AI_ENCRYPTION_KEY=$(openssl rand -hex 32)"
 echo "POSTGRES_PASSWORD=$(openssl rand -hex 24)"
 
 nano .env
@@ -97,7 +98,7 @@ Nếu repo để private, tạo một Personal Access Token trên GitHub (quyề
 Điền đủ các dòng trong `.env`:
 - `DOMAIN`: tên miền, không có `https://` và `www`, ví dụ `bao-tang-cam-xuc.me`.
 - `ACME_EMAIL`: email của bạn, Let's Encrypt gửi thông báo về chứng chỉ HTTPS vào đây.
-- `SECRET_KEY`, `POSTGRES_PASSWORD`: dán 2 chuỗi vừa tạo. **Lưu `SECRET_KEY` ở nơi an toàn.** Nếu đổi key, mọi người sẽ bị đăng xuất và API key AI đã lưu không giải mã được nữa.
+- `SECRET_KEY`, `AI_ENCRYPTION_KEY`, `POSTGRES_PASSWORD`: dán 3 chuỗi vừa tạo. **Lưu các key này ở nơi an toàn.** Đổi `SECRET_KEY` thì mọi người bị đăng xuất; đổi `AI_ENCRYPTION_KEY` thì API key AI đã lưu không giải mã được nữa.
 - `SMTP_USER`, `EMAILS_FROM_EMAIL`: địa chỉ Gmail.
 - `SMTP_PASSWORD`: App password 16 ký tự.
 
