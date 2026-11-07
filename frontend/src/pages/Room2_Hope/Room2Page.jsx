@@ -225,12 +225,6 @@ export function Room2Page({
     };
   }, [debouncedSearch, activeFilter, lanterns, personalLantern]);
 
-  const myLanternsCount = useMemo(() => {
-    const fromList = lanterns.filter((it) => it.is_mine || it.isMine).length;
-    const hasPersonal = Boolean(personalLantern && !lanterns.some((it) => String(it.id) === String(personalLantern.id)));
-    return fromList + (hasPersonal ? 1 : 0);
-  }, [lanterns, personalLantern]);
-
   // Initial load
   useEffect(() => {
     loadLanterns();
@@ -474,17 +468,6 @@ export function Room2Page({
           {isLoading && (
             <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
               {language === 'en' ? 'Loading...' : 'Đang tải...'}
-            </span>
-          )}
-          {!isLoading && !debouncedSearch && activeFilter === 'mine' && (
-            <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
-              {myLanternsCount > 0
-                ? (language === 'en'
-                  ? `${myLanternsCount} lantern${myLanternsCount > 1 ? 's' : ''}`
-                  : `${myLanternsCount} lồng đèn của bạn`)
-                : (language === 'en'
-                  ? 'Bạn chưa có lồng đèn nào'
-                  : 'Bạn chưa có lồng đèn nào')}
             </span>
           )}
         </div>
