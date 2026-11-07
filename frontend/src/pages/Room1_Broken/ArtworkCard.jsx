@@ -9,8 +9,13 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction, searchQ
   const [isHovered, setIsHovered] = useState(false);
   const { original, language } = useLanguage();
 
-  const title = artwork.highlight?.title || original(artwork, 'title') || artwork.t || (language === 'en' ? 'Untitled' : 'Chưa có tiêu đề');
-  const summary = artwork.highlight?.short_content || artwork.highlight?.summary || original(artwork, 'short_content') || artwork.summary || artwork.s || '';
+  const hlTitle = Array.isArray(artwork.highlight?.title) ? artwork.highlight.title.join(' ') : artwork.highlight?.title;
+  const hlSummary = Array.isArray(artwork.highlight?.short_content)
+    ? artwork.highlight.short_content.join(' ')
+    : (Array.isArray(artwork.highlight?.summary) ? artwork.highlight.summary.join(' ') : (artwork.highlight?.short_content || artwork.highlight?.summary));
+
+  const title = hlTitle || original(artwork, 'title') || artwork.t || (language === 'en' ? 'Untitled' : 'Chưa có tiêu đề');
+  const summary = hlSummary || original(artwork, 'short_content') || artwork.summary || artwork.s || '';
   const author = artwork.author_display_name || artwork.a || (artwork.is_anonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : (language === 'en' ? 'Author' : 'Tác giả'));
   const viewCount = artwork.view_count !== undefined ? artwork.view_count : (artwork.v || 0);
 

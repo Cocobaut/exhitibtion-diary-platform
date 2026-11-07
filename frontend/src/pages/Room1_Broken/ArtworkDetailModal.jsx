@@ -165,9 +165,16 @@ export function ArtworkDetailModal({
     }
   };
 
-  const title = artwork.highlight?.title || tr.text('title') || original(artwork, 'title') || artwork.t || (language === 'en' ? 'Artwork' : 'Tác phẩm');
+  const hlTitle = Array.isArray(artwork.highlight?.title) ? artwork.highlight.title.join(' ') : artwork.highlight?.title;
+  const hlStory = Array.isArray(artwork.highlight?.content)
+    ? artwork.highlight.content.join(' ')
+    : (Array.isArray(artwork.highlight?.short_content)
+      ? artwork.highlight.short_content.join(' ')
+      : (artwork.highlight?.content || artwork.highlight?.short_content));
+
+  const title = hlTitle || tr.text('title') || original(artwork, 'title') || artwork.t || (language === 'en' ? 'Artwork' : 'Tác phẩm');
   const author = detail?.author_display_name || artwork.author_display_name || artwork.a || (artwork.is_anonymous ? (language === 'en' ? 'Anonymous' : 'Ẩn danh') : (language === 'en' ? 'Author' : 'Tác giả'));
-  const story = artwork.highlight?.content || artwork.highlight?.short_content || tr.text('content') || tr.text('short_content') || original(artwork, 'content') || original(artwork, 'short_content') || artwork.story || artwork.s || '';
+  const story = hlStory || tr.text('content') || tr.text('short_content') || original(artwork, 'content') || original(artwork, 'short_content') || artwork.story || artwork.s || '';
   const viewCount = detail?.view_count !== undefined ? detail.view_count : (artwork.view_count || artwork.v || 0);
 
   const reactionTypes = ['HEART', 'HUG', 'SYMPATHY'];

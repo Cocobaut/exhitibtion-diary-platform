@@ -487,17 +487,6 @@ export function Room2Page({
                   : 'Bạn chưa có lồng đèn nào')}
             </span>
           )}
-          {!isLoading && debouncedSearch && searchHits !== null && (
-            <span className="muted" style={{ fontSize: '13px', marginLeft: '6px' }}>
-              {searchHits > 0
-                ? (language === 'en'
-                  ? `${searchHits} lantern(s) match "${debouncedSearch}"`
-                  : `Tìm thấy ${searchHits} lồng đèn khớp "${debouncedSearch}"`)
-                : (language === 'en'
-                  ? `No lantern matches "${debouncedSearch}"`
-                  : `Không có lồng đèn nào khớp "${debouncedSearch}"`)}
-            </span>
-          )}
         </div>
 
         {/* Mobile/Tablet Dropdown (customized with same format as desktop .chip.glass.on) */}
