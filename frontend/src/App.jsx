@@ -52,7 +52,7 @@ export const pathToRoute = (pathname) => {
   return 'home';
 };
 
-// Các trang của ứng dụng; mỗi trang có một mục trong lịch sử trình duyệt dạng "#/<route>"
+// Các trang của ứng dụng
 const ROUTES = ['home', 'r1', 'r2', 'r3', 'diary', 'notebook', 'admin', 'owner', 'login', 'profile'];
 
 const hasStoredSession = () => {
@@ -78,16 +78,24 @@ const hasStoredSession = () => {
   }
 };
 
-const routeFromHash = () => {
-  const match = window.location.hash.match(/^#\/([\w-]+)/);
-  if (match && ROUTES.includes(match[1])) return match[1];
+const routeFromUrl = () => {
+  // 1. Đọc từ pathname chuẩn (ví dụ /rooms/1, /notebook, /login)
   const fromPath = pathToRoute(window.location.pathname);
   if (fromPath && fromPath !== 'home') return fromPath;
-  return null;
+
+  // 2. Hỗ trợ dự phòng nếu truy cập từ liên kết cũ có chứa hash #/
+  const match = window.location.hash.match(/^#\/([\w-]+)/);
+  if (match && ROUTES.includes(match[1])) return match[1];
+
+  return fromPath || 'home';
 };
 
-// Giữ nguyên query (ví dụ ?reset_token=...) và chỉ đổi phần hash
-const urlForRoute = (route) => `${window.location.pathname}${window.location.search}#/${route}`;
+// Đường dẫn URL chuẩn sạch (không dùng hash #)
+const urlForRoute = (route) => {
+  const path = ROUTE_PATH_MAP[route] || '/';
+  const search = window.location.search || '';
+  return `${path}${search}`;
+};
 
 function MainApp() {
   const { theme, setTheme } = useTheme();
@@ -96,7 +104,7 @@ function MainApp() {
   const [currentRoute, setCurrentRoute] = useState(() => {
     try {
       if (!hasStoredSession() || window.location.search.includes('reset_token=')) return 'login';
-      const fromUrl = routeFromHash();
+      const fromUrl = routeFromUrl();
       if (fromUrl && fromUrl !== 'login') return fromUrl;
       return sessionStorage.getItem('museum_route') || 'home';
     } catch {
@@ -155,7 +163,7 @@ function MainApp() {
       setIsThemeModalOpen(false);
       setNotificationTarget(null);
 
-      let route = event.state?.route || routeFromHash() || 'home';
+      let route = event.state?.route || routeFromUrl() || 'home';
       const loggedIn = hasStoredSession();
       if (!loggedIn && route !== 'login') {
         route = 'login';
@@ -166,7 +174,7 @@ function MainApp() {
         route = 'home';
       }
 
-      if (route !== (event.state?.route || routeFromHash())) {
+      if (route !== (event.state?.route || routeFromUrl())) {
         try {
           window.history.replaceState({ route }, '', urlForRoute(route));
         } catch {
@@ -210,7 +218,7 @@ function MainApp() {
     }
   }, [currentRoute]);
 
-  // Trang quản trị chỉ dành cho đúng vai trò (gõ tay "#/admin" hoặc bấm Back cũng không vào được)
+  // Trang quản trị chỉ dành cho đúng vai trò (gõ tay URL "/admin" hoặc bấm Back cũng không vào được)
   React.useEffect(() => {
     const guestBlocked = isGuest && ['diary', 'notebook', 'admin', 'owner', 'profile'].includes(currentRoute);
     const adminBlocked = currentRoute === 'admin' && user && !isAdmin;

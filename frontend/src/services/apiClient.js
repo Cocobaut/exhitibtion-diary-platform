@@ -102,9 +102,6 @@ apiClient.interceptors.response.use(
           window.location.pathname !== '/login'
         ) {
           window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-          if (window.location.hash && !window.location.hash.includes('#/login')) {
-            window.location.hash = '#/login';
-          }
         }
       }
 
