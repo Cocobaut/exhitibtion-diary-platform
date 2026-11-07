@@ -723,6 +723,7 @@ export function OwnerDashboardPage({ onNavigate, onOpenNotifications, onOpenThem
 
         {/* 4-Card System Stats Metric Strip */}
         <div
+          className="owner-stats-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',

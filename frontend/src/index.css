@@ -667,6 +667,10 @@ p {
   transition: color 0.15s ease;
 }
 
+.artwork-detail-close {
+  z-index: 2;
+}
+
 .panel .x:hover {
   color: var(--ink);
 }
@@ -3833,10 +3837,71 @@ table.at td {
     padding: 20px 18px calc(20px + var(--safe-bottom)) !important;
   }
 
+  /* Modal 2 cột (Thả lồng đèn, Treo lời nhắn, Viết nhật ký, Chi tiết tác phẩm...) xếp thành 1 cột.
+     Style inline của React ra DOM dạng "grid-template-columns: ...", nên bắt theo chuỗi đó. */
+  .panel[style*="grid-template-columns"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 18px !important;
+  }
+
+  /* Nội dung modal dài hơn màn hình thì cuộn được (một số modal đặt overflow: hidden inline) */
+  .panel {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Cột con trong lưới không được đẩy modal rộng hơn màn hình */
+  .panel > * {
+    min-width: 0;
+  }
+
   /* Form song ngữ VI/EN trong Modal & Admin: Chuyển lưới 2 cột thành 1 cột */
-  .panel div[style*="gridTemplateColumns: '1fr 1fr'"],
   .panel div[style*="grid-template-columns: 1fr 1fr"] {
     grid-template-columns: 1fr !important;
+  }
+
+  /* Chi tiết tác phẩm: ảnh vừa nửa màn hình, nút đóng luôn nổi ở góc trên */
+  .artwork-detail-panel .artwork-detail-frame-wrap {
+    padding: 14px !important;
+  }
+  .artwork-detail-panel .artwork-detail-frame {
+    width: 100% !important;
+    height: min(46dvh, 420px) !important;
+    border-width: 6px !important;
+  }
+  .artwork-detail-panel .artwork-detail-body {
+    padding: 18px 18px 22px !important;
+    overflow: visible !important;
+  }
+  .artwork-detail-panel > .artwork-detail-close {
+    position: fixed !important;
+    top: calc(var(--safe-top, 0px) + 28px) !important;
+    right: 16px !important;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(243, 234, 221, 0.92);
+    color: var(--ink) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Dropdown thông báo: căn giữa, chừa lề hai bên và không đè lên thanh điều hướng dưới */
+  .notif-dropdown {
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: calc(100dvh - 78px - var(--bottom-nav-h) - var(--safe-bottom) - 16px) !important;
+  }
+
+  /* Thẻ thống kê của Owner: 2 cột thay vì mỗi thẻ một hàng */
+  .owner-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
   }
 
   /* Admin navigation tabs scroll ngang */
@@ -4728,5 +4793,22 @@ table.at td {
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
+  }
+}
+
+/* Tablet (769px–1024px): modal 2 cột chia đều, lưới con 2 cột xếp dọc để ô nhập không bị bóp */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .artwork-detail-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+  .artwork-detail-panel .artwork-detail-frame {
+    width: 100% !important;
+    height: min(60vh, 520px) !important;
+  }
+  .artwork-detail-panel .artwork-detail-body {
+    padding: 26px 24px 22px !important;
+  }
+  .panel div[style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
   }
 }

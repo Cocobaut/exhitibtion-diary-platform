@@ -139,7 +139,7 @@ export function NotificationDropdown({ isOpen, onClose, onActionClick }) {
     <>
       <div className="scrim" style={{ background: 'transparent' }} onClick={onClose} />
       <div
-        className="abs"
+        className="abs notif-dropdown"
         style={{
           right: '30px',
           top: '78px',
