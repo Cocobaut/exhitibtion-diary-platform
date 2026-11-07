@@ -448,6 +448,15 @@ async def run_tests():
     print("\n ALL 9 TESTS FOR PLAN 08 PASSED PERFECTLY! \n")
 
 
+
+async def test_diaries_scenario():
+    """Cho pytest chạy toàn bộ kịch bản (file này vẫn chạy được bằng `python tests/test_diaries.py`)."""
+    try:
+        await run_tests()
+    finally:
+        app.dependency_overrides.clear()
+
+
 if __name__ == "__main__":
     asyncio.run(run_tests())
 

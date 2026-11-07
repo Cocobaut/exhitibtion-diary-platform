@@ -21,6 +21,10 @@ from app.schemas.ai_copilot import BuildImagePromptData, BuildImagePromptRequest
 from app.services.ai_translation_service import AiTranslationService
 from app.services.badwords_service import BadWordsService
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # Giới hạn độ dài nội dung đưa vào prompt (tránh prompt quá dài cho model sinh ảnh)
 MAX_CONTENT_CHARS = 1200
 # Ngân sách ký tự "từ đệm" LLM được phép thêm so với nội dung nguồn
@@ -93,10 +97,10 @@ async def _call_llm(system: str, user_text: str, cfg: Dict[str, Any]) -> Tuple[O
                         headers={"x-goog-api-key": api_key}, json=payload,
                     )
                 except httpx.HTTPError as ex:
-                    print(f"[AI Image Prompt] {m} error: {type(ex).__name__}")
+                    logger.warning(f"[AI Image Prompt] {m} error: {type(ex).__name__}")
                     continue
                 if resp.status_code != 200:
-                    print(f"[AI Image Prompt] {m} returned HTTP {resp.status_code}")
+                    logger.info(f"[AI Image Prompt] {m} returned HTTP {resp.status_code}")
                     continue
                 cands = resp.json().get("candidates", [])
                 parts = cands[0].get("content", {}).get("parts", []) if cands else []
@@ -138,9 +142,9 @@ async def _call_llm(system: str, user_text: str, cfg: Dict[str, Any]) -> Tuple[O
                     data = AiTranslationService._parse_json(resp.json()["choices"][0]["message"]["content"])
                     if data is not None:
                         return (data, target_model)
-                print(f"[AI Image Prompt] {target_model} returned HTTP {resp.status_code}")
+                logger.info(f"[AI Image Prompt] {target_model} returned HTTP {resp.status_code}")
             except Exception as ex:
-                print(f"[AI Image Prompt] {target_model} error: {ex}")
+                logger.warning(f"[AI Image Prompt] {target_model} error: {ex}")
                 continue
         return None, None
 
@@ -249,7 +253,7 @@ class AiImagePromptService:
             try:
                 result, used = await _call_llm(PROMPT_BUILDER_SYSTEM, user_text, llm_config)
             except Exception as ex:  # noqa: BLE001 – mọi lỗi mạng/parse đều fallback về mẫu
-                print(f"[AI Image Prompt] LLM error, using template: {ex}")
+                logger.warning(f"[AI Image Prompt] LLM error, using template: {ex}")
                 result, used = None, None
 
             if result:

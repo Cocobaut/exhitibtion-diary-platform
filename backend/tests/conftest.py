@@ -1,3 +1,8 @@
+import os
+
+# Test chạy ở chế độ dev (cho phép SECRET_KEY mặc định); phải đặt trước khi import app
+os.environ.setdefault("DEBUG", "True")
+
 import asyncio
 from typing import AsyncGenerator
 import pytest
@@ -93,3 +98,12 @@ async def seed_users(db_session: AsyncSession):
     db_session.add_all([admin, user, locked])
     await db_session.commit()
     return {"admin": admin, "user": user, "locked": locked}
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiters():
+    """Bộ đếm giới hạn nằm trong bộ nhớ tiến trình: xoá trước mỗi test để các test không ảnh hưởng nhau."""
+    from app.core.rate_limit import ALL_LIMITERS
+    for limiter in ALL_LIMITERS:
+        limiter.clear()
+    yield

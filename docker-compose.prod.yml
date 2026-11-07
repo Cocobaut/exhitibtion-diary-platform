@@ -25,6 +25,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-exhibition_diary_db}
       SECRET_KEY: ${SECRET_KEY:?Hãy đặt SECRET_KEY trong .env (openssl rand -hex 32)}
+      AI_ENCRYPTION_KEY: ${AI_ENCRYPTION_KEY:-}
       DEBUG: "False"
       PUBLIC_BASE_URL: https://${DOMAIN:?Hãy đặt DOMAIN trong .env}
       BACKEND_CORS_ORIGINS: https://${DOMAIN}

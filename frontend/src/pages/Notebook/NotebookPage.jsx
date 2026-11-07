@@ -17,6 +17,7 @@ function formatSavedAt(value, language) {
 export function NotebookPage({
   notebookItems = [],
   onRemoveItem,
+  onSyncItems,
   onOpenNotifications,
   onOpenThemeModal,
 }) {
@@ -31,6 +32,10 @@ export function NotebookPage({
   const [serverItems, setServerItems] = useState([]);
   // true khi API sổ tay trả lời thành công (kể cả danh sách rỗng)
   const [serverLoaded, setServerLoaded] = useState(false);
+  // true khi không gọi được API: lúc đó mới dùng bản lưu cục bộ
+  const [serverError, setServerError] = useState(false);
+  const syncItemsRef = useRef(onSyncItems);
+  syncItemsRef.current = onSyncItems;
   const [isLoading, setIsLoading] = useState(false);
   const [readingItem, setReadingItem] = useState(null);
   const [expandedNotebookId, setExpandedNotebookId] = useState(null);
@@ -85,13 +90,20 @@ export function NotebookPage({
             source_id: it.source_id,
             artwork_id: it.artwork_id,
             draw_id: it.draw_id,
+            media_url: it.media_url,
           }));
           setServerItems(mapped);
           setServerLoaded(true);
+          setServerError(false);
+          // Danh sách đầy đủ (không lọc, không tìm) thì cập nhật luôn bản lưu cục bộ cho khớp server
+          if (filter === 'all' && !debouncedSearch && syncItemsRef.current) {
+            syncItemsRef.current(mapped);
+          }
         }
       }
     } catch (err) {
       console.warn('Could not load unified notebook from API, using local storage:', err);
+      setServerError(true);
     } finally {
       setIsLoading(false);
     }
@@ -101,12 +113,16 @@ export function NotebookPage({
     loadNotebook();
   }, [loadNotebook]);
 
-  // Ưu tiên dữ liệu server; chỉ dùng bản lưu cục bộ khi không gọi được API
-  const useServer = Boolean(user && serverLoaded);
+  // Đã đăng nhập thì chỉ hiện dữ liệu server; bản lưu cục bộ chỉ dùng khi không gọi được API.
+  // Nhờ vậy không còn cảnh hiện các mục cũ trong máy rồi biến mất khi server trả lời.
+  const useServer = Boolean(user && serverLoaded && !serverError);
+  const waitingForServer = Boolean(user && !serverLoaded && !serverError);
   const activeItems = useServer ? serverItems : notebookItems;
 
   // Filter client-side if using local items
-  const displayItems = useServer
+  const displayItems = waitingForServer
+    ? []
+    : useServer
     ? serverItems
     : activeItems.filter((item) => {
         if (filter === 'mailbox' && item.source !== 'mailbox') return false;
@@ -128,19 +144,28 @@ export function NotebookPage({
   const handleRemove = async (e, item) => {
     e.stopPropagation();
 
-    // Optimistic removal locally
-    if (onRemoveItem) {
-      onRemoveItem(item.id);
-    }
+    // Gỡ ngay trên giao diện, nếu server báo lỗi thì trả lại chỗ cũ
+    const previousServerItems = serverItems;
     setServerItems((prev) => prev.filter((it) => it.id !== item.id));
 
-    // Call service to unsave from backend
     try {
       await notebookService.removeNotebookItem(item);
     } catch (err) {
       console.warn('Backend unsave failed:', err);
+      if (useServer) {
+        setServerItems(previousServerItems);
+        triggerToast(
+          language === 'en'
+            ? 'Could not remove this item. Please try again.'
+            : 'Chưa gỡ được mục này. Bạn thử lại nhé.'
+        );
+        return;
+      }
     }
 
+    if (onRemoveItem) {
+      onRemoveItem(item.id);
+    }
     triggerToast(language === 'en' ? 'Removed from notebook' : 'Đã gỡ mục này khỏi sổ tay');
   };
 
@@ -263,7 +288,11 @@ export function NotebookPage({
           padding: '0 clamp(24px, 4vw, 48px) 44px',
         }}
       >
-        {displayItems.length === 0 ? (
+        {waitingForServer ? (
+          <div className="muted" style={{ textAlign: 'center', padding: '60px 20px', fontSize: '15px' }}>
+            {language === 'en' ? 'Loading your notebook…' : 'Đang tải sổ tay…'}
+          </div>
+        ) : displayItems.length === 0 ? (
           <div
             style={{
               textAlign: 'center',

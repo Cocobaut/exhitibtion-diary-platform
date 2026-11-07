@@ -8,6 +8,15 @@ import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
 import { TranslationToggle } from '../../components/common/TranslationToggle';
 
+// Hiển thị ngày hạ cánh theo giờ máy người xem
+const formatUnlockDate = (value, lang) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return lang === 'en' ? 'its landing date' : 'ngày hạ cánh';
+  return d.toLocaleString(lang === 'en' ? 'en-GB' : 'vi-VN', {
+    hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric',
+  });
+};
+
 export function LanternLandedModal({
   isOpen,
   onClose,
@@ -23,7 +32,15 @@ export function LanternLandedModal({
   const tr = useTranslationToggle(letter, ['title', 'content']);
   const [isSaved, setIsSaved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // Ngày hạ cánh khi thư còn khoá với người xem (server không trả nội dung trước ngày này)
+  const [lockedUntil, setLockedUntil] = useState(null);
   const [saveLoading, setSaveLoading] = useState(false);
+  // Lỗi khi lưu: hiện tạm trên nút thay vì giả vờ đã lưu trong máy
+  const [saveError, setSaveError] = useState('');
+  const showSaveError = (msg) => {
+    setSaveError(msg);
+    setTimeout(() => setSaveError(''), 3500);
+  };
   const [currentReaction, setCurrentReaction] = useState(null);
   const [reactionsMap, setReactionsMap] = useState({
     HEART: 0,
@@ -41,6 +58,7 @@ export function LanternLandedModal({
 
     let isMounted = true;
     setLetter(letterData);
+    setLockedUntil(letterData.can_read === false ? (letterData.target_date || 'unknown') : null);
     setIsSaved(Boolean(letterData.is_saved));
     setCurrentReaction(letterData.my_reaction || letterData.user_reaction || null);
 
@@ -85,6 +103,11 @@ export function LanternLandedModal({
           }
         })
         .catch((err) => {
+          if (!isMounted) return;
+          if (err?.errorCode === 'LANTERN_LOCKED') {
+            setLockedUntil(err?.data?.target_date || letterData.target_date || 'unknown');
+            return;
+          }
           console.warn('Could not mark lantern opened on backend:', err);
         })
         .finally(() => {
@@ -138,6 +161,10 @@ export function LanternLandedModal({
 
     const willSave = !isSaved;
     try {
+      // Mục không có trên server (ví dụ lồng đèn minh hoạ) thì không lưu được vào sổ tay
+      if (!(currentLetter?.id && isUuid(String(currentLetter.id)))) {
+        throw new Error('NOT_SAVABLE');
+      }
       if (currentLetter.id && isUuid(String(currentLetter.id))) {
         if (willSave) {
           await room2Service.saveLanternToNotebook(currentLetter.id);
@@ -164,23 +191,11 @@ export function LanternLandedModal({
       }
     } catch (err) {
       console.error('Error toggling notebook save:', err);
-      // Fallback local save even if backend save fails
-      setIsSaved(willSave);
-      if (willSave && onSaveToNotebook) {
-        onSaveToNotebook({
-          id: currentLetter.id ? `nb_lt_${currentLetter.id}` : `nb_lt_${Date.now()}`,
-          artwork_id: currentLetter.id,
-          source: 'lantern',
-          sourceLabel: language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2',
-          badgeClass: 'b-wait',
-          icon: 'r2',
-          title: currentLetter.title || (language === 'en' ? 'Lantern letter to future' : 'Lồng đèn gửi tương lai'),
-          content: currentLetter.content,
-          author: currentLetter.author_display_name || currentLetter.author || (language === 'en' ? 'Anonymous sender' : 'Người gửi ẩn danh'),
-          symbol: currentLetter.symbol || 'heart',
-          savedAt: language === 'en' ? 'Today' : 'Hôm nay',
-        });
-      }
+      showSaveError(
+        err?.message === 'NOT_SAVABLE'
+          ? (language === 'en' ? 'This item cannot be saved' : 'Mục minh hoạ, không lưu được')
+          : (language === 'en' ? 'Could not save, try again' : 'Chưa lưu được, thử lại nhé')
+      );
     } finally {
       setSaveLoading(false);
     }
@@ -316,6 +331,20 @@ export function LanternLandedModal({
           <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--muted)' }}>
             {language === 'en' ? 'Opening...' : 'Đang mở thư...'}
           </div>
+        ) : lockedUntil ? (
+          <div className="book" style={{ fontSize: '16px', lineHeight: 1.85, color: '#3A2016' }}>
+            <div style={{ fontWeight: 600, marginBottom: '8px' }}>
+              {'🔒 '}
+              {language === 'en'
+                ? `This letter has not landed yet. It opens on ${formatUnlockDate(lockedUntil, 'en')}.`
+                : `Lồng đèn này chưa tới ngày hạ cánh. Bức thư sẽ mở vào ${formatUnlockDate(lockedUntil, 'vi')}.`}
+            </div>
+            {original(currentLetter, 'short_content') && (
+              <div style={{ fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                {original(currentLetter, 'short_content')}
+              </div>
+            )}
+          </div>
         ) : (
           <div
             className="book"
@@ -391,6 +420,8 @@ export function LanternLandedModal({
             <Icon name={isSaved ? 'check' : 'bookmark'} size={16} />
             {saveLoading
               ? (language === 'en' ? 'Saving...' : 'Đang lưu...')
+              : saveError
+              ? saveError
               : isSaved
               ? (language === 'en' ? 'Saved to notebook' : 'Đã lưu vào sổ tay')
               : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}

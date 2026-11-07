@@ -12,6 +12,7 @@ from app.models.message_capsule import MessageCapsule
 from app.models.user import User
 from app.models.user_capsule_draw import UserCapsuleDraw
 from app.models.user_saved_artwork import UserSavedArtwork
+from app.services.room2_service import is_lantern_unlocked
 from app.schemas.notebook import (
     NotebookCounts,
     NotebookItem,
@@ -124,10 +125,15 @@ class NotebookService:
             else:  # ROOM_HOPE
                 item_src = "lantern"
                 src_label = "Lồng đèn hạ xuống · Phòng 2"
-                cat_display = art.tag_category or "Hy vọng"
+                cat_display = "Hy vọng"  # tag_category của Phòng 2 là hình lồng đèn, không phải thể loại
                 badge_cls = "b-wait"
                 ic = "r2"
                 prefix_id = "nb_lt_"
+
+            content = art.content or art.short_content
+            # Lồng đèn chưa tới ngày hạ cánh (kể cả của chính mình): chỉ giữ tóm tắt, không lộ nội dung thư
+            if art.room_id == ROOM_HOPE and not is_lantern_unlocked(art.target_date):
+                content = art.short_content
 
             items_all.append({
                 "id": f"{prefix_id}{sa.id}",
@@ -138,7 +144,7 @@ class NotebookService:
                 "badge_class": badge_cls,
                 "icon": ic,
                 "title": art.title,
-                "content": art.content or art.short_content,
+                "content": content,
                 "short_content": art.short_content,
                 "author": author_name,
                 "symbol": art.color_code or art.tag_category or "heart",

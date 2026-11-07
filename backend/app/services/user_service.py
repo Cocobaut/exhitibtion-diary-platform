@@ -104,8 +104,9 @@ class UserService:
         )
 
         # Xóa file avatar cũ nếu nằm trong uploads nội bộ
+        # Chỉ xoá avatar do chính người này tải lên (tên file bắt đầu bằng user.id)
         if old_avatar_url:
-            StorageService.delete(old_avatar_url)
+            StorageService.delete(old_avatar_url, folder="avatars", owner_prefix=f"{user.id}-")
 
         user.avatar_url = new_url
         user.updated_at = func.now()

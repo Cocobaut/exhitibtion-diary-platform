@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import logging
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -39,6 +40,9 @@ async def lifespan(app: FastAPI):
     # Shutdown: Dispose engine connection pool
     await engine.dispose()
 
+
+# Log của ứng dụng (logger theo từng module) ra stdout cùng uvicorn; docker compose logs sẽ thấy
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

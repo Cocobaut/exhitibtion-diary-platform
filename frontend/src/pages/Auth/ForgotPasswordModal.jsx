@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Modal } from '../../components/common/Modal';
 import { authService } from '../../services/authService';
 
@@ -22,6 +22,16 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  // Đã gửi yêu cầu: chờ người dùng mở link trong email
+  const [linkSent, setLinkSent] = useState(false);
+
+  // Mở từ link trong email: token đến sau lần render đầu nên phải đồng bộ lại
+  useEffect(() => {
+    if (resetToken) {
+      setActiveToken(resetToken);
+      setIsVerified(true);
+    }
+  }, [resetToken]);
 
   if (!isOpen) return null;
 
@@ -87,20 +97,15 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
         email: formData.email.trim(),
       });
       setIsLoading(false);
-      if (res && res.reset_token) {
-        setActiveToken(res.reset_token);
-        setIsVerified(true);
-        setSuccessMsg('Thông tin tài khoản chính xác! Vui lòng nhập mật khẩu mới phía dưới.');
-      } else {
-        setErrorMsg('Không thể xác thực thông tin. Vui lòng thử lại.');
-      }
+      // Server không trả token: link đặt lại mật khẩu chỉ được gửi tới hộp thư của chủ tài khoản
+      setLinkSent(true);
+      setSuccessMsg(
+        res?.message ||
+          'Nếu thông tin khớp với một tài khoản, chúng tôi đã gửi link đặt lại mật khẩu tới email đó. Hãy kiểm tra hộp thư (cả mục Spam).'
+      );
     } catch (err) {
       setIsLoading(false);
-      if (err.errorCode === 'INVALID_CREDENTIALS') {
-        setErrorMsg('Tên đăng nhập hoặc email không chính xác.');
-      } else if (err.errorCode === 'ACCOUNT_LOCKED') {
-        setErrorMsg('Tài khoản của bạn đang bị khóa. Hãy liên hệ quản trị viên.');
-      } else if (err.errorCode === 'TOO_MANY_ATTEMPTS') {
+      if (err.errorCode === 'TOO_MANY_ATTEMPTS') {
         setErrorMsg('Bạn đã thử quá nhiều lần. Hãy đợi một ít phút rồi thử lại.');
       } else {
         setErrorMsg(err.message || 'Tên đăng nhập hoặc email không chính xác.');
@@ -132,7 +137,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
     } catch (err) {
       setIsLoading(false);
       if (err.errorCode === 'INVALID_RESET_TOKEN') {
-        setErrorMsg('Phiên đặt lại mật khẩu đã hết hạn. Vui lòng xác thực lại từ đầu.');
+        setErrorMsg('Link đặt lại mật khẩu đã hết hạn hoặc đã được dùng. Hãy yêu cầu link mới.');
         setIsVerified(false);
         setActiveToken('');
       } else if (err.errorCode === 'ACCOUNT_LOCKED') {
@@ -152,7 +157,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
           Đặt lại mật khẩu
         </h2>
         <div className="hand" style={{ fontSize: '18px', color: 'var(--ink2)', marginTop: '4px' }}>
-          {isVerified ? 'nhập mật khẩu mới cho tài khoản' : 'nhập tên đăng nhập và email của bạn'}
+          {isVerified ? 'nhập mật khẩu mới cho tài khoản' : 'nhận link đặt lại mật khẩu qua email'}
         </div>
       </div>
 
@@ -191,7 +196,8 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
       )}
 
       <form onSubmit={isVerified ? handleResetPassword : handleVerifyAccount} style={{ textAlign: 'left' }}>
-        {/* Bước 1: Nhập Tên đăng nhập & Email */}
+        {/* Bước 1: Nhập Tên đăng nhập & Email để nhận link (ẩn khi đã mở từ link trong email) */}
+        {!isVerified && (<>
         <div>
           <div className="fieldl">
             <span>Tên đăng nhập *</span>
@@ -226,6 +232,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
             disabled={isLoading || isVerified}
           />
         </div>
+        </>)}
 
         {/* Bước 2: Hiển thị ngay 2 ô Mật khẩu mới & Xác nhận mật khẩu khi thông tin đúng */}
         {isVerified && (
@@ -280,11 +287,11 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
             type="submit"
             className="btn main"
             style={{ width: '100%', padding: '12px' }}
-            disabled={isLoading || (successMsg && successMsg.includes('Đổi mật khẩu thành công'))}
+            disabled={isLoading || (!isVerified && linkSent) || (successMsg && successMsg.includes('Đổi mật khẩu thành công'))}
           >
             {isLoading
-              ? (isVerified ? 'Đang cập nhật mật khẩu...' : 'Đang kiểm tra tài khoản...')
-              : (isVerified ? 'Cập nhật mật khẩu' : 'Xác thực tài khoản')}
+              ? (isVerified ? 'Đang cập nhật mật khẩu...' : 'Đang gửi link...')
+              : (isVerified ? 'Cập nhật mật khẩu' : linkSent ? 'Đã gửi link, hãy kiểm tra email' : 'Gửi link đặt lại mật khẩu')}
           </button>
         </div>
       </form>
