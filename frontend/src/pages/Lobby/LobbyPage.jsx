@@ -91,9 +91,7 @@ export function LobbyPage({
   };
 
   const handleMailboxClick = () => {
-    guardAction(() => {
-      if (onOpenMailbox) onOpenMailbox();
-    }, 'rút một thông điệp từ Hòm thư');
+    if (onOpenMailbox) onOpenMailbox();
   };
 
   const handleDiaryClick = () => {

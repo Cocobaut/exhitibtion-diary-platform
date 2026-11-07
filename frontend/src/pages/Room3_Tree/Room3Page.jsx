@@ -9,6 +9,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
+import { matchesSearchQuery } from '../../utils/searchUtils';
+import { HighlightText } from '../../components/common/HighlightText';
 
 /**
  * StarrySky component covering almost the entire screen with twinkling stars.
@@ -152,6 +154,8 @@ export function Room3Page({
   const [filterMine, setFilterMine] = useState(false);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [matchedLeafIds, setMatchedLeafIds] = useState(new Set());
+  const isSearchActive = Boolean(debouncedSearch && debouncedSearch.trim().length > 0);
 
   const [leaves, setLeaves] = useState([]);
   const [totalLeaves, setTotalLeaves] = useState(0);
@@ -197,43 +201,87 @@ export function Room3Page({
     }
   }, []);
 
-  // Load leaves on tree
+  // Load base leaves on tree
   const loadLeaves = useCallback(async () => {
     setIsLoading(true);
     try {
-      if (debouncedSearch) {
-        const res = await room3Service.searchLeaves({
-          q: debouncedSearch,
-          category: filterCategory,
-          scope: filterMine ? 'mine' : 'all',
-          limit: 100,
-        });
-        const data = res?.data || res;
-        const items = data?.items || [];
-        setLeaves(items);
-        if (data?.pagination?.total_hits !== undefined) {
-          setTotalLeaves(data.pagination.total_hits);
-        }
-      } else {
-        const res = await room3Service.getLeaves({
-          category: filterCategory,
-          filter: filterMine ? 'mine' : 'all',
-          mine: filterMine,
-          limit: 100,
-        });
-        const data = res?.data || res;
-        const items = data?.items || [];
-        setLeaves(items);
-        if (data?.total_ribbons !== undefined) {
-          setTotalLeaves(data.total_ribbons);
-        }
+      const res = await room3Service.getLeaves({
+        category: filterCategory,
+        filter: filterMine ? 'mine' : 'all',
+        mine: filterMine,
+        limit: 100,
+      });
+      const data = res?.data || res;
+      const items = data?.items || [];
+      setLeaves(items);
+      if (data?.total_ribbons !== undefined) {
+        setTotalLeaves(data.total_ribbons);
       }
     } catch (err) {
       console.warn('Could not load leaves from API, using fallback:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [filterCategory, filterMine, debouncedSearch]);
+  }, [filterCategory, filterMine]);
+
+  // Handle dynamic search matching without removing other leaves from the tree
+  useEffect(() => {
+    const q = debouncedSearch.trim();
+    if (!q) {
+      setMatchedLeafIds(new Set());
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      const matched = new Set();
+
+      // 1. Backend search query
+      try {
+        const res = await room3Service.searchLeaves({
+          q,
+          category: filterCategory,
+          scope: filterMine ? 'mine' : 'all',
+          limit: 100,
+        });
+        const data = res?.data || res;
+        const items = data?.items || [];
+        items.forEach((it) => {
+          if (it?.id !== undefined && it?.id !== null) {
+            matched.add(String(it.id));
+          }
+        });
+      } catch (err) {
+        console.warn('Backend leaf search fallback to local match:', err);
+      }
+
+      // 2. Client-side matching across loaded leaves
+      leaves.forEach((it) => {
+        if (!it) return;
+        const isMatch =
+          matchesSearchQuery(it.title, q) ||
+          matchesSearchQuery(it.title_vi, q) ||
+          matchesSearchQuery(it.title_en, q) ||
+          matchesSearchQuery(it.content, q) ||
+          matchesSearchQuery(it.content_vi, q) ||
+          matchesSearchQuery(it.content_en, q) ||
+          matchesSearchQuery(it.short_content, q) ||
+          matchesSearchQuery(it.author_display_name, q);
+
+        if (isMatch && it.id !== undefined && it.id !== null) {
+          matched.add(String(it.id));
+        }
+      });
+
+      if (isMounted) {
+        setMatchedLeafIds(matched);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedSearch, filterCategory, filterMine, leaves]);
 
   useEffect(() => {
     loadCategoriesMeta();
@@ -435,15 +483,14 @@ export function Room3Page({
             />
           </div>
 
-          <div className="row r3-action-buttons" style={{ gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+          <div className="row r3-action-buttons">
             {/* Chức năng rút lá (draw wish) với icon viền rỗng nằm ngang với hang message */}
             <button
               type="button"
-              className="btn glass shrink-0"
+              className="btn glass shrink-0 r3-btn-draw"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '7px',
                 whiteSpace: 'nowrap',
                 color: 'var(--onw)',
                 borderColor: 'rgba(212, 176, 106, 0.45)',
@@ -472,7 +519,7 @@ export function Room3Page({
 
             <button
               type="button"
-              className="btn main shrink-0"
+              className="btn main shrink-0 r3-btn-hang"
               style={{ whiteSpace: 'nowrap' }}
               onClick={() => {
                 guardAction(() => setShowHangModal(true), 'treo thông điệp lên Cây');
@@ -529,6 +576,9 @@ export function Room3Page({
           ref={wishTreeRef}
           leaves={leaves}
           filterCategory={filterCategory}
+          matchedLeafIds={matchedLeafIds}
+          isSearchActive={isSearchActive}
+          searchQuery={debouncedSearch}
           hoveredLeaf={hoveredLeaf}
           onHoverLeaf={setHoveredLeaf}
           onOpenLeafModal={handleOpenReadModal}
@@ -588,7 +638,10 @@ export function Room3Page({
               textOverflow: 'ellipsis',
             }}
           >
-            {original(hoveredLeaf, 'title') || (language === 'en' ? 'To you who are trying' : 'Gửi bạn đang cố gắng')}
+            <HighlightText
+              text={original(hoveredLeaf, 'title') || (language === 'en' ? 'To you who are trying' : 'Gửi bạn đang cố gắng')}
+              query={debouncedSearch}
+            />
           </b>
           <div className="muted" style={{ fontSize: '12.5px' }}>
             {hoveredLeaf.author_display_name || (language === 'en' ? 'Stranger' : 'Người lạ')} · {language === 'en' ? 'click to read' : 'nhấn để đọc'}
@@ -631,6 +684,7 @@ export function Room3Page({
       <ReadLeafModal
         isOpen={showReadModal}
         leafData={modalLeaf}
+        searchQuery={debouncedSearch}
         onClose={handleCloseReadModal}
         onReactionUpdated={handleReactionUpdated}
         onSaveToNotebook={onSaveToNotebook}

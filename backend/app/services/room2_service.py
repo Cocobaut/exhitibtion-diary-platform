@@ -31,8 +31,8 @@ class Room2Service:
         """
         public_cond = and_(Artwork.visibility == "PUBLIC", Artwork.status == "APPROVED")
         if current_user:
-            private_cond = and_(Artwork.visibility == "PRIVATE", Artwork.user_id == current_user.id)
-            visible_clause = or_(public_cond, private_cond)
+            user_own_cond = (Artwork.user_id == current_user.id)
+            visible_clause = or_(public_cond, user_own_cond)
         else:
             visible_clause = public_cond
 
@@ -503,8 +503,8 @@ class Room2Service:
         extra_conditions = []
         public_cond = and_(Artwork.visibility == "PUBLIC", Artwork.status == "APPROVED")
         if current_user:
-            private_cond = and_(Artwork.visibility == "PRIVATE", Artwork.user_id == current_user.id)
-            extra_conditions.append(or_(public_cond, private_cond))
+            user_own_cond = (Artwork.user_id == current_user.id)
+            extra_conditions.append(or_(public_cond, user_own_cond))
         else:
             extra_conditions.append(public_cond)
 

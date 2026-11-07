@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Icon } from '../common/Icons';
 import { useAuth } from '../../context/AuthContext';
+import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { capsuleService } from '../../services/capsuleService';
 
@@ -145,7 +146,8 @@ const MOCK_MESSAGES = [
 ];
 
 export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems = [] }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isGuest } = useAuth();
+  const { guardAction } = useGuestGuard();
   const { language, localize } = useLanguage();
   const [drawnData, setDrawnData] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -277,21 +279,8 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
   const handleSaveToggle = async () => {
     if (!drawnData || gachaPhase === 'charging') return;
 
-    if (!isAuthenticated) {
-      if (onSaveToNotebook) {
-        onSaveToNotebook({
-          id: drawnData.draw_id,
-          source: 'mailbox',
-          sourceLabel: language === 'en' ? `Mailbox · ${currentTheme.nameEn}` : `Hòm thư · ${currentTheme.nameVi}`,
-          badgeClass: currentTheme.badge,
-          icon: 'sparkle',
-          content: localize(drawnData, 'message'),
-          author: drawnData.author_name || (language === 'en' ? 'Anonymous' : 'Ẩn danh'),
-          category: drawnData.category,
-          savedAt: language === 'en' ? 'Just now' : 'Vừa xong',
-        });
-      }
-      setDrawnData((prev) => ({ ...prev, is_saved: true }));
+    if (!isAuthenticated || isGuest) {
+      guardAction(null, language === 'en' ? 'save message to notebook' : 'lưu thông điệp vào sổ tay');
       return;
     }
 
@@ -499,7 +488,29 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
           margin-top: 20px;
           border-top: 1px solid var(--line);
           padding-top: 16px;
+          display: flex;
           align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          box-sizing: border-box;
+          gap: 10px;
+        }
+        .mailbox-another-btn {
+          flex-shrink: 0;
+          box-sizing: border-box;
+          white-space: nowrap;
+        }
+        .mailbox-save-group {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          flex-shrink: 0;
+          box-sizing: border-box;
+        }
+        .mailbox-save-btn {
+          flex-shrink: 0;
+          box-sizing: border-box;
+          white-space: nowrap;
         }
         .mailbox-charging-wrap {
           position: fixed;
@@ -536,13 +547,49 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
           }
           .mailbox-card {
             width: min(520px, 88vw) !important;
-            padding: 24px 28px 20px !important;
+            padding: 22px 24px 18px !important;
             border-radius: 22px !important;
           }
           .mailbox-message-text {
             font-size: 19.5px !important;
             line-height: 1.65 !important;
             min-height: 75px !important;
+          }
+          .mailbox-footer {
+            margin-top: 16px !important;
+            padding-top: 14px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 10px !important;
+            width: 100% !important;
+          }
+          .mailbox-another-btn {
+            font-size: 13px !important;
+            padding: 7px 12px !important;
+            gap: 6px !important;
+            max-width: 48% !important;
+            box-sizing: border-box !important;
+          }
+          .mailbox-another-btn span {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+          .mailbox-save-group {
+            gap: 8px !important;
+            max-width: 50% !important;
+            justify-content: flex-end !important;
+          }
+          .mailbox-save-btn {
+            font-size: 13px !important;
+            padding: 7px 12px !important;
+            box-sizing: border-box !important;
+          }
+          .mailbox-save-btn span {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
           }
           .mailbox-bg-svg {
             transform: translateX(-50%) scale(0.85);
@@ -564,29 +611,61 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
             margin-top: 2px !important;
           }
           .mailbox-card {
-            top: 55% !important;
+            top: 52% !important;
             width: min(500px, 92vw) !important;
-            max-height: 82dvh !important;
+            max-height: 84dvh !important;
             overflow-y: auto !important;
-            padding: 14px 22px 14px !important;
+            padding: 12px 18px 12px !important;
             border-radius: 18px !important;
           }
           .mailbox-card-header {
             margin-bottom: 8px !important;
           }
           .mailbox-message-text {
-            font-size: 15.5px !important;
-            line-height: 1.5 !important;
-            min-height: 42px !important;
+            font-size: 15px !important;
+            line-height: 1.45 !important;
+            min-height: 38px !important;
             padding: 2px 0 !important;
           }
           .mailbox-author-text {
-            font-size: 14px !important;
+            font-size: 13.5px !important;
             margin-top: 4px !important;
           }
           .mailbox-footer {
             margin-top: 10px !important;
             padding-top: 8px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            gap: 8px !important;
+            width: 100% !important;
+          }
+          .mailbox-another-btn {
+            font-size: 11.5px !important;
+            padding: 5px 9px !important;
+            gap: 5px !important;
+            max-width: 48% !important;
+            box-sizing: border-box !important;
+          }
+          .mailbox-another-btn span {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+          .mailbox-save-group {
+            gap: 6px !important;
+            max-width: 50% !important;
+            justify-content: flex-end !important;
+          }
+          .mailbox-save-btn {
+            font-size: 11.5px !important;
+            padding: 5px 9px !important;
+            box-sizing: border-box !important;
+          }
+          .mailbox-save-btn span {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
           }
           .mailbox-charging-wrap {
             transform: translate(-50%, -50%) scale(0.72) !important;
@@ -596,55 +675,88 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
           }
         }
 
-        /* 3. MOBILE PORTRAIT (<= 480px) */
-        @media (max-width: 480px) {
+        /* 3. MOBILE PORTRAIT (<= 767px) */
+        @media (max-width: 767px) {
           .mailbox-modal-header {
-            top: clamp(18px, 3.5vh, 28px) !important;
+            top: clamp(16px, 3vh, 26px) !important;
             padding: 0 12px !important;
           }
           .mailbox-modal-title {
-            font-size: 19px !important;
+            font-size: 18.5px !important;
             line-height: 1.25 !important;
           }
           .mailbox-modal-subtitle {
-            font-size: 11.5px !important;
+            font-size: 11px !important;
             margin-top: 4px !important;
           }
           .mailbox-card {
             top: 52% !important;
-            width: calc(100vw - 32px) !important;
-            max-width: 390px !important;
-            max-height: 80dvh !important;
+            width: calc(100vw - 28px) !important;
+            max-width: 400px !important;
+            max-height: 82dvh !important;
             overflow-y: auto !important;
-            padding: 20px 18px 16px !important;
+            padding: 18px 16px 14px !important;
             border-radius: 20px !important;
           }
           .mailbox-card .x {
-            right: 14px !important;
-            top: 14px !important;
+            right: 12px !important;
+            top: 12px !important;
           }
           .mailbox-card-header {
-            margin-bottom: 12px !important;
+            margin-bottom: 10px !important;
             gap: 6px !important;
           }
           .mailbox-message-text {
-            font-size: 17px !important;
-            line-height: 1.6 !important;
-            min-height: 60px !important;
+            font-size: 16.5px !important;
+            line-height: 1.55 !important;
+            min-height: 56px !important;
           }
           .mailbox-author-text {
-            font-size: 15px !important;
-            margin-top: 8px !important;
+            font-size: 14.5px !important;
+            margin-top: 6px !important;
           }
           .mailbox-footer {
             margin-top: 14px !important;
-            padding-top: 12px !important;
-            flex-wrap: wrap !important;
+            padding-top: 10px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
             gap: 8px !important;
+            width: 100% !important;
           }
-          .mailbox-footer button {
-            padding: 7px 12px !important;
-            font-size: 12px !important;
+          .mailbox-another-btn {
+            font-size: 11.5px !important;
+            padding: 6px 10px !important;
+            gap: 5px !important;
+            flex: 1 1 auto !important;
+            justify-content: center !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+          }
+          .mailbox-another-btn span {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+          .mailbox-save-group {
+            flex: 1 1 auto !important;
+            justify-content: flex-end !important;
+            min-width: 0 !important;
+            gap: 6px !important;
+          }
+          .mailbox-save-btn {
+            font-size: 11.5px !important;
+            padding: 6px 10px !important;
+            gap: 5px !important;
+            flex: 1 1 auto !important;
+            justify-content: center !important;
+            min-width: 0 !important;
+            box-sizing: border-box !important;
+          }
+          .mailbox-save-btn span {
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
           }
           .mailbox-charging-wrap {
             transform: translate(-50%, -50%) scale(0.82) !important;
@@ -1018,7 +1130,7 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
             {/* Gacha Pull Action Button */}
             <button
               type="button"
-              className="btn line sm gacha-btn-shine"
+              className="btn line sm gacha-btn-shine mailbox-another-btn"
               onClick={handleDraw}
               disabled={gachaPhase === 'charging'}
               style={{
@@ -1037,26 +1149,48 @@ export function MailboxModal({ isOpen, onClose, onSaveToNotebook, notebookItems 
               <span>{language === 'en' ? 'Another message' : 'Lời nhắn khác'}</span>
             </button>
 
-            <span className="row" style={{ gap: '12px', alignItems: 'center' }}>
-              <span className="muted" style={{ fontSize: '13px' }}>
-                {language === 'en' ? `Notebook (${notebookItems.length})` : `Sổ tay (${notebookItems.length})`}
-              </span>
+            <span className="row mailbox-save-group" style={{ gap: '12px', alignItems: 'center' }}>
+              {isAuthenticated && !isGuest && (
+                <span className="muted mailbox-notebook-count" style={{ fontSize: '13px' }}>
+                  {language === 'en' ? `Notebook (${notebookItems.length})` : `Sổ tay (${notebookItems.length})`}
+                </span>
+              )}
               <button
                 type="button"
-                className={`btn ${drawnData?.is_saved ? 'main' : 'line'} sm`}
+                className={`btn ${drawnData?.is_saved ? 'main' : 'line'} sm mailbox-save-btn`}
                 onClick={handleSaveToggle}
                 disabled={gachaPhase === 'charging' || isSaving || !drawnData}
                 style={{
                   padding: '7px 16px',
                   fontWeight: 600,
                   cursor: 'pointer',
+                  opacity: (!isAuthenticated || isGuest) ? 0.72 : 1,
+                  borderStyle: (!isAuthenticated || isGuest) ? 'dashed' : 'solid',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease',
                 }}
+                title={
+                  (!isAuthenticated || isGuest)
+                    ? (language === 'en' ? 'Sign in to save to notebook' : 'Đăng nhập để lưu vào sổ tay')
+                    : ''
+                }
               >
-                <Icon name={drawnData?.is_saved ? 'check' : 'bookmark'} size={15} />
+                <Icon
+                  name={
+                    (!isAuthenticated || isGuest)
+                      ? 'lock'
+                      : (drawnData?.is_saved ? 'check' : 'bookmark')
+                  }
+                  size={15}
+                />
                 <span>
-                  {drawnData?.is_saved
-                    ? (language === 'en' ? 'Saved' : 'Đã lưu')
-                    : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')}
+                  {(!isAuthenticated || isGuest)
+                    ? (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay')
+                    : (drawnData?.is_saved
+                        ? (language === 'en' ? 'Saved' : 'Đã lưu')
+                        : (language === 'en' ? 'Save to notebook' : 'Lưu vào sổ tay'))}
                 </span>
               </button>
             </span>

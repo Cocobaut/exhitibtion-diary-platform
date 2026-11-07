@@ -6,12 +6,29 @@ import { NotebookDustMotes } from './NotebookDustMotes';
 import { notebookService } from '../../services/notebookService';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { HighlightText } from '../../components/common/HighlightText';
 
 // Hiển thị ngày lưu dạng 28/10/2026 thay vì chuỗi ISO thô
 function formatSavedAt(value, language) {
   const d = value ? new Date(value) : null;
   if (!d || Number.isNaN(d.getTime())) return language === 'en' ? 'Recently' : 'Gần đây';
   return d.toLocaleDateString(language === 'en' ? 'en-GB' : 'vi-VN');
+}
+
+function getSourceLabel(item, language) {
+  if (item?.sourceLabel) return item.sourceLabel;
+  if (item?.source === 'mailbox') return language === 'en' ? 'Mailbox' : 'Hòm thư';
+  if (item?.source === 'room1') return language === 'en' ? 'Artwork · Room 1' : 'Tác phẩm · Phòng 1';
+  if (item?.source === 'room3') return language === 'en' ? 'Wish Leaf · Room 3' : 'Chiếc lá nguyện ước · Phòng 3';
+  return language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2';
+}
+
+function getSourceIcon(item) {
+  if (item?.icon) return item.icon;
+  if (item?.source === 'mailbox') return 'sparkle';
+  if (item?.source === 'room1') return 'r1';
+  if (item?.source === 'room3') return 'r3';
+  return 'r2';
 }
 
 export function NotebookPage({
@@ -25,11 +42,11 @@ export function NotebookPage({
   // Hòm thư là lời nhắn ban quản trị soạn sẵn hai thứ tiếng; còn lại là lời gốc của người viết
   const itemText = (it, field) => (it?.source === 'mailbox' ? localize(it, field) : original(it, field));
 
-  const [filter, setFilter] = useState('all'); // 'all', 'mailbox', 'lantern'
+  const [filter, setFilter] = useState('all'); // 'all', 'mailbox', 'lantern', 'room1', 'room3'
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [serverItems, setServerItems] = useState([]);
-  // true khi API sổ tay trả lời thành công (kể cả danh sách rỗng)
+  // true khi API sổ tay đã phản hồi (kể cả rỗng hoặc lỗi)
   const [serverLoaded, setServerLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [readingItem, setReadingItem] = useState(null);
@@ -53,88 +70,130 @@ export function NotebookPage({
     }, 3500);
   };
 
-  // Fetch unified notebook items from backend if user is logged in
+  // 1. Fetch unified notebook items from backend if user is logged in
   const loadNotebook = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setServerLoaded(true);
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await notebookService.getNotebook({
-        source: filter,
+        source: 'all',
         search: debouncedSearch,
         limit: 50,
       });
       const data = res?.data || res;
-      if (data) {
-        if (Array.isArray(data.items)) {
-          const mapped = data.items.map((it) => ({
-            id: it.id,
-            source: it.source,
-            sourceLabel: it.source_label || (it.source === 'mailbox' ? (language === 'en' ? 'Mailbox' : 'Hòm thư') : (language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2')),
-            badgeClass: it.badge_class || (it.source === 'mailbox' ? 'b-ok' : 'b-wait'),
-            icon: it.icon || (it.source === 'mailbox' ? 'sparkle' : 'r2'),
-            title: it.title,
-            title_vi: it.title_vi,
-            title_en: it.title_en,
-            content: it.content,
-            content_vi: it.content_vi,
-            content_en: it.content_en,
-            author: it.author || (language === 'en' ? 'Stranger' : 'Người lạ'),
-            category: it.category,
-            symbol: it.symbol || 'heart',
-            savedAt: formatSavedAt(it.saved_at, language),
-            source_id: it.source_id,
-            artwork_id: it.artwork_id,
-            draw_id: it.draw_id,
-          }));
-          setServerItems(mapped);
-          setServerLoaded(true);
-        }
+      if (data && Array.isArray(data.items)) {
+        const mapped = data.items.map((it) => ({
+          id: it.id,
+          source: it.source,
+          sourceLabel: it.source_label || (
+            it.source === 'mailbox' ? (language === 'en' ? 'Mailbox' : 'Hòm thư') :
+            it.source === 'room1' ? (language === 'en' ? 'Artwork · Room 1' : 'Tác phẩm · Phòng 1') :
+            it.source === 'room3' ? (language === 'en' ? 'Wish Leaf · Room 3' : 'Chiếc lá nguyện ước · Phòng 3') :
+            (language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2')
+          ),
+          badgeClass: it.badge_class || (it.source === 'mailbox' || it.source === 'room1' ? 'b-ok' : 'b-wait'),
+          icon: it.icon || (
+            it.source === 'mailbox' ? 'sparkle' :
+            it.source === 'room1' ? 'r1' :
+            it.source === 'room3' ? 'r3' : 'r2'
+          ),
+          title: it.title,
+          title_vi: it.title_vi,
+          title_en: it.title_en,
+          content: it.content,
+          content_vi: it.content_vi,
+          content_en: it.content_en,
+          author: it.author || (language === 'en' ? 'Stranger' : 'Người lạ'),
+          category: it.category,
+          symbol: it.symbol || 'heart',
+          savedAt: formatSavedAt(it.saved_at, language),
+          source_id: it.source_id,
+          artwork_id: it.artwork_id,
+          draw_id: it.draw_id,
+          media_url: it.media_url,
+        }));
+        setServerItems(mapped);
       }
+      setServerLoaded(true);
     } catch (err) {
       console.warn('Could not load unified notebook from API, using local storage:', err);
+      setServerLoaded(true);
     } finally {
       setIsLoading(false);
     }
-  }, [filter, debouncedSearch, user]);
+  }, [debouncedSearch, user, language]);
 
   useEffect(() => {
     loadNotebook();
   }, [loadNotebook]);
 
-  // Ưu tiên dữ liệu server; chỉ dùng bản lưu cục bộ khi không gọi được API
-  const useServer = Boolean(user && serverLoaded);
-  const activeItems = useServer ? serverItems : notebookItems;
+  // 2. Kết hợp thông minh giữa serverItems và notebookItems:
+  // Luôn bảo toàn các mục người dùng đã lưu trong local storage mà server chưa có hoặc không lưu (ví dụ mock, offline).
+  const activeItems = React.useMemo(() => {
+    if (!serverLoaded) {
+      return notebookItems || [];
+    }
 
-  // Filter client-side if using local items
-  const displayItems = useServer
-    ? serverItems
-    : activeItems.filter((item) => {
-        if (filter === 'mailbox' && item.source !== 'mailbox') return false;
-        if (filter === 'lantern' && item.source !== 'lantern') return false;
-        if (filter === 'room1' && item.source !== 'room1') return false;
-        if (filter === 'room3' && item.source !== 'room3') return false;
+    const merged = [...serverItems];
+    const serverSourceIds = new Set(
+      serverItems.map((it) => it.source_id || it.artwork_id || it.id).filter(Boolean)
+    );
+    const serverContents = new Set(
+      serverItems.map((it) => (it.content || '').trim()).filter(Boolean)
+    );
 
-        if (debouncedSearch) {
-          const term = debouncedSearch.toLowerCase();
-          const matchContent = item.content && item.content.toLowerCase().includes(term);
-          const matchTitle = item.title && item.title.toLowerCase().includes(term);
-          const matchAuthor = item.author && item.author.toLowerCase().includes(term);
-          const matchCategory = item.category && item.category.toLowerCase().includes(term);
-          return matchContent || matchTitle || matchAuthor || matchCategory;
-        }
-        return true;
-      });
+    (notebookItems || []).forEach((localIt) => {
+      const localId = localIt.source_id || localIt.artwork_id || localIt.id;
+      const localContent = (localIt.content || '').trim();
+
+      const alreadyExists =
+        (localId && serverSourceIds.has(localId)) ||
+        (localContent && serverContents.has(localContent));
+
+      if (!alreadyExists) {
+        merged.push(localIt);
+      }
+    });
+
+    return merged;
+  }, [serverLoaded, serverItems, notebookItems]);
+
+  // 3. Lọc danh sách theo filter chip và ô tìm kiếm
+  const displayItems = React.useMemo(() => {
+    return activeItems.filter((item) => {
+      if (filter === 'mailbox' && item.source !== 'mailbox') return false;
+      if (filter === 'lantern' && item.source !== 'lantern') return false;
+      if (filter === 'room1' && item.source !== 'room1') return false;
+      if (filter === 'room3' && item.source !== 'room3') return false;
+
+      if (debouncedSearch) {
+        const term = debouncedSearch.toLowerCase();
+        const matchContent = item.content && item.content.toLowerCase().includes(term);
+        const matchTitle = item.title && item.title.toLowerCase().includes(term);
+        const matchAuthor = item.author && item.author.toLowerCase().includes(term);
+        const matchCategory = item.category && item.category.toLowerCase().includes(term);
+        return matchContent || matchTitle || matchAuthor || matchCategory;
+      }
+      return true;
+    });
+  }, [activeItems, filter, debouncedSearch]);
 
   const handleRemove = async (e, item) => {
     e.stopPropagation();
 
-    // Optimistic removal locally
+    // 1. Gỡ bỏ tức thì trên giao diện và local storage
     if (onRemoveItem) {
-      onRemoveItem(item.id);
+      onRemoveItem(item);
     }
-    setServerItems((prev) => prev.filter((it) => it.id !== item.id));
+    const targetSourceId = item.source_id || item.artwork_id;
+    setServerItems((prev) =>
+      prev.filter((it) => it.id !== item.id && (!targetSourceId || it.source_id !== targetSourceId))
+    );
 
-    // Call service to unsave from backend
+    // 2. Gỡ bỏ trên máy chủ backend
     try {
       await notebookService.removeNotebookItem(item);
     } catch (err) {
@@ -321,8 +380,8 @@ export function NotebookPage({
                   {/* Header: Source badge & Date */}
                   <div className="row between" style={{ marginBottom: '12px' }}>
                     <span className={`badge ${item.badgeClass || 'b-ok'}`}>
-                      <Icon name={item.icon || 'sparkle'} size={13} />
-                      {item.sourceLabel || (item.source === 'mailbox' ? (language === 'en' ? 'Mailbox' : 'Hòm thư') : (language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2'))}
+                      <Icon name={getSourceIcon(item)} size={13} />
+                      {getSourceLabel(item, language)}
                     </span>
                     <span className="muted" style={{ fontSize: '12.5px' }}>
                       {item.savedAt}
@@ -341,7 +400,7 @@ export function NotebookPage({
                         marginBottom: '8px',
                       }}
                     >
-                      {itemText(item, 'title')}
+                      <HighlightText text={itemText(item, 'title')} query={debouncedSearch} />
                     </div>
                   )}
 
@@ -382,7 +441,7 @@ export function NotebookPage({
                       WebkitBoxOrient: 'vertical',
                     }}
                   >
-                    {itemText(item, 'content')}
+                    <HighlightText text={itemText(item, 'content')} query={debouncedSearch} />
                   </div>
 
                   {/* Author & Footer Actions */}
@@ -491,8 +550,8 @@ export function NotebookPage({
 
             <div className="row between" style={{ marginBottom: '14px' }}>
               <span className={`badge ${readingItem.badgeClass || 'b-ok'}`}>
-                <Icon name={readingItem.icon || 'sparkle'} size={13} />
-                {readingItem.sourceLabel || (readingItem.source === 'mailbox' ? (language === 'en' ? 'Mailbox' : 'Hòm thư') : (language === 'en' ? 'Landed lantern · Room 2' : 'Lồng đèn hạ xuống · Phòng 2'))}
+                <Icon name={getSourceIcon(readingItem)} size={13} />
+                {getSourceLabel(readingItem, language)}
               </span>
               <span className="muted" style={{ fontSize: '13px' }}>
                 {readingItem.savedAt}
@@ -510,7 +569,7 @@ export function NotebookPage({
                   margin: '4px 0 14px',
                 }}
               >
-                {itemText(readingItem, 'title')}
+                <HighlightText text={itemText(readingItem, 'title')} query={debouncedSearch} />
               </h2>
             )}
 
@@ -544,7 +603,7 @@ export function NotebookPage({
                 margin: '14px 0 20px',
               }}
             >
-              {itemText(readingItem, 'content')}
+              <HighlightText text={itemText(readingItem, 'content')} query={debouncedSearch} />
             </div>
 
             <div

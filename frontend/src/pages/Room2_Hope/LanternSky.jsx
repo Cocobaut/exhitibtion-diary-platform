@@ -18,6 +18,8 @@ export function SingleLantern({
   isOpened = false,
   isLocked = false,
   activeFilter = 'all',
+  isSearchActive = false,
+  isSearchMatch = false,
   onClick,
   titleText = "Nhấn hoặc kéo xuống để đọc thư",
 }) {
@@ -34,27 +36,33 @@ export function SingleLantern({
   const startXRef = useRef(0);
   const currentDragRef = useRef(0);
 
-  // Filter Match State & Red-Glow Highlight logic
-  const filterState = useMemo(() => {
-    if (!activeFilter || activeFilter === 'all') {
-      return { isMatch: true, isHighlighted: false };
+  // Visual Theme calculation: 'mine' (Red/Burgundy) vs 'all' (Warm Amber/Orange) vs 'dimmed'
+  // Quy tắc người dùng:
+  // - Khi ở tab "tất cả": nếu art thỏa search thì đổi màu đèn thành đèn giống tab "của tôi" (red/crimson). Không xóa đèn khác.
+  // - Khi ở tab "của tôi": đổi màu đèn kết quả search trả về thành màu cam như tab tất cả (amber/orange). Không xóa đèn khác.
+  // - Xóa hết keyword: trả về màu như cũ.
+  const visualTheme = useMemo(() => {
+    if (isSearchActive) {
+      if (activeFilter === 'all') {
+        return isSearchMatch ? 'mine' : 'all';
+      }
+      if (activeFilter === 'mine') {
+        if (isMine) {
+          return isSearchMatch ? 'all' : 'mine';
+        }
+        return 'dimmed';
+      }
     }
+    // Chế độ không tìm kiếm
     if (activeFilter === 'mine') {
-      const match = Boolean(isMine);
-      return { isMatch: match, isHighlighted: match };
+      return isMine ? 'mine' : 'dimmed';
     }
-    if (activeFilter === 'opened') {
-      const match = Boolean(isOpened);
-      return { isMatch: match, isHighlighted: match };
-    }
-    if (activeFilter === 'locked') {
-      const match = Boolean(isLocked);
-      return { isMatch: match, isHighlighted: match };
-    }
-    return { isMatch: true, isHighlighted: false };
-  }, [activeFilter, isMine, isOpened, isLocked]);
+    return 'all';
+  }, [isSearchActive, isSearchMatch, activeFilter, isMine]);
 
-  const { isMatch, isHighlighted } = filterState;
+  const isCrimsonTheme = visualTheme === 'mine';
+  const isAmberSearchMatch = isSearchActive && isSearchMatch && visualTheme === 'all';
+  const isMatch = visualTheme !== 'dimmed';
 
   const handlePointerDown = (e) => {
     if (!isMatch) return;
@@ -116,12 +124,14 @@ export function SingleLantern({
   };
 
   const body =
-    color ||
-    (isHighlighted
+    (isCrimsonTheme
       ? "#FF8585"
-      : isMine
-      ? "#FFF3D6"
-      : ["#FFE3A8", "#FFD9B0", "#FFE7C2", "#F9CFA0"][Math.floor(r() * 4)]);
+      : isAmberSearchMatch
+      ? "#FFD9B0"
+      : color ||
+        (isMine
+          ? "#FFF3D6"
+          : ["#FFE3A8", "#FFD9B0", "#FFE7C2", "#F9CFA0"][Math.floor(r() * 4)]));
 
   const sym = (SYM[lanternKind] ? SYM[lanternKind]() : SYM.star()).map(([a, b]) => [
     a * 11,
@@ -130,10 +140,12 @@ export function SingleLantern({
 
   const currentScale = sc * (
     isDragging
-      ? 1.26
+      ? 1.28
       : isHovered
-      ? 1.18
-      : isHighlighted
+      ? 1.22
+      : isSearchActive && isSearchMatch
+      ? 1.34
+      : isCrimsonTheme
       ? 1.08
       : isMatch
       ? 1
@@ -146,14 +158,18 @@ export function SingleLantern({
   if (!isMatch) {
     computedFilter = 'blur(2.2px) brightness(0.55)';
   } else if (isDragging) {
-    computedFilter = isHighlighted
-      ? 'drop-shadow(0 0 28px rgba(255, 100, 100, 1))'
+    computedFilter = isCrimsonTheme
+      ? 'drop-shadow(0 0 28px rgba(255, 80, 80, 1))'
       : 'drop-shadow(0 0 26px rgba(255, 235, 160, 1))';
   } else if (isHovered) {
-    computedFilter = isHighlighted
+    computedFilter = isCrimsonTheme
       ? 'drop-shadow(0 0 24px rgba(230, 45, 45, 1))'
       : 'drop-shadow(0 0 20px rgba(255, 220, 130, 0.95))';
-  } else if (isHighlighted) {
+  } else if (isSearchActive && isSearchMatch) {
+    computedFilter = isCrimsonTheme
+      ? 'drop-shadow(0 0 26px rgba(245, 45, 45, 1)) drop-shadow(0 0 10px rgba(255, 120, 120, 0.9))'
+      : 'drop-shadow(0 0 26px rgba(255, 175, 45, 1)) drop-shadow(0 0 10px rgba(255, 225, 130, 0.95))';
+  } else if (isCrimsonTheme) {
     // Red Burgundy / Crimson Glow for matching state
     computedFilter = 'drop-shadow(0 0 16px rgba(195, 36, 42, 0.92)) drop-shadow(0 0 6px rgba(255, 95, 95, 0.85))';
   } else if (isMine) {
@@ -164,8 +180,10 @@ export function SingleLantern({
 
   const computedOpacity = !isMatch
     ? 0.22
-    : isDragging || isHovered || isHighlighted
+    : isDragging || isHovered || (isSearchActive && isSearchMatch)
     ? 1
+    : isSearchActive
+    ? 0.72
     : op;
 
   return (
@@ -196,7 +214,7 @@ export function SingleLantern({
           y1={f(y)}
           x2={f(x)}
           y2={f(currentY - 20 * sc)}
-          stroke={isHighlighted ? 'rgba(255, 100, 100, 0.75)' : 'rgba(255, 215, 130, 0.6)'}
+          stroke={isCrimsonTheme ? 'rgba(255, 100, 100, 0.75)' : 'rgba(255, 215, 130, 0.6)'}
           strokeWidth="1.5"
           strokeDasharray="3 3"
         />
@@ -214,11 +232,17 @@ export function SingleLantern({
       >
         <defs>
           <radialGradient id={`g${id}`}>
-            {isHighlighted ? (
+            {isCrimsonTheme ? (
               <>
                 <stop offset="0%" stopColor="#FFF0EB" stopOpacity="0.98" />
                 <stop offset="45%" stopColor="#FF6B6B" stopOpacity="0.55" />
                 <stop offset="100%" stopColor="#B51D24" stopOpacity="0" />
+              </>
+            ) : isAmberSearchMatch ? (
+              <>
+                <stop offset="0%" stopColor="#FFF4D0" stopOpacity="0.98" />
+                <stop offset="45%" stopColor="#FFA64D" stopOpacity="0.65" />
+                <stop offset="100%" stopColor="#D45B00" stopOpacity="0" />
               </>
             ) : (
               <>
@@ -229,11 +253,17 @@ export function SingleLantern({
             )}
           </radialGradient>
           <radialGradient id={`b${id}`} cx=".5" cy=".6">
-            {isHighlighted ? (
+            {isCrimsonTheme ? (
               <>
                 <stop offset="0%" stopColor="#FFF3E8" />
                 <stop offset="60%" stopColor="#D9383E" />
                 <stop offset="100%" stopColor="#871015" />
+              </>
+            ) : isAmberSearchMatch ? (
+              <>
+                <stop offset="0%" stopColor="#FFF6DE" />
+                <stop offset="55%" stopColor="#FFB356" />
+                <stop offset="100%" stopColor="#B84E14" />
               </>
             ) : (
               <>
@@ -250,7 +280,7 @@ export function SingleLantern({
         <path
           d="M-20 -26 Q0 -34 20 -26"
           fill="none"
-          stroke={isHighlighted ? "#8C181D" : "#A85A2E"}
+          stroke={isCrimsonTheme ? "#8C181D" : "#A85A2E"}
           strokeWidth="2"
         />
         <rect
@@ -259,13 +289,13 @@ export function SingleLantern({
           width="16"
           height="5"
           rx="2"
-          fill={isHighlighted ? "#6A0A0E" : "#7A3B1E"}
+          fill={isCrimsonTheme ? "#6A0A0E" : "#7A3B1E"}
           opacity="0.85"
         />
         <path
           d={poly(sym)}
           fill="none"
-          stroke={isHighlighted ? "#FFF0EB" : "#7F1916"}
+          stroke={isCrimsonTheme ? "#FFF0EB" : isAmberSearchMatch ? "#FFF2DD" : "#7F1916"}
           strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -274,11 +304,11 @@ export function SingleLantern({
         {/* Small pull-down arrow visual indicator on hover / drag */}
         {(isHovered || isDragging) && isMatch && (
           <g transform="translate(0, 36)" opacity="0.95">
-            <circle r="9" fill={isHighlighted ? "rgba(70,12,18,0.9)" : "rgba(40,16,20,0.85)"} />
+            <circle r="9" fill={isCrimsonTheme ? "rgba(70,12,18,0.9)" : "rgba(40,16,20,0.85)"} />
             <path
               d="M-4 -2 L0 3 L4 -2"
               fill="none"
-              stroke={isHighlighted ? "#FFD0D0" : "#FFE3A8"}
+              stroke={isCrimsonTheme ? "#FFD0D0" : "#FFE3A8"}
               strokeWidth="1.6"
               strokeLinecap="round"
             />
@@ -305,6 +335,9 @@ export function LanternSky({
   lanterns = [],
   personalLantern = null,
   activeFilter = 'all',
+  matchedLanternIds = new Set(),
+  isSearchActive = false,
+  searchQuery = '',
   onOpenLandedModal,
 }) {
   const compId = useId().replace(/:/g, '');
@@ -387,9 +420,13 @@ export function LanternSky({
         const authorName = item.author_display_name || 'Người gửi ẩn danh';
         const titleText = `${item.title || 'Lồng đèn hy vọng'} — ${authorName} · Kéo xuống hoặc nhấn để đọc`;
 
-        const isMine = Boolean(item.is_mine || item.isMine);
+        const isMine = Boolean(item.is_mine || item.isMine || activeFilter === 'mine');
         const isOpened = Boolean(item.is_opened || item.status === 'OPENED' || item.statusNote?.includes('đã mở'));
         const isLocked = Boolean(item.status === 'LOCKED' || item.status === 'WAITING' || (item.remaining_seconds && item.remaining_seconds > 0) || !item.is_opened);
+
+        const isSearchMatch = isSearchActive && item.id
+          ? (matchedLanternIds?.has ? matchedLanternIds.has(String(item.id)) : false)
+          : false;
 
         items.push(
           <SingleLantern
@@ -404,6 +441,8 @@ export function LanternSky({
             isOpened={isOpened}
             isLocked={isLocked}
             activeFilter={activeFilter}
+            isSearchActive={isSearchActive}
+            isSearchMatch={isSearchMatch}
             titleText={titleText}
             onClick={() => onOpenLandedModal && onOpenLandedModal(item)}
           />
@@ -435,6 +474,10 @@ export function LanternSky({
       const ambientOpened = i % 2 === 0;
       const ambientLocked = i % 2 !== 0;
 
+      const isSearchMatch = isSearchActive && fallbackLetter.id
+        ? (matchedLanternIds?.has ? matchedLanternIds.has(String(fallbackLetter.id)) : false)
+        : false;
+
       items.push(
         <SingleLantern
           key={`ambient_${i}`}
@@ -447,18 +490,52 @@ export function LanternSky({
           isOpened={ambientOpened}
           isLocked={ambientLocked}
           activeFilter={activeFilter}
+          isSearchActive={isSearchActive}
+          isSearchMatch={isSearchMatch}
           titleText={`Lồng đèn hy vọng · Nhấn hoặc kéo xuống để đọc`}
           onClick={() => onOpenLandedModal && onOpenLandedModal(fallbackLetter)}
         />
       );
     }
 
+    // Ensure matched search lanterns are placed on top in SVG order
+    if (isSearchActive) {
+      const normal = [];
+      const matched = [];
+      items.forEach((elem) => {
+        if (elem.props.isSearchMatch) {
+          matched.push(elem);
+        } else {
+          normal.push(elem);
+        }
+      });
+      return [...normal, ...matched];
+    }
+
     return items;
-  }, [lanterns, isLanded, activeFilter, onOpenLandedModal, vbWidth, isCompact, lanternScaleMultiplier]);
+  }, [
+    lanterns,
+    isLanded,
+    activeFilter,
+    matchedLanternIds,
+    isSearchActive,
+    onOpenLandedModal,
+    vbWidth,
+    isCompact,
+    lanternScaleMultiplier,
+  ]);
 
   const personalIsOpened = Boolean(personalLantern?.is_opened);
   const personalIsLocked = Boolean(personalLantern && !personalLantern.is_opened);
   const personalX = isCompact ? Math.round(vbWidth * 0.72) : 1010;
+
+  const activePersonalId = personalLantern?.id || null;
+  const isPersonalSearchMatch = Boolean(
+    isSearchActive &&
+    activePersonalId &&
+    matchedLanternIds?.has &&
+    matchedLanternIds.has(String(activePersonalId))
+  );
 
   return (
     <svg
@@ -480,28 +557,22 @@ export function LanternSky({
       {stars}
       {renderedLanterns}
 
-      {/* User's Own High-flying Personal Lantern */}
-      {!isLanded && (
+      {/* User's Own High-flying Personal Lantern (chỉ hiển thị khi đã đăng nhập và thực sự có lồng đèn cá nhân) */}
+      {!isLanded && Boolean(personalLantern) && (
         <SingleLantern
           x={personalX}
           y={215}
           sc={isCompact ? 0.96 * lanternScaleMultiplier : 0.96}
           seed={4321}
-          kind={personalLantern?.symbol || 'heart'}
-          color="#FFF0D2"
+          kind={personalLantern.symbol || 'heart'}
           isMine={true}
           isOpened={personalIsOpened}
           isLocked={personalIsLocked}
           activeFilter={activeFilter}
-          titleText={
-            personalLantern
-              ? `Lồng đèn của bạn: "${personalLantern.title}" · Nhấn để kéo xuống mở thư`
-              : 'Lồng đèn riêng của bạn · Nhấn để kéo xuống mở thư'
-          }
-          onClick={() =>
-            onOpenLandedModal &&
-            onOpenLandedModal(personalLantern || MOCK_LANTERN_LETTERS[0])
-          }
+          isSearchActive={isSearchActive}
+          isSearchMatch={isPersonalSearchMatch}
+          titleText={`Lồng đèn của bạn: "${personalLantern.title}" · Nhấn để kéo xuống mở thư`}
+          onClick={() => onOpenLandedModal && onOpenLandedModal(personalLantern)}
         />
       )}
 

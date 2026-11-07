@@ -7,10 +7,12 @@ import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
 import { TranslationToggle } from '../../components/common/TranslationToggle';
 import { room3Service, toFrontendCategory, CATEGORY_MAP } from '../../services/room3Service';
+import { HighlightText } from '../../components/common/HighlightText';
 
 export function ReadLeafModal({
   isOpen,
   leafData,
+  searchQuery = '',
   onClose,
   onReactionUpdated,
   onSaveToNotebook,
@@ -304,7 +306,10 @@ export function ReadLeafModal({
         </div>
 
         <h2 style={{ marginTop: '6px', fontSize: '24px' }}>
-          {(leaf ? tr.text('title') : original(currentLeaf, 'title')) || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên')}
+          <HighlightText
+            text={(leaf ? tr.text('title') : original(currentLeaf, 'title')) || (language === 'en' ? 'Encouraging message' : 'Thông điệp động viên')}
+            query={searchQuery}
+          />
         </h2>
 
         {isLoading ? (
@@ -322,9 +327,12 @@ export function ReadLeafModal({
               whiteSpace: 'pre-wrap',
             }}
           >
-            {leaf
-              ? tr.text('content') || tr.text('short_content')
-              : original(currentLeaf, 'content') || original(currentLeaf, 'short_content')}
+            <HighlightText
+              text={leaf
+                ? tr.text('content') || tr.text('short_content')
+                : original(currentLeaf, 'content') || original(currentLeaf, 'short_content')}
+              query={searchQuery}
+            />
           </div>
         )}
         <TranslationToggle

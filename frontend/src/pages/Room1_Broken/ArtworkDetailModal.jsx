@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
 import { TranslationToggle } from '../../components/common/TranslationToggle';
+import { HighlightText } from '../../components/common/HighlightText';
 import { room1Service } from '../../services/room1Service';
 
 export function ArtworkDetailModal({
@@ -250,7 +251,7 @@ export function ArtworkDetailModal({
           </div>
 
           <h2 style={{ fontSize: '34px', marginTop: '6px', color: 'var(--ink)' }}>
-            {title}
+            <HighlightText text={title} />
           </h2>
 
           <div className="row muted" style={{ gap: '14px', margin: '4px 0 16px' }}>
@@ -275,7 +276,7 @@ export function ArtworkDetailModal({
               color: 'var(--ink)',
             }}
           >
-            {isLoading ? (language === 'en' ? 'Loading...' : 'Đang tải...') : story}
+            {isLoading ? (language === 'en' ? 'Loading...' : 'Đang tải...') : <HighlightText text={story} />}
           </div>
           <TranslationToggle
             hasTranslation={tr.hasTranslation}

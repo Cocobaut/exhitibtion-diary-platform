@@ -10,6 +10,7 @@ import { room2Service } from '../../services/room2Service';
 import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { matchesSearchQuery } from '../../utils/searchUtils';
 
 export function Room2Page({
   onOpenNotifications,
@@ -33,8 +34,11 @@ export function Room2Page({
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
   const [lanterns, setLanterns] = useState([]);
+  const [matchedLanternIds, setMatchedLanternIds] = useState(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState({ total_lanterns: 0, total_opened: 0 });
+
+  const isSearchActive = Boolean(debouncedSearch && debouncedSearch.trim().length > 0);
 
   const [personalLantern, setPersonalLantern] = useState(null);
   const [remainingSeconds, setRemainingSeconds] = useState(null);
@@ -43,7 +47,7 @@ export function Room2Page({
 
   const [showReleaseModal, setShowReleaseModal] = useState(false);
   const [showLandedModal, setShowLandedModal] = useState(false);
-  const [selectedLetter, setSelectedLetter] = useState(MOCK_LANTERN_LETTERS[0]);
+  const [selectedLetter, setSelectedLetter] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
   const searchTimerRef = useRef(null);
@@ -65,86 +69,6 @@ export function Room2Page({
     }, 4500);
   };
 
-  // Load lanterns based on filter and search
-  const loadLanterns = useCallback(async () => {
-    if (activeFilter === 'mine' && (isGuest || !user)) {
-      setLanterns([]);
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      if (debouncedSearch) {
-        const res = await room2Service.searchLanterns({
-          q: debouncedSearch,
-          filter: activeFilter,
-          limit: 50,
-        });
-        const data = res?.data || res;
-        const items = data?.items || [];
-        setLanterns(items);
-        if (data?.total !== undefined) {
-          setStats((prev) => ({ ...prev, total_lanterns: data.total }));
-        }
-      } else {
-        const res = await room2Service.getLanterns({
-          filter: activeFilter,
-          limit: 60,
-        });
-        const data = res?.data || res;
-        const items = data?.items || [];
-        setLanterns(items);
-        if (data?.total_lanterns !== undefined) {
-          setStats({
-            total_lanterns: data.total_lanterns,
-            total_opened: data.total_opened ?? 0,
-          });
-        }
-
-        // Silent auto-landing check result (only for authenticated users)
-        if (!isGuest && user && data?.freshly_landed && data.freshly_landed.length > 0) {
-          triggerToast(
-            language === 'en'
-              ? '✦ A future lantern of yours has reached its time and landed gently on the dunes! ✦'
-              : '✦ Một lồng đèn của bạn vừa hạ xuống! ✦'
-          );
-          checkReadyToFall();
-        }
-      }
-    } catch (err) {
-      console.warn('Error loading lanterns from API, using fallback:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [activeFilter, debouncedSearch, isGuest, user, language]);
-
-  // Load personal lantern & countdown widget
-  const loadPersonalLantern = useCallback(async () => {
-    if (isGuest || !user) {
-      setPersonalLantern(null);
-      setRemainingSeconds(null);
-      return;
-    }
-    try {
-      const res = await room2Service.getMyPersonalLantern();
-      const data = res?.data || res;
-      if (data && data.title) {
-        setPersonalLantern(data);
-        if (typeof data.remaining_seconds === 'number') {
-          setRemainingSeconds(Math.max(0, data.remaining_seconds));
-        }
-      } else {
-        setPersonalLantern(null);
-        setRemainingSeconds(null);
-      }
-    } catch (err) {
-      // Unauthenticated or no personal lantern
-      setPersonalLantern(null);
-      setRemainingSeconds(null);
-    }
-  }, [isGuest, user]);
-
   // Check ready-to-fall lanterns for user
   const checkReadyToFall = useCallback(async () => {
     if (isGuest || !user) {
@@ -164,6 +88,140 @@ export function Room2Page({
       // Ignore if not logged in
     }
   }, [isGuest, user]);
+
+  // Load personal lantern & countdown widget
+  const loadPersonalLantern = useCallback(async () => {
+    if (isGuest || !user) {
+      setPersonalLantern(null);
+      setRemainingSeconds(null);
+      return;
+    }
+    try {
+      const res = await room2Service.getMyPersonalLantern();
+      const raw = res?.data || res;
+      const lanternData = raw?.lantern || raw;
+      if (lanternData && (lanternData.title || lanternData.id)) {
+        setPersonalLantern({ ...lanternData, isMine: true });
+        if (typeof lanternData.remaining_seconds === 'number') {
+          setRemainingSeconds(Math.max(0, lanternData.remaining_seconds));
+        }
+      } else {
+        setPersonalLantern(null);
+        setRemainingSeconds(null);
+      }
+    } catch {
+      // Unauthenticated or no personal lantern
+      setPersonalLantern(null);
+      setRemainingSeconds(null);
+    }
+  }, [isGuest, user]);
+
+  // Load base lanterns based on active filter
+  const loadLanterns = useCallback(async () => {
+    if (activeFilter === 'mine' && (isGuest || !user)) {
+      setLanterns([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await room2Service.getLanterns({
+        filter: activeFilter,
+        limit: 60,
+      });
+      const data = res?.data || res;
+      const items = data?.items || [];
+      setLanterns(items);
+      if (data?.total_lanterns !== undefined) {
+        setStats({
+          total_lanterns: data.total_lanterns,
+          total_opened: data.total_opened ?? 0,
+        });
+      }
+
+      // Silent auto-landing check result (only for authenticated users)
+      if (!isGuest && user && data?.freshly_landed && data.freshly_landed.length > 0) {
+        triggerToast(
+          language === 'en'
+            ? '✦ A future lantern of yours has reached its time and landed gently on the dunes! ✦'
+            : '✦ Một lồng đèn của bạn vừa hạ xuống! ✦'
+        );
+        checkReadyToFall();
+      }
+    } catch (err) {
+      console.warn('Error loading lanterns from API, using fallback:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [activeFilter, isGuest, user, language, checkReadyToFall]);
+
+  // Handle dynamic search matching without removing other lanterns from sky
+  useEffect(() => {
+    const q = debouncedSearch.trim();
+    if (!q) {
+      setMatchedLanternIds(new Set());
+      return;
+    }
+
+    let isMounted = true;
+    (async () => {
+      const matched = new Set();
+
+      // 1. Backend search query
+      try {
+        const res = await room2Service.searchLanterns({
+          q,
+          filter: activeFilter,
+          limit: 50,
+        });
+        const data = res?.data || res;
+        const items = data?.items || [];
+        items.forEach((it) => {
+          if (it?.id !== undefined && it?.id !== null) {
+            matched.add(String(it.id));
+          }
+        });
+      } catch (err) {
+        console.warn('Backend lantern search fallback to local match:', err);
+      }
+
+      // 2. Client-side matching across loaded lanterns, personal lantern & mock lanterns
+      const publicMocks = MOCK_LANTERN_LETTERS.filter((m) => !m.isMine);
+      const allCandidates = [
+        ...lanterns,
+        ...(personalLantern ? [personalLantern] : []),
+        ...(isGuest ? publicMocks : MOCK_LANTERN_LETTERS),
+      ];
+
+      allCandidates.forEach((it) => {
+        if (!it) return;
+        const isMatch =
+          matchesSearchQuery(it.title, q) ||
+          matchesSearchQuery(it.title_vi, q) ||
+          matchesSearchQuery(it.title_en, q) ||
+          matchesSearchQuery(it.content, q) ||
+          matchesSearchQuery(it.content_vi, q) ||
+          matchesSearchQuery(it.content_en, q) ||
+          matchesSearchQuery(it.author, q) ||
+          matchesSearchQuery(it.author_vi, q) ||
+          matchesSearchQuery(it.author_en, q) ||
+          matchesSearchQuery(it.author_display_name, q);
+
+        if (isMatch && it.id !== undefined && it.id !== null) {
+          matched.add(String(it.id));
+        }
+      });
+
+      if (isMounted) {
+        setMatchedLanternIds(matched);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedSearch, activeFilter, lanterns, personalLantern]);
 
   // Initial load
   useEffect(() => {
@@ -225,7 +283,7 @@ export function Room2Page({
   };
 
   const handleOpenLantern = (letter) => {
-    setSelectedLetter(letter || MOCK_LANTERN_LETTERS[0]);
+    setSelectedLetter(letter || null);
     setShowLandedModal(true);
   };
 
@@ -271,8 +329,9 @@ export function Room2Page({
       const randomItem = lanterns[Math.floor(Math.random() * lanterns.length)];
       handleOpenLantern(randomItem);
     } else {
+      const publicMocks = MOCK_LANTERN_LETTERS.filter((m) => !m.isMine);
       const randomMock =
-        MOCK_LANTERN_LETTERS[Math.floor(Math.random() * MOCK_LANTERN_LETTERS.length)];
+        publicMocks[Math.floor(Math.random() * publicMocks.length)];
       handleOpenLantern(randomMock);
     }
   };
@@ -294,6 +353,9 @@ export function Room2Page({
         lanterns={lanterns}
         personalLantern={personalLantern}
         activeFilter={activeFilter}
+        matchedLanternIds={matchedLanternIds}
+        isSearchActive={isSearchActive}
+        searchQuery={debouncedSearch}
         onOpenLandedModal={handleOpenLantern}
       />
 
@@ -446,6 +508,7 @@ export function Room2Page({
       <LanternLandedModal
         isOpen={showLandedModal}
         letterData={selectedLetter}
+        searchQuery={debouncedSearch}
         onClose={() => setShowLandedModal(false)}
         onSaveToNotebook={onSaveToNotebook}
         onReactionUpdated={(lanternId, updatedData) => {

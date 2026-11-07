@@ -3,6 +3,7 @@ import { Painting } from '../../components/common/Painting';
 import { ReactionStack, ReactionPicker } from '../../components/common/Reactions';
 import { Icon } from '../../components/common/Icons';
 import { useLanguage } from '../../context/LanguageContext';
+import { HighlightText } from '../../components/common/HighlightText';
 
 export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -45,8 +46,8 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
           </div>
         </div>
         <div className="cap">
-          <h4>{title}</h4>
-          <p>{summary}</p>
+          <h4><HighlightText text={title} /></h4>
+          <p><HighlightText text={summary} /></p>
           <div className="meta">
             <span className="badge b-wait">
               <Icon name="clock" size={13} /> {language === 'en' ? 'Being prepared' : 'Đang được chuẩn bị'}
@@ -70,7 +71,7 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
           <Painting seed={900 + (index || 0)} kind="rain" />
         </div>
         <div className="cap">
-          <h4>{title}</h4>
+          <h4><HighlightText text={title} /></h4>
           <p>
             {language === 'en' ? 'Reason: ' : 'Lý do: '}
             {artwork.rejection_reason || artwork.reason || (language === 'en' ? 'Story does not meet museum guidelines.' : 'câu chuyện chưa phù hợp với tiêu chuẩn bảo tàng.')}
@@ -108,8 +109,8 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction }) {
       </div>
 
       <div className="cap">
-        <h4>{title}</h4>
-        <p>{summary}</p>
+        <h4><HighlightText text={title} /></h4>
+        <p><HighlightText text={summary} /></p>
         <div className="meta">
           <span className="by">{author}</span>
           <span className="row" style={{ gap: '12px' }}>

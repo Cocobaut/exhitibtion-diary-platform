@@ -346,7 +346,7 @@ export function LoginModal({ isOpen, onClose, featureName, onLoginSuccess }) {
             <span>{language === 'en' ? 'Username or Email' : 'Tên đăng nhập hoặc Email'}</span>
           </div>
           <input
-            className="inp focus"
+            className="inp"
             placeholder={language === 'en' ? 'e.g. linh.ng or email@example.com' : 'ví dụ: linh.ng hoặc email@example.com'}
             value={account}
             onChange={(e) => {
@@ -354,7 +354,6 @@ export function LoginModal({ isOpen, onClose, featureName, onLoginSuccess }) {
               setErrorMsg('');
             }}
             disabled={isLoading}
-            autoFocus
             style={{
               width: '100%',
               fontSize: '14.5px',
@@ -403,7 +402,7 @@ export function LoginModal({ isOpen, onClose, featureName, onLoginSuccess }) {
           </div>
 
           <input
-            className="inp focus"
+            className="inp"
             type={showPassword ? 'text' : 'password'}
             placeholder={language === 'en' ? 'Enter your password' : 'Nhập mật khẩu của bạn'}
             value={password}

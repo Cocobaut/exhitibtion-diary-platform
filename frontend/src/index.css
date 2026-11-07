@@ -410,10 +410,27 @@ p {
   gap: 16px;
   z-index: 8;
   pointer-events: none;
+  flex-wrap: nowrap;
 }
 
 .chips-row > * {
   pointer-events: auto;
+}
+
+.r3-action-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.r1-btn-submit,
+.r2-btn-release,
+.r3-btn-draw,
+.r3-btn-hang {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .chips {
@@ -1845,7 +1862,35 @@ table.at td {
     align-items: center !important;
     justify-content: space-between !important;
     gap: 8px !important;
+    flex-wrap: nowrap !important;
+    width: calc(100% - 24px) !important;
+    box-sizing: border-box !important;
     z-index: 25 !important;
+  }
+
+  .r1-btn-submit,
+  .r2-btn-release {
+    padding: 5px 12px !important;
+    font-size: 12px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .r3-action-buttons {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    flex-shrink: 0 !important;
+    gap: 6px !important;
+  }
+
+  .r3-action-buttons .btn,
+  .r3-btn-draw,
+  .r3-btn-hang {
+    padding: 5px 10px !important;
+    font-size: 11.5px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
   }
 
   .diary-timeline-col {
@@ -3153,6 +3198,32 @@ table.at td {
     display: flex !important;
     align-items: center !important;
     flex: 0 1 auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  .r1-btn-submit,
+  .r2-btn-release {
+    padding: 7px 16px !important;
+    font-size: 13px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .r3-action-buttons {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    flex-shrink: 0 !important;
+    gap: 8px !important;
+  }
+
+  .r3-action-buttons .btn,
+  .r3-btn-draw,
+  .r3-btn-hang {
+    padding: 7px 14px !important;
+    font-size: 13px !important;
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
   }
 
   /* 5. Diary: Ẩn cột đọc riêng biệt trên tablet/mobile, hiển thị list dưới toolbar All entries */
@@ -3660,6 +3731,42 @@ table.at td {
   }
 }
 
+/* ==========================================================================
+   Search Keyword Highlight Styling
+   ========================================================================== */
+.search-keyword-highlight,
+mark.search-keyword-highlight {
+  background: rgba(230, 194, 128, 0.42) !important;
+  color: inherit !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid var(--gold, #E6C280) !important;
+  box-shadow: 0 0 8px rgba(230, 194, 128, 0.25) !important;
+  display: inline !important;
+}
+
+/* Light paper / card backgrounds */
+.work .search-keyword-highlight,
+.notebook-polaroid-card .search-keyword-highlight,
+.wax-seal-modal .search-keyword-highlight,
+.leaf-modal-paper .search-keyword-highlight,
+.dialog .search-keyword-highlight,
+.modal .search-keyword-highlight {
+  background: rgba(245, 197, 66, 0.38) !important;
+  color: #2C1810 !important;
+  border-bottom: 2px solid #C99A3B !important;
+}
+
+/* Dark surfaces (Night/Dusk theme, Stage) */
+.stage .search-keyword-highlight,
+.screen[data-theme='night'] .search-keyword-highlight,
+.screen[data-theme='dusk'] .search-keyword-highlight {
+  background: rgba(230, 194, 128, 0.35) !important;
+  color: #FFF2D6 !important;
+}
+
 /* -------------------------------------------------------------
    3. MOBILE STYLING (max-width: 768px)
    ------------------------------------------------------------- */
@@ -3755,39 +3862,110 @@ table.at td {
     font-size: 19px !important;
   }
 
-  /* Sub-header row: Cách xa thanh Top bằng margin-top, không bao giờ bị search/bell đè lên */
+  /* Sub-header row: Căn ngang 1 dòng tuyệt đối, KHÔNG BAO GIỜ xuống dòng (nowrap) */
   .chips-row {
     position: relative !important;
     left: auto !important;
     right: auto !important;
     top: auto !important;
-    margin-top: 10px !important;
-    padding: 0 16px 12px !important;
+    margin-top: 8px !important;
+    padding: 0 14px 10px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     gap: 8px !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    overflow-x: visible !important;
   }
 
   .mobile-filter-wrapper {
     display: flex !important;
     align-items: center !important;
     gap: 8px !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
+    flex-shrink: 0 !important;
   }
 
   .custom-filter-chip-btn {
-    padding: 6px 12px !important;
-    font-size: 12px !important;
+    padding: 6px 11px !important;
+    font-size: clamp(11px, 3vw, 12.5px) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .r1-btn-submit,
+  .r2-btn-release {
+    padding: 6px 13px !important;
+    font-size: clamp(11.5px, 3.2vw, 13px) !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    border-radius: 999px !important;
+  }
+
+  .r3-action-buttons {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    flex-shrink: 0 !important;
+    gap: clamp(4px, 1.2vw, 8px) !important;
+  }
+
+  .r3-action-buttons .btn,
+  .r3-btn-draw,
+  .r3-btn-hang {
+    padding: 6px 11px !important;
+    font-size: clamp(11px, 2.8vw, 12.5px) !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    border-radius: 999px !important;
+    gap: 5px !important;
+  }
+
+  .r3-btn-draw svg {
+    width: 14px !important;
+    height: 14px !important;
   }
 
   .diary-btn-write {
     padding: 6px 14px !important;
     font-size: 12px !important;
     white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  @media (max-width: 380px) {
+    .chips-row {
+      padding: 0 8px 8px !important;
+      gap: 5px !important;
+    }
+    .custom-filter-chip-btn {
+      padding: 5px 8px !important;
+      font-size: 10.5px !important;
+    }
+    .r1-btn-submit,
+    .r2-btn-release {
+      padding: 5px 10px !important;
+      font-size: 11px !important;
+    }
+    .r3-action-buttons {
+      gap: 4px !important;
+    }
+    .r3-action-buttons .btn,
+    .r3-btn-draw,
+    .r3-btn-hang {
+      padding: 5px 7px !important;
+      font-size: 10.5px !important;
+      gap: 3px !important;
+    }
+    .r3-btn-draw svg {
+      width: 12px !important;
+      height: 12px !important;
+    }
   }
 
   .chips {
@@ -4729,4 +4907,40 @@ table.at td {
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
   }
+}
+
+/* ==========================================================================
+   Search Keyword Highlight Styling
+   ========================================================================== */
+.search-keyword-highlight,
+mark.search-keyword-highlight {
+  background: rgba(230, 194, 128, 0.42) !important;
+  color: inherit !important;
+  font-style: normal !important;
+  font-weight: 600 !important;
+  padding: 1px 4px !important;
+  border-radius: 4px !important;
+  border-bottom: 2px solid var(--gold, #E6C280) !important;
+  box-shadow: 0 0 8px rgba(230, 194, 128, 0.25) !important;
+  display: inline !important;
+}
+
+/* Light paper / card backgrounds */
+.work .search-keyword-highlight,
+.notebook-polaroid-card .search-keyword-highlight,
+.wax-seal-modal .search-keyword-highlight,
+.leaf-modal-paper .search-keyword-highlight,
+.dialog .search-keyword-highlight,
+.modal .search-keyword-highlight {
+  background: rgba(245, 197, 66, 0.38) !important;
+  color: #2C1810 !important;
+  border-bottom: 2px solid #C99A3B !important;
+}
+
+/* Dark surfaces (Night/Dusk theme, Stage) */
+.stage .search-keyword-highlight,
+.screen[data-theme='night'] .search-keyword-highlight,
+.screen[data-theme='dusk'] .search-keyword-highlight {
+  background: rgba(230, 194, 128, 0.35) !important;
+  color: #FFF2D6 !important;
 }

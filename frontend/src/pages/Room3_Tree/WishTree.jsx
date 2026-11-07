@@ -31,6 +31,9 @@ export const WishTree = forwardRef(function WishTree(
   {
     leaves = [],
     filterCategory,
+    matchedLeafIds = new Set(),
+    isSearchActive = false,
+    searchQuery = '',
     hoveredLeaf,
     onHoverLeaf,
     onOpenLeafModal,
@@ -273,20 +276,49 @@ export const WishTree = forwardRef(function WishTree(
       const l = 19 + leafR() * 6; // Visible natural size
       const isHovered = hoveredLeaf?.id && hoveredLeaf.id === item.id;
 
+      const isSearchMatch = isSearchActive && item.id
+        ? (matchedLeafIds?.has ? matchedLeafIds.has(String(item.id)) : false)
+        : false;
+
+      // Opacity & emphasis calculation
+      let leafOpacity = 1;
+      let leafScaleMultiplier = 1;
+      let computedFilter = 'drop-shadow(0 2px 5px rgba(0,0,0,0.22))';
+      let leafStroke = isHovered ? '#FFFFFF' : 'rgba(255,255,255,0.4)';
+      let leafStrokeWidth = isHovered ? 2.4 : 0.8;
+
+      if (dim) {
+        leafOpacity = 0.12;
+        computedFilter = 'blur(1.6px) grayscale(0.5)';
+      } else if (isSearchActive) {
+        if (isSearchMatch) {
+          // Phóng to & nổi bật rực rỡ
+          leafOpacity = 1;
+          leafScaleMultiplier = 1.75;
+          leafStroke = '#FFFFFF';
+          leafStrokeWidth = 2.8;
+          computedFilter = 'drop-shadow(0 0 16px rgba(255, 235, 140, 1)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.95))';
+        } else {
+          // Giữ nguyên các lá khác, không xóa, chỉ mờ nhẹ
+          leafOpacity = 0.32;
+          leafScaleMultiplier = 1;
+          computedFilter = 'blur(1px) opacity(0.85)';
+        }
+      } else if (isHovered) {
+        computedFilter = 'drop-shadow(0 0 14px rgba(255,245,210,1))';
+      }
+
       list.push(
         <g
           key={item.id || `leaf_${idx}`}
-          transform={`translate(${f(x)} ${f(y)}) rotate(${f(leafR() * 360)})`}
-          opacity={dim ? 0.12 : 1}
+          data-search-match={isSearchMatch}
+          transform={`translate(${f(x)} ${f(y)}) scale(${f(leafScaleMultiplier)}) rotate(${f(leafR() * 360)})`}
+          opacity={leafOpacity}
           style={{
             cursor: dim ? 'default' : 'pointer',
             pointerEvents: dim ? 'none' : 'auto',
-            filter: dim
-              ? 'blur(1.6px) grayscale(0.5)'
-              : isHovered
-              ? 'drop-shadow(0 0 14px rgba(255,245,210,1))'
-              : 'drop-shadow(0 2px 5px rgba(0,0,0,0.22))',
-            transition: 'opacity 0.3s ease, filter 0.3s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            filter: computedFilter,
+            transition: 'opacity 0.35s ease, filter 0.35s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
           }}
           className="group"
           onMouseEnter={() => {
@@ -326,8 +358,8 @@ export const WishTree = forwardRef(function WishTree(
             style={{
               animationDelay: `-${f(leafR() * 5)}s`,
               animationDuration: `${f(4 + leafR() * 3)}s`,
-              stroke: isHovered ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
-              strokeWidth: isHovered ? 2.4 : 0.8,
+              stroke: leafStroke,
+              strokeWidth: leafStrokeWidth,
             }}
             d={leafPath(l, l * 0.42)}
             fill={`url(#${id}${catKey})`}
@@ -343,8 +375,32 @@ export const WishTree = forwardRef(function WishTree(
       );
     });
 
+    if (isSearchActive) {
+      const normalLeaves = [];
+      const matchedLeaves = [];
+      list.forEach((elem) => {
+        if (elem.props['data-search-match']) {
+          matchedLeaves.push(elem);
+        } else {
+          normalLeaves.push(elem);
+        }
+      });
+      return [...normalLeaves, ...matchedLeaves];
+    }
+
     return list;
-  }, [leaves, filterCategory, hoveredLeaf, tips, id, onHoverLeaf, onOpenLeafModal, language]);
+  }, [
+    leaves,
+    filterCategory,
+    matchedLeafIds,
+    isSearchActive,
+    hoveredLeaf,
+    tips,
+    id,
+    onHoverLeaf,
+    onOpenLeafModal,
+    language,
+  ]);
 
   // Sturdy root buttresses resting safely on the ground line
   const roots = (

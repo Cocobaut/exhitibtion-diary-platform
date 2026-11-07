@@ -145,7 +145,6 @@ export function RegisterModal({ isOpen, onClose, onSuccess, onSwitchToLogin }) {
             value={formData.username}
             onChange={(e) => handleChange('username', e.target.value)}
             disabled={isLoading}
-            autoFocus
           />
         </div>
 

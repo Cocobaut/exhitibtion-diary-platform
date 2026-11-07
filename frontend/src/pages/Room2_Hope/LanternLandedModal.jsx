@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useGuestGuard } from '../../context/GuestGuardContext';
 import { useLanguage, useTranslationToggle } from '../../context/LanguageContext';
 import { TranslationToggle } from '../../components/common/TranslationToggle';
+import { HighlightText } from '../../components/common/HighlightText';
 
 export function LanternLandedModal({
   isOpen,
@@ -15,6 +16,7 @@ export function LanternLandedModal({
   onReplyFuture,
   onReactionUpdated,
   letterData,
+  searchQuery = '',
 }) {
   const { isGuest, isAuthenticated } = useAuth();
   const { guardAction } = useGuestGuard();
@@ -309,7 +311,10 @@ export function LanternLandedModal({
             fontWeight: 700,
           }}
         >
-          {letter ? tr.text('title') : original(currentLetter, 'title')}
+          <HighlightText
+            text={letter ? tr.text('title') : original(currentLetter, 'title')}
+            query={searchQuery}
+          />
         </div>
 
         {isLoading ? (
@@ -326,7 +331,10 @@ export function LanternLandedModal({
               color: '#3A2016',
             }}
           >
-            {letter ? tr.text('content') : original(currentLetter, 'content')}
+            <HighlightText
+              text={letter ? tr.text('content') : original(currentLetter, 'content')}
+              query={searchQuery}
+            />
           </div>
         )}
         <TranslationToggle

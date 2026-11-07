@@ -206,7 +206,6 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
             value={formData.username}
             onChange={(e) => handleChange('username', e.target.value)}
             disabled={isLoading || isVerified}
-            autoFocus={!isVerified}
           />
         </div>
 
@@ -247,7 +246,6 @@ export function ForgotPasswordModal({ isOpen, onClose, onSuccess, onSwitchToLogi
                 value={formData.new_password}
                 onChange={(e) => handleChange('new_password', e.target.value)}
                 disabled={isLoading || (successMsg && successMsg.includes('Đổi mật khẩu thành công'))}
-                autoFocus
               />
               {fieldErrors.new_password && (
                 <div style={{ color: 'var(--acc)', fontSize: '12px', marginTop: '4px' }}>

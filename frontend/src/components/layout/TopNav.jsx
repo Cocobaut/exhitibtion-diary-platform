@@ -87,12 +87,6 @@ export function TopNav({
             placeholder={searchPlaceholder}
             value={searchValue}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (isGuest || !isAuthenticated)) {
-                e.preventDefault();
-                openLoginModal(language === 'en' ? 'search exhibition items' : 'tìm kiếm nội dung triển lãm');
-              }
-            }}
           />
         </div>
       )}
