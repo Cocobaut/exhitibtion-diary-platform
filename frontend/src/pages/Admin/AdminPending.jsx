@@ -181,6 +181,11 @@ export function AdminPending({
       const url = res?.media_url || res?.data?.media_url;
       if (url) {
         setMediaUrl(url);
+        setValidationErrors((prev) => {
+          const next = { ...prev };
+          delete next.mediaUrl;
+          return next;
+        });
         if (triggerToast) {
           triggerToast(
             language === 'en'
@@ -204,6 +209,9 @@ export function AdminPending({
       }
     } finally {
       setIsUploadingImage(false);
+      if (e?.target) {
+        e.target.value = '';
+      }
     }
   };
 
@@ -1078,18 +1086,31 @@ export function AdminPending({
               )}
             </div>
 
-            <div className="row" style={{ gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="btn line sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingImage || imagePromptModalOpen}
+            <div className="row" style={{ gap: '8px', marginTop: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <label
+                className={`btn line sm ${isUploadingImage || imagePromptModalOpen ? 'disabled' : ''}`}
+                style={{
+                  cursor: isUploadingImage || imagePromptModalOpen ? 'not-allowed' : 'pointer',
+                  margin: 0,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  opacity: isUploadingImage || imagePromptModalOpen ? 0.6 : 1,
+                }}
               >
                 <Icon name="upload" size={15} />{' '}
                 {isUploadingImage
                   ? (language === 'en' ? 'Uploading...' : 'Đang tải...')
                   : (language === 'en' ? 'Upload different image' : 'Tải ảnh khác')}
-              </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  accept="image/png,image/jpeg,image/webp,image/jpg"
+                  disabled={isUploadingImage || imagePromptModalOpen}
+                  onChange={handleImageUpload}
+                />
+              </label>
               <button
                 type="button"
                 className="btn line sm"
@@ -1104,6 +1125,16 @@ export function AdminPending({
               >
                 {language === 'en' ? 'AI Generate Image' : 'Tạo ảnh bằng AI'}
               </button>
+              {mediaUrl && (
+                <button
+                  type="button"
+                  className="btn ghost sm"
+                  style={{ color: '#C44B2B' }}
+                  onClick={() => setMediaUrl('')}
+                >
+                  {language === 'en' ? 'Remove Image' : 'Xóa ảnh'}
+                </button>
+              )}
             </div>
             {validationErrors.mediaUrl && (
               <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '6px' }}>

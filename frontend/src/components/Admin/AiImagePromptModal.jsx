@@ -56,6 +56,8 @@ export function AiImagePromptModal({ isOpen, onClose, artId, roomId, initialFiel
   const [prompts, setPrompts] = useState({ vi: '', en: '' });
   const [activeLang, setActiveLang] = useState('vi');
   const [copied, setCopied] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState(null);
+  const [generatedData, setGeneratedData] = useState(null);
 
   // Reset mỗi lần mở modal với nội dung gốc mới nhất từ form duyệt bài
   useEffect(() => {
@@ -66,6 +68,8 @@ export function AiImagePromptModal({ isOpen, onClose, artId, roomId, initialFiel
     setPrompts({ vi: '', en: '' });
     setActiveLang(isEn ? 'en' : 'vi');
     setCopied(false);
+    setGeneratedImage(null);
+    setGeneratedData(null);
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isOpen) return null;
@@ -124,21 +128,30 @@ export function AiImagePromptModal({ isOpen, onClose, artId, roomId, initialFiel
       });
       const data = res?.data || res;
       if (data?.image_url) {
-        onImageGenerated && onImageGenerated(data.image_url);
-        notify(
-          data.is_fallback_art
-            ? (isEn
-              ? 'Image API failed – a placeholder illustration was used. You can copy the prompt and use Gemini instead.'
-              : 'API sinh ảnh lỗi – đang dùng ảnh minh họa tạm. Bạn có thể Copy prompt và tự tạo bằng Gemini.')
-            : (isEn ? '✦ AI image generated successfully.' : '✦ Đã tạo ảnh bằng AI thành công.')
-        );
-        onClose();
+        setGeneratedImage(data.image_url);
+        setGeneratedData(data);
+        setStep(3); // Bước 3: Xem trước và người dùng bấm Xác nhận thì mới upload/áp dụng vào tác phẩm
+      } else {
+        notify(isEn ? 'No image returned from AI service.' : 'Dịch vụ AI không trả về ảnh.');
       }
     } catch (err) {
       notify(`[AI Image] ${errMsgOf(err, isEn ? 'Image generation failed.' : 'Tạo ảnh không thành công.')}`);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleConfirmImage = () => {
+    if (!generatedImage) return;
+    onImageGenerated && onImageGenerated(generatedImage);
+    notify(
+      generatedData?.is_fallback_art
+        ? (isEn
+          ? 'Placeholder illustration applied to artwork. You can still copy the prompt and generate with Gemini.'
+          : 'Đã áp dụng ảnh minh họa tạm vào tác phẩm. Bạn vẫn có thể copy prompt để tự vẽ với Gemini.')
+        : (isEn ? '✦ Confirmed and applied AI image to artwork!' : '✦ Đã xác nhận và áp dụng ảnh AI vào tác phẩm!')
+    );
+    onClose();
   };
 
   const sectionLabel = { fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '6px' };
@@ -194,21 +207,27 @@ export function AiImagePromptModal({ isOpen, onClose, artId, roomId, initialFiel
         {/* Header */}
         <div style={{ marginBottom: '14px', flexShrink: 0, paddingRight: '28px' }}>
           <div style={{ fontSize: '11px', letterSpacing: '.2em', fontWeight: 600, color: 'var(--acc)', textTransform: 'uppercase', marginBottom: '4px' }}>
-            {isEn ? `AI IMAGE · STEP ${step}/2` : `TẠO ẢNH BẰNG AI · BƯỚC ${step}/2`}
+            {isEn ? `AI IMAGE · STEP ${step}/3` : `TẠO ẢNH BẰNG AI · BƯỚC ${step}/3`}
           </div>
           <h2 className="serif" style={{ fontSize: '24px', margin: 0, fontWeight: 600 }}>
             {step === 1
               ? (isEn ? 'Detailed content for the image' : 'Nội dung chi tiết cần tạo ảnh')
-              : (isEn ? 'Confirm image content' : 'Xác nhận nội dung ảnh cần tạo')}
+              : step === 2
+                ? (isEn ? 'Confirm image prompt' : 'Xác nhận câu lệnh (prompt) tạo ảnh')
+                : (isEn ? 'Preview & Confirm generated image' : 'Xem trước & Xác nhận ảnh do AI sinh')}
           </h2>
           <div className="muted" style={{ fontSize: '13px', marginTop: '6px', lineHeight: 1.5 }}>
             {step === 1
               ? (isEn
                 ? 'Edit the content below. AI will only rearrange it and add connecting words into a complete prompt – no new details are invented.'
                 : 'Chỉnh sửa nội dung bên dưới. AI chỉ sắp xếp lại và thêm từ đệm để thành một câu prompt hoàn chỉnh – không bịa thêm chi tiết.')
-              : (isEn
-                ? 'You can still edit the prompt. Copy it to use your own Gemini, or generate directly with the configured image API.'
-                : 'Bạn vẫn có thể chỉnh sửa prompt. Bấm Copy để tự tạo bằng Gemini cá nhân, hoặc Tạo ảnh bằng AI để gọi API sinh ảnh.')}
+              : step === 2
+                ? (isEn
+                  ? 'You can still edit the prompt. Copy it to use your own Gemini, or generate directly with the configured image API.'
+                  : 'Bạn vẫn có thể chỉnh sửa prompt. Bấm Copy để tự tạo bằng Gemini cá nhân, hoặc Tạo ảnh bằng AI để gọi API sinh ảnh.')
+                : (isEn
+                  ? 'Review the generated artwork below. Click "Confirm & Use this Image" to apply it, or go back to adjust the prompt and regenerate.'
+                  : 'Kiểm tra ảnh minh họa nghệ thuật do AI vừa sinh. Bấm "Xác nhận áp dụng ảnh" để đưa vào tác phẩm, hoặc quay lại để chỉnh sửa prompt và tạo lại.')}
           </div>
         </div>
 
@@ -314,6 +333,59 @@ export function AiImagePromptModal({ isOpen, onClose, artId, roomId, initialFiel
               )}
             </>
           )}
+
+          {step === 3 && generatedImage && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div
+                style={{
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  border: '1px solid var(--line)',
+                  background: '#1A1815',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  maxHeight: '340px',
+                  minHeight: '220px',
+                  padding: '8px',
+                }}
+              >
+                <img
+                  src={generatedImage}
+                  alt="AI Generated Artwork"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '320px',
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                    display: 'block',
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  fontSize: '13px',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
+                  lineHeight: 1.5,
+                  background: generatedData?.is_fallback_art ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                  border: `1px solid ${generatedData?.is_fallback_art ? 'rgba(245, 158, 11, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
+                  color: 'var(--ink)',
+                }}
+              >
+                {generatedData?.is_fallback_art ? (
+                  isEn
+                    ? 'ⓘ AI Image API is currently offline – an aesthetic artistic placeholder was generated. You can still confirm it, copy the prompt to use your personal Gemini, or upload your own file from your computer.'
+                    : 'ⓘ API sinh ảnh trực tiếp chưa phản hồi – hệ thống đã tạo tranh minh họa nghệ thuật dự phòng. Bạn có thể xác nhận dùng, copy prompt để tự tạo bằng Gemini hoặc tải ảnh từ máy tính.'
+                ) : (
+                  isEn
+                    ? '✓ AI image generated successfully! Please review the artwork above. Click "Confirm & Use this Image" to apply it to the artwork, or go back to adjust the prompt.'
+                    : '✓ AI đã sinh tranh minh họa thành công theo đúng nội dung bạn đã xác nhận! Vui lòng xem tranh ở trên. Bấm "Xác nhận áp dụng ảnh" để đưa vào tác phẩm, hoặc quay lại để điều chỉnh prompt.'
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -329,7 +401,7 @@ export function AiImagePromptModal({ isOpen, onClose, artId, roomId, initialFiel
             flexShrink: 0,
           }}
         >
-          {step === 1 ? (
+          {step === 1 && (
             <>
               <button type="button" className="btn line" onClick={onClose} disabled={busy} style={{ padding: '8px 18px', fontSize: '14px' }}>
                 {isEn ? 'Cancel' : 'Hủy'}
@@ -338,7 +410,9 @@ export function AiImagePromptModal({ isOpen, onClose, artId, roomId, initialFiel
                 {isBuilding ? (isEn ? 'Building prompt...' : 'Đang soạn prompt...') : (isEn ? 'Continue → Build prompt' : 'Tiếp tục → Soạn prompt')}
               </button>
             </>
-          ) : (
+          )}
+
+          {step === 2 && (
             <>
               <button type="button" className="btn line" onClick={() => setStep(1)} disabled={busy} style={{ padding: '8px 18px', fontSize: '14px', marginRight: 'auto' }}>
                 {isEn ? '← Back' : '← Quay lại'}
@@ -355,6 +429,38 @@ export function AiImagePromptModal({ isOpen, onClose, artId, roomId, initialFiel
                 style={{ ...accentBtn, opacity: promptData?.image_gen_available ? 1 : 0.5 }}
               >
                 {isGenerating ? (isEn ? 'Generating...' : 'Đang tạo ảnh...') : (isEn ? 'Generate image with AI' : 'Tạo ảnh bằng AI')}
+              </button>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <button
+                type="button"
+                className="btn line"
+                onClick={() => setStep(2)}
+                disabled={busy}
+                style={{ padding: '8px 18px', fontSize: '14px', marginRight: 'auto' }}
+              >
+                {isEn ? '← Back / Regenerate' : '← Quay lại / Sửa prompt'}
+              </button>
+              <button
+                type="button"
+                className="btn line"
+                onClick={onClose}
+                disabled={busy}
+                style={{ padding: '8px 18px', fontSize: '14px' }}
+              >
+                {isEn ? 'Cancel' : 'Hủy'}
+              </button>
+              <button
+                type="button"
+                className="btn main"
+                onClick={handleConfirmImage}
+                disabled={busy || !generatedImage}
+                style={accentBtn}
+              >
+                {isEn ? '✦ Confirm & Use this Image' : '✦ Xác nhận áp dụng ảnh'}
               </button>
             </>
           )}
