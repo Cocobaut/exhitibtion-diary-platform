@@ -57,6 +57,10 @@ diary_create_limiter = SlidingWindowLimiter(max_hits=20, window_seconds=10 * 60)
 # Tải ảnh (avatar, ảnh nhật ký): 30 lần / giờ cho mỗi người dùng, tránh làm đầy ổ đĩa
 upload_limiter = SlidingWindowLimiter(max_hits=30, window_seconds=60 * 60)
 
+# AI Copilot của Admin: mỗi Admin 20 lượt / phút cho mỗi loại việc, riêng sinh ảnh 8 lượt / phút (tốn tiền nhất)
+admin_ai_limiter = SlidingWindowLimiter(max_hits=20, window_seconds=60)
+admin_ai_image_limiter = SlidingWindowLimiter(max_hits=8, window_seconds=60)
+
 ALL_LIMITERS = (
     login_account_limiter,
     login_ip_limiter,
@@ -65,6 +69,8 @@ ALL_LIMITERS = (
     register_ip_limiter,
     diary_create_limiter,
     upload_limiter,
+    admin_ai_limiter,
+    admin_ai_image_limiter,
 )
 
 

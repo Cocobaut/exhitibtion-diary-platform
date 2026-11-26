@@ -3,20 +3,19 @@ Validates:
 1. Rule Suppression Bug Fix: Rule violations (PII, profanity) are never discarded even if LLM reports 100 score.
 2. Stored XSS Mitigation: SVG sanitizer strips <script>, <foreignObject>, on*, and javascript: URIs.
 3. SSRF Protection: validate_safe_base_url blocks localhost, 127.0.0.1, 169.254.169.254, RFC 1918 private IPs.
-4. Admin AI Rate Limiting: enforce_admin_ai_rate_limit returns 429 when quota is exceeded within 60s.
+4. Admin AI Rate Limiting: the shared admin AI limiter returns 429 when quota is exceeded within 60s.
 5. Bidirectional Room Appropriateness: Room 1, 2, and 3 validation for emotional alignment.
 """
 
 import pytest
 from unittest.mock import patch, AsyncMock
-from fastapi import HTTPException
 
 from app.core.exceptions import AppException
 from app.core.security import validate_safe_base_url
 from app.schemas.ai_copilot import ModerateArtRequest
 from app.services.ai_image_service import AiImageService
 from app.services.ai_moderation_service import AiModerationService
-from app.api.v1.endpoints.admin_ai import enforce_admin_ai_rate_limit, _admin_ai_request_log
+from app.core.rate_limit import admin_ai_image_limiter, enforce_limit
 
 
 # ==============================================================================
@@ -164,23 +163,15 @@ def test_ssrf_validator_blocks_internal_and_cloud_metadata():
 # ==============================================================================
 
 def test_admin_ai_rate_limiter_enforces_threshold():
-    """Rate limiter must allow calls under limit and raise 429 when threshold exceeded."""
-    admin_id = "test-admin-uuid-123"
-    action = "generate_image_test"
+    """Sinh ảnh: 8 lượt / phút cho mỗi Admin, lượt thứ 9 bị chặn 429; Admin khác không bị ảnh hưởng."""
+    for _ in range(8):
+        enforce_limit(admin_ai_image_limiter, "admin-a:sinh ảnh", "chậm lại")
 
-    # Reset log for test
-    _admin_ai_request_log[f"{admin_id}:{action}"] = []
-
-    # Max 3 requests allowed
-    enforce_admin_ai_rate_limit(admin_id, action, max_requests=3, window_seconds=60)
-    enforce_admin_ai_rate_limit(admin_id, action, max_requests=3, window_seconds=60)
-    enforce_admin_ai_rate_limit(admin_id, action, max_requests=3, window_seconds=60)
-
-    # 4th request must be rejected with 429
-    with pytest.raises(HTTPException) as exc:
-        enforce_admin_ai_rate_limit(admin_id, action, max_requests=3, window_seconds=60)
+    with pytest.raises(AppException) as exc:
+        enforce_limit(admin_ai_image_limiter, "admin-a:sinh ảnh", "chậm lại")
     assert exc.value.status_code == 429
-    assert "Tần suất yêu cầu quá nhanh" in str(exc.value.detail)
+
+    enforce_limit(admin_ai_image_limiter, "admin-b:sinh ảnh", "chậm lại")
 
 
 # ==============================================================================

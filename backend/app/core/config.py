@@ -49,7 +49,6 @@ class Settings(BaseSettings):
     FRONTEND_RESET_URL: str = "http://localhost:3000/"
 
     # File Upload & Storage
-    STORAGE_BACKEND: str = "local"  # "local" or "s3"
     UPLOAD_DIR: str = "uploads"
     PUBLIC_BASE_URL: str = "http://localhost:8000"
 

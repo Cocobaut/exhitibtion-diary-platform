@@ -8,7 +8,7 @@ Hệ thống Backend RESTful API phục vụ module **Quản lý Người dùng 
 
 - **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12+)
 - **Database**: PostgreSQL 16 (Hỗ trợ AsyncIO driver `asyncpg`)
-- **ORM**: SQLAlchemy 2.0 (Async Session) & Alembic (Database Migrations)
+- **ORM**: SQLAlchemy 2.0 (Async Session); cấu trúc DB nằm trong `database/01_schema.sql`
 - **Data Validation & Settings**: Pydantic v2 & Pydantic-Settings
 - **Bảo mật & Xác thực**:
   - Mã hóa mật khẩu: `bcrypt`
@@ -43,10 +43,6 @@ backend/
 │   ├── services/                 # Business Logic Layer
 │   │   └── user_service.py       # Logic xác thực, CRUD tài khoản, seed admin
 │   └── main.py                   # Điểm khởi chạy FastAPI, cấu hình CORS, Lifespan auto-seed
-├── alembic/                      # Quản lý database migrations
-│   ├── env.py
-│   └── versions/
-├── alembic.ini
 ├── Dockerfile                    # Docker build cho FastAPI backend
 ├── docker-compose.yml            # Khởi chạy PostgreSQL, Backend & Adminer
 ├── requirements.txt              # Danh sách thư viện Python
