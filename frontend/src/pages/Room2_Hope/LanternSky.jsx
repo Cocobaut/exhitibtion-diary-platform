@@ -1,6 +1,6 @@
 import React, { useId, useState, useEffect, useRef, useMemo } from 'react';
 import { rng, f } from '../../utils/rng';
-import { SYM, SYM_KEYS, MOCK_LANTERN_LETTERS } from '../../data/mockData';
+import { SYM, SYM_KEYS } from '../../data/mockData';
 
 export function poly(pts) {
   return "M" + pts.map(([x, y]) => `${f(x)} ${f(y)}`).join(" L");
@@ -391,132 +391,81 @@ export function LanternSky({
     return list;
   }, [vbWidth, isCompact]);
 
-  // Compute positioned lanterns combining active API items + ambient background
+  // Compute positioned lanterns: 100% data-driven from database (1 lantern per unique record, no mock/ambient duplicates)
   const renderedLanterns = useMemo(() => {
     const items = [];
-    const hasApiItems = Array.isArray(lanterns) && lanterns.length > 0;
     const widthSpan = isCompact ? Math.max(100, vbWidth - 70) : 1264;
     const minX = isCompact ? 35 : 50;
 
-    const personalIdStr = personalLantern?.id ? String(personalLantern.id) : null;
-    const personalArtIdStr = personalLantern?.artwork_id ? String(personalLantern.artwork_id) : null;
+    // Deduplicate lanterns by ID (include personalLantern if not already in lanterns list)
+    const seenIds = new Set();
+    const uniqueLanterns = [];
 
-    if (hasApiItems) {
-      // Map API lanterns into canvas positions
-      lanterns.forEach((item, idx) => {
-        // Tránh nhân bản lồng đèn: Bỏ qua lồng đèn cá nhân của chính mình nếu nó đã được vẽ tách biệt
-        // ở vị trí bay cao đặc quyền (personalX, 215)
-        if (!isLanded && personalLantern) {
-          const itemIdStr = item.id ? String(item.id) : null;
-          const itemArtIdStr = item.artwork_id ? String(item.artwork_id) : null;
-          const matchesId = (
-            (personalIdStr && (itemIdStr === personalIdStr || itemArtIdStr === personalIdStr)) ||
-            (personalArtIdStr && (itemIdStr === personalArtIdStr || itemArtIdStr === personalArtIdStr))
-          );
-          const matchesContent = Boolean(
-            personalLantern.title &&
-            item.title === personalLantern.title &&
-            (item.is_mine || item.isMine)
-          );
-          if (matchesId || matchesContent) {
-            return;
-          }
+    if (Array.isArray(lanterns)) {
+      lanterns.forEach((item) => {
+        if (!item) return;
+        const idKey = item.id !== undefined && item.id !== null ? String(item.id) : null;
+        if (idKey) {
+          if (seenIds.has(idKey)) return;
+          seenIds.add(idKey);
         }
-
-        const seed = stringToSeed(item.id || `api_${idx}`);
-        const r = rng(seed);
-        const d = r();
-        const x = minX + r() * widthSpan;
-        const y = 160 + r() * 470;
-
-        if (isLanded) {
-          const centerX = isCompact ? vbWidth * 0.5 : 682;
-          const exclusionZone = isCompact ? 200 : 280;
-          if (Math.abs(x - centerX) < exclusionZone && y > 350) return;
-        }
-
-        const authorName = item.author_display_name || 'Người gửi ẩn danh';
-        const titleText = `${item.title || 'Lồng đèn hy vọng'} — ${authorName} · Kéo xuống hoặc nhấn để đọc`;
-
-        const isMine = Boolean(item.is_mine || item.isMine);
-        const isOpened = Boolean(item.is_opened || item.status === 'OPENED' || item.statusNote?.includes('đã mở'));
-        const isLocked = Boolean(item.status === 'LOCKED' || item.status === 'WAITING' || (item.remaining_seconds && item.remaining_seconds > 0) || !item.is_opened);
-
-        const isSearchMatch = isSearchActive && item.id
-          ? (matchedLanternIds?.has ? (matchedLanternIds.has(String(item.id)) || (item.artwork_id && matchedLanternIds.has(String(item.artwork_id)))) : false)
-          : false;
-
-        items.push(
-          <SingleLantern
-            key={item.id || `api_${idx}`}
-            x={x}
-            y={y}
-            sc={isCompact ? (0.24 + d * 0.54) * lanternScaleMultiplier : (0.24 + d * 0.54)}
-            seed={seed}
-            kind={item.symbol || 'star'}
-            op={0.55 + d * 0.45}
-            isMine={isMine}
-            isOpened={isOpened}
-            isLocked={isLocked}
-            activeFilter={activeFilter}
-            isSearchActive={isSearchActive}
-            isSearchMatch={isSearchMatch}
-            titleText={titleText}
-            onClick={() => onOpenLandedModal && onOpenLandedModal(item)}
-          />
-        );
+        uniqueLanterns.push(item);
       });
     }
 
-    // Luôn giữ tối thiểu 48 lồng đèn trên bầu trời đêm để không bị giật hay đổi vị trí khi tìm kiếm / chuyển tab
-    const ambientCount = Math.max(0, (isCompact ? 28 : 48) - (hasApiItems ? lanterns.length : 0));
-    const ambientSpan = isCompact ? Math.max(100, vbWidth - 70) : 1284;
-    const ambientMinX = isCompact ? 30 : 40;
+    if (personalLantern && personalLantern.id !== undefined && personalLantern.id !== null) {
+      const pKey = String(personalLantern.id);
+      if (!seenIds.has(pKey)) {
+        seenIds.add(pKey);
+        uniqueLanterns.push({ ...personalLantern, is_mine: true, isMine: true });
+      }
+    }
 
-    for (let i = 0; i < ambientCount; i++) {
-      const r = rng(600 + i);
+    uniqueLanterns.forEach((item, idx) => {
+      const seed = stringToSeed(item.id || `api_${idx}`);
+      const r = rng(seed);
       const d = r();
-      const x = ambientMinX + r() * ambientSpan;
-      const y = 170 + r() * 480;
+      const x = minX + r() * widthSpan;
+      const y = 160 + r() * 470;
 
       if (isLanded) {
         const centerX = isCompact ? vbWidth * 0.5 : 682;
         const exclusionZone = isCompact ? 200 : 280;
-        if (Math.abs(x - centerX) < exclusionZone && y > 350) continue;
+        if (Math.abs(x - centerX) < exclusionZone && y > 350) return;
       }
 
-      const fallbackLetter =
-        MOCK_LANTERN_LETTERS[(i % (MOCK_LANTERN_LETTERS.length - 1)) + 1];
+      const authorName = item.author_display_name || 'Người gửi ẩn danh';
+      const titleText = `${item.title || 'Lồng đèn hy vọng'} — ${authorName} · Kéo xuống hoặc nhấn để đọc`;
 
-      // Assign deterministic open/locked states to ambient lanterns
-      const ambientOpened = i % 2 === 0;
-      const ambientLocked = i % 2 !== 0;
+      const isMine = Boolean(item.is_mine || item.isMine);
+      const isOpened = Boolean(item.is_opened || item.status === 'OPENED' || item.statusNote?.includes('đã mở'));
+      const isLocked = Boolean(item.status === 'LOCKED' || item.status === 'WAITING' || (item.remaining_seconds && item.remaining_seconds > 0) || !item.is_opened);
 
-      const isSearchMatch = isSearchActive && fallbackLetter.id
-        ? (matchedLanternIds?.has ? matchedLanternIds.has(String(fallbackLetter.id)) : false)
+      const isSearchMatch = isSearchActive && item.id
+        ? (matchedLanternIds?.has ? (matchedLanternIds.has(String(item.id)) || (item.artwork_id && matchedLanternIds.has(String(item.artwork_id)))) : false)
         : false;
 
       items.push(
         <SingleLantern
-          key={`ambient_${i}`}
+          key={item.id || `api_${idx}`}
           x={x}
           y={y}
-          sc={isCompact ? (0.18 + d * 0.5) * lanternScaleMultiplier : (0.18 + d * 0.5)}
-          seed={700 + i}
-          op={0.4 + d * 0.5}
-          isMine={false}
-          isOpened={ambientOpened}
-          isLocked={ambientLocked}
+          sc={isCompact ? (0.42 + d * 0.48) * lanternScaleMultiplier : (0.42 + d * 0.48)}
+          seed={seed}
+          kind={item.symbol || 'star'}
+          op={0.75 + d * 0.25}
+          isMine={isMine}
+          isOpened={isOpened}
+          isLocked={isLocked}
           activeFilter={activeFilter}
           isSearchActive={isSearchActive}
           isSearchMatch={isSearchMatch}
-          titleText={`Lồng đèn hy vọng · Nhấn hoặc kéo xuống để đọc`}
-          onClick={() => onOpenLandedModal && onOpenLandedModal(fallbackLetter)}
+          titleText={titleText}
+          onClick={() => onOpenLandedModal && onOpenLandedModal(item)}
         />
       );
-    }
+    });
 
-    // Giữ nguyên thứ tự tuyệt đối của các lồng đèn trên canvas, không đảo vị trí khi tìm kiếm
     return items;
   }, [
     lanterns,
@@ -529,20 +478,7 @@ export function LanternSky({
     vbWidth,
     isCompact,
     lanternScaleMultiplier,
-    showAmbient,
   ]);
-
-  const personalIsOpened = Boolean(personalLantern?.is_opened);
-  const personalIsLocked = Boolean(personalLantern && !personalLantern.is_opened);
-  const personalX = isCompact ? Math.round(vbWidth * 0.72) : 1010;
-
-  const activePersonalId = personalLantern?.id || null;
-  const isPersonalSearchMatch = Boolean(
-    isSearchActive &&
-    activePersonalId &&
-    matchedLanternIds?.has &&
-    (matchedLanternIds.has(String(activePersonalId)) || (personalLantern?.artwork_id && matchedLanternIds.has(String(personalLantern.artwork_id))))
-  );
 
   return (
     <svg
@@ -563,25 +499,6 @@ export function LanternSky({
       <rect width={isCompact ? vbWidth : 1364} height="900" fill={`url(#dusk_${compId})`} />
       {stars}
       {renderedLanterns}
-
-      {/* User's Own High-flying Personal Lantern (chỉ hiển thị khi đã đăng nhập và thực sự có lồng đèn cá nhân) */}
-      {!isLanded && Boolean(personalLantern) && (
-        <SingleLantern
-          x={personalX}
-          y={215}
-          sc={isCompact ? 0.96 * lanternScaleMultiplier : 0.96}
-          seed={4321}
-          kind={personalLantern.symbol || 'heart'}
-          isMine={true}
-          isOpened={personalIsOpened}
-          isLocked={personalIsLocked}
-          activeFilter={activeFilter}
-          isSearchActive={isSearchActive}
-          isSearchMatch={isPersonalSearchMatch}
-          titleText={`Lồng đèn của bạn: "${personalLantern.title}" · Nhấn để kéo xuống mở thư`}
-          onClick={() => onOpenLandedModal && onOpenLandedModal(personalLantern)}
-        />
-      )}
 
       {/* Ground and Pagoda silhouette with smooth curve */}
       {isCompact ? (

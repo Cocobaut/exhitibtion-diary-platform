@@ -329,10 +329,22 @@ export function Room3Page({
     setHoveredLeaf(null); // Ensure no floating card remains!
   };
 
-  const handleReactionUpdated = (artworkId, newReactions) => {
-    if (!artworkId || !newReactions) return;
+  const handleReactionUpdated = (artworkId, payload) => {
+    if (!artworkId || !payload) return;
+    const newReactions = payload.reactions || payload;
+    const extraFields = payload.reactions
+      ? {
+          reactions: payload.reactions,
+          ...(payload.has_received_energy !== undefined ? { has_received_energy: payload.has_received_energy } : {}),
+          ...(payload.user_has_hearted !== undefined ? { user_has_hearted: payload.user_has_hearted } : {}),
+        }
+      : { reactions: newReactions };
+
     setLeaves((prev) =>
-      prev.map((it) => (it.id === artworkId ? { ...it, reactions: newReactions } : it))
+      prev.map((it) => (it.id === artworkId ? { ...it, ...extraFields } : it))
+    );
+    setModalLeaf((prev) =>
+      prev && prev.id === artworkId ? { ...prev, ...extraFields } : prev
     );
   };
 

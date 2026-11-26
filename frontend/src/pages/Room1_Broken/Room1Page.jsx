@@ -211,18 +211,53 @@ export function Room1Page({
   // Cập nhật cảm xúc trên thẻ
   const handleSelectReaction = async (artworkId, reactionType) => {
     guardAction(async () => {
+      // Cập nhật lạc quan tức thì trên giao diện
+      setArtworks((prev) =>
+        prev.map((item) => {
+          if (item.id !== artworkId) return item;
+          const prevRx = item.my_reaction || item.user_reaction || null;
+          const nextRx = prevRx === reactionType ? null : reactionType;
+          const rxMap = {
+            HEART: item.reactions?.HEART || 0,
+            HUG: item.reactions?.HUG || 0,
+            SYMPATHY: item.reactions?.SYMPATHY || 0,
+            total: item.reactions?.total ?? item.total_reactions ?? item.reactions_total ?? 0,
+          };
+          if (prevRx && rxMap[prevRx] !== undefined) {
+            rxMap[prevRx] = Math.max(0, rxMap[prevRx] - 1);
+          }
+          if (nextRx && rxMap[nextRx] !== undefined) {
+            rxMap[nextRx] = (rxMap[nextRx] || 0) + 1;
+          }
+          rxMap.total = (rxMap.HEART || 0) + (rxMap.HUG || 0) + (rxMap.SYMPATHY || 0);
+          return {
+            ...item,
+            my_reaction: nextRx,
+            user_reaction: nextRx,
+            reactions: rxMap,
+            total_reactions: rxMap.total,
+            reactions_total: rxMap.total,
+          };
+        })
+      );
+
       try {
         const res = await room1Service.toggleReaction(artworkId, reactionType);
-        if (res) {
+        const data = res?.data || res;
+        if (data) {
+          const rxSummary = data.reactions_summary || data.reactions;
           setArtworks((prev) =>
             prev.map((item) => {
               if (item.id === artworkId) {
+                const nextReactions = rxSummary || item.reactions;
+                const nextTotal = nextReactions?.total ?? item.total_reactions ?? item.reactions_total ?? 0;
                 return {
                   ...item,
-                  my_reaction: res.current_reaction,
-                  user_reaction: res.current_reaction,
-                  reactions_count: res.reactions_count || item.reactions_count,
-                  reactions: res.reactions || item.reactions,
+                  my_reaction: data.current_reaction,
+                  user_reaction: data.current_reaction,
+                  reactions: nextReactions,
+                  total_reactions: nextTotal,
+                  reactions_total: nextTotal,
                 };
               }
               return item;
@@ -240,17 +275,31 @@ export function Room1Page({
     setArtworks((prev) =>
       prev.map((item) => {
         if (item.id === artworkId) {
+          const nextTotal = reactions?.total ?? item.total_reactions ?? item.reactions_total ?? 0;
           return {
             ...item,
             my_reaction,
             user_reaction: my_reaction,
-            reactions,
-            total_reactions: reactions?.total ?? item.total_reactions,
+            reactions: reactions || item.reactions,
+            total_reactions: nextTotal,
+            reactions_total: nextTotal,
           };
         }
         return item;
       })
     );
+    setSelectedArtwork((prev) => {
+      if (!prev || prev.id !== artworkId) return prev;
+      const nextTotal = reactions?.total ?? prev.total_reactions ?? prev.reactions_total ?? 0;
+      return {
+        ...prev,
+        my_reaction,
+        user_reaction: my_reaction,
+        reactions: reactions || prev.reactions,
+        total_reactions: nextTotal,
+        reactions_total: nextTotal,
+      };
+    });
   };
 
   // Bước 1: Khởi động gửi tác phẩm

@@ -229,14 +229,15 @@ export function LanternLandedModal({
       }
 
       nextMap.total = (nextMap.HEART || 0) + (nextMap.HUG || 0) + (nextMap.SYMPATHY || 0);
+
+      if (onReactionUpdated && currentLetter?.id) {
+        onReactionUpdated(currentLetter.id, {
+          my_reaction: nextReaction,
+          reactions: nextMap,
+        });
+      }
       return nextMap;
     });
-
-    if (onReactionUpdated && currentLetter?.id) {
-      onReactionUpdated(currentLetter.id, {
-        my_reaction: nextReaction,
-      });
-    }
   };
 
   const handleToggleReaction = async (type) => {

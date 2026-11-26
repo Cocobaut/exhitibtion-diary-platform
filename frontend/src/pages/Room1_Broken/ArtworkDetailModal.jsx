@@ -58,7 +58,14 @@ export function ArtworkDetailModal({
         HEART: artwork.reactions.HEART || 0,
         HUG: artwork.reactions.HUG || 0,
         SYMPATHY: artwork.reactions.SYMPATHY || 0,
-        total: artwork.reactions.total || 0,
+        total: artwork.reactions.total ?? artwork.total_reactions ?? artwork.reactions_total ?? 0,
+      });
+    } else {
+      setReactionsMap({
+        HEART: 0,
+        HUG: 0,
+        SYMPATHY: 0,
+        total: artwork.total_reactions ?? artwork.reactions_total ?? 0,
       });
     }
 
@@ -96,17 +103,43 @@ export function ArtworkDetailModal({
   // Toggle thả cảm xúc
   const handleToggleReaction = async (type) => {
     guardAction(async () => {
+      // Cập nhật lạc quan tức thì
+      const prevReaction = currentReaction;
+      const nextReaction = prevReaction === type ? null : type;
+      const optimisticMap = {
+        HEART: reactionsMap.HEART || 0,
+        HUG: reactionsMap.HUG || 0,
+        SYMPATHY: reactionsMap.SYMPATHY || 0,
+        total: reactionsMap.total || 0,
+      };
+      if (prevReaction && optimisticMap[prevReaction] !== undefined) {
+        optimisticMap[prevReaction] = Math.max(0, optimisticMap[prevReaction] - 1);
+      }
+      if (nextReaction && optimisticMap[nextReaction] !== undefined) {
+        optimisticMap[nextReaction] = (optimisticMap[nextReaction] || 0) + 1;
+      }
+      optimisticMap.total = (optimisticMap.HEART || 0) + (optimisticMap.HUG || 0) + (optimisticMap.SYMPATHY || 0);
+
+      setCurrentReaction(nextReaction);
+      setReactionsMap(optimisticMap);
+      if (onReactionUpdated) {
+        onReactionUpdated(artwork.id, {
+          my_reaction: nextReaction,
+          reactions: optimisticMap,
+        });
+      }
+
       try {
         const res = await room1Service.toggleReaction(artwork.id, type);
-        if (res) {
-          setCurrentReaction(res.current_reaction);
-          if (res.reactions_summary) {
-            setReactionsMap(res.reactions_summary);
-          }
+        const data = res?.data || res;
+        if (data) {
+          const rxSummary = data.reactions_summary || data.reactions || optimisticMap;
+          setCurrentReaction(data.current_reaction);
+          setReactionsMap(rxSummary);
           if (onReactionUpdated) {
             onReactionUpdated(artwork.id, {
-              my_reaction: res.current_reaction,
-              reactions: res.reactions_summary,
+              my_reaction: data.current_reaction,
+              reactions: rxSummary,
             });
           }
         }

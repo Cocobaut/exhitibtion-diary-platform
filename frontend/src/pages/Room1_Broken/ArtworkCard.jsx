@@ -24,13 +24,15 @@ export function ArtworkCard({ artwork, index, onClick, onSelectReaction, searchQ
       ? artwork.reactions.total
       : artwork.total_reactions !== undefined
       ? artwork.total_reactions
+      : artwork.reactions_total !== undefined
+      ? artwork.reactions_total
       : artwork.n || 0;
 
   const stackTypes = artwork.reactions
     ? ['HUG', 'HEART', 'SYMPATHY'].filter((k) => artwork.reactions[k] > 0)
     : artwork.rx || ['HUG', 'HEART'];
 
-  const userReaction = artwork.my_reaction || artwork.user_reaction || 'HUG';
+  const userReaction = artwork.my_reaction || artwork.user_reaction || null;
 
   // Format view count (ví dụ: 1200 -> 1,2k)
   const formatViews = (cnt) => {

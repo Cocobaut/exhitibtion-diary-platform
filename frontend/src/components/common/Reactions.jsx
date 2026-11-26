@@ -40,9 +40,11 @@ export function ReactionStack({ types = [], size = 20 }) {
   );
 }
 
-export function ReactionPicker({ onSelect, activeType = 'HUG' }) {
+export function ReactionPicker({ onSelect, activeType = null }) {
   const { language, t } = useLanguage();
+  const [hoveredType, setHoveredType] = React.useState(null);
   const reactionTypes = ['HEART', 'HUG', 'SYMPATHY'];
+  const displayType = hoveredType || activeType || 'HUG';
 
   const getLabel = (type) => {
     if (language === 'en') {
@@ -54,13 +56,15 @@ export function ReactionPicker({ onSelect, activeType = 'HUG' }) {
   return (
     <div className="picker" style={{ left: '18px', bottom: '-34px' }}>
       {reactionTypes.map((type) => {
-        const isBig = type === activeType;
+        const isBig = type === activeType || type === hoveredType;
         return (
           <span
             key={type}
             className={isBig ? "big" : ""}
             style={{ display: 'inline-grid', cursor: 'pointer' }}
             title={getLabel(type)}
+            onMouseEnter={() => setHoveredType(type)}
+            onMouseLeave={() => setHoveredType(null)}
             onClick={(e) => {
               e.stopPropagation();
               onSelect && onSelect(type);
@@ -71,7 +75,7 @@ export function ReactionPicker({ onSelect, activeType = 'HUG' }) {
         );
       })}
       <span style={{ fontSize: '13px', color: 'var(--ink)', fontWeight: 600, padding: '0 4px 9px 2px' }}>
-        {getLabel(activeType)}
+        {getLabel(displayType)}
       </span>
     </div>
   );

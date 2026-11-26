@@ -172,6 +172,12 @@ class Room2Service:
         )
         rows = (await db.execute(stmt)).scalars().unique().all()
 
+        ids = [art.id for art in rows]
+        summaries = await ReactionService.summary(db, ids, ROOM2_REACTIONS)
+        my_rx_map = await ReactionService.my_reactions(
+            db, ids, current_user.id if current_user else None
+        )
+
         items = []
         for art in rows:
             is_mine = bool(current_user and art.user_id == current_user.id)
@@ -189,6 +195,10 @@ class Room2Service:
             short_en = art.short_content_en or (art.short_content if lang == "en" else None)
             content_vi = art.content_vi or (art.content if lang == "vi" else None)
             content_en = art.content_en or (art.content if lang == "en" else None)
+
+            my_rx_list = my_rx_map.get(art.id, [])
+            my_rx = my_rx_list[0] if my_rx_list else None
+            rx_data = summaries.get(art.id, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0})
 
             items.append({
                 "id": art.id,
@@ -211,6 +221,8 @@ class Room2Service:
                 "is_opened": art.is_opened,
                 "symbol": art.tag_category or "star",
                 "media_url": art.media_url,
+                "reactions": rx_data,
+                "my_reaction": my_rx,
                 "created_at": art.created_at,
                 "can_read": can_read_lantern(art, current_user, now),
             })
@@ -301,8 +313,30 @@ class Room2Service:
             artwork.view_count = new_view_count
             await db.flush()
 
+        summaries = await ReactionService.summary(db, [lantern_id], ROOM2_REACTIONS)
+        my_rx_map = await ReactionService.my_reactions(
+            db, [lantern_id], current_user.id if current_user else None
+        )
+        my_rx_list = my_rx_map.get(lantern_id, [])
+        my_rx = my_rx_list[0] if my_rx_list else None
+
+        is_saved = False
+        if current_user:
+            check_saved = await db.scalar(
+                select(UserSavedArtwork.id).where(
+                    UserSavedArtwork.user_id == current_user.id,
+                    UserSavedArtwork.artwork_id == lantern_id,
+                )
+            )
+            is_saved = bool(check_saved)
+
+        payload = Room2Service._open_payload(artwork, target, new_view_count, is_opened=True)
+        payload["reactions"] = summaries.get(lantern_id, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0})
+        payload["my_reaction"] = my_rx
+        payload["is_saved"] = is_saved
+
         message = "Lồng đèn đã hạ cánh. Chúc mừng bạn đã chạm tới bức thư tương lai!"
-        return message, Room2Service._open_payload(artwork, target, new_view_count, is_opened=True)
+        return message, payload
 
     @staticmethod
     def _open_payload(artwork: Artwork, target: Optional[datetime], view_count: int, *, is_opened: bool) -> Dict[str, Any]:
@@ -774,6 +808,18 @@ class Room2Service:
             minutes = 0
             seconds = 0
 
+        summaries = await ReactionService.summary(db, [lantern.id], ROOM2_REACTIONS)
+        my_rx_map = await ReactionService.my_reactions(db, [lantern.id], current_user.id)
+        my_rx_list = my_rx_map.get(lantern.id, [])
+        my_rx = my_rx_list[0] if my_rx_list else None
+
+        check_saved = await db.scalar(
+            select(UserSavedArtwork.id).where(
+                UserSavedArtwork.user_id == current_user.id,
+                UserSavedArtwork.artwork_id == lantern.id,
+            )
+        )
+
         return {
             "has_lantern": True,
             "lantern": {
@@ -798,6 +844,9 @@ class Room2Service:
                 "is_mine": True,
                 "can_read": True,
                 "symbol": lantern.tag_category or "heart",
+                "reactions": summaries.get(lantern.id, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0}),
+                "my_reaction": my_rx,
+                "is_saved": bool(check_saved),
             }
         }
 

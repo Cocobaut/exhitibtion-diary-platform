@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { TopNav } from '../../components/layout/TopNav';
 import { CustomFilterDropdown } from '../../components/common/CustomFilterDropdown';
 import { Icon } from '../../components/common/Icons';
-import { MOCK_LANTERN_LETTERS } from '../../data/mockData';
 import { LanternSky } from './LanternSky';
 import { ReleaseLanternModal } from './ReleaseLanternModal';
 import { LanternLandedModal } from './LanternLandedModal';
@@ -183,15 +182,21 @@ export function Room2Page({
         console.warn('Backend lantern search fallback to local match:', err);
       }
 
-      // 2. Client-side matching across loaded lanterns, personal lantern & mock lanterns
-      const publicMocks = MOCK_LANTERN_LETTERS.filter((m) => !m.isMine);
-      const allCandidates = [
-        ...lanterns,
-        ...(personalLantern ? [personalLantern] : []),
-        ...(isGuest ? publicMocks : MOCK_LANTERN_LETTERS),
-      ];
+      // 2. Client-side matching across loaded lanterns & personal lantern (deduplicated)
+      const candidateMap = new Map();
+      lanterns.forEach((it) => {
+        if (it?.id !== undefined && it?.id !== null) {
+          candidateMap.set(String(it.id), it);
+        }
+      });
+      if (personalLantern?.id !== undefined && personalLantern?.id !== null) {
+        const pId = String(personalLantern.id);
+        if (!candidateMap.has(pId)) {
+          candidateMap.set(pId, personalLantern);
+        }
+      }
 
-      allCandidates.forEach((it) => {
+      candidateMap.forEach((it) => {
         if (!it) return;
         const isMatch =
           matchesSearchQuery(it.title, q) ||
@@ -330,11 +335,6 @@ export function Room2Page({
     if (lanterns.length > 0) {
       const randomItem = lanterns[Math.floor(Math.random() * lanterns.length)];
       handleOpenLantern(randomItem);
-    } else {
-      const publicMocks = MOCK_LANTERN_LETTERS.filter((m) => !m.isMine);
-      const randomMock =
-        publicMocks[Math.floor(Math.random() * publicMocks.length)];
-      handleOpenLantern(randomMock);
     }
   };
 
@@ -517,6 +517,12 @@ export function Room2Page({
         onReactionUpdated={(lanternId, updatedData) => {
           setLanterns((prev) =>
             prev.map((item) => (item.id === lanternId ? { ...item, ...updatedData } : item))
+          );
+          setSelectedLetter((prev) =>
+            prev && prev.id === lanternId ? { ...prev, ...updatedData } : prev
+          );
+          setPersonalLantern((prev) =>
+            prev && prev.id === lanternId ? { ...prev, ...updatedData } : prev
           );
         }}
         onReplyFuture={() => {

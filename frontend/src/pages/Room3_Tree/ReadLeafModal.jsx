@@ -78,6 +78,9 @@ export function ReadLeafModal({
             if (data?.has_received_energy !== undefined) {
               setHasEnergized(Boolean(data.has_received_energy));
             }
+            if (data?.user_has_hearted !== undefined) {
+              setHasHearted(Boolean(data.user_has_hearted));
+            }
             if (data?.is_saved !== undefined) {
               setIsSaved(Boolean(data.is_saved));
             }
@@ -158,6 +161,27 @@ export function ReadLeafModal({
           setIsTogglingEnergy(true);
         }
 
+        // Cập nhật lạc quan tức thì
+        const nextState = isHeart ? !hasHearted : !hasEnergized;
+        const nextEnergy = isHeart ? energyCount : (nextState ? energyCount + 1 : Math.max(0, energyCount - 1));
+        const nextHeart = isHeart ? (nextState ? heartCount + 1 : Math.max(0, heartCount - 1)) : heartCount;
+
+        if (isHeart) {
+          setHasHearted(nextState);
+          setHeartCount(nextHeart);
+        } else {
+          setHasEnergized(nextState);
+          setEnergyCount(nextEnergy);
+        }
+
+        if (onReactionUpdated) {
+          onReactionUpdated(currentLeaf.id, {
+            reactions: { ENERGY: nextEnergy, HEART: nextHeart, total: nextEnergy + nextHeart },
+            has_received_energy: isHeart ? hasEnergized : nextState,
+            user_has_hearted: isHeart ? nextState : hasHearted,
+          });
+        }
+
         try {
           const res = await room3Service.toggleEnergy(currentLeaf.id, actionType);
           const data = res?.data || res;
@@ -165,39 +189,23 @@ export function ReadLeafModal({
           if (data?.reactions) {
             setEnergyCount(data.reactions.ENERGY);
             setHeartCount(data.reactions.HEART);
+            const finalEnergized = isHeart ? hasEnergized : (data.current_action === 'INSPIRED');
+            const finalHearted = isHeart ? (data.current_action === 'HEART') : hasHearted;
             if (isHeart) {
-              setHasHearted(data.current_action === 'HEART');
+              setHasHearted(finalHearted);
             } else {
-              setHasEnergized(data.current_action === 'INSPIRED');
+              setHasEnergized(finalEnergized);
             }
-          } else {
-            // Fallback toggle
-            if (isHeart) {
-              const next = !hasHearted;
-              setHasHearted(next);
-              setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-            } else {
-              const next = !hasEnergized;
-              setHasEnergized(next);
-              setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
+            if (onReactionUpdated) {
+              onReactionUpdated(currentLeaf.id, {
+                reactions: data.reactions,
+                has_received_energy: finalEnergized,
+                user_has_hearted: finalHearted,
+              });
             }
-          }
-
-          if (onReactionUpdated) {
-            onReactionUpdated(currentLeaf.id, data?.reactions);
           }
         } catch (err) {
           console.error('Error toggling reaction:', err);
-          // Fallback optimistic
-          if (isHeart) {
-            const next = !hasHearted;
-            setHasHearted(next);
-            setHeartCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-          } else {
-            const next = !hasEnergized;
-            setHasEnergized(next);
-            setEnergyCount((prev) => (next ? prev + 1 : Math.max(0, prev - 1)));
-          }
         } finally {
           if (isHeart) setIsTogglingHeart(false);
           else setIsTogglingEnergy(false);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Logo } from '../../components/common/Logo';
 import { LobbyScene } from '../Lobby/LobbyScene';
+import { LobbyDustMotes } from '../Lobby/LobbyDustMotes';
 import { Icon } from '../../components/common/Icons';
 import { RegisterModal } from './RegisterModal';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
@@ -132,17 +133,18 @@ export function LoginPage({ onLoginSuccess, onExploreGuest }) {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>
       {/* Background Animated Lobby Scene */}
-      <div className="stage" style={{ left: 0 }}>
+      <div className="stage" style={{ left: 0, width: '100%', bottom: 0, overflow: 'hidden' }}>
         <LobbyScene />
+        <LobbyDustMotes />
       </div>
 
       {/* Atmospheric Glass Scrim */}
       <div
         className="scrim"
         style={{
-          background: 'radial-gradient(ellipse at center, rgba(35, 22, 17, 0.45) 0%, rgba(18, 12, 10, 0.82) 100%)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
+          background: 'radial-gradient(ellipse at center, rgba(35, 22, 17, 0.35) 0%, rgba(18, 12, 10, 0.68) 100%)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
         }}
       />
 

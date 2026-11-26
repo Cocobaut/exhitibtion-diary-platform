@@ -551,6 +551,7 @@ class DiaryService:
                 )
 
         await db.flush()
+        await db.commit()
 
         summaries = await ReactionService.diary_summary(db, [diary_id], ["HEART", "HUG"])
         sm = summaries.get(diary_id, {"HEART": 0, "HUG": 0, "total": 0})

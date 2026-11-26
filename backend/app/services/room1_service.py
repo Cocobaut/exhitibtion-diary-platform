@@ -383,6 +383,7 @@ class Room1Service:
                 )
 
         await db.flush()
+        await db.commit()
 
         # Recompute summary
         summaries = await ReactionService.summary(db, [artwork_id], ROOM1_REACTIONS)
@@ -392,6 +393,7 @@ class Room1Service:
             "artwork_id": artwork_id,
             "current_reaction": current_reaction,
             "reactions_summary": rx_summary,
+            "reactions": rx_summary,
         }
 
     @staticmethod
@@ -449,11 +451,17 @@ class Room1Service:
         # Batch summary for reactions_total
         art_ids = [item["id"] for item in items]
         summaries = await ReactionService.summary(db, art_ids, ROOM1_REACTIONS)
+        my_rx_map = await ReactionService.my_reactions(
+            db, art_ids, current_user.id if current_user else None
+        )
 
         formatted_items = []
         for item in items:
             aid = item["id"]
-            rx_total = summaries.get(aid, {}).get("total", 0)
+            rx_data = summaries.get(aid, {"HEART": 0, "HUG": 0, "SYMPATHY": 0, "total": 0})
+            rx_total = rx_data.get("total", 0)
+            my_rx_list = my_rx_map.get(aid, [])
+            my_rx = my_rx_list[0] if my_rx_list else None
             formatted_items.append({
                 "id": aid,
                 "title": item["title"],
@@ -468,6 +476,8 @@ class Room1Service:
                 "author_display_name": item["author_display_name"],
                 "media_url": item["media_url"],
                 "highlight": item.get("highlight", {}),
+                "reactions": rx_data,
+                "my_reaction": my_rx,
                 "reactions_total": rx_total,
                 "view_count": item["view_count"],
             })

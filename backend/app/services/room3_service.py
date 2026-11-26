@@ -126,6 +126,7 @@ class Room3Service:
 
             my_rx_list = my_rx_map.get(art.id, [])
             has_energy = "INSPIRED" in my_rx_list
+            has_heart = "HEART" in my_rx_list
 
             author_name = ArtworkQueryService.get_author_display_name(art)
 
@@ -145,6 +146,7 @@ class Room3Service:
                 "color_code": art.color_code,
                 "reactions": rx_obj,
                 "has_received_energy": has_energy,
+                "user_has_hearted": has_heart,
                 "created_at": art.created_at,
             })
 
@@ -196,7 +198,9 @@ class Room3Service:
             "total": energy_cnt + heart_cnt,
         }
 
-        has_energy = "INSPIRED" in my_rx_map.get(ribbon_id, [])
+        my_rx_list = my_rx_map.get(ribbon_id, [])
+        has_energy = "INSPIRED" in my_rx_list
+        has_heart = "HEART" in my_rx_list
         author_name = ArtworkQueryService.get_author_display_name(artwork)
 
         is_saved = False
@@ -224,6 +228,7 @@ class Room3Service:
             "content_en": artwork.content_en,
             "reactions": rx_obj,
             "has_received_energy": has_energy,
+            "user_has_hearted": has_heart,
             "view_count": new_view_count,
             "is_saved": is_saved,
             "created_at": artwork.created_at,
@@ -363,6 +368,7 @@ class Room3Service:
                 )
 
         await db.flush()
+        await db.commit()
 
         # Recompute reactions summary
         summaries = await ReactionService.summary(db, [ribbon_id], ["INSPIRED", "HEART"])

@@ -477,14 +477,14 @@ export function LoginModal({ isOpen, onClose, featureName, onLoginSuccess }) {
       <RegisterModal
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
-        onRegisterSuccess={handleRegisterSuccess}
+        onSuccess={handleRegisterSuccess}
         onSwitchToLogin={() => setIsRegisterOpen(false)}
       />
 
       <ForgotPasswordModal
         isOpen={isForgotOpen}
         onClose={() => setIsForgotOpen(false)}
-        onBackToLogin={() => setIsForgotOpen(false)}
+        onSwitchToLogin={() => setIsForgotOpen(false)}
       />
     </>
   );
