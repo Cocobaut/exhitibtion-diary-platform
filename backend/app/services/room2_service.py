@@ -1,12 +1,11 @@
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.core.language import detect_language
-from app.core.config import settings
 from app.core.constants import ROOM2_REACTIONS, ROOM_HOPE
 from app.core.exceptions import AppException
 from app.models.artwork import Artwork
@@ -66,7 +65,7 @@ class Room2Service:
         """Generate visible set conditions for Room 2 (Hope Lanterns):
         room_id = 2 AND (
             (visibility = 'PUBLIC' AND status = 'APPROVED')
-            OR (visibility = 'PRIVATE' AND user_id = :current_user_id)
+            OR user_id = :current_user_id   -- tác giả thấy mọi lồng đèn của mình, kể cả đang chờ duyệt
         )
         """
         public_cond = and_(Artwork.visibility == "PUBLIC", Artwork.status == "APPROVED")
@@ -448,22 +447,7 @@ class Room2Service:
         current_user: User,
     ) -> Tuple[str, Dict[str, Any]]:
         """Create a new hope lantern in Room 2."""
-        # Rate limit check across all rooms
-        window_minutes = settings.ARTWORK_RATE_LIMIT_WINDOW_MINUTES
-        max_allowed = settings.ARTWORK_RATE_LIMIT_MAX_PER_WINDOW
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
-
-        cnt_stmt = select(func.count(Artwork.id)).where(
-            Artwork.user_id == current_user.id,
-            Artwork.created_at >= cutoff,
-        )
-        recent_count = (await db.scalar(cnt_stmt)) or 0
-        if recent_count >= max_allowed:
-            raise AppException(
-                status_code=429,
-                error_code="RATE_LIMITED",
-                message="Bạn gửi bài quá nhanh, vui lòng thử lại sau ít phút"
-            )
+        await ArtworkQueryService.enforce_post_rate_limit(db, current_user.id)
 
         # Status and response message
         if request.visibility == "PUBLIC":
@@ -721,8 +705,7 @@ class Room2Service:
                 message="Không tìm thấy lồng đèn"
             )
 
-        # Visibility check: if PRIVATE, must belong to current user
-        if artwork.visibility == "PRIVATE" and artwork.user_id != current_user.id:
+        if not ArtworkQueryService.is_readable_by(artwork, current_user.id):
             raise AppException(
                 status_code=404,
                 error_code="ARTWORK_NOT_FOUND",
@@ -1020,7 +1003,12 @@ class Room2Service:
                 message=f"Loại cảm xúc không hợp lệ: {reaction_type}"
             )
 
-        stmt = select(Artwork).where(Artwork.id == lantern_id, Artwork.room_id == ROOM_HOPE)
+        # Khoá dòng lồng đèn: hai lần bấm liền nhau chạy lần lượt, không cùng chèn trùng cảm xúc
+        stmt = (
+            select(Artwork)
+            .where(Artwork.id == lantern_id, *Room2Service.get_visible_conditions(current_user))
+            .with_for_update(of=Artwork)
+        )
         lantern = (await db.execute(stmt)).scalar_one_or_none()
         if not lantern:
             raise AppException(

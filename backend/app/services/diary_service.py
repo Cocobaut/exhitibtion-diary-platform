@@ -220,6 +220,10 @@ class DiaryService:
                 message="Không tìm thấy bài nhật ký"
             )
 
+        # Client gửi lại đủ trường mỗi lần sửa, nên so giá trị cũ/mới chứ không xét trường có mặt
+        visible_before = (diary.title, diary.content, list(diary.media_urls or []))
+        was_public = diary.is_public
+
         if request.entry_date is not None:
             diary.entry_date = request.entry_date
         if request.title is not None:
@@ -228,7 +232,7 @@ class DiaryService:
             diary.mood = request.mood.strip().lower() if request.mood else None
         if request.content is not None:
             diary.content = request.content.strip()
-        if request.title is not None or request.content is not None:
+        if (diary.title, diary.content) != visible_before[:2]:
             # Nội dung đã đổi: cột gốc theo bản mới, bản dịch cũ không còn đúng nên bỏ đi
             lang = detect_language(diary.title, diary.content, fallback=diary.original_language or "vi")
             diary.original_language = lang
@@ -241,15 +245,14 @@ class DiaryService:
         if request.is_encrypted is not None:
             diary.is_encrypted = request.is_encrypted
 
-        # Re-approval rule: If updated diary is public, reset is_approved to False
+        # Duyệt lại khi người khác sắp thấy nội dung mới: vừa chuyển sang công khai, hoặc đang công khai
+        # mà đổi chữ/ảnh. Đổi tâm trạng hay ngày viết không cần duyệt lại.
         if request.is_public is not None:
             diary.is_public = request.is_public
-            if request.is_public:
-                diary.is_approved = False
-            else:
-                diary.is_approved = True
-        elif diary.is_public:
-            # If still public and content/title changed, reset is_approved to False
+        content_changed = visible_before != (diary.title, diary.content, list(diary.media_urls or []))
+        if not diary.is_public:
+            diary.is_approved = True
+        elif not was_public or content_changed:
             diary.is_approved = False
 
         diary.updated_at = datetime.now(timezone.utc)

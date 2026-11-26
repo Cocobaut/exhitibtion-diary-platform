@@ -1,13 +1,39 @@
+from datetime import datetime, timedelta, timezone
 import uuid
 from typing import Optional
-from sqlalchemy import update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.constants import ANONYMOUS_NAME
+from app.core.exceptions import AppException
 from app.models.artwork import Artwork
 
 
 class ArtworkQueryService:
+    @staticmethod
+    def is_readable_by(artwork: Artwork, user_id: Optional[uuid.UUID]) -> bool:
+        """Tác giả luôn đọc được bài của mình; người khác chỉ đọc bài công khai đã duyệt.
+        Bài bị gỡ (REJECTED) sau khi duyệt cũng không còn đọc được, kể cả qua Sổ tay.
+        """
+        if user_id is not None and artwork.user_id == user_id:
+            return True
+        return artwork.visibility == "PUBLIC" and artwork.status == "APPROVED"
+
+    @staticmethod
+    async def enforce_post_rate_limit(db: AsyncSession, user_id: uuid.UUID) -> None:
+        """Giới hạn số bài đăng mới của một người, tính chung cho cả 3 phòng."""
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=settings.ARTWORK_RATE_LIMIT_WINDOW_MINUTES)
+        recent_count = await db.scalar(
+            select(func.count(Artwork.id)).where(Artwork.user_id == user_id, Artwork.created_at >= cutoff)
+        ) or 0
+        if recent_count >= settings.ARTWORK_RATE_LIMIT_MAX_PER_WINDOW:
+            raise AppException(
+                status_code=429,
+                error_code="RATE_LIMITED",
+                message="Bạn gửi bài quá nhanh, vui lòng thử lại sau ít phút"
+            )
+
     @staticmethod
     def get_author_display_name(artwork: Artwork, author_nickname: Optional[str] = None) -> str:
         """Resolve artwork author display name according to Plan 00 §6.6:

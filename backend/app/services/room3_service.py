@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -251,7 +250,7 @@ class Room3Service:
                 message="Không tìm thấy thông điệp"
             )
 
-        if artwork.visibility == "PRIVATE" and artwork.user_id != current_user.id:
+        if not ArtworkQueryService.is_readable_by(artwork, current_user.id):
             raise AppException(
                 status_code=404,
                 error_code="ARTWORK_NOT_FOUND",
@@ -311,7 +310,7 @@ class Room3Service:
             Artwork.id == ribbon_id,
             Artwork.room_id == ROOM_COMMUNITY,
             Artwork.status == "APPROVED",
-        )
+        ).with_for_update(of=Artwork)  # khoá dòng thông điệp: lần bấm thứ hai chờ lần đầu xong, không chèn trùng
         artwork = (await db.execute(stmt)).scalar_one_or_none()
         if not artwork:
             raise AppException(
@@ -404,22 +403,7 @@ class Room3Service:
                 message="Danh mục và mã màu không khớp theo quy chuẩn phòng 3"
             )
 
-        # Rate limit check across all rooms
-        window_minutes = settings.ARTWORK_RATE_LIMIT_WINDOW_MINUTES
-        max_allowed = settings.ARTWORK_RATE_LIMIT_MAX_PER_WINDOW
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
-
-        cnt_stmt = select(func.count(Artwork.id)).where(
-            Artwork.user_id == current_user.id,
-            Artwork.created_at >= cutoff,
-        )
-        recent_count = (await db.scalar(cnt_stmt)) or 0
-        if recent_count >= max_allowed:
-            raise AppException(
-                status_code=429,
-                error_code="RATE_LIMITED",
-                message="Bạn gửi bài quá nhanh, vui lòng thử lại sau ít phút"
-            )
+        await ArtworkQueryService.enforce_post_rate_limit(db, current_user.id)
 
         # Auto approve check
         if settings.ROOM3_AUTO_APPROVE:

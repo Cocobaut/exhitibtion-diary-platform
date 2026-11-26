@@ -12,6 +12,7 @@ from app.models.message_capsule import MessageCapsule
 from app.models.user import User
 from app.models.user_capsule_draw import UserCapsuleDraw
 from app.models.user_saved_artwork import UserSavedArtwork
+from app.services.artwork_query_service import ArtworkQueryService
 from app.services.room2_service import is_lantern_unlocked
 from app.schemas.notebook import (
     NotebookCounts,
@@ -101,7 +102,8 @@ class NotebookService:
         saved_arts = (await db.execute(saved_stmt)).scalars().unique().all()
         for sa in saved_arts:
             art = sa.artwork
-            if not art:
+            # Bài đã bị gỡ hoặc chuyển riêng tư sau khi lưu thì không còn hiện trong Sổ tay của người khác
+            if not art or not ArtworkQueryService.is_readable_by(art, user_id):
                 continue
 
             author_name = art.author_display_name or (

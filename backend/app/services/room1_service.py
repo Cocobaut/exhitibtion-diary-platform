@@ -1,14 +1,12 @@
 import math
 import re
 import uuid
-from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.core.language import detect_language
-from app.core.config import settings
 from app.core.constants import ROOM1_REACTIONS, ROOM_BROKEN
 from app.core.exceptions import AppException
 from app.models.artwork import Artwork
@@ -239,7 +237,7 @@ class Room1Service:
                 message="Không tìm thấy tác phẩm"
             )
 
-        if artwork.visibility == "PRIVATE" and artwork.user_id != current_user.id:
+        if not ArtworkQueryService.is_readable_by(artwork, current_user.id):
             raise AppException(
                 status_code=404,
                 error_code="ARTWORK_NOT_FOUND",
@@ -302,7 +300,7 @@ class Room1Service:
             Artwork.id == artwork_id,
             Artwork.room_id == ROOM_BROKEN,
             Artwork.status == "APPROVED",
-        )
+        ).with_for_update(of=Artwork)  # khoá dòng tác phẩm: lần bấm thứ hai chờ lần đầu xong, không chèn trùng
         artwork = (await db.execute(stmt)).scalar_one_or_none()
         if not artwork:
             raise AppException(
@@ -316,10 +314,6 @@ class Room1Service:
             ArtworkInteraction.artwork_id == artwork_id,
             ArtworkInteraction.user_id == current_user.id,
         )
-        bind = db.get_bind()
-        if bind and bind.dialect.name == "postgresql":
-            rx_query = rx_query.with_for_update()
-
         existing_reactions = (await db.execute(rx_query)).scalars().all()
 
         current_reaction: Optional[str] = None
@@ -499,22 +493,7 @@ class Room1Service:
         current_user: User,
     ) -> Dict[str, Any]:
         """Create a new artwork in Room 1 with rate limiting."""
-        # Rate limit check: user artworks created in window across all rooms
-        window_minutes = settings.ARTWORK_RATE_LIMIT_WINDOW_MINUTES
-        max_allowed = settings.ARTWORK_RATE_LIMIT_MAX_PER_WINDOW
-        cutoff = datetime.now(timezone.utc) - timedelta(minutes=window_minutes)
-
-        cnt_stmt = select(func.count(Artwork.id)).where(
-            Artwork.user_id == current_user.id,
-            Artwork.created_at >= cutoff,
-        )
-        recent_count = (await db.scalar(cnt_stmt)) or 0
-        if recent_count >= max_allowed:
-            raise AppException(
-                status_code=429,
-                error_code="RATE_LIMITED",
-                message="Bạn gửi bài quá nhanh, vui lòng thử lại sau ít phút"
-            )
+        await ArtworkQueryService.enforce_post_rate_limit(db, current_user.id)
 
         clean_title = request.title.strip()
         clean_content = request.content.strip()
